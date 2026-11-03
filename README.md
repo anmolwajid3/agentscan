@@ -1,17 +1,16 @@
 # FORMA study screening
 
-Fourteen studies for the FORMA paper, on whether a designated verifier can check a cross-agent requirement from the evidence it is allowed to see.
+Eleven studies for the related work of the FORMA paper. Each one can change a paragraph. The question is whether a designated verifier can check a cross-agent requirement from the evidence it is allowed to see.
 
-The studies, PDFs, and the workbook are in [`forma-screening/`](forma-screening/).
+The workbook is [`forma-screening/FORMA-screening.xlsx`](forma-screening/FORMA-screening.xlsx).
 
-| Item | What it is |
+| Sheet | What it is |
 | --- | --- |
-| `forma-screening/FORMA-screening.xlsx` | One row per study: ID, title, authors, year, venue, DOI or URL, publication status, PDF status, and a short reason for inclusion. A second sheet records the search and why the set was cut to these fourteen. |
-| `forma-screening/S01.pdf` … `S14.pdf` | Full text. The file name is the ID in the workbook. |
+| Studies | Eleven rows. The ID is the order the studies would be used in the paper, not a rank. Each row has the FORMA element it informs, why it is here, what it does not do, and where it goes in the draft. |
+| Screening log | What happened to every row of the other 18-row sheet, the three studies added here, and the papers that were considered and left out. |
+| Search record | The query, the date, and the corrections to venues and authors. |
 
-`S01` is the first row, not a ranking. Rows run by year, newest first, then by first author. No theme labels have been assigned.
-
-## Search
+Full texts are not in this folder. The link on each row is the citable version.
 
 The search was run on **3 November 2026 (Europe/Kyiv)**, limited to work from **2022 onward**.
 
@@ -24,7 +23,3 @@ AND
  OR "trust management" OR "evidence sharing" OR "information flow"
  OR "access control" OR reliability)
 ```
-
-Google Scholar blocked automated queries from this environment. The same Boolean query was run on arXiv and OpenAlex, and the first five Scholar pages were screened from a browser export. That pass kept a much larger set. This folder keeps the fourteen studies closest to architectural verifiability: evidence available to a named verifier, the trust assumptions behind that evidence, information flow and isolation, runtime verification and enforcement, and failures of multi-agent LLM systems.
-
-Three of the fourteen are already cited in the draft: AgentLeak, AgentSpec, and “Why Do Multi-Agent LLM Systems Fail?”. Protocol documents and the draft’s attack and fault benchmarks were not repeated. The search-record sheet names them.
