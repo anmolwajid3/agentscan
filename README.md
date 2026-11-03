@@ -10,7 +10,7 @@ The workbook is [`forma-screening/FORMA-screening.xlsx`](forma-screening/FORMA-s
 | Screening log | What happened to every row of the other 18-row sheet, the three studies added here, and the papers that were considered and left out. |
 | Search record | The query, the date, and the corrections to venues and authors. |
 
-Full texts are not in this folder. The link on each row is the citable version.
+The PDFs are in [`papers/`](papers/). `papers/Claude/` uses the other sheet’s numbers, `papers/Cursor/` uses this sheet’s numbers. A file ending in `-D` is in both lists. The same study keeps its own number in each folder, so Claude `S01-D` is Cursor `S02-D`.
 
 The search was run on **3 November 2026 (Europe/Kyiv)**, limited to work from **2022 onward**.
 
