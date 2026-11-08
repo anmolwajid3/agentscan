@@ -15,10 +15,24 @@ p2_swap_sample: 30
 p2_removal_sample: 30
 sample_seed: 20261108
 sample_size: 2000
-sample_workers: 4
+sample_workers: 16
 clone_timeout_seconds: 180
 sample_clone_timeout_seconds: 600
+# Whole-project limit. A repository that is still running is recorded as failed and the sample moves on.
+sample_project_timeout_seconds: 1200
 month_days: 30.4375
+
+# Exact AI identities. A name or email counts only when the whole value equals one entry.
+# Substrings do not count: haider@ is not aider@, and codegen.ie is not an AI agent.
+ai_bot_names:
+  - copilot-swe-agent[bot]
+  - claude[bot]
+  - devin-ai-integration[bot]
+  - copilot[bot]
+ai_coauthor_emails:
+  - noreply@anthropic.com
+  - 175728472+Copilot@users.noreply.github.com
+  - copilot@users.noreply.github.com
 
 # Five-project trial. Not the full population.
 trial_repos:

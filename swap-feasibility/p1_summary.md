@@ -1,138 +1,1071 @@
 # P1 summary (interim)
 
-Interim. This is not the finished sample.
-No pass or fail is declared.
+Interim. This file is a random sample of eligible projects. It is not the full population.
+No pass or fail is declared from the sample.
 
-Written: 2026-11-08T10:54+00:00.
-Eligible projects with a finished analysis when this file was written: 1375.
-The sample is still running. These rows are the eligible projects whose analysis files were already complete, including projects that finished ahead of slower repositories still in progress.
-Main rules only: same-commit swaps whose rule type does not start with `rename`. Rename rules are excluded.
+Sample seed: 20261108. Sample size target: 2000.
+
+Artifact swaps count every library coordinate pair. Decisions count a commit once when it swaps several artifacts of the same two group ids.
+Rates and the projection use decisions. Artifact counts stay beside them.
+
+The main counts use the 802 rules whose type does not start with `rename`.
+The 392 rename rules are reported in their own section and are not included in the main counts or the projection.
+
 Cut-off: 2026-11-08. Control window starts 2025-01-01.
-The full-run bar, recorded here and not applied as a verdict, is at least 100 same-commit ai_after swaps from more than 20 projects.
+The full-run bar, unchanged and not applied here, is at least 100 same-commit ai_after swaps from more than 20 projects, and at least as many control_same_period swaps.
 
-## AI signal
+## Main rules: same commit
 
-Projects with an AI signal: 514.
-Projects without an AI signal: 861.
+| Group | Artifact swaps | Decisions | Projects | Exposure (project-months) | Decisions per 100 project-months | Share from top 5 |
+| --- | --- | --- | --- | --- | --- | --- |
+| ai_after | 24 | 22 | 17 | 4614.4 | 0.477 | 45.5% |
+| ai_before | 755 | 567 | 268 | 120464.8 | 0.471 | 6.2% |
+| control_same_period | 38 | 34 | 29 | 20258.2 | 0.168 | 29.4% |
 
-## Adoption dates by quarter
+## Main rules: 30-day window
 
-Quarters are the adoption date of projects with an AI signal.
+| Group | Artifact swaps | Decisions | Projects | Exposure (project-months) | Decisions per 100 project-months | Share from top 5 |
+| --- | --- | --- | --- | --- | --- | --- |
+| ai_after | 18 | 18 | 11 | 4614.4 | 0.390 | 66.7% |
+| ai_before | 993 | 687 | 192 | 120464.8 | 0.570 | 21.0% |
+| control_same_period | 20 | 17 | 12 | 20258.2 | 0.084 | 58.8% |
 
-| Quarter | Projects |
-| --- | --- |
-| 2015 Q3 | 1 |
-| 2017 Q2 | 1 |
-| 2023 Q1 | 1 |
-| 2024 Q3 | 2 |
-| 2024 Q4 | 2 |
-| 2025 Q1 | 1 |
-| 2025 Q2 | 22 |
-| 2025 Q3 | 37 |
-| 2025 Q4 | 56 |
-| 2026 Q1 | 101 |
-| 2026 Q2 | 124 |
-| 2026 Q3 | 107 |
-| 2026 Q4 | 59 |
+Same-commit main-rule ai_after artifact swaps with an AI co-author or agent author: 2 of 24.
+Same-commit main-rule ai_after decisions with an AI co-author or agent author: 2 of 22.
 
-## Same-commit swaps, main rules
+## Most common same-commit pairs (Main rules): ai_after
 
-| Group | Swaps | Projects | Exposure (project-months) | Swaps per 100 project-months |
-| --- | --- | --- | --- | --- |
-| ai_after | 14 | 11 | 3554.7 | 0.394 |
-| ai_before | 523 | 183 | 84346.8 | 0.620 |
-| control_same_period | 25 | 19 | 13588.5 | 0.184 |
+- 2: junit:junit -> org.mockito:mockito-junit-jupiter
+- 2: com.sun.xml.bind:jaxb-impl -> org.glassfish.jaxb:jaxb-runtime
+- 2: org.hibernate:hibernate-ehcache -> org.ehcache:ehcache
+- 2: commons-lang:commons-lang -> org.apache.commons:commons-text
+- 1: org.slf4j:slf4j-simple -> ch.qos.logback:logback-classic
+- 1: ch.qos.logback:logback-classic -> org.apache.logging.log4j:log4j-api
+- 1: ch.qos.logback:logback-classic -> org.apache.logging.log4j:log4j-core
+- 1: org.apache.commons:commons-dbcp2 -> com.zaxxer:HikariCP
+- 1: org.powermock:powermock-api-mockito -> org.mockito:mockito-core
+- 1: org.powermock:powermock-module-junit4 -> org.mockito:mockito-core
+- 1: log4j:log4j -> ch.qos.logback:logback-core
+- 1: org.slf4j:slf4j-log4j12 -> org.apache.logging.log4j:log4j-slf4j-impl
+- 1: net.sf.json-lib:json-lib -> com.fasterxml.jackson.core:jackson-databind
+- 1: com.fasterxml.jackson.dataformat:jackson-dataformat-yaml -> org.yaml:snakeyaml
+- 1: javax.ws.rs:javax.ws.rs-api -> jakarta.ws.rs:jakarta.ws.rs-api
+- 1: org.glassfish:javax.json -> jakarta.ws.rs:jakarta.ws.rs-api
+- 1: org.slf4j:jcl-over-slf4j -> ch.qos.logback:logback-core
+- 1: com.google.gwt:gwt-servlet -> org.glassfish.jersey.core:jersey-server
+- 1: org.testng:testng -> org.junit.jupiter:junit-jupiter-api
+- 1: com.googlecode.json-simple:json-simple -> com.fasterxml.jackson.core:jackson-databind
+
+## Most common same-commit pairs (Main rules): ai_before
+
+- 25: com.sun.xml.bind:jaxb-impl -> org.glassfish.jaxb:jaxb-runtime
+- 24: org.slf4j:slf4j-log4j12 -> org.apache.logging.log4j:log4j-slf4j-impl
+- 23: org.slf4j:slf4j-log4j12 -> org.apache.logging.log4j:log4j-core
+- 22: org.slf4j:slf4j-log4j12 -> org.apache.logging.log4j:log4j-api
+- 21: junit:junit -> org.mockito:mockito-junit-jupiter
+- 17: javax.mail:mail -> com.sun.mail:javax.mail
+- 16: org.slf4j:slf4j-log4j12 -> ch.qos.logback:logback-classic
+- 14: javax.ws.rs:javax.ws.rs-api -> jakarta.ws.rs:jakarta.ws.rs-api
+- 10: log4j:log4j -> ch.qos.logback:logback-classic
+- 10: org.powermock:powermock-api-mockito -> org.powermock:powermock-api-mockito2
+- 10: junit:junit -> org.mockito:mockito-core
+- 9: commons-logging:commons-logging -> org.slf4j:slf4j-api
+- 9: org.apache.logging.log4j:log4j-api -> org.slf4j:slf4j-api
+- 8: com.google.code.gson:gson -> com.fasterxml.jackson.core:jackson-databind
+- 8: org.powermock:powermock-api-mockito -> org.mockito:mockito-core
+- 8: log4j:log4j -> org.slf4j:slf4j-api
+- 8: org.apache.logging.log4j:log4j-core -> org.slf4j:slf4j-api
+- 7: com.google.collections:google-collections -> com.google.guava:guava
+- 6: commons-logging:commons-logging -> org.slf4j:jcl-over-slf4j
+- 6: org.glassfish.jaxb:jaxb-runtime -> com.sun.xml.bind:jaxb-impl
+
+## Most common same-commit pairs (Main rules): control_same_period
+
+- 5: junit:junit -> org.mockito:mockito-junit-jupiter
+- 4: com.sun.xml.bind:jaxb-impl -> org.glassfish.jaxb:jaxb-runtime
+- 3: javax.ws.rs:javax.ws.rs-api -> jakarta.ws.rs:jakarta.ws.rs-api
+- 3: commons-lang:commons-lang -> org.apache.commons:commons-text
+- 2: commons-lang:commons-lang -> org.apache.commons:commons-collections4
+- 2: org.slf4j:slf4j-simple -> org.apache.logging.log4j:log4j-core
+- 2: ch.qos.logback:logback-classic -> org.slf4j:slf4j-simple
+- 1: org.mockito:mockito-all -> org.hamcrest:hamcrest
+- 1: org.slf4j:slf4j-api -> org.apache.logging.log4j:log4j-core
+- 1: org.slf4j:slf4j-api -> org.apache.logging.log4j:log4j-api
+- 1: org.slf4j:slf4j-log4j12 -> org.apache.logging.log4j:log4j-api
+- 1: commons-logging:commons-logging -> org.slf4j:jcl-over-slf4j
+- 1: org.testng:testng -> org.junit.jupiter:junit-jupiter-api
+- 1: org.testng:testng -> org.junit.jupiter:junit-jupiter-engine
+- 1: com.fasterxml.jackson.core:jackson-annotations -> com.google.code.gson:gson
+- 1: org.slf4j:slf4j-simple -> org.apache.logging.log4j:log4j-api
+- 1: org.junit.vintage:junit-vintage-engine -> org.mockito:mockito-junit-jupiter
+- 1: com.h2database:h2 -> org.springframework.boot:spring-boot-dependencies
+- 1: org.powermock:powermock-api-mockito -> org.powermock:powermock-api-mockito2
+- 1: junit:junit -> org.testng:testng
+
+## Same-commit main-rule decisions by quarter
+
+| Quarter | AI projects | Controls |
+| --- | --- | --- |
+| 2022 Q1 | 20 | 22 |
+| 2022 Q2 | 9 | 14 |
+| 2022 Q3 | 12 | 14 |
+| 2022 Q4 | 7 | 7 |
+| 2023 Q1 | 12 | 20 |
+| 2023 Q2 | 8 | 9 |
+| 2023 Q3 | 9 | 14 |
+| 2023 Q4 | 14 | 21 |
+| 2024 Q1 | 8 | 13 |
+| 2024 Q2 | 4 | 4 |
+| 2024 Q3 | 4 | 12 |
+| 2024 Q4 | 1 | 8 |
+| 2025 Q1 | 3 | 5 |
+| 2025 Q2 | 2 | 5 |
+| 2025 Q3 | 10 | 5 |
+| 2025 Q4 | 8 | 2 |
+| 2026 Q1 | 11 | 4 |
+| 2026 Q2 | 12 | 5 |
+| 2026 Q3 | 2 | 7 |
+| 2026 Q4 | 0 | 1 |
+
+## Rename rules, separate from the main count
+
+Rename rows in the rule file: 392. Rename swaps detected: 3690.
+
+## Rename rules: same commit
+
+| Group | Artifact swaps | Decisions | Projects | Exposure (project-months) | Decisions per 100 project-months | Share from top 5 |
+| --- | --- | --- | --- | --- | --- | --- |
+| ai_after | 71 | 52 | 28 | 4614.4 | 1.127 | 42.3% |
+| ai_before | 1336 | 954 | 363 | 120464.8 | 0.792 | 6.4% |
+| control_same_period | 90 | 79 | 65 | 20258.2 | 0.390 | 17.7% |
+
+## Rename rules: 30-day window
+
+| Group | Artifact swaps | Decisions | Projects | Exposure (project-months) | Decisions per 100 project-months | Share from top 5 |
+| --- | --- | --- | --- | --- | --- | --- |
+| ai_after | 13 | 12 | 8 | 4614.4 | 0.260 | 75.0% |
+| ai_before | 415 | 265 | 122 | 120464.8 | 0.220 | 19.2% |
+| control_same_period | 10 | 10 | 6 | 20258.2 | 0.049 | 90.0% |
+
+Unparsed dependency rows after placeholder resolution: 37119254.
 
 ## Projection
 
-Interim projection. The rate is same-commit main-rule ai_after swaps per eligible project in this file, scaled to the 2,950 projects that passed the GitHub screen.
+Interim. The projection uses decisions. It is not a pass or fail.
 
-Eligible projects in this file: 1375.
-Eligible population the projection scales to: 2950.
-Same-commit main-rule ai_after swaps in this interim set: 14.
-Projects contributing those swaps: 11.
-Projected ai_after swaps in the 2,950: 30.0.
-Projected projects contributing those swaps: 23.6.
-The projected swap count is under 100. The projected project count is more than 20.
+Eligible projects in this file: 2000.
+Eligible population the projection scales to: 2893.
+Same-commit main-rule ai_after artifact swaps in the sample: 24.
+Same-commit main-rule ai_after decisions in the sample: 22.
+Projected ai_after artifact swaps in the full eligible population: 34.7.
+Projected ai_after decisions in the full eligible population: 31.8.
+Projected ai_after decisions in the 2950 projects that passed the GitHub screen: 32.4.
+AI projects in the sample: 726.
+Decisions per AI project: 0.0303.
+AI projects expected in the full eligible population: 1050.2.
+AI projects needed in total to reach 100 decisions at this rate: 3300.0.
+Additional AI projects, beyond those expected in that population, needed to reach 100 decisions: 2249.8.
 The projection is not a pass or fail.
 
-## Unparsed rows
+## Event-time rates
 
-Unparsed dependency rows after placeholder resolution: 28125254.
+Interim. Same-commit main-rule decisions for projects with an AI signal, in 6-month bins around each project's own adoption date.
+The window starts 24 months before adoption and runs through the cut-off. The rate is decisions per 100 project-months.
 
-| Reason | Rows |
-| --- | --- |
-| unresolved property | 38259 |
-| missing groupId or artifactId | 20 |
-| could not read pom.xml | 28084291 |
-| broken XML | 2684 |
-
-Largest unparsed counts:
-
-- 6649990: xwiki/xwiki-platform
-- 2190384: apache/tomee
-- 2137610: nuxeo/nuxeo
-- 1704009: spring-projects/spring-boot
-- 1701383: apache/aries
-
-## Suspicious adoption dates
-
-Interim. These are the three projects behind the 2015 Q3, 2017 Q2, and 2023 Q1 rows in the adoption table above.
-Each date is a false match. None is a real AI coding-tool signal.
-
-| Project | Date the rule stored | Signal that set it | What matched | Judgment |
+| Months relative to adoption | Decisions | Projects | Exposure (project-months) | Decisions per 100 project-months |
 | --- | --- | --- | --- | --- |
-| java-native-access/jna | 2015-08-01 | agent author | Author email `gottfried.haider@gmail.com` on commit [`f0ea52cc`](https://github.com/java-native-access/jna/commit/f0ea52cc47da13354ebecbf124c0cdc6171d4f9f), “Get additional library paths from ldconfig on Linux.” The address contains the letters `aider@`. | False match. The author is a person, gohai. |
-| processing/processing-android | 2017-06-07 | agent author | The same author email on commit [`d0b6b1cc`](https://github.com/processing/processing-android/commit/d0b6b1cc4108ace0e160d064a3b81ffe5b03d3a1), “Add missing space to MISSING_SDK_MESSAGE.” | False match. Same person, same email rule. |
-| TownyAdvanced/Towny | 2023-02-21 | co-author | `Co-authored-by: Josh Jameson <josh@codegen.ie>` on commit [`6690a240`](https://github.com/TownyAdvanced/Towny/commit/6690a240cb35f0ca071372bbd2c0a9146bf61646), “Option to prevent people from claiming in a straight line.” The domain contains `codegen`. | False match. Josh Jameson is a human co-author. `codegen.ie` is his email domain, not an AI coding agent. |
+| -24 to -18 | 9 | 9 | 4356.0 | 0.207 |
+| -18 to -12 | 3 | 3 | 4356.0 | 0.069 |
+| -12 to -6 | 8 | 7 | 4356.0 | 0.184 |
+| -6 to 0 | 16 | 12 | 4356.0 | 0.367 |
+| 0 to 6 | 19 | 16 | 3067.3 | 0.619 |
+| 6 to 12 | 1 | 1 | 1241.2 | 0.081 |
+| 12 to 18 | 2 | 1 | 290.8 | 0.688 |
+| 18 to 24 | 0 | 0 | 14.8 | 0.000 |
+| 24 to 30 | 0 | 0 | 0.6 | 0.000 |
 
-## Same-period comparison
+## Library pairs for review
 
-Interim. Same-commit swaps under the non-rename rules, for projects with a finished analysis at this later cut.
-Eligible projects in this comparison: 2092. With an AI signal: 806. Without: 1286.
-Recorded adoption dates before 2025: 13 of the 806 AI projects. The 2022, 2023, and 2024 rows are therefore before adoption for almost every project in the AI column.
-The three false matches above contributed no same-commit main-rule swaps in these four windows.
-A year runs from 1 January through the next 1 January. The last window runs from 1 January 2025 through the cut-off, 2026-11-08.
-Exposure is the overlap of each project's history, ending at the earlier of its last commit and the cut-off, with that window. The rate is swaps per 100 project-months.
+Interim. Every distinct library pair in the detected swaps. Nothing has been removed.
+A relocation or a mismatch stays in this list so it can be reviewed.
 
-| Period | Group | Swaps | Projects | Exposure (project-months) | Swaps per 100 project-months |
-| --- | --- | ---: | ---: | ---: | ---: |
-| 2022 | AI | 79 | 39 | 9647.4 | 0.819 |
-| 2022 | non-AI | 67 | 37 | 15390.0 | 0.435 |
-| 2023 | AI | 61 | 36 | 9665.4 | 0.631 |
-| 2023 | non-AI | 85 | 48 | 15064.9 | 0.564 |
-| 2024 | AI | 30 | 20 | 9691.9 | 0.310 |
-| 2024 | non-AI | 48 | 20 | 13920.1 | 0.345 |
-| 2025–cutoff | AI | 62 | 39 | 17371.0 | 0.357 |
-| 2025–cutoff | non-AI | 39 | 28 | 20291.4 | 0.192 |
+| Removed | Added | Rule | Artifact swaps | Decisions | Same commit | 30-day window |
+| --- | --- | --- | --- | --- | --- | --- |
+| junit:junit | org.junit.jupiter:junit-jupiter-engine | rename:rename:undecided | 204 | 204 | 177 | 27 |
+| junit:junit | org.junit.jupiter:junit-jupiter-api | rename:rename:undecided | 186 | 186 | 153 | 33 |
+| org.mockito:mockito-all | org.mockito:mockito-core | rename:rename:undecided | 166 | 166 | 162 | 4 |
+| junit:junit | org.junit.jupiter:junit-jupiter | rename:rename:undecided | 149 | 149 | 132 | 17 |
+| commons-lang:commons-lang | org.apache.commons:commons-lang3 | rename:rename:undecided | 135 | 135 | 122 | 13 |
+| junit:junit | org.junit.vintage:junit-vintage-engine | rename:rename:undecided | 133 | 133 | 110 | 23 |
+| log4j:log4j | org.apache.logging.log4j:log4j-core | rename:rename:upgrade | 115 | 115 | 101 | 14 |
+| junit:junit | org.junit.jupiter:junit-jupiter-params | rename:rename:undecided | 108 | 108 | 80 | 28 |
+| org.slf4j:slf4j-log4j12 | org.apache.logging.log4j:log4j-slf4j-impl | main:undecided | 88 | 88 | 69 | 19 |
+| log4j:log4j | org.apache.logging.log4j:log4j-api | rename:rename:upgrade | 80 | 80 | 63 | 17 |
+| junit:junit | org.mockito:mockito-core | main:undecided | 74 | 74 | 24 | 50 |
+| log4j:log4j | org.slf4j:slf4j-api | main:undecided | 69 | 69 | 29 | 40 |
+| log4j:log4j | org.apache.logging.log4j:log4j-slf4j-impl | rename:rename:upgrade | 68 | 68 | 54 | 14 |
+| org.slf4j:slf4j-log4j12 | org.apache.logging.log4j:log4j-core | main:undecided | 68 | 68 | 52 | 16 |
+| org.slf4j:slf4j-log4j12 | org.apache.logging.log4j:log4j-api | main:undecided | 63 | 63 | 48 | 15 |
+| org.codehaus.jackson:jackson-mapper-asl | com.fasterxml.jackson.core:jackson-databind | rename:rename:undecided | 62 | 62 | 52 | 10 |
+| junit:junit | org.mockito:mockito-junit-jupiter | main:undecided | 59 | 59 | 48 | 11 |
+| log4j:log4j | org.slf4j:slf4j-log4j12 | main:undecided | 58 | 58 | 10 | 48 |
+| org.hibernate:hibernate-validator | org.hibernate.validator:hibernate-validator | rename:rename:undecided | 56 | 56 | 53 | 3 |
+| com.sun.xml.bind:jaxb-impl | org.glassfish.jaxb:jaxb-runtime | main:undecided | 53 | 53 | 48 | 5 |
+| commons-lang:commons-lang | com.google.guava:guava | main:undecided | 53 | 53 | 3 | 50 |
+| postgresql:postgresql | org.postgresql:postgresql | rename:rename:undecided | 51 | 51 | 48 | 3 |
+| org.slf4j:slf4j-log4j12 | log4j:log4j | main:undecided | 49 | 49 | 3 | 46 |
+| commons-logging:commons-logging | org.slf4j:slf4j-api | main:undecided | 47 | 47 | 23 | 24 |
+| commons-collections:commons-collections | org.apache.commons:commons-collections4 | rename:rename:undecided | 46 | 46 | 40 | 6 |
+| junit:junit | org.junit.platform:junit-platform-launcher | rename:rename:undecided | 46 | 46 | 35 | 11 |
+| org.slf4j:slf4j-log4j12 | ch.qos.logback:logback-classic | main:undecided | 45 | 45 | 31 | 14 |
+| org.slf4j:slf4j-api | ch.qos.logback:logback-classic | main:undecided | 44 | 44 | 5 | 39 |
+| commons-httpclient:commons-httpclient | org.apache.httpcomponents:httpclient | rename:rename:undecided | 43 | 43 | 28 | 15 |
+| log4j:log4j | ch.qos.logback:logback-classic | main:undecided | 40 | 40 | 24 | 16 |
+| org.codehaus.jackson:jackson-mapper-asl | com.fasterxml.jackson.core:jackson-core | rename:rename:upgrade | 40 | 40 | 33 | 7 |
+| org.junit.vintage:junit-vintage-engine | org.junit.jupiter:junit-jupiter-engine | rename:rename:undecided | 40 | 40 | 21 | 19 |
+| org.powermock:powermock-api-mockito | org.powermock:powermock-api-mockito2 | main:undecided | 40 | 40 | 39 | 1 |
+| org.apache.logging.log4j:log4j-core | org.slf4j:slf4j-api | main:undecided | 38 | 38 | 17 | 21 |
+| org.slf4j:slf4j-api | org.apache.logging.log4j:log4j-core | main:undecided | 38 | 38 | 14 | 24 |
+| javax.ws.rs:javax.ws.rs-api | jakarta.ws.rs:jakarta.ws.rs-api | main:undecided | 37 | 37 | 36 | 1 |
+| ch.qos.logback:logback-classic | org.slf4j:slf4j-api | main:undecided | 34 | 34 | 4 | 30 |
+| javax.mail:mail | com.sun.mail:javax.mail | main:undecided | 34 | 34 | 31 | 3 |
+| org.codehaus.jackson:jackson-core-asl | com.fasterxml.jackson.core:jackson-databind | rename:rename:undecided | 34 | 34 | 26 | 8 |
+| dom4j:dom4j | org.dom4j:dom4j | rename:rename:undecided | 33 | 33 | 29 | 4 |
+| hsqldb:hsqldb | org.hsqldb:hsqldb | rename:rename:undecided | 33 | 33 | 31 | 2 |
+| org.apache.logging.log4j:log4j-api | org.slf4j:slf4j-api | main:undecided | 33 | 33 | 17 | 16 |
+| org.slf4j:slf4j-api | org.apache.logging.log4j:log4j-api | main:undecided | 33 | 33 | 12 | 21 |
+| junit:junit | org.springframework.boot:spring-boot-starter-test | main:undecided | 32 | 32 | 18 | 14 |
+| org.apache.commons:commons-io | commons-io:commons-io | rename:rename:undecided | 31 | 31 | 28 | 3 |
+| org.slf4j:slf4j-simple | ch.qos.logback:logback-classic | main:undecided | 31 | 31 | 21 | 10 |
+| com.google.code.gson:gson | com.fasterxml.jackson.core:jackson-databind | main:undecided | 30 | 30 | 16 | 14 |
+| commons-collections:commons-collections | org.apache.commons:commons-lang3 | rename:rename:undecided | 30 | 30 | 15 | 15 |
+| org.junit.vintage:junit-vintage-engine | org.junit.jupiter:junit-jupiter-api | rename:rename:undecided | 30 | 30 | 8 | 22 |
+| org.slf4j:slf4j-api | org.apache.logging.log4j:log4j-slf4j-impl | main:undecided | 30 | 30 | 14 | 16 |
+| com.sun.xml.bind:jaxb-core | org.glassfish.jaxb:jaxb-runtime | rename:rename:upgrade | 29 | 29 | 26 | 3 |
+| commons-dbcp:commons-dbcp | org.apache.commons:commons-dbcp2 | rename:rename:undecided | 29 | 29 | 25 | 4 |
+| commons-logging:commons-logging | org.slf4j:slf4j-log4j12 | main:undecided | 29 | 29 | 12 | 17 |
+| log4j:log4j | org.slf4j:jcl-over-slf4j | main:undecided | 29 | 29 | 8 | 21 |
+| org.codehaus.jackson:jackson-core-asl | com.fasterxml.jackson.core:jackson-core | rename:rename:upgrade | 29 | 29 | 24 | 5 |
+| org.slf4j:slf4j-api | log4j:log4j | main:undecided | 29 | 29 | 3 | 26 |
+| junit:junit | org.springframework.boot:spring-boot-starter-web | main:undecided | 28 | 28 | 13 | 15 |
+| org.springframework:spring-webmvc | org.springframework.boot:spring-boot-starter-web | rename:rename:undecided | 28 | 28 | 23 | 5 |
+| log4j:log4j | org.slf4j:slf4j-simple | main:undecided | 27 | 27 | 13 | 14 |
+| org.codehaus.jackson:jackson-mapper-asl | com.fasterxml.jackson.core:jackson-annotations | rename:rename:upgrade | 26 | 26 | 19 | 7 |
+| org.powermock:powermock-api-mockito | org.mockito:mockito-core | main:undecided | 26 | 26 | 18 | 8 |
+| log4j:log4j | commons-logging:commons-logging | main:undecided | 25 | 25 | 5 | 20 |
+| org.hamcrest:hamcrest-all | org.mockito:mockito-core | main:undecided | 25 | 25 | 8 | 17 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty:jetty-server | rename:rename:undecided | 25 | 25 | 22 | 3 |
+| org.slf4j:slf4j-api | commons-logging:commons-logging | main:undecided | 25 | 25 | 8 | 17 |
+| org.springframework:spring-web | org.springframework.boot:spring-boot-starter-web | rename:rename:undecided | 25 | 25 | 16 | 9 |
+| commons-lang:commons-lang | org.apache.commons:commons-text | main:undecided | 24 | 24 | 17 | 7 |
+| junit:junit | org.testng:testng | main:undecided | 24 | 24 | 14 | 10 |
+| log4j:log4j | org.apache.logging.log4j:log4j-1.2-api | rename:rename:upgrade | 24 | 24 | 20 | 4 |
+| org.hamcrest:hamcrest-all | org.hamcrest:hamcrest-core | rename:rename:undecided | 24 | 24 | 22 | 2 |
+| org.junit.vintage:junit-vintage-engine | org.junit.jupiter:junit-jupiter-params | rename:rename:undecided | 24 | 24 | 13 | 11 |
+| com.google.code.gson:gson | com.fasterxml.jackson.core:jackson-core | main:undecided | 23 | 23 | 10 | 13 |
+| ch.qos.logback:logback-core | org.slf4j:slf4j-api | main:undecided | 22 | 22 | 3 | 19 |
+| com.google.guava:guava | org.apache.commons:commons-lang3 | main:undecided | 22 | 22 | 2 | 20 |
+| commons-logging:commons-logging | log4j:log4j | main:undecided | 22 | 22 | 3 | 19 |
+| javassist:javassist | org.javassist:javassist | rename:rename:undecided | 22 | 22 | 20 | 2 |
+| org.powermock:powermock-module-junit4 | org.mockito:mockito-core | main:undecided | 22 | 22 | 13 | 9 |
+| ant:ant | org.apache.ant:ant | rename:rename:upgrade | 21 | 21 | 18 | 3 |
+| asm:asm | org.ow2.asm:asm | rename:rename:upgrade | 21 | 21 | 20 | 1 |
+| ch.qos.logback:logback-classic | org.slf4j:slf4j-simple | main:undecided | 21 | 21 | 12 | 9 |
+| com.google.code.findbugs:annotations | com.github.spotbugs:spotbugs-annotations | main:undecided | 21 | 21 | 20 | 1 |
+| commons-logging:commons-logging | org.slf4j:jcl-over-slf4j | main:undecided | 21 | 21 | 11 | 10 |
+| commons-lang:commons-lang | org.apache.commons:commons-collections4 | main:undecided | 20 | 20 | 9 | 11 |
+| commons-pool:commons-pool | org.apache.commons:commons-pool2 | rename:rename:undecided | 20 | 20 | 13 | 7 |
+| org.apache.logging.log4j:log4j-slf4j-impl | org.slf4j:slf4j-api | main:undecided | 19 | 19 | 2 | 17 |
+| org.eclipse.aether:aether-api | org.apache.maven.resolver:maven-resolver-api | rename:rename:undecided | 19 | 19 | 17 | 2 |
+| org.hamcrest:hamcrest-core | org.mockito:mockito-core | main:undecided | 19 | 19 | 6 | 13 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty:jetty-webapp | rename:rename:undecided | 19 | 19 | 16 | 3 |
+| org.slf4j:jcl-over-slf4j | ch.qos.logback:logback-classic | main:undecided | 19 | 19 | 2 | 17 |
+| com.sun.jersey:jersey-client | org.glassfish.jersey.core:jersey-client | rename:rename:upgrade | 18 | 18 | 15 | 3 |
+| commons-codec:commons-codec | com.google.guava:guava | main:undecided | 17 | 17 | 4 | 13 |
+| commons-logging:commons-logging | ch.qos.logback:logback-classic | main:undecided | 17 | 17 | 6 | 11 |
+| javax.validation:validation-api | org.hibernate:hibernate-validator | main:undecided | 17 | 17 | 1 | 16 |
+| junit:junit | org.junit.platform:junit-platform-runner | rename:rename:undecided | 17 | 17 | 15 | 2 |
+| log4j:log4j | ch.qos.logback:logback-core | main:undecided | 17 | 17 | 7 | 10 |
+| org.apache.logging.log4j:log4j-core | ch.qos.logback:logback-classic | main:undecided | 17 | 17 | 11 | 6 |
+| org.hsqldb:hsqldb | com.h2database:h2 | main:undecided | 17 | 17 | 8 | 9 |
+| org.junit.vintage:junit-vintage-engine | org.mockito:mockito-junit-jupiter | main:undecided | 17 | 17 | 11 | 6 |
+| org.testng:testng | junit:junit | main:undecided | 17 | 17 | 6 | 11 |
+| ch.qos.logback:logback-classic | org.slf4j:jcl-over-slf4j | main:undecided | 16 | 16 | 0 | 16 |
+| org.apache.httpcomponents:httpclient | commons-httpclient:commons-httpclient | rename:rename:undecided | 16 | 16 | 3 | 13 |
+| org.codehaus.jackson:jackson-core-asl | com.fasterxml.jackson.core:jackson-annotations | rename:rename:upgrade | 16 | 16 | 11 | 5 |
+| org.codehaus.jackson:jackson-jaxrs | com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider | rename:rename:upgrade | 16 | 16 | 13 | 3 |
+| org.easytesting:fest-assert | org.assertj:assertj-core | main:undecided | 16 | 16 | 13 | 3 |
+| org.jdom:jdom | org.jdom:jdom2 | rename:rename:undecided | 16 | 16 | 16 | 0 |
+| org.json:json | com.fasterxml.jackson.core:jackson-databind | main:undecided | 16 | 16 | 4 | 12 |
+| org.mockito:mockito-all | org.junit.jupiter:junit-jupiter-api | main:undecided | 16 | 16 | 9 | 7 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty:jetty-servlet | rename:rename:undecided | 16 | 16 | 14 | 2 |
+| org.slf4j:slf4j-log4j12 | ch.qos.logback:logback-core | main:undecided | 16 | 16 | 9 | 7 |
+| org.slf4j:slf4j-log4j12 | commons-logging:commons-logging | main:undecided | 16 | 16 | 4 | 12 |
+| org.slf4j:slf4j-simple | log4j:log4j | main:undecided | 16 | 16 | 5 | 11 |
+| com.fasterxml.jackson.core:jackson-core | com.fasterxml.jackson:jackson-bom | rename:rename:undecided | 15 | 15 | 15 | 0 |
+| commons-configuration:commons-configuration | org.apache.commons:commons-configuration2 | rename:rename:undecided | 15 | 15 | 15 | 0 |
+| org.apache.derby:derby | com.h2database:h2 | main:undecided | 15 | 15 | 6 | 9 |
+| org.apache.logging.log4j:log4j-api | ch.qos.logback:logback-classic | main:undecided | 15 | 15 | 10 | 5 |
+| org.hamcrest:hamcrest-all | org.hamcrest:hamcrest-library | rename:rename:undecided | 15 | 15 | 15 | 0 |
+| org.json:json | com.google.code.gson:gson | main:undecided | 15 | 15 | 7 | 8 |
+| org.mockito:mockito-all | org.powermock:powermock-module-junit4 | main:undecided | 15 | 15 | 7 | 8 |
+| com.fasterxml.jackson.core:jackson-annotations | com.fasterxml.jackson:jackson-bom | rename:rename:undecided | 14 | 14 | 14 | 0 |
+| com.fasterxml.jackson.core:jackson-databind | com.google.code.gson:gson | main:undecided | 14 | 14 | 5 | 9 |
+| com.h2database:h2 | postgresql:postgresql | main:undecided | 14 | 14 | 0 | 14 |
+| com.jayway.restassured:rest-assured | io.rest-assured:rest-assured | rename:rename:upgrade | 14 | 14 | 14 | 0 |
+| commons-collections:commons-collections | com.google.guava:guava | main:undecided | 14 | 14 | 3 | 11 |
+| log4j:log4j | org.slf4j:log4j-over-slf4j | main:undecided | 14 | 14 | 6 | 8 |
+| org.junit.vintage:junit-vintage-engine | org.junit.platform:junit-platform-launcher | rename:rename:downgrade | 14 | 14 | 5 | 9 |
+| org.mockito:mockito-all | org.powermock:powermock-api-mockito | main:undecided | 14 | 14 | 6 | 8 |
+| xmlunit:xmlunit | org.xmlunit:xmlunit-core | rename:rename:undecided | 14 | 14 | 14 | 0 |
+| c3p0:c3p0 | com.mchange:c3p0 | rename:rename:undecided | 13 | 13 | 12 | 1 |
+| commons-logging:commons-logging | org.slf4j:log4j-over-slf4j | main:undecided | 13 | 13 | 5 | 8 |
+| org.apache.maven:maven-aether-provider | org.apache.maven.resolver:maven-resolver-api | rename:rename:downgrade | 13 | 13 | 10 | 3 |
+| org.easymock:easymock | org.mockito:mockito-core | main:undecided | 13 | 13 | 10 | 3 |
+| org.junit.vintage:junit-vintage-engine | junit:junit | rename:rename:undecided | 13 | 13 | 7 | 6 |
+| org.mockito:mockito-all | org.hamcrest:hamcrest-core | main:undecided | 13 | 13 | 10 | 3 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty:jetty-util | rename:rename:undecided | 13 | 13 | 11 | 2 |
+| org.slf4j:jcl-over-slf4j | ch.qos.logback:logback-core | main:undecided | 13 | 13 | 1 | 12 |
+| org.slf4j:jcl-over-slf4j | log4j:log4j | main:undecided | 13 | 13 | 0 | 13 |
+| org.slf4j:log4j-over-slf4j | ch.qos.logback:logback-classic | main:undecided | 13 | 13 | 1 | 12 |
+| ch.qos.logback:logback-classic | org.apache.logging.log4j:log4j-core | main:undecided | 12 | 12 | 8 | 4 |
+| com.fasterxml.jackson.core:jackson-core | com.google.code.gson:gson | main:undecided | 12 | 12 | 1 | 11 |
+| com.google.code.findbugs:jsr305 | com.github.spotbugs:spotbugs-annotations | main:undecided | 12 | 12 | 12 | 0 |
+| com.google.code.gson:gson | com.fasterxml.jackson.core:jackson-annotations | main:undecided | 12 | 12 | 6 | 6 |
+| commons-httpclient:commons-httpclient | org.apache.httpcomponents:httpmime | rename:rename:undecided | 12 | 12 | 8 | 4 |
+| commons-logging:commons-logging | org.apache.logging.log4j:log4j-core | main:undecided | 12 | 12 | 5 | 7 |
+| jdom:jdom | org.jdom:jdom | rename:rename:undecided | 12 | 12 | 11 | 1 |
+| log4j:log4j | org.apache.logging.log4j:log4j-jcl | rename:rename:upgrade | 12 | 12 | 10 | 2 |
+| mysql:mysql-connector-java | org.xerial:sqlite-jdbc | main:undecided | 12 | 12 | 0 | 12 |
+| net.sf.ehcache:ehcache | org.ehcache:ehcache | rename:rename:upgrade | 12 | 12 | 11 | 1 |
+| org.hamcrest:hamcrest-core | org.junit.jupiter:junit-jupiter-api | main:undecided | 12 | 12 | 7 | 5 |
+| org.hamcrest:hamcrest-library | org.hamcrest:hamcrest-core | rename:rename:undecided | 12 | 12 | 2 | 10 |
+| org.powermock:powermock-module-junit4 | com.fasterxml.jackson.core:jackson-databind | main:undecided | 12 | 12 | 0 | 12 |
+| org.slf4j:slf4j-jdk14 | ch.qos.logback:logback-classic | main:undecided | 12 | 12 | 8 | 4 |
+| ch.qos.logback:logback-classic | org.apache.logging.log4j:log4j-api | main:undecided | 11 | 11 | 9 | 2 |
+| ch.qos.logback:logback-core | org.slf4j:slf4j-simple | main:undecided | 11 | 11 | 3 | 8 |
+| com.codahale.metrics:metrics-core | io.dropwizard.metrics:metrics-core | rename:rename:upgrade | 11 | 11 | 9 | 2 |
+| com.fasterxml.jackson.core:jackson-databind | com.fasterxml.jackson:jackson-bom | rename:rename:undecided | 11 | 11 | 9 | 2 |
+| com.google.guava:guava | com.github.ben-manes.caffeine:caffeine | main:undecided | 11 | 11 | 2 | 9 |
+| com.sun.jersey:jersey-core | org.glassfish.jersey.core:jersey-server | rename:rename:upgrade | 11 | 11 | 10 | 1 |
+| com.sun.xml.bind:jaxb-core | org.glassfish.jaxb:jaxb-core | rename:rename:upgrade | 11 | 11 | 10 | 1 |
+| commons-httpclient:commons-httpclient | org.apache.httpcomponents:httpcore | rename:rename:undecided | 11 | 11 | 3 | 8 |
+| commons-logging:commons-logging | org.apache.logging.log4j:log4j-api | main:undecided | 11 | 11 | 6 | 5 |
+| jfree:jfreechart | org.jfree:jfreechart | rename:rename:upgrade | 11 | 11 | 11 | 0 |
+| org.apache.commons:commons-collections4 | com.google.guava:guava | main:undecided | 11 | 11 | 0 | 11 |
+| org.apache.httpcomponents:httpclient | com.squareup.okhttp3:okhttp | main:undecided | 11 | 11 | 7 | 4 |
+| org.apache.maven:maven-aether-provider | org.apache.maven.resolver:maven-resolver-connector-basic | rename:rename:downgrade | 11 | 11 | 9 | 2 |
+| org.apache.maven:maven-aether-provider | org.apache.maven.resolver:maven-resolver-util | rename:rename:downgrade | 11 | 11 | 9 | 2 |
+| org.codehaus.plexus:plexus-utils | commons-io:commons-io | main:undecided | 11 | 11 | 2 | 9 |
+| org.glassfish:javax.json | jakarta.ws.rs:jakarta.ws.rs-api | main:undecided | 11 | 11 | 9 | 2 |
+| org.hibernate.javax.persistence:hibernate-jpa-2.1-api | javax.persistence:javax.persistence-api | main:undecided | 11 | 11 | 9 | 2 |
+| org.junit.jupiter:junit-jupiter-params | org.junit:junit-bom | rename:rename:undecided | 11 | 11 | 7 | 4 |
+| org.mortbay.jetty:jetty-util | org.eclipse.jetty:jetty-server | rename:rename:undecided | 11 | 11 | 8 | 3 |
+| org.mortbay.jetty:jetty-util | org.eclipse.jetty:jetty-util | rename:rename:undecided | 11 | 11 | 8 | 3 |
+| org.slf4j:slf4j-log4j12 | org.apache.logging.log4j:log4j-1.2-api | main:undecided | 11 | 11 | 6 | 5 |
+| org.slf4j:slf4j-simple | org.apache.logging.log4j:log4j-core | main:undecided | 11 | 11 | 7 | 4 |
+| ch.qos.logback:logback-classic | org.apache.logging.log4j:log4j-slf4j-impl | main:undecided | 10 | 10 | 8 | 2 |
+| com.alibaba:dubbo | org.apache.dubbo:dubbo | rename:rename:upgrade | 10 | 10 | 6 | 4 |
+| com.google.collections:google-collections | com.google.guava:guava | main:undecided | 10 | 10 | 9 | 1 |
+| com.intellij:annotations | org.jetbrains:annotations | rename:rename:upgrade | 10 | 10 | 10 | 0 |
+| com.jayway.awaitility:awaitility | org.awaitility:awaitility | rename:rename:upgrade | 10 | 10 | 10 | 0 |
+| com.ning:async-http-client | org.asynchttpclient:async-http-client | rename:rename:upgrade | 10 | 10 | 10 | 0 |
+| com.squareup.okhttp:okhttp | com.squareup.okhttp3:okhttp | rename:rename:upgrade | 10 | 10 | 9 | 1 |
+| com.sun.jersey.contribs:jersey-multipart | org.glassfish.jersey.media:jersey-media-multipart | rename:rename:upgrade | 10 | 10 | 9 | 1 |
+| com.sun.jersey:jersey-server | org.glassfish.jersey.core:jersey-server | rename:rename:upgrade | 10 | 10 | 9 | 1 |
+| com.sun.jersey:jersey-servlet | org.glassfish.jersey.containers:jersey-container-servlet | rename:rename:upgrade | 10 | 10 | 9 | 1 |
+| commons-logging:commons-logging | org.slf4j:slf4j-simple | main:undecided | 10 | 10 | 2 | 8 |
+| javax.json:javax.json-api | org.glassfish:javax.json | main:undecided | 10 | 10 | 1 | 9 |
+| org.apache.commons:commons-lang3 | commons-lang:commons-lang | rename:rename:undecided | 10 | 10 | 3 | 7 |
+| org.apache.logging.log4j:log4j-core | org.slf4j:log4j-over-slf4j | main:undecided | 10 | 10 | 5 | 5 |
+| org.apache.logging.log4j:log4j-core | org.slf4j:slf4j-simple | main:undecided | 10 | 10 | 7 | 3 |
+| org.apache.logging.log4j:log4j-slf4j-impl | ch.qos.logback:logback-classic | main:undecided | 10 | 10 | 8 | 2 |
+| org.apache.maven:maven-aether-provider | org.apache.maven.resolver:maven-resolver-spi | rename:rename:downgrade | 10 | 10 | 8 | 2 |
+| org.glassfish.jaxb:jaxb-runtime | com.sun.xml.bind:jaxb-impl | main:undecided | 10 | 10 | 9 | 1 |
+| org.glassfish.jersey.containers:jersey-container-servlet | org.glassfish.jersey.core:jersey-common | rename:rename:undecided | 10 | 10 | 1 | 9 |
+| org.hamcrest:hamcrest-library | org.assertj:assertj-core | main:undecided | 10 | 10 | 7 | 3 |
+| org.junit.jupiter:junit-jupiter-api | org.junit.vintage:junit-vintage-engine | rename:rename:undecided | 10 | 10 | 1 | 9 |
+| org.mockito:mockito-all | org.junit.jupiter:junit-jupiter-engine | main:undecided | 10 | 10 | 6 | 4 |
+| org.powermock:powermock-api-mockito | com.fasterxml.jackson.core:jackson-databind | main:undecided | 10 | 10 | 0 | 10 |
+| org.powermock:powermock-module-junit4 | org.mockito:mockito-all | main:undecided | 10 | 10 | 2 | 8 |
+| org.slf4j:jcl-over-slf4j | org.apache.logging.log4j:log4j-core | main:undecided | 10 | 10 | 6 | 4 |
+| org.slf4j:jcl-over-slf4j | org.apache.logging.log4j:log4j-slf4j-impl | main:undecided | 10 | 10 | 7 | 3 |
+| org.slf4j:slf4j-simple | ch.qos.logback:logback-core | main:undecided | 10 | 10 | 4 | 6 |
+| org.slf4j:slf4j-simple | commons-logging:commons-logging | main:undecided | 10 | 10 | 2 | 8 |
+| org.springframework:spring-webmvc | org.springframework.boot:spring-boot-starter-thymeleaf | rename:rename:undecided | 10 | 10 | 7 | 3 |
+| rome:rome | com.rometools:rome | rename:rename:undecided | 10 | 10 | 9 | 1 |
+| ch.qos.logback:logback-classic | org.slf4j:log4j-over-slf4j | main:undecided | 9 | 9 | 0 | 9 |
+| ch.qos.logback:logback-classic | org.springframework.boot:spring-boot-dependencies | main:undecided | 9 | 9 | 3 | 6 |
+| com.fasterxml.jackson.core:jackson-core | org.springframework.boot:spring-boot-dependencies | main:undecided | 9 | 9 | 1 | 8 |
+| com.fasterxml.jackson.core:jackson-databind | org.springframework.boot:spring-boot-dependencies | main:undecided | 9 | 9 | 1 | 8 |
+| com.googlecode.json-simple:json-simple | com.fasterxml.jackson.core:jackson-databind | main:undecided | 9 | 9 | 5 | 4 |
+| com.sun.jersey:jersey-json | org.glassfish.jersey.media:jersey-media-json-jackson | rename:rename:upgrade | 9 | 9 | 8 | 1 |
+| org.codehaus.jackson:jackson-mapper-asl | com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider | rename:rename:upgrade | 9 | 9 | 7 | 2 |
+| org.easytesting:fest-assert-core | org.assertj:assertj-core | main:undecided | 9 | 9 | 9 | 0 |
+| org.glassfish.jersey.media:jersey-media-json-jackson | com.fasterxml.jackson.core:jackson-core | main:undecided | 9 | 9 | 2 | 7 |
+| org.hamcrest:hamcrest-core | org.assertj:assertj-core | main:undecided | 9 | 9 | 7 | 2 |
+| org.hibernate:hibernate-ehcache | org.ehcache:ehcache | main:undecided | 9 | 9 | 9 | 0 |
+| org.junit.jupiter:junit-jupiter-engine | org.junit.vintage:junit-vintage-engine | rename:rename:undecided | 9 | 9 | 2 | 7 |
+| org.mockito:mockito-all | org.hamcrest:hamcrest-all | main:undecided | 9 | 9 | 1 | 8 |
+| org.mockito:mockito-all | org.hamcrest:hamcrest-library | main:undecided | 9 | 9 | 5 | 4 |
+| org.mortbay.jetty:jetty-util | org.eclipse.jetty:jetty-servlet | rename:rename:undecided | 9 | 9 | 6 | 3 |
+| org.mortbay.jetty:jetty-util | org.eclipse.jetty:jetty-webapp | rename:rename:undecided | 9 | 9 | 5 | 4 |
+| org.powermock:powermock-api-mockito | org.mockito:mockito-all | main:undecided | 9 | 9 | 1 | 8 |
+| org.slf4j:slf4j-log4j12 | org.apache.logging.log4j:log4j-jcl | main:undecided | 9 | 9 | 6 | 3 |
+| org.springframework.data:spring-data-jpa | org.springframework.boot:spring-boot-starter-data-jpa | rename:rename:undecided | 9 | 9 | 9 | 0 |
+| org.springframework:spring-jdbc | org.springframework.boot:spring-boot-starter-jdbc | rename:rename:undecided | 9 | 9 | 6 | 3 |
+| org.testng:testng | org.junit.jupiter:junit-jupiter-api | main:undecided | 9 | 9 | 8 | 1 |
+| rhino:js | org.mozilla:rhino | main:undecided | 9 | 9 | 9 | 0 |
+| aopalliance:aopalliance | org.springframework:spring-beans | main:undecided | 8 | 8 | 0 | 8 |
+| aopalliance:aopalliance | org.springframework:spring-context | main:undecided | 8 | 8 | 0 | 8 |
+| asm:asm | org.ow2.asm:asm-commons | rename:rename:upgrade | 8 | 8 | 8 | 0 |
+| ch.qos.logback:logback-classic | log4j:log4j | main:undecided | 8 | 8 | 2 | 6 |
+| ch.qos.logback:logback-classic | org.slf4j:slf4j-log4j12 | main:undecided | 8 | 8 | 2 | 6 |
+| ch.qos.logback:logback-core | log4j:log4j | main:undecided | 8 | 8 | 1 | 7 |
+| com.fasterxml.jackson.core:jackson-annotations | org.springframework.boot:spring-boot-dependencies | main:undecided | 8 | 8 | 1 | 7 |
+| com.fasterxml.jackson.dataformat:jackson-dataformat-yaml | com.fasterxml.jackson:jackson-bom | rename:rename:undecided | 8 | 8 | 7 | 1 |
+| com.google.code.findbugs:jsr305 | org.checkerframework:checker-qual | main:undecided | 8 | 8 | 6 | 2 |
+| com.google.code.gson:gson | org.codehaus.jackson:jackson-mapper-asl | main:undecided | 8 | 8 | 1 | 7 |
+| com.googlecode.json-simple:json-simple | org.json:json | main:undecided | 8 | 8 | 3 | 5 |
+| easymock:easymock | org.easymock:easymock | rename:rename:undecided | 8 | 8 | 7 | 1 |
+| javax:javaee-web-api | javax.servlet:javax.servlet-api | main:undecided | 8 | 8 | 5 | 3 |
+| net.sf.ehcache:ehcache-core | org.ehcache:ehcache | rename:rename:upgrade | 8 | 8 | 7 | 1 |
+| org.apache.commons:commons-dbcp2 | com.zaxxer:HikariCP | main:undecided | 8 | 8 | 8 | 0 |
+| org.apache.httpcomponents:httpcore | commons-httpclient:commons-httpclient | rename:rename:undecided | 8 | 8 | 0 | 8 |
+| org.apache.logging.log4j:log4j-core | log4j:log4j | rename:rename:downgrade | 8 | 8 | 5 | 3 |
+| org.apache.maven:maven-aether-provider | org.apache.maven.resolver:maven-resolver-transport-http | rename:rename:downgrade | 8 | 8 | 6 | 2 |
+| org.codehaus.jackson:jackson-core-asl | com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider | rename:rename:upgrade | 8 | 8 | 7 | 1 |
+| org.codehaus.jackson:jackson-jaxrs | com.fasterxml.jackson.core:jackson-databind | rename:rename:undecided | 8 | 8 | 6 | 2 |
+| org.codehaus.jackson:jackson-mapper-asl | com.google.code.gson:gson | main:undecided | 8 | 8 | 1 | 7 |
+| org.codehaus.jackson:jackson-xc | com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider | rename:rename:upgrade | 8 | 8 | 6 | 2 |
+| org.codehaus.woodstox:woodstox-core-asl | com.fasterxml.woodstox:woodstox-core | rename:rename:upgrade | 8 | 8 | 8 | 0 |
+| org.glassfish.jersey.media:jersey-media-json-jackson | org.glassfish.jersey.core:jersey-common | main:undecided | 8 | 8 | 1 | 7 |
+| org.hibernate:hibernate-entitymanager | org.springframework.boot:spring-boot-starter-web | main:undecided | 8 | 8 | 6 | 2 |
+| org.json:json | com.fasterxml.jackson.core:jackson-annotations | main:undecided | 8 | 8 | 0 | 8 |
+| org.junit.jupiter:junit-jupiter-engine | junit:junit | rename:rename:undecided | 8 | 8 | 5 | 3 |
+| org.junit.jupiter:junit-jupiter-engine | org.junit:junit-bom | rename:rename:undecided | 8 | 8 | 6 | 2 |
+| org.mockito:mockito-core | org.powermock:powermock-module-junit4 | main:undecided | 8 | 8 | 1 | 7 |
+| org.mockito:mockito-core | org.springframework.boot:spring-boot-starter-test | main:undecided | 8 | 8 | 4 | 4 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty:jetty-jmx | rename:rename:undecided | 8 | 8 | 5 | 3 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty:jetty-security | rename:rename:undecided | 8 | 8 | 6 | 2 |
+| org.postgresql:postgresql | org.mariadb.jdbc:mariadb-java-client | main:undecided | 8 | 8 | 1 | 7 |
+| org.slf4j:jcl-over-slf4j | com.fasterxml.jackson.core:jackson-databind | main:undecided | 8 | 8 | 1 | 7 |
+| org.slf4j:jcl-over-slf4j | org.apache.logging.log4j:log4j-api | main:undecided | 8 | 8 | 5 | 3 |
+| org.slf4j:slf4j-log4j12 | org.apache.logging.log4j:log4j-web | main:undecided | 8 | 8 | 5 | 3 |
+| org.slf4j:slf4j-simple | org.apache.logging.log4j:log4j-api | main:undecided | 8 | 8 | 6 | 2 |
+| org.slf4j:slf4j-simple | org.apache.logging.log4j:log4j-slf4j-impl | main:undecided | 8 | 8 | 5 | 3 |
+| org.xerial:sqlite-jdbc | com.h2database:h2 | main:undecided | 8 | 8 | 4 | 4 |
+| org.yaml:snakeyaml | com.fasterxml.jackson.dataformat:jackson-dataformat-yaml | main:undecided | 8 | 8 | 5 | 3 |
+| postgresql:postgresql | mysql:mysql-connector-java | main:undecided | 8 | 8 | 0 | 8 |
+| aopalliance:aopalliance | org.springframework:spring-core | main:undecided | 7 | 7 | 0 | 7 |
+| com.fasterxml.jackson.core:jackson-annotations | com.google.code.gson:gson | main:undecided | 7 | 7 | 1 | 6 |
+| com.fasterxml.jackson.core:jackson-databind | com.alibaba:fastjson | main:undecided | 7 | 7 | 2 | 5 |
+| com.fasterxml.jackson.core:jackson-databind | org.json:json | main:undecided | 7 | 7 | 0 | 7 |
+| com.google.code.findbugs:jsr305 | org.jetbrains:annotations | main:undecided | 7 | 7 | 3 | 4 |
+| com.google.inject.extensions:guice-servlet | com.google.inject:guice | rename:rename:undecided | 7 | 7 | 0 | 7 |
+| com.googlecode.json-simple:json-simple | com.google.code.gson:gson | main:undecided | 7 | 7 | 4 | 3 |
+| com.h2database:h2 | mysql:mysql-connector-java | main:undecided | 7 | 7 | 1 | 6 |
+| com.h2database:h2 | org.hsqldb:hsqldb | main:undecided | 7 | 7 | 2 | 5 |
+| com.sun.jersey:jersey-core | org.glassfish.jersey.core:jersey-client | rename:rename:upgrade | 7 | 7 | 6 | 1 |
+| com.vividsolutions:jts | org.locationtech.jts:jts-core | rename:rename:undecided | 7 | 7 | 6 | 1 |
+| com.yammer.metrics:metrics-core | com.codahale.metrics:metrics-core | rename:rename:upgrade | 7 | 7 | 5 | 2 |
+| concurrent:concurrent | backport-util-concurrent:backport-util-concurrent | rename:rename:undecided | 7 | 7 | 0 | 7 |
+| info.cukes:cucumber-java | io.cucumber:cucumber-java | rename:rename:undecided | 7 | 7 | 7 | 0 |
+| info.cukes:cucumber-junit | io.cucumber:cucumber-junit | rename:rename:undecided | 7 | 7 | 7 | 0 |
+| jline:jline | org.jline:jline | rename:rename:undecided | 7 | 7 | 7 | 0 |
+| net.sf.opencsv:opencsv | com.opencsv:opencsv | rename:rename:undecided | 7 | 7 | 7 | 0 |
+| org.apache.logging.log4j:log4j-api | org.slf4j:log4j-over-slf4j | main:undecided | 7 | 7 | 4 | 3 |
+| org.apache.logging.log4j:log4j-core | ch.qos.logback:logback-core | main:undecided | 7 | 7 | 4 | 3 |
+| org.apache.logging.log4j:log4j-core | org.slf4j:jcl-over-slf4j | main:undecided | 7 | 7 | 1 | 6 |
+| org.apache.maven:maven-aether-provider | org.apache.maven.resolver:maven-resolver-transport-file | rename:rename:downgrade | 7 | 7 | 5 | 2 |
+| org.codehaus.jackson:jackson-mapper-asl | com.fasterxml.jackson.module:jackson-module-jaxb-annotations | rename:rename:upgrade | 7 | 7 | 4 | 3 |
+| org.glassfish:javax.json | com.fasterxml.jackson.core:jackson-core | main:undecided | 7 | 7 | 4 | 3 |
+| org.glassfish:javax.json | javax.json:javax.json-api | main:undecided | 7 | 7 | 2 | 5 |
+| org.hibernate:hibernate-commons-annotations | org.hibernate.common:hibernate-commons-annotations | rename:rename:undecided | 7 | 7 | 5 | 2 |
+| org.hibernate:hibernate-entitymanager | org.springframework.boot:spring-boot-starter-data-jpa | main:undecided | 7 | 7 | 6 | 1 |
+| org.junit.vintage:junit-vintage-engine | org.assertj:assertj-core | main:undecided | 7 | 7 | 2 | 5 |
+| org.postgresql:postgresql | mysql:mysql-connector-java | main:undecided | 7 | 7 | 0 | 7 |
+| org.postgresql:postgresql | org.xerial:sqlite-jdbc | main:undecided | 7 | 7 | 1 | 6 |
+| org.powermock:powermock-api-mockito | com.fasterxml.jackson.core:jackson-core | main:undecided | 7 | 7 | 1 | 6 |
+| org.testng:testng | org.junit.jupiter:junit-jupiter-engine | main:undecided | 7 | 7 | 6 | 1 |
+| taglibs:standard | org.apache.taglibs:taglibs-standard-impl | rename:rename:upgrade | 7 | 7 | 6 | 1 |
+| ch.qos.logback:logback-core | org.slf4j:slf4j-log4j12 | main:undecided | 6 | 6 | 0 | 6 |
+| com.alibaba:fastjson | com.fasterxml.jackson.core:jackson-databind | main:undecided | 6 | 6 | 2 | 4 |
+| com.fasterxml.jackson.core:jackson-databind | org.codehaus.jackson:jackson-mapper-asl | rename:rename:undecided | 6 | 6 | 2 | 4 |
+| com.fasterxml.jackson.dataformat:jackson-dataformat-yaml | org.yaml:snakeyaml | main:undecided | 6 | 6 | 5 | 1 |
+| com.google.code.gson:gson | org.codehaus.jackson:jackson-core-asl | main:undecided | 6 | 6 | 1 | 5 |
+| com.googlecode.jmockit:jmockit | org.jmockit:jmockit | rename:rename:undecided | 6 | 6 | 6 | 0 |
+| com.googlecode.json-simple:json-simple | com.fasterxml.jackson.core:jackson-core | main:undecided | 6 | 6 | 3 | 3 |
+| com.h2database:h2 | org.xerial:sqlite-jdbc | main:undecided | 6 | 6 | 1 | 5 |
+| dom4j:dom4j | jaxen:jaxen | main:undecided | 6 | 6 | 1 | 5 |
+| hsqldb:hsqldb | com.h2database:h2 | main:undecided | 6 | 6 | 3 | 3 |
+| javax.enterprise:cdi-api | javax.inject:javax.inject | main:undecided | 6 | 6 | 1 | 5 |
+| javax.servlet:jstl | javax.servlet.jsp.jstl:javax.servlet.jsp.jstl-api | main:undecided | 6 | 6 | 4 | 2 |
+| javax.servlet:servlet-api | org.eclipse.jetty.orbit:javax.servlet | main:undecided | 6 | 6 | 4 | 2 |
+| javax:javaee-api | javax.enterprise:cdi-api | main:undecided | 6 | 6 | 5 | 1 |
+| net.sf.json-lib:json-lib | com.fasterxml.jackson.core:jackson-databind | main:undecided | 6 | 6 | 3 | 3 |
+| org.apache.logging.log4j:log4j-api | ch.qos.logback:logback-core | main:undecided | 6 | 6 | 3 | 3 |
+| org.apache.logging.log4j:log4j-api | org.slf4j:jcl-over-slf4j | main:undecided | 6 | 6 | 1 | 5 |
+| org.apache.logging.log4j:log4j-api | org.slf4j:slf4j-simple | main:undecided | 6 | 6 | 4 | 2 |
+| org.apache.logging.log4j:log4j-slf4j-impl | org.slf4j:slf4j-log4j12 | main:undecided | 6 | 6 | 3 | 3 |
+| org.codehaus.jackson:jackson-core-asl | com.fasterxml.jackson.module:jackson-module-jaxb-annotations | rename:rename:upgrade | 6 | 6 | 3 | 3 |
+| org.codehaus.jackson:jackson-jaxrs | com.fasterxml.jackson.core:jackson-annotations | rename:rename:upgrade | 6 | 6 | 2 | 4 |
+| org.elasticsearch:elasticsearch | org.elasticsearch.client:elasticsearch-rest-high-level-client | rename:rename:undecided | 6 | 6 | 1 | 5 |
+| org.hamcrest:hamcrest-all | junit:junit-dep | main:undecided | 6 | 6 | 4 | 2 |
+| org.hamcrest:hamcrest-all | org.assertj:assertj-core | main:undecided | 6 | 6 | 2 | 4 |
+| org.hamcrest:hamcrest-core | org.junit.jupiter:junit-jupiter-engine | main:undecided | 6 | 6 | 1 | 5 |
+| org.hibernate:hibernate-entitymanager | org.springframework.boot:spring-boot-starter-test | main:undecided | 6 | 6 | 5 | 1 |
+| org.jboss.netty:netty | io.netty:netty | rename:rename:undecided | 6 | 6 | 6 | 0 |
+| org.json:json | com.fasterxml.jackson.core:jackson-core | main:undecided | 6 | 6 | 2 | 4 |
+| org.mariadb.jdbc:mariadb-java-client | org.postgresql:postgresql | main:undecided | 6 | 6 | 1 | 5 |
+| org.mortbay.jetty:jetty | javax.servlet:javax.servlet-api | main:undecided | 6 | 6 | 4 | 2 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty:jetty-http | rename:rename:undecided | 6 | 6 | 3 | 3 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty:jetty-io | rename:rename:undecided | 6 | 6 | 3 | 3 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty:jetty-jsp | rename:rename:undecided | 6 | 6 | 4 | 2 |
+| org.mortbay.jetty:jetty-util | org.eclipse.jetty:jetty-http | rename:rename:undecided | 6 | 6 | 2 | 4 |
+| org.mortbay.jetty:jetty-util | org.eclipse.jetty:jetty-io | rename:rename:undecided | 6 | 6 | 2 | 4 |
+| org.mortbay.jetty:jetty-util | org.eclipse.jetty:jetty-security | rename:rename:undecided | 6 | 6 | 3 | 3 |
+| org.mortbay.jetty:jetty-util | org.eclipse.jetty:jetty-util-ajax | rename:rename:undecided | 6 | 6 | 2 | 4 |
+| asm:asm-all | org.ow2.asm:asm-all | rename:rename:undecided | 5 | 5 | 5 | 0 |
+| ch.qos.logback:logback-core | org.springframework.boot:spring-boot-dependencies | main:undecided | 5 | 5 | 2 | 3 |
+| com.alibaba:fastjson | com.fasterxml.jackson.core:jackson-annotations | main:undecided | 5 | 5 | 1 | 4 |
+| com.esotericsoftware.kryo:kryo | com.esotericsoftware:kryo | rename:rename:upgrade | 5 | 5 | 4 | 1 |
+| com.fasterxml.jackson.core:jackson-annotations | org.codehaus.jackson:jackson-mapper-asl | rename:rename:downgrade | 5 | 5 | 3 | 2 |
+| com.fasterxml.jackson.core:jackson-annotations | org.json:json | main:undecided | 5 | 5 | 0 | 5 |
+| com.fasterxml.jackson.core:jackson-databind | org.codehaus.jackson:jackson-core-asl | rename:rename:undecided | 5 | 5 | 1 | 4 |
+| com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider | com.fasterxml.jackson:jackson-bom | rename:rename:undecided | 5 | 5 | 4 | 1 |
+| com.google.code.gson:gson | com.alibaba:fastjson | main:undecided | 5 | 5 | 3 | 2 |
+| com.google.inject.extensions:guice-multibindings | com.google.inject:guice | rename:rename:undecided | 5 | 5 | 1 | 4 |
+| com.google.inject:guice | javax.inject:javax.inject | main:undecided | 5 | 5 | 4 | 1 |
+| com.googlecode.json-simple:json-simple | com.fasterxml.jackson.core:jackson-annotations | main:undecided | 5 | 5 | 2 | 3 |
+| com.h2database:h2 | org.springframework.boot:spring-boot-dependencies | main:undecided | 5 | 5 | 4 | 1 |
+| com.jolbox:bonecp | com.zaxxer:HikariCP | main:undecided | 5 | 5 | 5 | 0 |
+| com.lowagie:itext | com.itextpdf:itextpdf | main:undecided | 5 | 5 | 5 | 0 |
+| com.mchange:c3p0 | com.zaxxer:HikariCP | main:undecided | 5 | 5 | 5 | 0 |
+| com.mchange:c3p0 | org.apache.commons:commons-dbcp2 | main:undecided | 5 | 5 | 3 | 2 |
+| com.sun.xml.bind:jaxb-xjc | org.glassfish.jaxb:jaxb-xjc | main:undecided | 5 | 5 | 4 | 1 |
+| commons-digester:commons-digester | org.apache.commons:commons-digester3 | rename:rename:undecided | 5 | 5 | 5 | 0 |
+| commons-io:commons-io | org.apache.commons:commons-io | rename:rename:undecided | 5 | 5 | 4 | 1 |
+| io.swagger:swagger-annotations | io.swagger.core.v3:swagger-annotations | rename:rename:upgrade | 5 | 5 | 5 | 0 |
+| jasperreports:jasperreports | net.sf.jasperreports:jasperreports | rename:rename:upgrade | 5 | 5 | 5 | 0 |
+| javax.json:javax.json-api | javax.json.bind:javax.json.bind-api | main:undecided | 5 | 5 | 1 | 4 |
+| javax.mail:javax.mail-api | com.sun.mail:javax.mail | main:undecided | 5 | 5 | 3 | 2 |
+| jstl:jstl | javax.servlet:jstl | rename:rename:undecided | 5 | 5 | 4 | 1 |
+| log4j:log4j | org.slf4j:slf4j-jdk14 | main:undecided | 5 | 5 | 4 | 1 |
+| net.sf.json-lib:json-lib | com.fasterxml.jackson.core:jackson-annotations | main:undecided | 5 | 5 | 2 | 3 |
+| net.sf.json-lib:json-lib | com.fasterxml.jackson.core:jackson-core | main:undecided | 5 | 5 | 2 | 3 |
+| net.sf.trove4j:trove4j | it.unimi.dsi:fastutil | main:undecided | 5 | 5 | 2 | 3 |
+| org.apache.derby:derbyclient | com.h2database:h2 | main:undecided | 5 | 5 | 3 | 2 |
+| org.apache.logging.log4j:log4j-slf4j-impl | org.slf4j:log4j-over-slf4j | main:undecided | 5 | 5 | 0 | 5 |
+| org.codehaus.jackson:jackson-core-asl | com.google.code.gson:gson | main:undecided | 5 | 5 | 0 | 5 |
+| org.codehaus.jackson:jackson-jaxrs | com.fasterxml.jackson.core:jackson-core | rename:rename:upgrade | 5 | 5 | 3 | 2 |
+| org.codehaus.jackson:jackson-jaxrs | com.fasterxml.jackson.jaxrs:jackson-jaxrs-base | rename:rename:upgrade | 5 | 5 | 3 | 2 |
+| org.codehaus.jackson:jackson-xc | com.fasterxml.jackson.core:jackson-databind | rename:rename:undecided | 5 | 5 | 4 | 1 |
+| org.codehaus.jackson:jackson-xc | com.fasterxml.jackson.module:jackson-module-jaxb-annotations | rename:rename:upgrade | 5 | 5 | 3 | 2 |
+| org.eclipse.jdt.core.compiler:ecj | org.eclipse.jdt:ecj | rename:rename:undecided | 5 | 5 | 4 | 1 |
+| org.jmockit:jmockit | org.mockito:mockito-core | main:undecided | 5 | 5 | 3 | 2 |
+| org.junit.jupiter:junit-jupiter-api | junit:junit | rename:rename:undecided | 5 | 5 | 4 | 1 |
+| org.junit.platform:junit-platform-launcher | org.junit.jupiter:junit-jupiter | rename:rename:upgrade | 5 | 5 | 3 | 2 |
+| org.mockito:mockito-core | org.powermock:powermock-api-mockito | main:undecided | 5 | 5 | 0 | 5 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty.aggregate:jetty-all-server | rename:rename:undecided | 5 | 5 | 3 | 2 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty:jetty-util-ajax | rename:rename:undecided | 5 | 5 | 2 | 3 |
+| org.mortbay.jetty:jetty-util | org.eclipse.jetty:jetty-jmx | rename:rename:undecided | 5 | 5 | 3 | 2 |
+| org.slf4j:log4j-over-slf4j | commons-logging:commons-logging | main:undecided | 5 | 5 | 1 | 4 |
+| org.slf4j:log4j-over-slf4j | org.apache.logging.log4j:log4j-api | main:undecided | 5 | 5 | 3 | 2 |
+| org.slf4j:slf4j-jdk14 | org.apache.logging.log4j:log4j-core | main:undecided | 5 | 5 | 2 | 3 |
+| org.sonatype.sisu:sisu-guice | com.google.inject:guice | main:undecided | 5 | 5 | 4 | 1 |
+| org.xerial:sqlite-jdbc | org.postgresql:postgresql | main:undecided | 5 | 5 | 0 | 5 |
+| ch.qos.logback:logback-core | org.apache.logging.log4j:log4j-api | main:undecided | 4 | 4 | 2 | 2 |
+| com.beust:jcommander | info.picocli:picocli | main:undecided | 4 | 4 | 3 | 1 |
+| com.fasterxml.jackson.core:jackson-annotations | org.codehaus.jackson:jackson-core-asl | rename:rename:downgrade | 4 | 4 | 2 | 2 |
+| com.fasterxml.jackson.core:jackson-core | org.codehaus.jackson:jackson-mapper-asl | rename:rename:downgrade | 4 | 4 | 2 | 2 |
+| com.microsoft.sqlserver:mssql-jdbc | com.h2database:h2 | main:undecided | 4 | 4 | 0 | 4 |
+| com.sun.jersey:jersey-bundle | org.glassfish.jersey.containers:jersey-container-servlet | rename:rename:upgrade | 4 | 4 | 3 | 1 |
+| com.sun.jersey:jersey-bundle | org.glassfish.jersey.core:jersey-server | rename:rename:upgrade | 4 | 4 | 3 | 1 |
+| com.sun.jersey:jersey-bundle | org.glassfish.jersey.media:jersey-media-json-jackson | rename:rename:upgrade | 4 | 4 | 3 | 1 |
+| com.thoughtworks.xstream:xstream | com.fasterxml.jackson.dataformat:jackson-dataformat-xml | main:undecided | 4 | 4 | 2 | 2 |
+| commons-cli:commons-cli | com.beust:jcommander | main:undecided | 4 | 4 | 2 | 2 |
+| commons-logging:commons-logging | org.slf4j:slf4j-jdk14 | main:undecided | 4 | 4 | 1 | 3 |
+| hsqldb:hsqldb | org.apache.derby:derby | main:undecided | 4 | 4 | 0 | 4 |
+| io.dropwizard.metrics:metrics-jvm | io.micrometer:micrometer-registry-prometheus | main:undecided | 4 | 4 | 3 | 1 |
+| io.reactivex:rxjava | io.reactivex.rxjava2:rxjava | rename:rename:upgrade | 4 | 4 | 3 | 1 |
+| javax.el:javax.el-api | org.glassfish:javax.el | main:undecided | 4 | 4 | 2 | 2 |
+| javax.persistence:persistence-api | org.hibernate:hibernate-core | main:undecided | 4 | 4 | 2 | 2 |
+| javax.servlet:jsp-api | javax.servlet.jsp:javax.servlet.jsp-api | main:undecided | 4 | 4 | 4 | 0 |
+| javax:javaee-api | org.jboss.logging:jboss-logging | main:undecided | 4 | 4 | 1 | 3 |
+| junit:junit | org.junit.jupiter:junit-jupiter-migrationsupport | rename:rename:undecided | 4 | 4 | 3 | 1 |
+| nekohtml:nekohtml | net.sourceforge.nekohtml:nekohtml | rename:rename:upgrade | 4 | 4 | 3 | 1 |
+| net.sf.json-lib:json-lib | com.google.code.gson:gson | main:undecided | 4 | 4 | 3 | 1 |
+| org.apache.derby:derby | hsqldb:hsqldb | main:undecided | 4 | 4 | 2 | 2 |
+| org.apache.logging.log4j:log4j-api | log4j:log4j | rename:rename:downgrade | 4 | 4 | 2 | 2 |
+| org.apache.logging.log4j:log4j-api | org.slf4j:slf4j-log4j12 | main:undecided | 4 | 4 | 2 | 2 |
+| org.apache.logging.log4j:log4j-core | org.slf4j:slf4j-log4j12 | main:undecided | 4 | 4 | 2 | 2 |
+| org.apache.logging.log4j:log4j-slf4j-impl | ch.qos.logback:logback-core | main:undecided | 4 | 4 | 2 | 2 |
+| org.apache.logging.log4j:log4j-slf4j-impl | org.slf4j:jcl-over-slf4j | main:undecided | 4 | 4 | 0 | 4 |
+| org.apache.logging.log4j:log4j-slf4j-impl | org.slf4j:slf4j-jdk14 | main:undecided | 4 | 4 | 2 | 2 |
+| org.codehaus.jackson:jackson-jaxrs | com.fasterxml.jackson.module:jackson-module-jaxb-annotations | rename:rename:upgrade | 4 | 4 | 2 | 2 |
+| org.codehaus.jackson:jackson-mapper-asl | com.fasterxml.jackson.dataformat:jackson-dataformat-xml | rename:rename:upgrade | 4 | 4 | 2 | 2 |
+| org.codehaus.jackson:jackson-mapper-asl | org.json:json | main:undecided | 4 | 4 | 2 | 2 |
+| org.codehaus.jackson:jackson-xc | com.fasterxml.jackson.core:jackson-annotations | rename:rename:upgrade | 4 | 4 | 2 | 2 |
+| org.codehaus.plexus:plexus-utils | org.apache.commons:commons-lang3 | main:undecided | 4 | 4 | 1 | 3 |
+| org.eclipse.jetty:jetty-servlet | javax.servlet:javax.servlet-api | main:undecided | 4 | 4 | 1 | 3 |
+| org.ehcache:ehcache | net.sf.ehcache:ehcache | rename:rename:downgrade | 4 | 4 | 4 | 0 |
+| org.elasticsearch:elasticsearch | org.elasticsearch.client:transport | main:undecided | 4 | 4 | 3 | 1 |
+| org.hamcrest:hamcrest-all | org.springframework.boot:spring-boot-starter-test | main:undecided | 4 | 4 | 2 | 2 |
+| org.hamcrest:hamcrest-core | org.powermock:powermock-api-mockito | main:undecided | 4 | 4 | 2 | 2 |
+| org.hibernate.validator:hibernate-validator | org.hibernate:hibernate-validator | rename:rename:undecided | 4 | 4 | 4 | 0 |
+| org.json:json | com.googlecode.json-simple:json-simple | main:undecided | 4 | 4 | 0 | 4 |
+| org.mockito:mockito-all | org.hamcrest:hamcrest | main:undecided | 4 | 4 | 3 | 1 |
+| org.mockito:mockito-all | org.junit.jupiter:junit-jupiter-params | main:undecided | 4 | 4 | 4 | 0 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty:jetty-servlets | rename:rename:undecided | 4 | 4 | 4 | 0 |
+| org.mortbay.jetty:jetty-util | org.eclipse.jetty:jetty-jsp | rename:rename:undecided | 4 | 4 | 2 | 2 |
+| org.powermock:powermock-module-junit4 | org.springframework.boot:spring-boot-starter-test | main:undecided | 4 | 4 | 2 | 2 |
+| org.reflections:reflections | io.github.lukehutch:fast-classpath-scanner | main:undecided | 4 | 4 | 2 | 2 |
+| org.simpleframework:simple-xml | com.fasterxml.jackson.dataformat:jackson-dataformat-xml | main:undecided | 4 | 4 | 2 | 2 |
+| org.slf4j:log4j-over-slf4j | log4j:log4j | main:undecided | 4 | 4 | 0 | 4 |
+| org.slf4j:log4j-over-slf4j | org.apache.logging.log4j:log4j-core | main:undecided | 4 | 4 | 2 | 2 |
+| org.slf4j:log4j-over-slf4j | org.apache.logging.log4j:log4j-slf4j-impl | main:undecided | 4 | 4 | 1 | 3 |
+| org.slf4j:slf4j-jdk14 | org.apache.logging.log4j:log4j-api | main:undecided | 4 | 4 | 2 | 2 |
+| org.springframework.boot:spring-boot-starter-web | org.springframework:spring-web | rename:rename:undecided | 4 | 4 | 1 | 3 |
+| org.springframework:spring-aop | org.springframework.boot:spring-boot-starter-aop | rename:rename:undecided | 4 | 4 | 3 | 1 |
+| pdfbox:pdfbox | org.apache.pdfbox:pdfbox | rename:rename:upgrade | 4 | 4 | 4 | 0 |
+| xstream:xstream | com.thoughtworks.xstream:xstream | rename:rename:undecided | 4 | 4 | 2 | 2 |
+| antlr:antlr | org.antlr:antlr-runtime | rename:rename:undecided | 3 | 3 | 0 | 3 |
+| c3p0:c3p0 | com.zaxxer:HikariCP | main:undecided | 3 | 3 | 3 | 0 |
+| ch.qos.logback:logback-core | org.apache.logging.log4j:log4j-core | main:undecided | 3 | 3 | 1 | 2 |
+| ch.qos.logback:logback-core | org.apache.logging.log4j:log4j-slf4j-impl | main:undecided | 3 | 3 | 1 | 2 |
+| com.101tec:zkclient | org.apache.curator:curator-framework | main:undecided | 3 | 3 | 0 | 3 |
+| com.alibaba:fastjson | com.fasterxml.jackson.core:jackson-core | main:undecided | 3 | 3 | 1 | 2 |
+| com.carrotsearch:hppc | it.unimi.dsi:fastutil | main:undecided | 3 | 3 | 2 | 1 |
+| com.fasterxml.jackson.core:jackson-core | org.codehaus.jackson:jackson-core-asl | rename:rename:downgrade | 3 | 3 | 1 | 2 |
+| com.fasterxml.jackson.core:jackson-core | org.json:json | main:undecided | 3 | 3 | 0 | 3 |
+| com.h2database:h2 | hsqldb:hsqldb | main:undecided | 3 | 3 | 0 | 3 |
+| com.itextpdf:itextpdf | org.apache.pdfbox:pdfbox | main:undecided | 3 | 3 | 3 | 0 |
+| com.jayway.restassured:rest-assured | io.rest-assured:json-path | main:undecided | 3 | 3 | 3 | 0 |
+| com.squareup.okhttp:okhttp | com.squareup.okhttp3:okhttp-urlconnection | rename:rename:upgrade | 3 | 3 | 2 | 1 |
+| com.sun.jersey:jersey-bundle | org.glassfish.jersey.core:jersey-common | rename:rename:upgrade | 3 | 3 | 2 | 1 |
+| com.sun.jersey:jersey-bundle | org.glassfish.jersey.media:jersey-media-multipart | rename:rename:upgrade | 3 | 3 | 2 | 1 |
+| com.sun.jersey:jersey-servlet | javax.servlet:javax.servlet-api | rename:rename:upgrade | 3 | 3 | 1 | 2 |
+| com.sun.jersey:jersey-servlet | org.glassfish.jersey.containers:jersey-container-servlet-core | rename:rename:upgrade | 3 | 3 | 2 | 1 |
+| com.yammer.metrics:metrics-core | io.dropwizard.metrics:metrics-jvm | rename:rename:upgrade | 3 | 3 | 2 | 1 |
+| com.zaxxer:HikariCP | org.springframework.boot:spring-boot-starter-jdbc | main:undecided | 3 | 3 | 2 | 1 |
+| commons-cli:commons-cli | args4j:args4j | main:undecided | 3 | 3 | 2 | 1 |
+| commons-cli:commons-cli | net.sf.jopt-simple:jopt-simple | main:undecided | 3 | 3 | 1 | 2 |
+| commons-logging:commons-logging | ch.qos.logback:logback-core | main:undecided | 3 | 3 | 0 | 3 |
+| commons-logging:commons-logging | org.slf4j:slf4j-nop | main:undecided | 3 | 3 | 1 | 2 |
+| commons-logging:commons-logging-api | org.slf4j:slf4j-api | main:undecided | 3 | 3 | 0 | 3 |
+| dom4j:dom4j | org.jdom:jdom | main:undecided | 3 | 3 | 1 | 2 |
+| io.dropwizard.metrics:metrics-core | io.micrometer:micrometer-core | main:undecided | 3 | 3 | 2 | 1 |
+| io.dropwizard.metrics:metrics-graphite | io.micrometer:micrometer-registry-prometheus | main:undecided | 3 | 3 | 2 | 1 |
+| io.grpc:grpc-protobuf | com.google.protobuf:protobuf-java | main:undecided | 3 | 3 | 0 | 3 |
+| io.prometheus:simpleclient | io.micrometer:micrometer-registry-prometheus | main:undecided | 3 | 3 | 2 | 1 |
+| io.rest-assured:rest-assured | org.springframework.boot:spring-boot-test | main:undecided | 3 | 3 | 0 | 3 |
+| io.rest-assured:rest-assured | org.springframework:spring-test | main:undecided | 3 | 3 | 0 | 3 |
+| javax.annotation:jsr250-api | org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec | main:undecided | 3 | 3 | 3 | 0 |
+| javax.faces:jsf-api | com.sun.faces:jsf-api | main:undecided | 3 | 3 | 0 | 3 |
+| javax.faces:jsf-api | com.sun.faces:jsf-impl | main:undecided | 3 | 3 | 0 | 3 |
+| javax.json:javax.json-api | com.fasterxml.jackson.core:jackson-core | main:undecided | 3 | 3 | 1 | 2 |
+| javax.json:javax.json-api | com.google.code.gson:gson | main:undecided | 3 | 3 | 2 | 1 |
+| javax.servlet:jstl | org.glassfish.web:jstl-impl | main:undecided | 3 | 3 | 2 | 1 |
+| javax.transaction:jta | org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec | main:undecided | 3 | 3 | 2 | 1 |
+| jaxen:jaxen | org.jdom:jdom | main:undecided | 3 | 3 | 1 | 2 |
+| net.sf.ehcache:ehcache-core | org.hibernate:hibernate-ehcache | main:undecided | 3 | 3 | 1 | 2 |
+| org.apache.ant:ant | org.codehaus.plexus:plexus-utils | main:undecided | 3 | 3 | 1 | 2 |
+| org.apache.commons:commons-dbcp2 | commons-dbcp:commons-dbcp | rename:rename:undecided | 3 | 3 | 2 | 1 |
+| org.apache.derby:derby | org.hsqldb:hsqldb | main:undecided | 3 | 3 | 1 | 2 |
+| org.apache.httpcomponents:httpcore | com.squareup.okhttp3:okhttp | main:undecided | 3 | 3 | 3 | 0 |
+| org.apache.logging.log4j:log4j-slf4j-impl | log4j:log4j | rename:rename:downgrade | 3 | 3 | 0 | 3 |
+| org.codehaus.jackson:jackson-core-asl | com.fasterxml.jackson.datatype:jackson-datatype-guava | rename:rename:upgrade | 3 | 3 | 2 | 1 |
+| org.codehaus.jackson:jackson-core-asl | com.fasterxml.jackson.jaxrs:jackson-jaxrs-base | rename:rename:upgrade | 3 | 3 | 2 | 1 |
+| org.codehaus.jackson:jackson-mapper-asl | com.fasterxml.jackson.datatype:jackson-datatype-guava | rename:rename:upgrade | 3 | 3 | 2 | 1 |
+| org.codehaus.jackson:jackson-mapper-asl | com.fasterxml.jackson.jaxrs:jackson-jaxrs-base | rename:rename:upgrade | 3 | 3 | 2 | 1 |
+| org.codehaus.jackson:jackson-xc | com.fasterxml.jackson.core:jackson-core | rename:rename:upgrade | 3 | 3 | 2 | 1 |
+| org.codehaus.jettison:jettison | com.fasterxml.jackson.core:jackson-databind | main:undecided | 3 | 3 | 0 | 3 |
+| org.ehcache:ehcache | javax.cache:cache-api | main:undecided | 3 | 3 | 1 | 2 |
+| org.glassfish.jersey.core:jersey-client | org.apache.httpcomponents:httpclient | main:undecided | 3 | 3 | 1 | 2 |
+| org.glassfish.jersey.inject:jersey-hk2 | javax.ws.rs:javax.ws.rs-api | main:undecided | 3 | 3 | 1 | 2 |
+| org.glassfish.jersey.inject:jersey-hk2 | org.springframework.boot:spring-boot-starter-web | main:undecided | 3 | 3 | 1 | 2 |
+| org.glassfish.jersey.media:jersey-media-json-jackson | com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider | main:undecided | 3 | 3 | 1 | 2 |
+| org.glassfish:javax.el | jakarta.ws.rs:jakarta.ws.rs-api | main:undecided | 3 | 3 | 3 | 0 |
+| org.hamcrest:hamcrest-all | org.hamcrest:java-hamcrest | rename:rename:undecided | 3 | 3 | 3 | 0 |
+| org.hibernate:hibernate-core | org.mybatis:mybatis | main:undecided | 3 | 3 | 2 | 1 |
+| org.hibernate:hibernate-core | org.mybatis:mybatis-spring | main:undecided | 3 | 3 | 2 | 1 |
+| org.hibernate:hibernate-ehcache | net.sf.ehcache:ehcache-core | main:undecided | 3 | 3 | 0 | 3 |
+| org.hsqldb:hsqldb | hsqldb:hsqldb | rename:rename:undecided | 3 | 3 | 2 | 1 |
+| org.jboss.arquillian.junit:arquillian-junit-container | org.jboss.arquillian:arquillian-bom | rename:rename:undecided | 3 | 3 | 0 | 3 |
+| org.jboss.as:jboss-as-arquillian-container-managed | org.wildfly:wildfly-arquillian-container-managed | main:undecided | 3 | 3 | 2 | 1 |
+| org.jboss.logging:jboss-logging | org.slf4j:slf4j-api | main:undecided | 3 | 3 | 0 | 3 |
+| org.jboss.resteasy:resteasy-jackson-provider | com.fasterxml.jackson.core:jackson-annotations | main:undecided | 3 | 3 | 0 | 3 |
+| org.jboss.resteasy:resteasy-jackson-provider | com.fasterxml.jackson.core:jackson-databind | main:undecided | 3 | 3 | 0 | 3 |
+| org.jboss.spec.javax.servlet:jboss-servlet-api_3.0_spec | org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.0_spec | rename:rename:undecided | 3 | 3 | 2 | 1 |
+| org.jmock:jmock | org.mockito:mockito-core | main:undecided | 3 | 3 | 0 | 3 |
+| org.json:json | com.fasterxml.jackson.dataformat:jackson-dataformat-xml | main:undecided | 3 | 3 | 2 | 1 |
+| org.json:json | org.codehaus.jackson:jackson-mapper-asl | main:undecided | 3 | 3 | 1 | 2 |
+| org.junit.platform:junit-platform-launcher | junit:junit | rename:rename:undecided | 3 | 3 | 1 | 2 |
+| org.lwjgl.lwjgl:lwjgl | org.lwjgl:lwjgl | rename:rename:upgrade | 3 | 3 | 1 | 2 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty.aggregate:jetty-all | rename:rename:undecided | 3 | 3 | 2 | 1 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty:jetty-continuation | rename:rename:undecided | 3 | 3 | 3 | 0 |
+| org.mortbay.jetty:jetty-util | javax.servlet:servlet-api | main:undecided | 3 | 3 | 0 | 3 |
+| org.mybatis.spring.boot:mybatis-spring-boot-starter | com.baomidou:mybatis-plus-boot-starter | main:undecided | 3 | 3 | 3 | 0 |
+| org.mybatis.spring.boot:mybatis-spring-boot-starter | org.springframework.boot:spring-boot-starter-data-jpa | main:undecided | 3 | 3 | 0 | 3 |
+| org.osgi:org.osgi.core | org.apache.felix:org.apache.felix.framework | main:undecided | 3 | 3 | 0 | 3 |
+| org.slf4j:slf4j-jdk14 | org.apache.logging.log4j:log4j-slf4j-impl | main:undecided | 3 | 3 | 1 | 2 |
+| org.slf4j:slf4j-nop | ch.qos.logback:logback-classic | main:undecided | 3 | 3 | 2 | 1 |
+| org.slf4j:slf4j-nop | org.apache.logging.log4j:log4j-api | main:undecided | 3 | 3 | 2 | 1 |
+| org.springframework.boot:spring-boot-starter-amqp | org.springframework.cloud:spring-cloud-starter-stream-rabbit | rename:rename:undecided | 3 | 3 | 0 | 3 |
+| org.springframework.boot:spring-boot-starter-log4j2 | ch.qos.logback:logback-classic | main:undecided | 3 | 3 | 1 | 2 |
+| org.springframework.boot:spring-boot-starter-thymeleaf | org.thymeleaf:thymeleaf-spring4 | main:undecided | 3 | 3 | 2 | 1 |
+| org.testng:testng | org.springframework.boot:spring-boot-starter-test | main:undecided | 3 | 3 | 1 | 2 |
+| org.xerial.snappy:snappy-java | org.iq80.snappy:snappy | rename:rename:undecided | 3 | 3 | 1 | 2 |
+| org.xerial:sqlite-jdbc | javax.servlet:javax.servlet-api | main:undecided | 3 | 3 | 1 | 2 |
+| redis.clients:jedis | io.lettuce:lettuce-core | main:undecided | 3 | 3 | 2 | 1 |
+| rome:rome | org.apache.httpcomponents:httpclient | main:undecided | 3 | 3 | 1 | 2 |
+| taglibs:standard | org.apache.taglibs:taglibs-standard-spec | rename:rename:upgrade | 3 | 3 | 3 | 0 |
+| velocity:velocity | org.apache.velocity:velocity | rename:rename:undecided | 3 | 3 | 3 | 0 |
+| xerces:xerces | xerces:xercesImpl | main:undecided | 3 | 3 | 3 | 0 |
+| asm:asm | org.ow2.asm:asm-debug-all | rename:rename:undecided | 2 | 2 | 2 | 0 |
+| asm:asm-all | org.ow2.asm:asm | rename:rename:upgrade | 2 | 2 | 2 | 0 |
+| asm:asm-all | org.ow2.asm:asm-debug-all | rename:rename:undecided | 2 | 2 | 2 | 0 |
+| backport-util-concurrent:backport-util-concurrent | commons-pool:commons-pool | main:undecided | 2 | 2 | 1 | 1 |
+| bcel:bcel | org.apache.bcel:bcel | rename:rename:undecided | 2 | 2 | 2 | 0 |
+| c3p0:c3p0 | commons-dbcp:commons-dbcp | main:undecided | 2 | 2 | 0 | 2 |
+| c3p0:c3p0 | org.hibernate:hibernate-c3p0 | rename:rename:undecided | 2 | 2 | 1 | 1 |
+| cglib:cglib-nodep | org.javassist:javassist | main:undecided | 2 | 2 | 1 | 1 |
+| ch.qos.logback:logback-classic | org.slf4j:slf4j-jdk14 | main:undecided | 2 | 2 | 0 | 2 |
+| ch.qos.logback:logback-classic | org.springframework.boot:spring-boot-starter-logging | main:undecided | 2 | 2 | 1 | 1 |
+| com.101tec:zkclient | org.apache.curator:curator-recipes | main:undecided | 2 | 2 | 0 | 2 |
+| com.alibaba:druid | com.zaxxer:HikariCP | main:undecided | 2 | 2 | 1 | 1 |
+| com.fasterxml.jackson.core:jackson-annotations | com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider | rename:rename:undecided | 2 | 2 | 0 | 2 |
+| com.fasterxml.jackson.core:jackson-annotations | org.jboss.resteasy:resteasy-jackson-provider | rename:rename:undecided | 2 | 2 | 0 | 2 |
+| com.fasterxml.jackson.core:jackson-core | com.alibaba:fastjson | main:undecided | 2 | 2 | 1 | 1 |
+| com.fasterxml.jackson.core:jackson-core | org.codehaus.jackson:jackson-jaxrs | rename:rename:downgrade | 2 | 2 | 0 | 2 |
+| com.fasterxml.jackson.core:jackson-databind | org.codehaus.jackson:jackson-jaxrs | rename:rename:undecided | 2 | 2 | 0 | 2 |
+| com.fasterxml.jackson.core:jackson-databind | org.jboss.resteasy:resteasy-jackson-provider | main:undecided | 2 | 2 | 0 | 2 |
+| com.fasterxml.jackson.core:jackson-databind | org.springframework.boot:spring-boot-starter-json | main:undecided | 2 | 2 | 2 | 0 |
+| com.fasterxml.jackson.datatype:jackson-datatype-jsr310 | com.fasterxml.jackson:jackson-bom | rename:rename:undecided | 2 | 2 | 2 | 0 |
+| com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider | com.fasterxml.jackson.module:jackson-module-jaxb-annotations | rename:rename:undecided | 2 | 2 | 0 | 2 |
+| com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider | org.codehaus.jackson:jackson-jaxrs | rename:rename:downgrade | 2 | 2 | 0 | 2 |
+| com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider | org.jboss.resteasy:jaxrs-api | rename:rename:undecided | 2 | 2 | 0 | 2 |
+| com.google.code.findbugs:annotations | net.jcip:jcip-annotations | main:undecided | 2 | 2 | 2 | 0 |
+| com.google.code.findbugs:jsr305 | com.github.stephenc.findbugs:findbugs-annotations | main:undecided | 2 | 2 | 1 | 1 |
+| com.google.code.findbugs:jsr305 | com.github.stephenc.jcip:jcip-annotations | main:undecided | 2 | 2 | 1 | 1 |
+| com.google.gwt:gwt-servlet | org.glassfish.jersey.core:jersey-server | main:undecided | 2 | 2 | 1 | 1 |
+| com.google.http-client:google-http-client | org.apache.httpcomponents:httpclient | main:undecided | 2 | 2 | 2 | 0 |
+| com.google.inject:guice | org.sonatype.sisu:sisu-guice | main:undecided | 2 | 2 | 1 | 1 |
+| com.googlecode.json-simple:json-simple | com.alibaba:fastjson | main:undecided | 2 | 2 | 2 | 0 |
+| com.jayway.jsonpath:json-path | io.rest-assured:json-path | rename:rename:upgrade | 2 | 2 | 2 | 0 |
+| com.squareup.okhttp:okhttp | com.squareup.retrofit2:retrofit | main:undecided | 2 | 2 | 1 | 1 |
+| com.sun.faces:jsf-api | org.glassfish:javax.faces | rename:rename:undecided | 2 | 2 | 2 | 0 |
+| com.sun.faces:jsf-impl | org.glassfish:javax.faces | rename:rename:undecided | 2 | 2 | 2 | 0 |
+| com.sun.jersey.contribs:jersey-spring | org.glassfish.jersey.ext:jersey-spring3 | rename:rename:upgrade | 2 | 2 | 1 | 1 |
+| com.sun.jersey.contribs:jersey-spring | org.glassfish.jersey.ext:jersey-spring4 | rename:rename:upgrade | 2 | 2 | 2 | 0 |
+| com.sun.jersey:jersey-bundle | org.glassfish.jersey.core:jersey-client | rename:rename:upgrade | 2 | 2 | 1 | 1 |
+| com.sun.jersey:jersey-bundle | org.glassfish.jersey.inject:jersey-hk2 | rename:rename:upgrade | 2 | 2 | 1 | 1 |
+| com.sun.jersey:jersey-bundle | org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2 | rename:rename:upgrade | 2 | 2 | 2 | 0 |
+| com.yammer.metrics:metrics-core | io.dropwizard.metrics:metrics-core | rename:rename:upgrade | 2 | 2 | 2 | 0 |
+| com.yammer.metrics:metrics-core | io.dropwizard.metrics:metrics-ganglia | rename:rename:upgrade | 2 | 2 | 1 | 1 |
+| commons-httpclient:commons-httpclient | org.apache.httpcomponents:fluent-hc | rename:rename:undecided | 2 | 2 | 2 | 0 |
+| commons-logging:commons-logging | org.ops4j.pax.logging:pax-logging-api | main:undecided | 2 | 2 | 2 | 0 |
+| commons-logging:commons-logging-api | org.slf4j:jcl-over-slf4j | main:undecided | 2 | 2 | 1 | 1 |
+| easymock:easymock | org.easymock:easymockclassextension | rename:rename:undecided | 2 | 2 | 1 | 1 |
+| io.dropwizard.metrics:metrics-core | com.codahale.metrics:metrics-core | rename:rename:downgrade | 2 | 2 | 2 | 0 |
+| io.dropwizard.metrics:metrics-jvm | com.codahale.metrics:metrics-core | rename:rename:downgrade | 2 | 2 | 1 | 1 |
+| javax.inject:javax.inject | org.apache.geronimo.specs:geronimo-atinject_1.0_spec | main:undecided | 2 | 2 | 2 | 0 |
+| javax.json:javax.json-api | com.fasterxml.jackson.core:jackson-databind | main:undecided | 2 | 2 | 0 | 2 |
+| javax.persistence:persistence-api | org.hibernate.javax.persistence:hibernate-jpa-2.1-api | main:undecided | 2 | 2 | 2 | 0 |
+| javax.servlet:jsp-api | javax.servlet.jsp:jsp-api | main:undecided | 2 | 2 | 1 | 1 |
+| javax.servlet:jstl | javax.servlet.jsp.jstl:jstl-api | main:undecided | 2 | 2 | 0 | 2 |
+| jboss:javassist | javassist:javassist | rename:rename:undecided | 2 | 2 | 1 | 1 |
+| jdom:jdom | org.jdom:jdom2 | rename:rename:undecided | 2 | 2 | 1 | 1 |
+| jmock:jmock | org.jmock:jmock | rename:rename:undecided | 2 | 2 | 2 | 0 |
+| joda-time:joda-time | org.threeten:threetenbp | main:undecided | 2 | 2 | 2 | 0 |
+| junit:junit | org.junit.platform:junit-platform-surefire-provider | rename:rename:undecided | 2 | 2 | 1 | 1 |
+| log4j:log4j | org.slf4j:slf4j-jcl | main:undecided | 2 | 2 | 0 | 2 |
+| net.jcip:jcip-annotations | com.github.stephenc.jcip:jcip-annotations | rename:rename:undecided | 2 | 2 | 2 | 0 |
+| net.sf.flexjson:flexjson | com.google.code.gson:gson | main:undecided | 2 | 2 | 1 | 1 |
+| net.sourceforge.saxon:saxon | net.sf.saxon:Saxon-HE | main:undecided | 2 | 2 | 2 | 0 |
+| org.antlr:antlr-runtime | org.antlr:antlr4-runtime | rename:rename:undecided | 2 | 2 | 1 | 1 |
+| org.apache.commons:commons-dbcp2 | com.mchange:c3p0 | main:undecided | 2 | 2 | 2 | 0 |
+| org.apache.commons:commons-math | commons-lang:commons-lang | rename:rename:undecided | 2 | 2 | 0 | 2 |
+| org.apache.httpcomponents:httpmime | com.squareup.okhttp3:okhttp | main:undecided | 2 | 2 | 1 | 1 |
+| org.apache.httpcomponents:httpmime | com.squareup.okhttp:okhttp | main:undecided | 2 | 2 | 1 | 1 |
+| org.apache.solr:solr-solrj | org.elasticsearch:elasticsearch | main:undecided | 2 | 2 | 1 | 1 |
+| org.apache.xmlbeans:xmlbeans | javax.xml.bind:jaxb-api | main:undecided | 2 | 2 | 0 | 2 |
+| org.codehaus.jackson:jackson-core-asl | com.fasterxml.jackson.dataformat:jackson-dataformat-smile | rename:rename:upgrade | 2 | 2 | 1 | 1 |
+| org.codehaus.jackson:jackson-core-asl | com.fasterxml.jackson.datatype:jackson-datatype-joda | rename:rename:upgrade | 2 | 2 | 2 | 0 |
+| org.codehaus.jackson:jackson-jaxrs | com.fasterxml.jackson.datatype:jackson-datatype-guava | rename:rename:upgrade | 2 | 2 | 1 | 1 |
+| org.codehaus.jackson:jackson-mapper-asl | com.fasterxml.jackson.dataformat:jackson-dataformat-smile | rename:rename:upgrade | 2 | 2 | 1 | 1 |
+| org.codehaus.jackson:jackson-mapper-asl | com.fasterxml.jackson.datatype:jackson-datatype-joda | rename:rename:upgrade | 2 | 2 | 2 | 0 |
+| org.codehaus.jackson:jackson-xc | com.fasterxml.jackson.jaxrs:jackson-jaxrs-base | rename:rename:upgrade | 2 | 2 | 0 | 2 |
+| org.codehaus.jettison:jettison | com.cedarsoftware:json-io | main:undecided | 2 | 2 | 2 | 0 |
+| org.easymock:easymockclassextension | org.mockito:mockito-all | main:undecided | 2 | 2 | 0 | 2 |
+| org.eclipse.jetty:jetty-webapp | org.apache.tomcat.embed:tomcat-embed-core | main:undecided | 2 | 2 | 1 | 1 |
+| org.ehcache:ehcache | com.github.ben-manes.caffeine:caffeine | main:undecided | 2 | 2 | 0 | 2 |
+| org.elasticsearch:elasticsearch | org.elasticsearch.client:rest | main:undecided | 2 | 2 | 2 | 0 |
+| org.glassfish.jaxb:jaxb-runtime | com.sun.xml.bind:jaxb-core | main:undecided | 2 | 2 | 1 | 1 |
+| org.glassfish.jersey.inject:jersey-hk2 | org.springframework.boot:spring-boot-starter-test | main:undecided | 2 | 2 | 2 | 0 |
+| org.hamcrest:hamcrest-all | org.easytesting:fest-assert | main:undecided | 2 | 2 | 2 | 0 |
+| org.hamcrest:hamcrest-all | org.springframework.boot:spring-boot-starter | main:undecided | 2 | 2 | 1 | 1 |
+| org.hamcrest:hamcrest-core | org.easytesting:fest-assert-core | main:undecided | 2 | 2 | 1 | 1 |
+| org.hamcrest:hamcrest-core | org.mockito:mockito-all | main:undecided | 2 | 2 | 0 | 2 |
+| org.hibernate:hibernate-core | org.hibernate.javax.persistence:hibernate-jpa-2.1-api | rename:rename:undecided | 2 | 2 | 0 | 2 |
+| org.hsqldb:hsqldb | org.apache.derby:derby | main:undecided | 2 | 2 | 0 | 2 |
+| org.javassist:javassist | javassist:javassist | rename:rename:undecided | 2 | 2 | 2 | 0 |
+| org.jboss.arquillian.testng:arquillian-testng-container | org.jboss.arquillian.junit:arquillian-junit-container | rename:rename:undecided | 2 | 2 | 1 | 1 |
+| org.jboss.logging:jboss-logging | ch.qos.logback:logback-classic | main:undecided | 2 | 2 | 0 | 2 |
+| org.jboss.resteasy:jaxrs-api | org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec | main:undecided | 2 | 2 | 0 | 2 |
+| org.jboss.resteasy:resteasy-jackson-provider | com.fasterxml.jackson.core:jackson-core | main:undecided | 2 | 2 | 0 | 2 |
+| org.jboss.spec.javax.ejb:jboss-ejb-api_3.1_spec | org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec | rename:rename:undecided | 2 | 2 | 2 | 0 |
+| org.jdom:jdom | jaxen:jaxen | main:undecided | 2 | 2 | 0 | 2 |
+| org.jmock:jmock | org.mockito:mockito-all | main:undecided | 2 | 2 | 1 | 1 |
+| org.junit.jupiter:junit-jupiter-api | org.testng:testng | main:undecided | 2 | 2 | 1 | 1 |
+| org.junit.vintage:junit-vintage-engine | ch.qos.logback:logback-classic | main:undecided | 2 | 2 | 0 | 2 |
+| org.junit.vintage:junit-vintage-engine | org.junit.platform:junit-platform-runner | rename:rename:downgrade | 2 | 2 | 0 | 2 |
+| org.mockito:mockito-all | org.powermock:powermock-core | main:undecided | 2 | 2 | 1 | 1 |
+| org.mongodb:mongo-java-driver | org.springframework.boot:spring-boot-starter-data-mongodb | main:undecided | 2 | 2 | 0 | 2 |
+| org.mortbay.jetty:jetty-util | org.eclipse.jetty.aggregate:jetty-all-server | rename:rename:undecided | 2 | 2 | 2 | 0 |
+| org.mortbay.jetty:jetty-util | org.eclipse.jetty:jetty-servlets | rename:rename:undecided | 2 | 2 | 2 | 0 |
+| org.neo4j:neo4j | org.neo4j.test:neo4j-harness | rename:rename:undecided | 2 | 2 | 0 | 2 |
+| org.projectlombok:lombok | org.jetbrains.kotlin:kotlin-stdlib | main:undecided | 2 | 2 | 0 | 2 |
+| org.scribe:scribe | com.github.scribejava:scribejava-apis | rename:rename:undecided | 2 | 2 | 2 | 0 |
+| org.simpleframework:simple-xml | com.fasterxml.jackson.core:jackson-annotations | main:undecided | 2 | 2 | 1 | 1 |
+| org.simpleframework:simple-xml | com.fasterxml.jackson.core:jackson-databind | main:undecided | 2 | 2 | 0 | 2 |
+| org.slf4j:log4j-over-slf4j | org.apache.logging.log4j:log4j-to-slf4j | main:undecided | 2 | 2 | 1 | 1 |
+| org.slf4j:slf4j-jdk14 | ch.qos.logback:logback-core | main:undecided | 2 | 2 | 1 | 1 |
+| org.springframework.boot:spring-boot-starter | org.springframework.cloud:spring-cloud-dependencies | rename:rename:undecided | 2 | 2 | 0 | 2 |
+| org.springframework.boot:spring-boot-starter-data-mongodb | mysql:mysql-connector-java | main:undecided | 2 | 2 | 1 | 1 |
+| org.springframework.boot:spring-boot-starter-thymeleaf | org.thymeleaf.extras:thymeleaf-extras-springsecurity4 | main:undecided | 2 | 2 | 1 | 1 |
+| org.swinglabs:swingx | org.swinglabs.swingx:swingx-all | rename:rename:upgrade | 2 | 2 | 2 | 0 |
+| org.testng:testng | org.jboss.arquillian.junit:arquillian-junit-container | main:undecided | 2 | 2 | 1 | 1 |
+| org.thymeleaf:thymeleaf | org.springframework.boot:spring-boot-starter-thymeleaf | main:undecided | 2 | 2 | 2 | 0 |
+| postgresql:postgresql | org.hsqldb:hsqldb | main:undecided | 2 | 2 | 2 | 0 |
+| stax:stax-api | org.codehaus.woodstox:woodstox-core-asl | main:undecided | 2 | 2 | 2 | 0 |
+| woodstox:wstx-asl | org.codehaus.woodstox:wstx-asl | rename:rename:upgrade | 2 | 2 | 1 | 1 |
+| aopalliance:aopalliance | com.google.inject:guice | main:undecided | 1 | 1 | 0 | 1 |
+| asm:asm-all | org.apache.servicemix.bundles:org.apache.servicemix.bundles.asm | main:undecided | 1 | 1 | 1 | 0 |
+| asm:asm-all | org.ow2.asm:asm-analysis | rename:rename:upgrade | 1 | 1 | 0 | 1 |
+| asm:asm-all | org.ow2.asm:asm-tree | rename:rename:upgrade | 1 | 1 | 0 | 1 |
+| asm:asm-all | org.ow2.asm:asm-util | rename:rename:upgrade | 1 | 1 | 0 | 1 |
+| c3p0:c3p0 | com.alibaba:druid | main:undecided | 1 | 1 | 1 | 0 |
+| castor:castor | org.codehaus.castor:castor | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| ch.qos.logback:logback-access | org.apache.logging.log4j:log4j-api | main:undecided | 1 | 1 | 0 | 1 |
+| ch.qos.logback:logback-access | org.apache.logging.log4j:log4j-core | main:undecided | 1 | 1 | 0 | 1 |
+| ch.qos.logback:logback-access | org.apache.logging.log4j:log4j-slf4j-impl | main:undecided | 1 | 1 | 0 | 1 |
+| ch.qos.logback:logback-classic | org.slf4j:slf4j-nop | main:undecided | 1 | 1 | 1 | 0 |
+| com.alibaba:fastjson | org.codehaus.jackson:jackson-mapper-asl | main:undecided | 1 | 1 | 0 | 1 |
+| com.esotericsoftware.kryo:kryo | com.esotericsoftware:kryo-shaded | rename:rename:upgrade | 1 | 1 | 0 | 1 |
+| com.esotericsoftware:kryo | com.esotericsoftware.kryo:kryo | rename:rename:downgrade | 1 | 1 | 0 | 1 |
+| com.fasterxml.jackson.core:jackson-annotations | com.fasterxml.jackson.datatype:jackson-datatype-joda | rename:rename:undecided | 1 | 1 | 0 | 1 |
+| com.fasterxml.jackson.core:jackson-annotations | org.codehaus.jackson:jackson-jaxrs | rename:rename:downgrade | 1 | 1 | 0 | 1 |
+| com.fasterxml.jackson.core:jackson-core | org.jboss.resteasy:resteasy-jackson-provider | rename:rename:undecided | 1 | 1 | 0 | 1 |
+| com.fasterxml.jackson.core:jackson-core | org.springframework.boot:spring-boot-starter-json | main:undecided | 1 | 1 | 1 | 0 |
+| com.fasterxml.jackson.datatype:jackson-datatype-jdk8 | com.fasterxml.jackson:jackson-bom | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| com.fasterxml.jackson.datatype:jackson-datatype-joda | com.fasterxml.jackson:jackson-bom | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| com.fasterxml.jackson.datatype:jackson-datatype-jsr310 | org.springframework.boot:spring-boot-starter-json | main:undecided | 1 | 1 | 1 | 0 |
+| com.github.ben-manes.caffeine:caffeine | javax.cache:cache-api | main:undecided | 1 | 1 | 1 | 0 |
+| com.github.sgroschupf:zkclient | com.101tec:zkclient | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| com.google.code.findbugs:annotations | com.github.spotbugs:spotbugs | main:undecided | 1 | 1 | 0 | 1 |
+| com.google.code.findbugs:annotations | com.github.stephenc.findbugs:findbugs-annotations | main:undecided | 1 | 1 | 1 | 0 |
+| com.google.code.findbugs:jsr305 | net.jcip:jcip-annotations | main:undecided | 1 | 1 | 1 | 0 |
+| com.google.code.gson:gson | org.codehaus.jackson:jackson-jaxrs | main:undecided | 1 | 1 | 0 | 1 |
+| com.google.code.gson:gson | org.jboss.resteasy:resteasy-jackson2-provider | main:undecided | 1 | 1 | 0 | 1 |
+| com.google.inject:guice | com.google.dagger:dagger | main:undecided | 1 | 1 | 1 | 0 |
+| com.google.inject:guice | com.google.dagger:dagger-compiler | main:undecided | 1 | 1 | 1 | 0 |
+| com.googlecode.json-simple:json-simple | net.minidev:json-smart | main:undecided | 1 | 1 | 1 | 0 |
+| com.itextpdf:itextpdf | com.lowagie:itext | main:undecided | 1 | 1 | 1 | 0 |
+| com.jayway.jsonpath:json-path | org.springframework.boot:spring-boot-starter-json | main:undecided | 1 | 1 | 1 | 0 |
+| com.jayway.restassured:rest-assured | io.rest-assured:json-schema-validator | main:undecided | 1 | 1 | 1 | 0 |
+| com.jolbox:bonecp | com.zaxxer:HikariCP-java6 | main:undecided | 1 | 1 | 1 | 0 |
+| com.jolbox:bonecp | org.apache.tomcat:tomcat-jdbc | main:undecided | 1 | 1 | 0 | 1 |
+| com.lmax:disruptor | com.googlecode.disruptor:disruptor | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| com.oracle:ojdbc14 | postgresql:postgresql | main:undecided | 1 | 1 | 0 | 1 |
+| com.rabbitmq:amqp-client | org.springframework.amqp:spring-rabbit | main:undecided | 1 | 1 | 1 | 0 |
+| com.sparkjava:spark-core | org.eclipse.jetty:jetty-server | main:undecided | 1 | 1 | 0 | 1 |
+| com.squareup.okhttp3:okhttp | com.squareup.retrofit2:retrofit | main:undecided | 1 | 1 | 0 | 1 |
+| com.sun.faces:jsf-api | javax.faces:jsf-api | rename:rename:undecided | 1 | 1 | 0 | 1 |
+| com.sun.jersey.contribs:jersey-spring | org.springframework:spring-webmvc | main:undecided | 1 | 1 | 0 | 1 |
+| com.sun.jersey:jersey-bundle | org.glassfish.jersey.containers:jersey-container-servlet-core | rename:rename:upgrade | 1 | 1 | 0 | 1 |
+| com.sun.jersey:jersey-json | org.glassfish.jersey.media:jersey-media-json-jettison | rename:rename:upgrade | 1 | 1 | 1 | 0 |
+| com.sun.xml.bind:jaxb-impl | javax.xml:jaxb-impl | rename:rename:undecided | 1 | 1 | 0 | 1 |
+| com.thoughtworks.xstream:xstream | com.sun.xml.bind:jaxb-impl | main:undecided | 1 | 1 | 0 | 1 |
+| commons-collections:commons-collections | net.sourceforge.collections:collections-generic | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| commons-logging:commons-logging-api | ch.qos.logback:logback-classic | main:undecided | 1 | 1 | 0 | 1 |
+| commons-logging:commons-logging-api | org.slf4j:log4j-over-slf4j | main:undecided | 1 | 1 | 0 | 1 |
+| commons-logging:commons-logging-api | org.slf4j:slf4j-log4j12 | main:undecided | 1 | 1 | 0 | 1 |
+| commons-logging:commons-logging-api | org.slf4j:slf4j-simple | main:undecided | 1 | 1 | 0 | 1 |
+| dom4j:dom4j | org.jdom:jdom2 | main:undecided | 1 | 1 | 0 | 1 |
+| dumbster:dumbster | org.subethamail:subethasmtp-wiser | main:undecided | 1 | 1 | 0 | 1 |
+| freemarker:freemarker | org.freemarker:freemarker | rename:rename:upgrade | 1 | 1 | 1 | 0 |
+| httpunit:httpunit | net.sourceforge.htmlunit:htmlunit | main:undecided | 1 | 1 | 1 | 0 |
+| httpunit:httpunit | org.httpunit:httpunit | rename:rename:upgrade | 1 | 1 | 1 | 0 |
+| httpunit:httpunit | xerces:xercesImpl | main:undecided | 1 | 1 | 0 | 1 |
+| io.dropwizard.metrics:metrics-graphite | io.micrometer:micrometer-core | main:undecided | 1 | 1 | 1 | 0 |
+| io.dropwizard.metrics:metrics-graphite | io.micrometer:micrometer-registry-influx | main:undecided | 1 | 1 | 1 | 0 |
+| io.dropwizard.metrics:metrics-graphite | io.micrometer:micrometer-spring-legacy | main:undecided | 1 | 1 | 1 | 0 |
+| io.dropwizard.metrics:metrics-jvm | com.codahale.metrics:metrics-jvm | rename:rename:downgrade | 1 | 1 | 1 | 0 |
+| io.dropwizard.metrics:metrics-jvm | com.codahale.metrics:metrics-servlets | rename:rename:downgrade | 1 | 1 | 1 | 0 |
+| io.dropwizard:dropwizard-core | org.springframework.boot:spring-boot-starter-web | main:undecided | 1 | 1 | 0 | 1 |
+| io.netty:netty | org.asynchttpclient:async-http-client | main:undecided | 1 | 1 | 0 | 1 |
+| io.reactivex:rxjava | org.reactivestreams:reactive-streams | main:undecided | 1 | 1 | 1 | 0 |
+| io.rest-assured:rest-assured | org.springframework.boot:spring-boot-test-autoconfigure | main:undecided | 1 | 1 | 0 | 1 |
+| io.vertx:vertx-core | io.netty:netty-all | main:undecided | 1 | 1 | 1 | 0 |
+| javax.cache:cache-api | org.springframework.boot:spring-boot-starter-cache | main:undecided | 1 | 1 | 0 | 1 |
+| javax.json:javax.json-api | com.fasterxml.jackson.core:jackson-annotations | main:undecided | 1 | 1 | 0 | 1 |
+| javax.persistence:persistence-api | org.eclipse.persistence:javax.persistence | main:undecided | 1 | 1 | 0 | 1 |
+| javax.servlet:javax.servlet-api | org.apache.tomcat:tomcat-servlet-api | main:undecided | 1 | 1 | 1 | 0 |
+| javax.servlet:jstl | org.jboss.spec.javax.servlet.jstl:jboss-jstl-api_1.2_spec | main:undecided | 1 | 1 | 0 | 1 |
+| javax.websocket:javax.websocket-api | org.eclipse.jetty.websocket:javax-websocket-server-impl | main:undecided | 1 | 1 | 1 | 0 |
+| javax:javaee-api | javax.annotation:javax.annotation-api | main:undecided | 1 | 1 | 1 | 0 |
+| javax:javaee-api | org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.0_spec | main:undecided | 1 | 1 | 1 | 0 |
+| javax:javaee-api | org.jboss.spec:jboss-javaee-6.0 | main:undecided | 1 | 1 | 0 | 1 |
+| javax:javaee-api | org.springframework:spring-context | main:undecided | 1 | 1 | 1 | 0 |
+| javax:javaee-api | org.springframework:spring-web | main:undecided | 1 | 1 | 1 | 0 |
+| jline:jline | org.fusesource.jansi:jansi | main:undecided | 1 | 1 | 0 | 1 |
+| jline:jline | org.sonatype.jline:jline | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| jmock:jmock | org.jmock:jmock-junit4 | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| jmock:jmock | org.jmock:jmock-legacy | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| mockit:jmockit | com.googlecode.jmockit:jmockit | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| net.sf.opencsv:opencsv | au.com.bytecode:opencsv | main:undecided | 1 | 1 | 1 | 0 |
+| net.sf.saxon:saxon | net.sourceforge.saxon:saxon | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.apache.activemq:activemq-broker | org.hornetq:hornetq-jms-server | main:undecided | 1 | 1 | 0 | 1 |
+| org.apache.geronimo.specs:geronimo-jta_1.1_spec | javax.transaction:javax.transaction-api | main:undecided | 1 | 1 | 1 | 0 |
+| org.apache.httpcomponents:httpcore | org.eclipse.jetty:jetty-io | main:undecided | 1 | 1 | 0 | 1 |
+| org.apache.logging.log4j:log4j-1.2-api | log4j:log4j | rename:rename:downgrade | 1 | 1 | 0 | 1 |
+| org.apache.logging.log4j:log4j-1.2-api | org.slf4j:log4j-over-slf4j | main:undecided | 1 | 1 | 0 | 1 |
+| org.apache.logging.log4j:log4j-jcl | org.slf4j:jcl-over-slf4j | main:undecided | 1 | 1 | 0 | 1 |
+| org.apache.maven.surefire:surefire-junit47 | org.junit.jupiter:junit-jupiter | main:undecided | 1 | 1 | 1 | 0 |
+| org.apache.solr:solr-core | org.elasticsearch:elasticsearch | main:undecided | 1 | 1 | 0 | 1 |
+| org.apache.tomcat.embed:tomcat-embed-core | org.eclipse.jetty:jetty-plus | main:undecided | 1 | 1 | 0 | 1 |
+| org.apache.tomcat.embed:tomcat-embed-jasper | org.eclipse.jetty:jetty-plus | main:undecided | 1 | 1 | 0 | 1 |
+| org.apache.tomcat.embed:tomcat-embed-logging-juli | org.eclipse.jetty:jetty-plus | main:undecided | 1 | 1 | 0 | 1 |
+| org.apache.tomcat:tomcat-servlet-api | javax.servlet:javax.servlet-api | main:undecided | 1 | 1 | 1 | 0 |
+| org.apache.xmlbeans:xmlbeans | com.sun.xml.bind:jaxb-impl | main:undecided | 1 | 1 | 0 | 1 |
+| org.codehaus.jackson:jackson-core-asl | com.fasterxml.jackson:jackson-bom | rename:rename:undecided | 1 | 1 | 0 | 1 |
+| org.codehaus.jackson:jackson-core-asl | org.jboss.resteasy:resteasy-jackson2-provider | main:undecided | 1 | 1 | 0 | 1 |
+| org.codehaus.jackson:jackson-jaxrs | com.fasterxml.jackson.datatype:jackson-datatype-joda | rename:rename:upgrade | 1 | 1 | 1 | 0 |
+| org.codehaus.jackson:jackson-jaxrs | com.google.code.gson:gson | main:undecided | 1 | 1 | 0 | 1 |
+| org.codehaus.jackson:jackson-jaxrs | org.jboss.resteasy:resteasy-jackson2-provider | main:undecided | 1 | 1 | 0 | 1 |
+| org.codehaus.jackson:jackson-mapper-asl | com.fasterxml.jackson:jackson-bom | rename:rename:undecided | 1 | 1 | 0 | 1 |
+| org.codehaus.jackson:jackson-mapper-asl | org.jboss.resteasy:resteasy-jackson2-provider | main:undecided | 1 | 1 | 0 | 1 |
+| org.codehaus.jackson:jackson-xc | com.fasterxml.jackson.datatype:jackson-datatype-guava | rename:rename:upgrade | 1 | 1 | 0 | 1 |
+| org.codehaus.jackson:jackson-xc | org.jboss.resteasy:resteasy-jackson2-provider | main:undecided | 1 | 1 | 0 | 1 |
+| org.codehaus.jettison:jettison | org.glassfish.jersey.media:jersey-media-json-jackson | main:undecided | 1 | 1 | 0 | 1 |
+| org.codehaus.jettison:jettison | org.json:json | main:undecided | 1 | 1 | 0 | 1 |
+| org.codehaus.woodstox:wstx-asl | com.fasterxml.woodstox:woodstox-core | rename:rename:upgrade | 1 | 1 | 1 | 0 |
+| org.easymock:easymock | org.mockito:mockito-all | main:undecided | 1 | 1 | 0 | 1 |
+| org.eclipse.jetty:jetty-client | org.apache.httpcomponents:httpclient | main:undecided | 1 | 1 | 1 | 0 |
+| org.eclipse.jetty:jetty-http | org.apache.httpcomponents:httpclient | main:undecided | 1 | 1 | 0 | 1 |
+| org.eclipse.jetty:jetty-http | org.mortbay.jetty:jetty | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.eclipse.jetty:jetty-jsp | org.mortbay.jetty:jsp-2.1 | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.eclipse.jetty:jetty-jsp | org.mortbay.jetty:jsp-api-2.1 | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.eclipse.jetty:jetty-server | org.eclipse.jetty.aggregate:jetty-all | rename:rename:undecided | 1 | 1 | 0 | 1 |
+| org.eclipse.jetty:jetty-server | org.mortbay.jetty:jetty | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.eclipse.jetty:jetty-servlet | org.mortbay.jetty:jetty | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.eclipse.jetty:jetty-servlet | org.mortbay.jetty:servlet-api-2.5 | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.eclipse.jetty:jetty-util | org.mortbay.jetty:jetty-util | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.eclipse.jetty:jetty-webapp | org.mortbay.jetty:jetty | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.elasticsearch:elasticsearch | org.apache.lucene:lucene-core | main:undecided | 1 | 1 | 1 | 0 |
+| org.elasticsearch:elasticsearch | org.springframework.boot:spring-boot-starter-data-elasticsearch | main:undecided | 1 | 1 | 0 | 1 |
+| org.flywaydb:flyway-core | org.liquibase:liquibase-core | main:undecided | 1 | 1 | 1 | 0 |
+| org.freemarker:freemarker | com.github.spullara.mustache.java:compiler | main:undecided | 1 | 1 | 1 | 0 |
+| org.glassfish.jersey.core:jersey-client | org.jboss.resteasy:resteasy-client | main:undecided | 1 | 1 | 1 | 0 |
+| org.glassfish.jersey.core:jersey-client | org.jboss.resteasy:resteasy-jackson2-provider | main:undecided | 1 | 1 | 1 | 0 |
+| org.glassfish.jersey.core:jersey-client | org.jboss.resteasy:resteasy-jaxrs | main:undecided | 1 | 1 | 0 | 1 |
+| org.glassfish.jersey.core:jersey-server | com.sun.jersey:jersey-server | rename:rename:downgrade | 1 | 1 | 0 | 1 |
+| org.glassfish.jersey.inject:jersey-hk2 | org.springframework.boot:spring-boot-devtools | main:undecided | 1 | 1 | 1 | 0 |
+| org.glassfish.jersey.inject:jersey-hk2 | org.springframework.boot:spring-boot-starter-tomcat | main:undecided | 1 | 1 | 1 | 0 |
+| org.glassfish.web:el-impl | javax.el:javax.el-api | main:undecided | 1 | 1 | 0 | 1 |
+| org.hamcrest:hamcrest-all | org.hamcrest:hamcrest-integration | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.hamcrest:hamcrest-library | org.easytesting:fest-assert | main:undecided | 1 | 1 | 1 | 0 |
+| org.hamcrest:hamcrest-library | org.easytesting:fest-assert-core | main:undecided | 1 | 1 | 1 | 0 |
+| org.hibernate.javax.persistence:hibernate-jpa-2.1-api | org.eclipse.persistence:javax.persistence | main:undecided | 1 | 1 | 1 | 0 |
+| org.hibernate.javax.persistence:hibernate-jpa-2.1-api | org.jboss.spec.javax.servlet:jboss-servlet-api_4.0_spec | main:undecided | 1 | 1 | 1 | 0 |
+| org.hibernate:hibernate-annotations | org.hibernate.common:hibernate-commons-annotations | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.hibernate:hibernate-entitymanager | org.apache.openjpa:openjpa | main:undecided | 1 | 1 | 0 | 1 |
+| org.javassist:javassist | asm:asm | main:undecided | 1 | 1 | 0 | 1 |
+| org.javassist:javassist | org.jboss.classfilewriter:jboss-classfilewriter | main:undecided | 1 | 1 | 0 | 1 |
+| org.jboss.arquillian.junit:arquillian-junit-container | org.testng:testng | main:undecided | 1 | 1 | 0 | 1 |
+| org.jboss.as:jboss-as-arquillian-container-managed | org.wildfly.arquillian:wildfly-arquillian-container-managed | main:undecided | 1 | 1 | 0 | 1 |
+| org.jboss.netty:netty | io.netty:netty-all | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.jboss.resteasy:jaxrs-api | javax.ws.rs:javax.ws.rs-api | main:undecided | 1 | 1 | 1 | 0 |
+| org.jboss.resteasy:jaxrs-api | org.jboss.spec.javax.ejb:jboss-ejb-api_3.1_spec | rename:rename:undecided | 1 | 1 | 0 | 1 |
+| org.jboss.resteasy:jaxrs-api | org.jboss.spec.javax.servlet:jboss-servlet-api_3.0_spec | rename:rename:undecided | 1 | 1 | 0 | 1 |
+| org.jboss.resteasy:jaxrs-api | org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec | rename:rename:undecided | 1 | 1 | 0 | 1 |
+| org.jboss.resteasy:jaxrs-api | org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.0_spec | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.jboss.resteasy:resteasy-jackson-provider | com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider | main:undecided | 1 | 1 | 0 | 1 |
+| org.jboss.resteasy:resteasy-jaxrs | com.sun.jersey:jersey-core | main:undecided | 1 | 1 | 0 | 1 |
+| org.jboss.shrinkwrap:shrinkwrap-api | com.google.jimfs:jimfs | main:undecided | 1 | 1 | 0 | 1 |
+| org.jboss.spec.javax.ejb:jboss-ejb-api_3.1_spec | org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.jboss.spec.javax.ejb:jboss-ejb-api_3.1_spec | org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.jboss.spec.javax.ejb:jboss-ejb-api_3.1_spec | org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.0_spec | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.jboss.spec.javax.servlet:jboss-servlet-api_3.0_spec | io.undertow:undertow-servlet | main:undecided | 1 | 1 | 0 | 1 |
+| org.jboss.spec:jboss-javaee-6.0 | org.hibernate.javax.persistence:hibernate-jpa-2.1-api | main:undecided | 1 | 1 | 0 | 1 |
+| org.jboss.spec:jboss-javaee-6.0 | org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec | rename:rename:undecided | 1 | 1 | 0 | 1 |
+| org.jboss.weld:weld-core | org.jboss.weld.se:weld-se-core | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.jdom:jdom2 | org.apache.servicemix.bundles:org.apache.servicemix.bundles.jdom | main:undecided | 1 | 1 | 1 | 0 |
+| org.jmock:jmock-junit4 | org.mockito:mockito-all | main:undecided | 1 | 1 | 0 | 1 |
+| org.jmock:jmock-junit4 | org.mockito:mockito-core | main:undecided | 1 | 1 | 1 | 0 |
+| org.json:json | com.alibaba:fastjson | main:undecided | 1 | 1 | 0 | 1 |
+| org.json:json | org.codehaus.jackson:jackson-xc | main:undecided | 1 | 1 | 0 | 1 |
+| org.json:json | org.springframework.boot:spring-boot-starter-json | main:undecided | 1 | 1 | 1 | 0 |
+| org.junit.jupiter:junit-jupiter-api | org.junit.platform:junit-platform-runner | rename:rename:downgrade | 1 | 1 | 0 | 1 |
+| org.junit.vintage:junit-vintage-engine | org.hamcrest:hamcrest-all | main:undecided | 1 | 1 | 1 | 0 |
+| org.mockito:mockito-all | org.hamcrest:java-hamcrest | main:undecided | 1 | 1 | 1 | 0 |
+| org.mockito:mockito-all | org.jmock:jmock | main:undecided | 1 | 1 | 0 | 1 |
+| org.mockito:mockito-core | org.powermock:powermock-core | main:undecided | 1 | 1 | 0 | 1 |
+| org.mongodb:mongo-java-driver | org.hsqldb:hsqldb | main:undecided | 1 | 1 | 0 | 1 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty:jetty-deploy | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty:jetty-plus | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.mortbay.jetty:jetty | org.eclipse.jetty:jetty-xml | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.mortbay.jetty:jetty-util | org.eclipse.jetty.orbit:javax.servlet | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.mortbay.jetty:jetty-util | org.eclipse.jetty:jetty-continuation | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.mortbay.jetty:jetty-util | org.eclipse.jetty:jetty-plus | rename:rename:undecided | 1 | 1 | 0 | 1 |
+| org.mortbay.jetty:jetty-util | org.eclipse.jetty:jetty-xml | rename:rename:undecided | 1 | 1 | 0 | 1 |
+| org.mybatis:mybatis | com.baomidou:mybatis-plus-boot-starter | main:undecided | 1 | 1 | 1 | 0 |
+| org.mybatis:mybatis | com.baomidou:mybatis-plus-extension | main:undecided | 1 | 1 | 1 | 0 |
+| org.mybatis:mybatis | com.baomidou:mybatis-plus-generator | main:undecided | 1 | 1 | 1 | 0 |
+| org.mybatis:mybatis | org.mybatis.generator:mybatis-generator-core | rename:rename:undecided | 1 | 1 | 0 | 1 |
+| org.mybatis:mybatis | org.mybatis.spring.boot:mybatis-spring-boot-starter | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.mybatis:mybatis-spring | org.mybatis.spring.boot:mybatis-spring-boot-starter | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.ow2.asm:asm | asm:asm | rename:rename:downgrade | 1 | 1 | 1 | 0 |
+| org.ow2.asm:asm-all | asm:asm-all | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.powermock:powermock-api-mockito | org.hamcrest:hamcrest | main:undecided | 1 | 1 | 0 | 1 |
+| org.powermock:powermock-api-mockito | org.jmockit:jmockit | main:undecided | 1 | 1 | 1 | 0 |
+| org.simpleframework:simple-xml | com.fasterxml.jackson.core:jackson-core | main:undecided | 1 | 1 | 1 | 0 |
+| org.simpleframework:simple-xml | com.fasterxml.jackson.datatype:jackson-datatype-joda | main:undecided | 1 | 1 | 1 | 0 |
+| org.slf4j:log4j-over-slf4j | org.apache.logging.log4j:log4j-1.2-api | main:undecided | 1 | 1 | 1 | 0 |
+| org.slf4j:slf4j-api | org.jboss.logging:jboss-logging | main:undecided | 1 | 1 | 0 | 1 |
+| org.slf4j:slf4j-jcl | ch.qos.logback:logback-classic | main:undecided | 1 | 1 | 1 | 0 |
+| org.slf4j:slf4j-jdk14 | log4j:log4j | main:undecided | 1 | 1 | 0 | 1 |
+| org.slf4j:slf4j-jdk14 | org.hibernate:hibernate-core | main:undecided | 1 | 1 | 0 | 1 |
+| org.sonatype.sisu:sisu-guice | com.google.inject.extensions:guice-assistedinject | main:undecided | 1 | 1 | 0 | 1 |
+| org.springframework.boot:spring-boot-starter-aop | org.springframework:spring-aop | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.springframework.boot:spring-boot-starter-data-redis | org.springframework.data:spring-data-redis | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.springframework.boot:spring-boot-starter-log4j2 | org.apache.logging.log4j:log4j-api | main:undecided | 1 | 1 | 1 | 0 |
+| org.springframework.boot:spring-boot-starter-redis | org.springframework.cloud:spring-cloud-starter-stream-rabbit | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.springframework.boot:spring-boot-starter-security | org.springframework.security:spring-security-config | rename:rename:undecided | 1 | 1 | 0 | 1 |
+| org.springframework.boot:spring-boot-starter-thymeleaf | org.thymeleaf:thymeleaf | main:undecided | 1 | 1 | 1 | 0 |
+| org.springframework.boot:spring-boot-test | org.junit.platform:junit-platform-commons | main:undecided | 1 | 1 | 0 | 1 |
+| org.springframework.data:spring-data-redis | org.springframework.boot:spring-boot-starter-data-redis | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.springframework.hateoas:spring-hateoas | org.springframework.boot:spring-boot-starter-hateoas | rename:rename:undecided | 1 | 1 | 1 | 0 |
+| org.springframework.kafka:spring-kafka | org.apache.kafka:kafka-clients | main:undecided | 1 | 1 | 0 | 1 |
+| org.springframework:spring-oxm | com.fasterxml.jackson.dataformat:jackson-dataformat-xml | main:undecided | 1 | 1 | 1 | 0 |
+| org.testng:testng | com.tngtech.java:junit-dataprovider | main:undecided | 1 | 1 | 1 | 0 |
+| org.testng:testng | org.junit.vintage:junit-vintage-engine | main:undecided | 1 | 1 | 0 | 1 |
+| redis.clients:jedis | org.springframework.boot:spring-boot-starter-data-redis | main:undecided | 1 | 1 | 0 | 1 |
+| saxon:saxon | net.sf.saxon:Saxon-HE | main:undecided | 1 | 1 | 1 | 0 |
+| stax:stax-api | javax.xml.stream:stax-api | main:undecided | 1 | 1 | 1 | 0 |
+| stax:stax-api | org.apache.geronimo.specs:geronimo-stax-api_1.0_spec | main:undecided | 1 | 1 | 0 | 1 |
+| velocity:velocity | org.apache.velocity:velocity-tools | rename:rename:undecided | 1 | 1 | 0 | 1 |
+| xerces:xercesImpl | org.simpleframework:simple-xml | main:undecided | 1 | 1 | 0 | 1 |
 
-In 2022, projects that later show an AI signal already swapped at 0.819 per 100 project-months, against 0.435 for projects with no AI signal. In 2023 the rates are 0.631 and 0.564. In 2024 the AI rate is 0.310 and the non-AI rate is 0.345. In 2025 through the cut-off the AI rate is 0.357 and the non-AI rate is 0.192.
+## Eligible population
 
-## The 14 ai_after swaps
+GitHub screening marked 2950 projects eligible before the pom.xml check.
+Of the screened projects cloned in seed order, 2386 passed the git history check and 47 failed it. Clone failures are not in either number.
+The projection uses 2893 as the full eligible population: the screened count times that pass rate.
+Projects kept in this sample: 2000.
 
-Interim. These are the 14 same-commit main-rule ai_after swaps in the snapshot above, from the 1,375 eligible projects. Later finishes are not in this list.
-“AI author” means the commit has an AI co-author trailer or an AI agent as its author.
+## Adoption allowlist
 
-| Project | Commit | Removed | Added | AI author |
-| --- | --- | --- | --- | --- |
-| xetorthio/jedis | [`1d1b268f9b`](https://github.com/xetorthio/jedis/commit/1d1b268f9be5b093f6684bc814d2fdab376a1ee3) | junit:junit | org.mockito:mockito-junit-jupiter | No |
-| xetorthio/jedis | [`b04e64bf45`](https://github.com/xetorthio/jedis/commit/b04e64bf45e23c06e9d3b638ccc5a2142f7ee638) | org.slf4j:slf4j-simple | ch.qos.logback:logback-classic | Yes. Co-authored-by Copilot. The author is a person. |
-| testingbot/Testingbot-Tunnel | [`b29131094d`](https://github.com/testingbot/Testingbot-Tunnel/commit/b29131094dca040294ef4643ae3b5993171b5d09) | net.sf.json-lib:json-lib | com.fasterxml.jackson.core:jackson-databind | No |
-| ta4j/ta4j | [`c29781e045`](https://github.com/ta4j/ta4j/commit/c29781e0453b9ec116ae9cab4a22fa8c6866b08a) | ch.qos.logback:logback-classic | org.apache.logging.log4j:log4j-api | No |
-| ta4j/ta4j | [`c29781e045`](https://github.com/ta4j/ta4j/commit/c29781e0453b9ec116ae9cab4a22fa8c6866b08a) | ch.qos.logback:logback-classic | org.apache.logging.log4j:log4j-core | No |
-| osalvador/ReplicaDB | [`c376068c32`](https://github.com/osalvador/ReplicaDB/commit/c376068c326f3ff30a23f86d7081091491c82b79) | org.slf4j:slf4j-log4j12 | org.apache.logging.log4j:log4j-slf4j-impl | No |
-| Adyen/adyen-java-api-library | [`40c802aff6`](https://github.com/Adyen/adyen-java-api-library/commit/40c802aff6066430fe61e118465a0d376fb7b0ae) | junit:junit | org.mockito:mockito-junit-jupiter | No |
-| undera/jmeter-plugins | [`cb7a711182`](https://github.com/undera/jmeter-plugins/commit/cb7a71118278a2521d09b09c44b43ca1649a81bc) | org.powermock:powermock-api-mockito | org.mockito:mockito-core | No |
-| undera/jmeter-plugins | [`cb7a711182`](https://github.com/undera/jmeter-plugins/commit/cb7a71118278a2521d09b09c44b43ca1649a81bc) | org.powermock:powermock-module-junit4 | org.mockito:mockito-core | No |
-| phax/ph-commons | [`41c5ac9225`](https://github.com/phax/ph-commons/commit/41c5ac9225c801852e7edc37140b15fd9e4f99f7) | com.sun.xml.bind:jaxb-impl | org.glassfish.jaxb:jaxb-runtime | No |
-| apache/airavata | [`f250f6dde8`](https://github.com/apache/airavata/commit/f250f6dde8e5f37eb857b5bf3117b556ee2e4b90) | org.apache.commons:commons-dbcp2 | com.zaxxer:HikariCP | Yes. Co-authored-by Claude. The author is a person. |
-| geosolutions-it/geostore | [`6b07cfec9e`](https://github.com/geosolutions-it/geostore/commit/6b07cfec9e615fd46db8a22fd6aa4ff4685770a8) | com.sun.xml.bind:jaxb-impl | org.glassfish.jaxb:jaxb-runtime | No |
-| apache/skywalking | [`277f19bcce`](https://github.com/apache/skywalking/commit/277f19bcce913c7aed66c13178d7b29f252ed729) | log4j:log4j | ch.qos.logback:logback-core | No |
-| dekorateio/dekorate | [`47fd389536`](https://github.com/dekorateio/dekorate/commit/47fd3895362261b2d51cf13ef784b9e8876f1b45) | com.fasterxml.jackson.dataformat:jackson-dataformat-yaml | org.yaml:snakeyaml | No |
-
-Two of the 14 swaps come from a commit with an AI co-author. None of the 14 has an AI agent as the commit author. The other 12 have neither.
-
-## Projection and P2
-
-Interim, and not yet the finished projection. The seeded sample is still running. Its ordered prefix is stopped at `wildfly/wildfly`, with 807 eligible projects before that gap, so the run has not reached its 2,000-project close and has not written the P2 samples.
-The projection and the unreviewed P2 draw wait until that run finishes.
+Interim. The exact-identity recheck of saved adopters is in adoption_allowlist_interim.md.

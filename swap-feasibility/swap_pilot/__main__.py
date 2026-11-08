@@ -42,7 +42,7 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description="Library-swap feasibility, P1 trial")
-    parser.add_argument("command", choices=["trial", "screen", "sample"])
+    parser.add_argument("command", choices=["trial", "screen", "sample", "redetect"])
     args = parser.parse_args()
     if args.command == "trial":
         trial()
@@ -52,6 +52,9 @@ def main() -> None:
     elif args.command == "sample":
         from swap_pilot.sample_run import run_sample
         run_sample()
+    elif args.command == "redetect":
+        from swap_pilot.redetect import redetect
+        redetect()
 
 
 def trial() -> None:

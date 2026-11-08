@@ -179,7 +179,7 @@ def _post(query: str, key: str) -> dict:
                 time.sleep(min(120, 2 ** attempt * 5))
                 continue
             raise SystemExit(f"GitHub API {exc.code}: {detail}") from exc
-        except urllib.error.URLError:
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
             time.sleep(min(60, 2 ** attempt * 2))
     raise SystemExit("GitHub API did not answer after retries")
 

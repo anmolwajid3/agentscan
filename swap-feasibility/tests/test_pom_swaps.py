@@ -1,9 +1,10 @@
 import unittest
 from datetime import datetime, timezone
 
+from swap_pilot.adopt import coauthor_allowed, identity_allowed
 from swap_pilot.detect import assign_group, same_commit_swaps
 from swap_pilot.pom import parse_pom
-from swap_pilot.summarize import months_between
+from swap_pilot.summarize import collapse_decisions, months_between
 
 
 POM = """<?xml version="1.0"?>
@@ -99,6 +100,49 @@ class PomTests(unittest.TestCase):
         start = datetime(2025, 1, 1, tzinfo=timezone.utc)
         cutoff = datetime(2026, 11, 8, tzinfo=timezone.utc)
         self.assertEqual(assign_group(row, "yes", "", start, cutoff), "NA")
+
+    def test_allowlist_rejects_substrings_and_accepts_exact_emails(self):
+        names = {"claude[bot]", "copilot-swe-agent[bot]"}
+        emails = {"noreply@anthropic.com", "175728472+copilot@users.noreply.github.com"}
+        self.assertFalse(identity_allowed("gohai", "gottfried.haider@gmail.com", names, emails))
+        self.assertFalse(identity_allowed("Josh Jameson", "josh@codegen.ie", names, emails))
+        self.assertTrue(identity_allowed("Claude Opus 4.6", "noreply@anthropic.com", names, emails))
+        self.assertTrue(identity_allowed("copilot-swe-agent[bot]", "someone@example.com", names, emails))
+        self.assertFalse(coauthor_allowed("Co-authored-by: Josh Jameson <josh@codegen.ie>", names, emails))
+        self.assertTrue(
+            coauthor_allowed("Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>", names, emails)
+        )
+
+    def test_one_commit_with_two_artifacts_of_one_family_is_one_decision(self):
+        rows = [
+            {
+                "project": "example/demo",
+                "commit": "abc",
+                "pair_commit": "",
+                "detection": "same commit",
+                "lib_removed": "ch.qos.logback:logback-classic",
+                "lib_added": "org.apache.logging.log4j:log4j-api",
+            },
+            {
+                "project": "example/demo",
+                "commit": "abc",
+                "pair_commit": "",
+                "detection": "same commit",
+                "lib_removed": "ch.qos.logback:logback-classic",
+                "lib_added": "org.apache.logging.log4j:log4j-core",
+            },
+            {
+                "project": "example/demo",
+                "commit": "abc",
+                "pair_commit": "",
+                "detection": "same commit",
+                "lib_removed": "junit:junit",
+                "lib_added": "org.mockito:mockito-junit-jupiter",
+            },
+        ]
+        chosen = collapse_decisions(rows)
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(len(chosen), 2)
 
     def test_negative_window_is_zero_and_missing_stays_missing(self):
         start = datetime(2026, 1, 1, tzinfo=timezone.utc)

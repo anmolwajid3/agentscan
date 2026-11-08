@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import random
 import shutil
+import signal
 import subprocess
+import time
 import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
@@ -24,7 +27,7 @@ from swap_pilot.gitrepo import (
 )
 from swap_pilot.rules import load_rules
 from swap_pilot.screen import screen
-from swap_pilot.summarize import summarize
+from swap_pilot.summarize import library_pair_rows, summarize
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "config.yaml"
@@ -50,32 +53,60 @@ def run_sample() -> None:
         )
     STATE.mkdir(parents=True, exist_ok=True)
     workers = int(config["sample_workers"])
-    included: list[dict] = []
     decided_yes = 0
     decided_no = 0
-    index = 0
+    cursor = 0
+    in_flight: dict = {}
+    # Statuses saved so far, so the seeded prefix can be counted without rereading every file.
+    known: dict[str, str] = {}
+
+    def prefix_yes() -> int:
+        found = 0
+        for name in queue:
+            status = known.get(name)
+            if status is None:
+                break
+            if status == "yes":
+                found += 1
+        return found
+
+    def remember(name: str, result: dict, cached: bool) -> None:
+        nonlocal decided_yes, decided_no
+        known[name] = result["project"].get("eligible") or "NA"
+        decided_yes, decided_no = _count(result, decided_yes, decided_no)
+        print(
+            f"sample yes {decided_yes} no {decided_no} last {name} {known[name]} {'cached' if cached else result['note']}",
+            flush=True,
+        )
+
     with ProcessPoolExecutor(max_workers=workers) as pool:
-        while index < len(queue) and len(included) < target:
-            wave = queue[index : index + workers]
-            index += len(wave)
-            futures = {pool.submit(_analyze, name): name for name in wave}
-            for future in as_completed(futures):
-                name = futures[future]
-                try:
-                    result = future.result()
-                except Exception as exc:  # noqa: BLE001
-                    result = _failed(name, f"worker failed: {exc}")
-                _save(result)
-                status = result["project"].get("eligible")
-                if status == "yes":
-                    decided_yes += 1
-                    included.append(result)
-                elif status == "no":
-                    decided_no += 1
-                print(
-                    f"sample yes {decided_yes} no {decided_no} last {name} {status} {result['note']}",
-                    flush=True,
-                )
+        while True:
+            while len(in_flight) < workers and cursor < len(queue) and prefix_yes() < target:
+                name = queue[cursor]
+                cursor += 1
+                saved = _load_saved(name)
+                if saved is not None:
+                    remember(name, saved, True)
+                    continue
+                in_flight[pool.submit(_analyze, name)] = name
+            if not in_flight or prefix_yes() >= target:
+                break
+            future = next(as_completed(in_flight))
+            name = in_flight.pop(future)
+            try:
+                result = future.result()
+            except Exception as exc:  # noqa: BLE001
+                result = _failed(name, f"worker failed: {exc}")
+            _save(result)
+            remember(name, result, False)
+        for future, name in list(in_flight.items()):
+            try:
+                result = future.result()
+            except Exception as exc:  # noqa: BLE001
+                result = _failed(name, f"worker failed: {exc}")
+            _save(result)
+            remember(name, result, False)
+    decided_yes, decided_no = _tally(queue)
     included = _prefix(queue, target)
     _publish(included, config, population_api, decided_yes, decided_no)
     print(f"wrote sample of {len(included)} projects", flush=True)
@@ -93,6 +124,21 @@ def _queue(seed: int) -> tuple[list[str], int]:
     return rows, population
 
 
+def _tally(queue: list[str]) -> tuple[int, int]:
+    yes = 0
+    no = 0
+    for name in queue:
+        saved = _load_saved(name)
+        if saved is None:
+            break
+        status = saved["project"].get("eligible")
+        if status == "yes":
+            yes += 1
+        elif status == "no":
+            no += 1
+    return yes, no
+
+
 def _prefix(queue: list[str], target: int) -> list[dict]:
     """First `target` eligible results in the seeded order, not completion order."""
     chosen = []
@@ -108,7 +154,92 @@ def _prefix(queue: list[str], target: int) -> list[dict]:
     return chosen
 
 
+_TRANSIENT = (
+    "could not resolve",
+    "unable to access",
+    "timed out",
+    "timeout",
+    "connection reset",
+    "connection refused",
+    "early eof",
+    "rpc failed",
+    "promisor",
+    "429",
+    "503",
+    "502",
+    "the remote end hung up",
+    "gnutls",
+    "temporary failure",
+)
+
+
+def _transient(note: str) -> bool:
+    text = note.lower()
+    return any(bit in text for bit in _TRANSIENT)
+
+
+class ProjectTimeout(Exception):
+    """The project used the whole per-project time limit."""
+
+
+def _on_project_timeout(signum, frame):  # noqa: ARG001
+    raise ProjectTimeout()
+
+
+def _child_pids(pid: int) -> list[int]:
+    found = []
+    proc = Path("/proc")
+    if not proc.exists():
+        return found
+    for entry in proc.iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            text = (entry / "stat").read_text(encoding="utf-8")
+        except OSError:
+            continue
+        tail = text.rsplit(")", 1)[-1].split()
+        if len(tail) >= 2 and tail[1] == str(pid):
+            found.append(int(entry.name))
+    return found
+
+
+def _kill_descendants(pid: int) -> None:
+    for child in _child_pids(pid):
+        _kill_descendants(child)
+        try:
+            os.kill(child, signal.SIGKILL)
+        except OSError:
+            continue
+
+
 def _analyze(name: str) -> dict:
+    config = load_config(CONFIG_PATH)
+    limit = int(config.get("sample_project_timeout_seconds") or 0)
+    if limit > 0:
+        signal.signal(signal.SIGALRM, _on_project_timeout)
+        signal.alarm(limit)
+    try:
+        return _analyze_retries(name)
+    except ProjectTimeout:
+        _kill_descendants(os.getpid())
+        return _failed(name, "project time limit")
+    finally:
+        if limit > 0:
+            signal.alarm(0)
+
+
+def _analyze_retries(name: str) -> dict:
+    result = _failed(name, "not started")
+    for attempt in range(4):
+        result = _analyze_once(name)
+        if result["project"].get("eligible") != "NA" or not _transient(result.get("note") or ""):
+            return result
+        time.sleep(min(20, 2 ** attempt))
+    return result
+
+
+def _analyze_once(name: str) -> dict:
     config = load_config(CONFIG_PATH)
     rules = load_rules(ROOT / "source" / "rules_typed.csv")
     screen_row = _screen_row(name)
@@ -132,8 +263,8 @@ def _analyze(name: str) -> dict:
         row = _measure(name, dest, screen_row, config)
         if row["eligible"] != "yes":
             return {"project": row, "swaps": [], "changes": [], "note": row["eligibility_note"]}
-        signal = adoption(str(dest))
-        row.update(signal)
+        found_signal = adoption(str(dest))
+        row.update(found_signal)
         commits = pom_commits(str(dest))
         changes, events = dependency_changes(str(dest), name, commits)
         control_start = parse_dt(config["control_start"] + "T00:00:00+00:00")
@@ -145,6 +276,8 @@ def _analyze(name: str) -> dict:
         return {"project": row, "swaps": found, "changes": changes, "note": "ok"}
     except subprocess.TimeoutExpired:
         return _failed(name, "clone timed out", screen_row)
+    except ProjectTimeout:
+        raise
     except Exception:
         return _failed(name, traceback.format_exc().splitlines()[-1][:200], screen_row)
     finally:
@@ -230,6 +363,34 @@ def _failed(name: str, note: str, screen_row: dict | None = None) -> dict:
     }
 
 
+def _count(result: dict, decided_yes: int, decided_no: int) -> tuple[int, int]:
+    status = result["project"].get("eligible")
+    if status == "yes":
+        return decided_yes + 1, decided_no
+    if status == "no":
+        return decided_yes, decided_no + 1
+    return decided_yes, decided_no
+
+
+def _load_saved(name: str) -> dict | None:
+    """Reuse a finished project so a restarted sample does not clone it again."""
+    slug = name.replace("/", "__")
+    path = STATE / f"{slug}.json"
+    changes = STATE / f"{slug}.changes.csv"
+    if not path.exists() or not changes.exists():
+        return None
+    try:
+        result = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    project = result.get("project")
+    if not isinstance(project, dict) or project.get("project") != name or "swaps" not in result:
+        return None
+    result.setdefault("note", project.get("eligibility_note") or "")
+    result.setdefault("changes", [])
+    return result
+
+
 def _save(result: dict) -> None:
     name = result["project"]["project"].replace("/", "__")
     payload = {"project": result["project"], "swaps": result["swaps"], "note": result["note"]}
@@ -255,15 +416,27 @@ def _publish(included: list[dict], config: dict, population_api: int, decided_ye
     _write_projects(projects)
     unparsed = _write_changes(included)
     _write_swaps(swaps)
+    _write_library_pairs(swaps)
     text = summarize(
         projects,
         swaps,
         config,
         unparsed_rows=unparsed,
         population_eligible=population,
+        population_screened=population_api,
         sample=True,
     )
     text += _population_note(population_api, population, decided_yes, decided_no, len(included))
+    if (ROOT / "adoption_allowlist_interim.md").exists():
+        text += "\n".join(
+            [
+                "",
+                "## Adoption allowlist",
+                "",
+                "Interim. The exact-identity recheck of saved adopters is in adoption_allowlist_interim.md.",
+                "",
+            ]
+        )
     (ROOT / "p1_summary.md").write_text(text, encoding="utf-8")
     _p2(swaps, included, int(config["p2_seed"]), int(config["p2_swap_sample"]), int(config["p2_removal_sample"]))
     _log(config, rules, included, population_api, population)
@@ -273,6 +446,7 @@ def _population_note(population_api: int, population: int | None, decided_yes: i
     adjusted = "NA" if population is None else str(population)
     return "\n".join(
         [
+            "",
             "## Eligible population",
             "",
             f"GitHub screening marked {population_api} projects eligible before the pom.xml check.",
@@ -308,6 +482,17 @@ def _write_changes(included: list[dict]) -> int:
                     if row.get("unparsed") == "yes":
                         unparsed += 1
     return unparsed
+
+
+def _write_library_pairs(swaps: list[dict]) -> None:
+    rows = library_pair_rows(swaps)
+    path = ROOT / "library_pairs.csv"
+    fields = ["lib_removed", "lib_added", "rule_category", "rule_type", "artifact_swaps", "decisions", "same_commit", "window"]
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
 
 
 def _write_swaps(swaps: list[dict]) -> None:
@@ -354,8 +539,9 @@ def _p2(swaps: list[dict], included: list[dict], seed: int, swap_n: int, removal
     (out / "README.md").write_text(
         "\n".join(
             [
-                "# P2 samples",
+                "# P2 samples (interim)",
                 "",
+                "Interim. No pass or fail.",
                 f"Seed {seed}. These rows were drawn and not checked.",
                 "The swap sample is same-commit swaps from the 802 non-rename rules.",
                 f"Such swaps available: {len(same)}. Drawn: {min(swap_n, len(same))}.",
@@ -374,7 +560,9 @@ def _log(config: dict, rules: dict, included: list[dict], population_api: int, p
         git_version = "NA"
     main_rules = sum(1 for rule in rules.values() if not str(rule["rule_type"]).startswith("rename"))
     lines = [
-        "# Run log",
+        "# Run log (interim)",
+        "",
+        "Interim. No pass or fail.",
         "",
         f"Data cut-off: {config['cutoff_date']}",
         f"Sample seed: {config['sample_seed']}",

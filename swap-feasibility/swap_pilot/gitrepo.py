@@ -121,7 +121,7 @@ def indexed_oids(repo: str) -> set[str]:
     return found
 
 
-def prefetch_blobs(repo: str, oids: list[str], batch: int = 50) -> int:
+def prefetch_blobs(repo: str, oids: list[str], batch: int = 500) -> int:
     """Fetch missing blobs in batches.
 
     A partial clone does not contain file contents. Asking for one blob at a
