@@ -1,0 +1,25 @@
+# Thresholds, dates, and the window. Change them here, not in the code.
+
+cutoff_date: "2026-11-08"
+eligibility_as_of: "2023-12-31"
+min_commits_before: 50
+activity_year: 2023
+min_commits_in_year: 10
+control_start: "2025-01-01"
+quarter_start: "2022-01-01"
+window_days: 30
+pass_ai_after_swaps: 100
+pass_ai_after_projects: 20
+p2_seed: 20261108
+p2_swap_sample: 30
+p2_removal_sample: 30
+clone_timeout_seconds: 180
+month_days: 30.4375
+
+# Five-project trial. Not the full population.
+trial_repos:
+  - checkstyle/checkstyle
+  - FasterXML/jackson-databind
+  - apache/maven
+  - junit-team/junit5
+  - square/okhttp
