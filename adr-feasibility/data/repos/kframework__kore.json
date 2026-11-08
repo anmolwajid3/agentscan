@@ -1,0 +1,61 @@
+{
+ "repo": "kframework/kore",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2016-10-24T15:48:27-05:00",
+ "last_commit": "2026-09-30T17:35:44+04:00",
+ "n_commits": 4818,
+ "n_authors": 71,
+ "n_files": 3145,
+ "n_code_files": 5,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 0,
+ "adrs": [],
+ "status_changes": [],
+ "ai_signals": [
+  {
+   "kind": "file:primary",
+   "name": "CLAUDE.md",
+   "date": "2026-05-26T23:13:45-06:00",
+   "commit": "dc48de7f89ac4a1880563d01acfffaed999eda46",
+   "evidence": "Additional Kore logging, Claude enablement, boosteryOnly simplification flag per-rpc request (#4145)",
+   "official": true,
+   "author": "Everett Hildenbrandt",
+   "email": "everett.hildenbrandt@runtimeverification.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-05-26T23:13:45-06:00",
+   "commit": "dc48de7f89ac4a1880563d01acfffaed999eda46",
+   "evidence": "Additional Kore logging, Claude enablement, boosteryOnly simplification flag per-rpc request (#4145)",
+   "official": true,
+   "author": "Everett Hildenbrandt",
+   "email": "everett.hildenbrandt@runtimeverification.com"
+  }
+ ],
+ "signal_date": "2026-05-27T05:13:45+00:00",
+ "signal_kind": "file:primary",
+ "mentions": {
+  "strict": [
+   {
+    "sha": "dc48de7f89ac4a1880563d01acfffaed999eda46",
+    "date": "2026-05-26T23:13:45-06:00",
+    "subject": "Additional Kore logging, Claude enablement, boosteryOnly simplification flag per-rpc request (#4145)"
+   }
+  ],
+  "strict_count": 1,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-native",
+ "adr_count_before_signal": 0,
+ "superseded_in_window": 0,
+ "eligibility_reason": "ai-native",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "16"
+}

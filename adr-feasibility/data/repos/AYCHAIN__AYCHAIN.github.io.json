@@ -1,0 +1,263 @@
+{
+ "repo": "AYCHAIN/AYCHAIN.github.io",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2018-05-11T21:28:55-05:00",
+ "last_commit": "2020-03-30T21:28:05+07:00",
+ "n_commits": 1555,
+ "n_authors": 11,
+ "n_files": 364,
+ "n_code_files": 257,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 7,
+ "adrs": [
+  {
+   "path": "docs/ADR/adr-006-handling-plural-i18n.md",
+   "identity": "docs/ADR/adr-006-handling-plural-i18n.md",
+   "adr_id": "6",
+   "title": "ADR 5: Handling plural for i18n label",
+   "first_commit": "2019-08-29T15:46:01+02:00",
+   "first_sha": "c99ff748e921276ee0cb4ff88e063f0df1d94be9",
+   "last_commit": "2019-08-29T15:46:01+02:00",
+   "author": "Julien Fraichot",
+   "email": "jfraichot@learningmachine.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR 5: Handling plural for i18n label\n\n ## Context\n Sometimes labels need to handle pluralization. While it could be just as easy as adding a `s` at the end of the word in English (it is not), French or Spanish, other languages have a variation of their plural form that require a better handling.\n \n ## Exploration\n We could use a pluralization library but that comes at the cost of added weight to the bundle as well as not guaranteeing success for more complex strings.\n Or we could also simply handle both strings in the translation files.\n \n ## Decision\n We chose to follow the second approach which adds less overhead to the bundle. \n It comes at the cost of having the contributor to add the plural version of the string they want translated. But this explicit approach also reduces the risk of error and inconsistency.\n \n ## Status\n Accepted\n \n ## Consequences\n The contributor will make sure they add a `keyPlural` version mapping to the singular version `key` to the translation files.\n Using the `getText` method, they will have to set the third argument (`usePlural`) to true, and pass as the fourth argument the `count` property which will decide which string to use.\n ",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/adr-003-store-connector-container-component.md",
+   "identity": "docs/ADR/adr-003-store-connector-container-component.md",
+   "adr_id": "3",
+   "title": "ADR 3: Connecting the store to a component",
+   "first_commit": "2018-06-13T15:31:26+02:00",
+   "first_sha": "6c521f02083d9a78c9d4008b43cbc341ab0b1181",
+   "last_commit": "2018-09-11T14:20:50+02:00",
+   "author": "Julien Fraichot",
+   "email": "jfraichot@learningmachine.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 9,
+   "text": "# ADR 3: Connecting the store to a component\n\n## Context\n[pwa-starter-kit](https://github.com/Polymer/pwa-starter-kit) is an example of a Redux application working with Polymer 3. While it serves its purpose, the separation of concerns is not entirely clear between the state and the views, which means that in the example views have too much knowledge of what provides and modfies the state.\n\nThis is potentially dangerous for scalability, and bloats the view code with decisions that shouldn't be of its concerns.\n\nReact provides an architectural pattern to handle this abstraction, in the shape of `Containers`. Containers are wrapper around the view component, which connect (via the `react-redux` helper function of the same name) the view and the state (to read it, and to action it). \n\nThis pattern is interesting because from an architectural standpoint every responsibility is properly distributed. The view receives props, may they be data or callback functions, and utilizes them, the container selects where to retrieve the data or callback functions, and the state solely stores the data and provide mechanisms to modify it.\n \n## Decision\nWe decided to keep this approach for a Polymer project too. Because the out-of-the-box tools do not provide that abstraction, we implemented our own architectural approach to fit this need.\n\nA visual representation of the intent is as follows:\n![Chain of connection: State > Connector > Container > Component](https://user-images.githubusercontent.com/12797962/41294972-a254d432-6e59-11e8-8e08-214c43772173.png)\n \n- The state handles the live data of the application.\n- The connector has an instantiation of the store, but is also a metaview, which enables communication with the methods of the store, without exposing it elsewhere.\n- The container is an instance of the connector, which allows defining which part of the state and which actions we would like to bind to its wrapped component.\n- And the wrapped component is just a regular component which expects some props, but does not know nor care where they come from.\n\n## Status\n Accepted\n \n## Consequences\nImplementation of components that need to access the state must follow this pattern.\n\nThere are 2 types of components in Polymer, pure functions and classes (extending `LitElement`).\nThe implementation of this approach differs a little bit, due to technical constraints of LitElement.\n\nExample of a pure function:\n\n**Component**\n\n```javascript\nconst Input = ({ onInput = () => {} } = {}) => {\n  return html`\n    <label \n      for='input'>Label for input</label>\n    <input \n      type='text'\n      id='input'\n      on-input='${(e) => { onInput(e.target.value); }}'\n    />\n  `;\n};\n\nexport default Input;\n```\n**Container**\n\n```javascript\nimport foo from '../../../actions/foo';\nimport connector from '../../../store/connector';\nimport Input from './Input';\n\nconst mapDispatchToProps = {\n  onInput: foo\n};\n\nconst InputContainer = connector(Input, { mapDispatchToProps });\nexport { InputContainer };\n```\n\nExample of a class component:\n\n**Component**\n```javascript\nclass Button extends LitElement {\n  static get properties () {\n    return {\n      onClick: Function\n    };\n  }\n\n  _render (_props) {\n    return html`\n      <button on-click='${_props.onClick}'>\n       Label\n      </button>\n    `;\n  }\n}\n\nwindow.customElements.define('buv-verify-button-raw', Button);\n\n// wrap VerifyButton in order to plug into Container\n// necessary trade-off to deal with class component in the store connector\nfunction ButtonWrapper (props) {\n  return html`<buv-verify-button-raw onClick='${props.onClick}'></buv-verify-button-raw>`;\n}\n\nexport { ButtonWrapper as Button };\n```\nWe need to encapsulate the button (that we need to define as a reusable component for this purpose) into a pure function, in order to simplify the rendering of the connector. This function is then exported and reused in the container. \n\n**Container**\n\n```javascript\nimport bar from '../../../actions/bar';\nimport connector from '../../../store/connector';\nimport { Button } from './Button';\n\nconst mapDispatchToProps = {\n  onClick: bar\n};\n\nconst VerifyButtonContainer = connector(Button, { mapDispatchToProps });\nexport { VerifyButtonContainer };\n```\nEncapsulating the wrapping function inside the component allows for containers to always follow the same pattern and improves expectability.\n\n#### mapping actions to a component\nuse `mapDispatchToProps`.\nIt should be an object expect the key (prop that is going to be passed down to the component), and the value should be the action creator to be mapped. See above example for more details.\n\n#### mapping state to a component\nuse `mapStateToProps`.\nIt should be a function taking `state` as a parameter, and returning an object with as the key the prop that is going to be passed down to the component, and as a value the selector method reading the state.\n\n```javascript\nimport connector from '../../../store/connector';\nimport Input from './Input';\nimport { foo } from '../../../selectors/foo';\n\nconst mapStateToProps = (state) => ({\n  isValid: foo(state)\n});\n\nconst InputContainer = connector(Input, { mapStateToProps });\nexport { InputContainer };\n\n```\n\n#### exposing the component own props\nuse `ownProps`. \nSometimes you want to be able to pass the props from where you use the component directly.\nIn the case of a connected component, this is not as straightforward as expected.\nIn order to do so, you need to map the `ownProps` object to the component's actual properties.\n\nIn practice, this means exposing your component as `SourceComponent`, and matching `ownProps` to `SourceComponents.properties`.\n\nie:\n```javascript\nexport {\n  BlockcertsVerifier as SourceComponent,\n  BUVWrapper as BlockcertsVerifier\n};\n```\n\nand in the container:\n\n```javascript\nimport connector from '../store/connector';\nimport { BlockcertsVerifier, SourceComponent } from './BlockcertsVerifier';\n\nconst ownProps = SourceComponent.properties;\n\nconst BlockcertsVerifierContainer = connector(BlockcertsVerifier, { ownProps });\nexport { BlockcertsVerifierContainer };\n\n```\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "user-images.githubusercontent.com/12797962/41294972-a254d432-6e59-11e8-8e08-214c43772173.png"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/adr-005-substeps-list.md",
+   "identity": "docs/ADR/adr-005-substeps-list.md",
+   "adr_id": "5",
+   "title": "ADR 5: Substeps List size calculation",
+   "first_commit": "2018-08-06T22:59:20+02:00",
+   "first_sha": "5d8bdd4daace9d20d7d24e061888cf6a894fbc49",
+   "last_commit": "2018-08-06T22:59:20+02:00",
+   "author": "Julien Fraichot",
+   "email": "jfraichot@learningmachine.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR 5: Substeps List size calculation\n\n## Context\n SubstepsList needs to be animated between showing and hiding the substeps of a step.\n Animating proves convenient on `max-height`\n We were initially hard coding the `max-height` property of the substeps list to have a maximum to animate too (from 0).\n However, hard-coding that value proved not flexible, especially when the substep was also holding an `ErrorMessage`, which could span an undeterminate height (multiple lines, responsiveness, etc).\n \n The height of the list all determines the height of the progress bar which at this point is settled and working with little work. \n \n ## Exploration\n Not many options are available to make sure we can pre-calculate the dynamic, correct, potential `max-height` of the list.\n \n - One way could be render the list somewhere on the DOM, hidden, in order to retrieve its height. However this proves problematic as we need to do a prerender which means complicating the DOM and the application code.\n - Another solution is to read the height of the list element once it has been rendered, and maintain it locally within the parent class. It is not super elegant as we need to overwrite the style property after rendering. \n \n ## Decision\n We chose to follow the second approach which requires less code to work. It is however creating issues with the `html` templating function of `lit-element`, since we change the state of the attribute without informing the library.\n Doing the latter would mean re-rendering via a state prop which would have to be updated at the `_didRender` moment, and would create complains from Polymer.\n \n We thus decided to trick the component:\n - we only calculate the `totalHeight` once, since content will not change once rendered.\n - we only force the `max-height` with the calculated height once, if the component was forced rendered and if we haven't applied the trick already\n \n We discovered that it would then require 3 clicks on the `hide` button to finally close the list. Some research led us to discover that the `html` templating function handles the values of the attributes, and does not trigger a change (cf: https://github.com/Polymer/lit-html/blob/master/src/core.ts#L538). As such, in the state of the code, the active value is `0` and not `[totalHeight]px` as we forced it to be. Since the closing value is 0 too, the code didn't see the reason for the change.\n \n To circumvent this issue, we are now setting the `hidden` state value to be 1px, which allows for the initial closing.\n\n ## Status\n Accepted\n \n ## Consequences\n It is not a very elegant hack, but it seems the least aggressive for the browser.\n You should avoid such approaches if you can, though. \n ",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/Polymer/lit-html/blob/master/src/core.ts"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/adr-004-domain.md",
+   "identity": "docs/ADR/adr-004-domain.md",
+   "adr_id": "4",
+   "title": "ADR 4: Explaining the Domain",
+   "first_commit": "2018-06-14T16:53:14+02:00",
+   "first_sha": "d2903d03f1d99489200e83f3b520c13a3941c4cc",
+   "last_commit": "2018-06-14T16:53:14+02:00",
+   "author": "Julien Fraichot",
+   "email": "jfraichot@learningmachine.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR 4: Explaining the Domain\n\n## Context\nRedux provides a good mechanism to handle the state and its mutations, but not so much to handle the business logic.\n\nHowever, like always, to keep a good segregation of concerns, we want to handle all business related logic, as well as all external communication of the application isolated. \n\n## Decision\nTo do so, we introduce the concept of domain.\n\nThe domain is the part responsible for everything that's not the view concern, nor the state concern.\n\nThe view concern is to render data.\nThe state concern is to store and modify data.\n\nThe rest belongs to the domain.\n\nA visual representation is as follows:\n\n![Domain connection: outer world > domain > state > view](https://user-images.githubusercontent.com/12797962/41419432-4c70fd4e-6ff2-11e8-8acd-a18367087193.png)\n\nEach method of the next inner layer only knows about the layer above it.\n\nThis domain is only inspired from Domain Driven Design and aims at being a simpler implementation of the approach.\n\n## Status\n Accepted\n \n## Consequences\nDomain concerns must be implemented so that methods (use cases) can be called as follows:\n\n```\ndomain.concern.usecase\n```\n\nUse cases must be tested.\n\nObjects resulting from domain methods can be stored in either Entities or Value Objects (see definitions: https://en.wikipedia.org/wiki/Domain-driven_design#Building_blocks), depending on the shape and concept they represent.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "user-images.githubusercontent.com/12797962/41419432-4c70fd4e-6ff2-11e8-8acd-a18367087193.png"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/adr-000-what-is-an-ADR.md",
+   "identity": "docs/ADR/adr-000-what-is-an-ADR.md",
+   "adr_id": "0",
+   "title": "ADR 0: What is an ADR?",
+   "first_commit": "2018-06-07T10:39:45+02:00",
+   "first_sha": "297e39c60348f4dbe9de9906c1d154ed1208acf8",
+   "last_commit": "2018-06-07T10:39:45+02:00",
+   "author": "Julien Fraichot",
+   "email": "jfraichot@learningmachine.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR 0: What is an ADR? \n\nIt stands for an Architectural Decision Report, and is described more thoroughly in this blog post: http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions \n\n# Context \nProjects tend to see a lot of different contributors intervene. Each of these contributors might influence the architecture in one way or another, and decisions remain, potentially hard to change, let alone understand. \n\n# Decision \nIn order to maintain some sort of quick reference as to why some decisions have been made, we have decided to introduce this format. The purpose is to allow any new developer to the project to easily understand why some of the more important things have been done one way and not the other. \n\n### Naming Convention\nThe naming of files should be made as follows: \n\n`adr-XXX-title-summary.md` \n\nwhere XXX is a unique sequential number. \n\n# Status \nAccepted \n\n# Consequences \nTricky/exposed/controversial architectural decisions now need to be documented in this file. \nAs stated in the original blog post, decisions can be superseded or deprecated, but need to be explicted once again via a new ADR.",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/adr-001-tools-and-methodologies.md",
+   "identity": "docs/ADR/adr-01-tools-and-methodologies.md",
+   "adr_id": "1",
+   "title": "ADR 1: Explaining the Tools and Methodologies",
+   "first_commit": "2018-06-06T19:34:53+02:00",
+   "first_sha": "45051a092c8d55570d5b0d5e0bbef3760c411470",
+   "last_commit": "2018-06-07T10:39:45+02:00",
+   "author": "Julien Fraichot",
+   "email": "jfraichot@learningmachine.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR 1: Explaining the Tools and Methodologies\n\n## Context\n Learning Machine handles a Blockcerts verifier in multiple repository and with different ways of deploying. This is costly and hard to maintain.\n \n Decision has been made to unify the verifier into one sole component and repository, with scalibility and maintainability at heart. \n \n ## Decision\n #### JS\nWe decided to use Polymer 3.0 as previous versions of the verifier were already written with Polymer. Also because Web Components seem like a promising technology that could open a interesting future for the usage of the component.\n\nState of the application will be handled by Redux, as demonstrated in the [example project of Polymer](https://github.com/Polymer/pwa-starter-kit). \n\n#### CSS\nWe decided to use ITCSS for its interesting way to handle CSS scalability and maintainability.\nMore information about this methodology can be found here:\n\nhttps://github.com/sky-uk/css\n\nhttps://www.xfive.co/blog/itcss-scalable-maintainable-css-architecture/\n\n#### Testing\nWe are using the tools provided by the Polymer Project, hence [WCT](https://github.com/Polymer/tools/tree/master/packages/web-component-tester). We also test for accessibility.\n\n#### Accessibility\nThe Web Component needs to be WCAG2.0 AA compliant.\n\n ## Status\n Accepted\n \n ## Consequences\n Follow above standards and methodologies for development. Maintain a good level of separation of concerns between state and views. Architecture for the communication with external APIs has not yet been decided, and will be subject of a future ADR. \n \n #### Testing\n Since WCT exposes Mocha methods, prefer using the BDD methods `describe`, `it` and `expect`.",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/adr-002-css-structure.md",
+   "identity": "docs/ADR/adr-02-css-structure.md",
+   "adr_id": "2",
+   "title": "ADR 2: Understanding the CSS structure",
+   "first_commit": "2018-06-06T19:34:53+02:00",
+   "first_sha": "45051a092c8d55570d5b0d5e0bbef3760c411470",
+   "last_commit": "2018-06-07T10:39:45+02:00",
+   "author": "Julien Fraichot",
+   "email": "jfraichot@learningmachine.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR 2: Understanding the CSS structure\n\n## Context\n Web Components encapsulate their shadow dom away from the rest of the DOM, meaning that a general stylesheet cannot style the internals of a Web Component.\n \n As such, we need to find a strategy to maintain component level styles but enable shared styles so that we limit code duplication.\n \n We had previously decided to follow ITCSS for its way to enable scalability as well as limit specificity war, and would like to keep following this approach.\n \n ## Exploration\n Using a general stylesheet is by essence out of the way.\n \n Using `css-variables` cannot work as not all the problems that it solves are based on variables. Indeed we need to be able to apply blocks of styles in some cases, and maintaining a variable API for each component might lead to insanity.\n \n [@apply](https://tabatkins.github.io/specs/css-apply-rule/) seemed promising, but the proposal has been discontinued, and its replacements (see [ShadyCSS Readme](https://github.com/webcomponents/shadycss/blob/master/README.md#about-applyshim)) are still in proposal stage and might not become the standard. \n \n Finally it seems that the only option in front of us is to embed styles per component.\n \n ## Decision\n Considering the outcome of the exploration, and seeing that we want to maintain a sense of scalability and separation of concerns as advocated by the ITCSS methodology, we have decided to maintain component specific stylesheets at component directory level, and use Sass `import` within these sheets to add specific classes that many component might use (basically any other layer from ITCSS beyond components).\n \n Shared styles will be hosted under `src/shared-styles` folder and organized following the ITCSS nomenclature.\n \n At this moment the `main.scss` file is maintained as it contains information around the available files, and may prove worthy in the future. The value of this needs to be reassessed.\n \n ## Status\n Accepted\n \n ## Consequences\n We are using [wc-sass-render](https://github.com/tristanMatthias/wc-sass-render) instead of our initial in-house solution, as it solves the exact problem we are facing, and provides the options we need.\n \n CSS files under the components need to follow ITCSS convention in terms of naming, in order to better highlight their layer in the inverted triangle concepts.\n \n Code duplication has been accepted as tech-debt, and might incur solutions to better handle large imports (such as tree-shaking, file splitting, etc).  \n \n ",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/webcomponents/shadycss/blob/master/README.md",
+    "src/shared-styles"
+   ],
+   "implementation": {
+    "sha": "ddce727b96798fd5de20f0eab3867919a15f60c6",
+    "date": "2018-06-12T17:36:37+02:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "src/shared-styles/_utils.a11y.scss"
+    ]
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/ADR/adr-001-tools-and-methodologies.md",
+   "identity": "docs/ADR/adr-01-tools-and-methodologies.md",
+   "commit": "297e39c60348f4dbe9de9906c1d154ed1208acf8",
+   "date": "2018-06-07T10:39:45+02:00",
+   "old_state": "accepted",
+   "new_state": "accepted",
+   "old_raw": "Accepted",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "docs(ADR): add ADR 0 explaining ADRs",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Julien Fraichot",
+   "email": "jfraichot@learningmachine.com"
+  },
+  {
+   "path": "docs/ADR/adr-002-css-structure.md",
+   "identity": "docs/ADR/adr-02-css-structure.md",
+   "commit": "297e39c60348f4dbe9de9906c1d154ed1208acf8",
+   "date": "2018-06-07T10:39:45+02:00",
+   "old_state": "accepted",
+   "new_state": "accepted",
+   "old_raw": "Accepted",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "docs(ADR): add ADR 0 explaining ADRs",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Julien Fraichot",
+   "email": "jfraichot@learningmachine.com"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 7,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "7"
+}

@@ -1,0 +1,61 @@
+{
+ "repo": "jdanil/skunkworks",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2019-11-12T23:51:40+11:00",
+ "last_commit": "2026-10-28T03:26:03+00:00",
+ "n_commits": 6561,
+ "n_authors": 7,
+ "n_files": 498,
+ "n_code_files": 115,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 1,
+ "adrs": [
+  {
+   "path": "docs/decisions/decision-documentation.md",
+   "identity": "docs/decisions/decision-documentation.md",
+   "adr_id": "",
+   "title": "",
+   "first_commit": "2019-12-18T17:24:29+11:00",
+   "first_sha": "75a48dc682ef5a87ce72824b37626094e5f67f7c",
+   "last_commit": "2020-01-12T17:59:22+11:00",
+   "author": "Joshua David",
+   "email": "Joshua.David@iress.com.au",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "too-few-adrs",
+ "adr_count_before_signal": 1,
+ "superseded_in_window": 0,
+ "eligibility_reason": "fewer-than-5-adrs",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "18"
+}

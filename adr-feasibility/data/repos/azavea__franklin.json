@@ -1,0 +1,50 @@
+{
+ "repo": "azavea/franklin",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2019-11-05T05:18:31-05:00",
+ "last_commit": "2025-10-31T15:31:17+01:00",
+ "n_commits": 1300,
+ "n_authors": 13,
+ "n_files": 215,
+ "n_code_files": 70,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 0,
+ "adrs": [],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [
+   {
+    "sha": "eed8299e441963ddd397265e8427e016f3752a33",
+    "date": "2021-11-19T16:50:11-05:00",
+    "subject": "Add deployment instructions with AWS Copilot and Cloudformation CLIs (#1021)"
+   },
+   {
+    "sha": "3ec16599492fa6df2ed8b7c0000247a0344f4079",
+    "date": "2022-01-26T15:15:49-05:00",
+    "subject": "Update deployment docs using AWS Copilot (#1121)"
+   },
+   {
+    "sha": "172fe38e888b45772e4cf2ba51f3e0e3f6385985",
+    "date": "2022-02-09T10:51:59-05:00",
+    "subject": "Add automated script for AWS Copilot deploy (#1132)"
+   }
+  ],
+  "strict_count": 3,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "too-few-adrs",
+ "adr_count_before_signal": 0,
+ "superseded_in_window": 0,
+ "eligibility_reason": "fewer-than-5-adrs",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "5"
+}

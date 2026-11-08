@@ -1,0 +1,425 @@
+{
+ "repo": "pace-neutrons/pace-developers",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2019-05-02T16:54:53+01:00",
+ "last_commit": "2025-02-21T16:22:31+00:00",
+ "n_commits": 120,
+ "n_authors": 11,
+ "n_files": 222,
+ "n_code_files": 7,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 13,
+ "adrs": [
+  {
+   "path": "documentation/adr/0013-light-python-wrapper-implementation-detail.md",
+   "identity": "documentation/adr/0013-light-python-wrapper-implementation-detail.md",
+   "adr_id": "13",
+   "title": "Implementation details for the Matlab UI for brille and euphonic",
+   "first_commit": "2021-01-11T09:50:11+00:00",
+   "first_sha": "6f0f2e35c265074d426bb7625a99c2f05907a096",
+   "last_commit": "2021-01-11T09:50:11+00:00",
+   "author": "Duc Le",
+   "email": "duc.le@stfc.ac.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "[<-previous](0012-matlab-python-wrapper.md) | [next->]()\n\n# 13. Implementation details for the Matlab UI for brille and euphonic\n\nDate: 2021-Jan-10\n\n## Status\n\nAccepted\n\n\n## Context\n\nAs described in [ADR #12](0012-matlab-python-wrapper.md),\nPACE aims to provide both a Python and a Matlab user interface (UI) for all its constituent programs.\nIn addition, these programs should be able to interact with each other regardless of the user's environment.\n\nThat ADR decided that the Matlab UI for Brille and Euphonic (which currently only have Python UIs)\nwould use an interface library called [`light_python_wrapper`](https://github.com/pace-neutrons/light_python_wrapper).\nA meeting between the developers of these programs on Jan 7 2021 also agreed the implementation details given here.\n\nIn addition, the meeting also decided that any computation or logic required for interfacing Brille/Euphonic\nwith other PACE programs should be written in *Python* so as to be accessible to both the Matlab and Python UI\nwithout the need for compiled Matlab.\n\n\n## Decision\n\n* Any computation required for use with Horace or other Matlab programs would be implemented in *Python*.\n* This Python code would be distributed as a separate module, to be installable using `pip`.\n* The Matlab UI itself would be a pure interface layer (very little computation)\nand be provided mainly by `light_python_wrapper`.\n* `light_python_wrapper` will be moved to a separate repository, and used as a submodule in\n[`horace_euphonic_interface`](https://github.com/pace-neutrons/horace-euphonic-interface)\nand [`brillem`](https://github.com/brille/brillem).\n* The continuous integration (CI) system would be updated to pull in the submodule for tests\n* The CI system would also be used to build a [\"Matlab Toolbox\"](https://uk.mathworks.com/help/matlab/creating-help.html)\nfor distribution which would include `light_python_wrapper` (so users do not have to install it separately).\n* Using this Matlab Toolbox `mltbx` file and uploading it to the github release allows it to be\n[automatically published](https://www.mathworks.com/matlabcentral/about/fx/#Why_GitHub) by the File Exchange.\n\n\n## Notes\n\nA [pull requests for Euphonic](https://github.com/pace-neutrons/horace-euphonic-interface/pull/4)\nimplements this architectural design decision.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#12",
+     "kind": "hash",
+     "url": "",
+     "number": "12"
+    },
+    {
+     "key": "pace-neutrons/horace-euphonic-interface#4",
+     "kind": "pull",
+     "url": "https://github.com/pace-neutrons/horace-euphonic-interface/pull/4",
+     "number": "4"
+    }
+   ],
+   "mentioned_paths": [
+    "uk.mathworks.com/help/matlab/creating-help.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "documentation/adr/0010-use-compiled-matlab-for-python.md",
+   "identity": "documentation/adr/0010-use-compiled-matlab-for-python.md",
+   "adr_id": "10",
+   "title": "Use Compiled Matlab library for Python users to run PACE",
+   "first_commit": "2020-11-29T15:49:22+00:00",
+   "first_sha": "e91d15522e76a18b469bc4e1cb08df5a4bf766d6",
+   "last_commit": "2021-01-11T09:46:34+00:00",
+   "author": "Duc Le",
+   "email": "duc.le@stfc.ac.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "[<-previous](0009-brille-integration.md) | [next->](0011-use-mex-for-pyHorace-python-calls.md)\n\n# 10. Use Compiled Matlab library for Python users to run PACE\n\nDate: 2020-Nov-29\n\n## Status\n\nAccepted\n\n\n## Context\n\nPACE is a collection of programs written in various languages including Matlab\nand Python, but the aim is that *users* should be able to use either Python\n*or* Matlab to run PACE programs.\n\nMatlab has [built-in functionality](https://www.mathworks.com/help/matlab/call-python-libraries.html)\nto call Python programs however the reverse is not true - principally because\nMatlab requires a (paid-for) license to use.\n\nThus to allow Python users to call the current Matlab PACE codes\n([Horace](https://github.com/pace-neutrons/Horace/)/[Herbert](https://github.com/pace-neutrons/Herbert/))\nit should either be translated to Python or C++ and a wrapper to Python and Matlab created,\nor the Matlab Compiler Runtime (MCR) toolbox should be used to \"compile\" \n`horace`/`herbert` for distribution as a Python package, as detailed\n[here](../../python_interface/design/01_pace_python_high_level_discussion.md).\nUsing the MCR would also allow users to use Horace without a Matlab license,\nwhilst enabling us to leave the Horace code mainly in the Matlab language.\n\n\n## Decision\n\nThe decision was made to use a compiled Matlab library for Python users to\nrun PACE.\n\nThis is because it was judged to be unfeasible to translate the `horace`/`herbert`\ncodebase to C/C++.\n\n\n## Consequences\n\nConsequences are discussed in detail in the design documents linked above,\nand in further architectural decisions records and design documents to be\nwritten as prototyping continues.\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.mathworks.com/help/matlab/call-python-libraries.html",
+    "/../python_interface/design/01_pace_python_high_level_discussion.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "documentation/adr/0011-use-mex-for-pyHorace-python-calls.md",
+   "identity": "documentation/adr/0011-use-mex-for-pyHorace-python-calls.md",
+   "adr_id": "11",
+   "title": "pyHorace Matlab code should use a mex interface to call Python functions",
+   "first_commit": "2020-12-29T17:37:55+00:00",
+   "first_sha": "f49d4eb8bb2772c665a459065ab6547b197064e9",
+   "last_commit": "2021-01-11T09:46:34+00:00",
+   "author": "Duc Le",
+   "email": "duc.le@stfc.ac.uk",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "[<-previous](0010-use-compiled-matlab-for-python.md) | [next->](0012-matlab-python-wrapper.md)\n\n# 11. pyHorace Matlab code should use a mex interface to call Python functions\n\nDate: 2020-Dec-02\n\n## Status\n\nProposed\n\n\n## Context\n\n`pyHorace` ([prototype](https://github.com/mducle/hugo)) is the proposed Python module for PACE\nwhich packages the Matlab Horace/Herbert codes as a \"compiled\" library.\nThe Matlab code within this library needs to interact with Python codes in the host.\nSpecifically for fitting and model evaluation, Horace has to be able to call a user defined model function.\nAs the compiled Matlab library does not allow users to use their own `m-file`,\nuser model functions would have to be written in Python (or C/C++/Fortran - subject of a separate ADR).\n\nHowever, the implementation of the compiled Matlab library is such that compiled Matlab functions cannot call\nPython functions directly using the standard API. \nThis is because the standard API for Matlab to call Python assumes that Matlab can spawn its own Python interpreter.\nIn `pyHorace`, this would clash with the user-launched parent Python intepreter and cause a crash.\n\n[This design document](../../01_pace_python_high_level_discussion.md#-calling-user-defined-functions)\noutlined two main methods for the compiled Matlab code to call a Python function.\n\n1. Using a `mex` file.\n2. Using a \"reverse communications interface\" (RCI).\n\nIn the `mex` method, a reference to the Python function is given to the `mex` file which uses the CPython\nAPI to call that function (in Python) and then automatically converts (copies) the results to Matlab (`Array`) format.\n\nIn the RCI approach, the compiled Matlab program never explicitly calls a Python function. \nInstead whenever the Matlab code needs to call a Python function, the user instead calls a **Python** wrapper\nwhich only exchanges data with Matlab. This is explained in detail in the [RCI section](#rci) below.\nBecause of the need to the wrapper, this is not a general purpose approach but requires code in each specific\ninstance where we want to employ it (e.g. in `multifit`).\nThis may prove too restrictive for integrating Brille.\n\nDespite this, the RCI approach uses only the documented Matlab-Python API which should make it more stable and robust.\nOn the other hand, the `mex` option allows the current Matlab code to be used without modifications and is more flexible.\nBut, as it uses a `mex` file, unhandled exceptions in the `mex` file can lead to hard crashes.\nIn addition, `mex` functions _cannot_ use non-Matlab (non-`Array` types) data as input or outputs.\nThus all data must be converted to Matlab format from Python, and vice versa which involves at least one data copy.\nThis restriction means that not all Python functions can be supported by this method \n(e.g. those which return non-convertible types such as Python classes) \nexcept with special work-arounds as in the case of Brille.\nThis also means that the reference to the Python function cannot be passed directly to the `mex` function.\nRather, the Python code stores it in a global dictionary and the (string) key is passed to the `mex`.\n\n\n## Decision\n\nThe decision was taken to use the `mex` method for compiled Matlab code to call Python functions.\nThis is because using the RCI approach would require extensive changes to the `multifit` and `SpinW` Matlab code to\nhandle the pyHorace use case.\nFuthermore these changes would be incompatible with the Matlab interface which would result in two different versions\nof the multifit `mfclass` and SpinW `spinw` classes.\nOn the other hand, using the `mex` approach, the current Matlab code can be used \"as-is\" in pyHorace.\n\n\n## Consequences\n\nUser model functions written in Python (which includes Euphonic and Brille) cannot return non-convertible data.\nThat is, scalar values and standard containers (lists, tuples, dicts, numpy arrays) can be returned but Python objects cannot.\nInstead, arbitrary Python objects may be handled using a global dictionary similarly to how function references are handled.\nThe current [minimum viable implementation](https://github.com/mducle/hugo/blob/master/src/call_python.cpp) can handle the\nneeds of the SpinW-Brille interface where Brille (Python) objects are passed to the (Matlab) SpinW methods, but would have to\nbe improved for more general usage.\n\n\n## <a name=\"rci\"></a> Reverse Communications Interface\n\nTaking the example of `multifit`, we define a Python wrapper, which for concreteness we call `multifit_py`.\nInstead of calling the Matlab `multifit` code directly, the user calls `multifit_py` and gives it a Python function reference.\n`multifit_py` then calls a modified version of `multifit` which just performs the initialisation of the problem\nand returns to `multifit_py` the initial parameters at which to evaluate the user model. \n`multifit_py` then calls the user model function (in Python) with these parameters and calls `multifit` with the result.\n`multifit` then calculates the residuals and Jacobian and determines the next parameters, whereupon it returns\nto `multifit_py` the new parameters, which `multifit_py` evaluates and calls `multifit` with the result, etc.\n\nThus, the Python code always calls the Matlab code and only data is exchanged bi-directionally,\nwhich satisfies the standard Python-Matlab interface.\nHowever, this also means that a Python wrapper and changes to the Matlab code is needed for this method to work.\n\nThese changes to the Matlab code may be quite extensive, especially in the two specific use cases where we need\nMatlab to call Python: that of `multifit` and the SpinW-Brille interface.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/../01_pace_python_high_level_discussion.md",
+    "github.com/mducle/hugo/blob/master/src/call_python.cpp"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "documentation/adr/0012-matlab-python-wrapper.md",
+   "identity": "documentation/adr/0012-matlab-python-wrapper.md",
+   "adr_id": "12",
+   "title": "A Matlab wrapper for Python PACE projects",
+   "first_commit": "2021-01-11T09:46:34+00:00",
+   "first_sha": "d19fdda38eb3681f6e23f15e865af497772e2ef5",
+   "last_commit": "2021-01-11T09:46:34+00:00",
+   "author": "Duc Le",
+   "email": "duc.le@stfc.ac.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "[<-previous](0011-use-mex-for-pyHorace-python-calls.md) | [next->](0013-light-python-wrapper-implementation-detail.md)\n\n# 12. A Matlab wrapper for Python PACE projects\n\nDate: 2021-Jan-01\n\n## Status\n\nAccepted\n\n\n## Context\n\nBoth Euphonic and Brille are PACE projects with primarily a Python user interface (UI).\nPACE, however, aims to provide both a Python and a Matlab UI to users,\nand also to foster inter-operability between projects which are written both in Matlab and Python.\nIn particular, `pyHorace` ([prototype](https://github.com/mducle/hugo)) cannot use the \n[standard method](https://uk.mathworks.com/help/matlab/call-python-libraries.html) for Matlab to run Python code, \nwhere calls to Python from Matlab are prefixed with `py.` followed by the full module specification.\nFor example, `r = py.numpy.random.rand()` uses `numpy` to generate a random number.\nThis is because such a call causes Matlab to \n[automatically spawn](https://uk.mathworks.com/help/matlab/ref/pyenv.html) a dependent Python interpreter,\nwhich can be either created within the same process as the Matlab interpreter (`InProcess`)\nor in an external process (`OutOfProcess`).\n`pyHorace` already runs within a Python interpreter and the compiled Matlab library *must* be loaded in-process.\nThus, if Matlab spawns a second Python intepreter with the default `InProcess` execution mode,\nthe two Python interpreters will conflict causing memory errors and a crash.\nWe can force Matlab to launch the dependent Python interpreter `OutOfProcess`\nbut this imposes a significant performance penalty\n(extensive testing was not done but Brille+SpinW runs about 10x slower than with `InProcess`). \n\n\n## Proposal\n\nSo, we propose that the Matlab UI to Euphonic and Brille would be through a Python wrapper class.\nThere would be two implementation of this class.\nOne (used by the Matlab UI) would have calls to `py.*` internally, whilst the other\n(used by the Python UI) would use the mechanism described in the [python interface design](../../python_interface/design).\nMost importantly, no Matlab code which would be compiled would have references to `py.*`\nwhich would otherwise cause a crash in `pyHorace`.\n\nAn important benefit of this Python wrapper class is that mimimal Matlab code would be needed\nto expose Euphonic or Brille (or indeed any other Python program) to Matlab.\nThe [proposed wrapper](https://github.com/pace-neutrons/light_python_wrapper)\nalso handles data conversion and translation between Python and Matlab keyword arguments and some error checking.\nFinally, the wrapper also exposes the `pydoc` documentation system\nallowing users in Matlab to access the Python documentation transparently,\nand to use tab-completion to access the properties and methods of the Python class or object.\n\n\n## Decision\n\nAt a meeting on Jan 7 2021, the developers of `pyHorace`, `brillem` and `horace-euphonic-interface` agreed to accept this proposal.\n`brillem` and `horace-euphonic-interface` will be refactored to use the `light_python_wrapper` proposed here.\nThe meeting also agreed implementation details which will be described in [ADR #13](0013-light-python-wrapper-implementation-detail.md).\n\n\n## Consequences\n\nThe current [`horace-euphonic-interface`](https://github.com/pace-neutrons/horace-euphonic-interface/) and\n[`brillem`](https://github.com/brille/brillem/) code would need to be refactored to use the wrapper.\nPull requests [for Euphonic](https://github.com/pace-neutrons/horace-euphonic-interface/pull/4)\nand [brillem](https://github.com/brille/brillem/pull/4) will implement this refactoring.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#13",
+     "kind": "hash",
+     "url": "",
+     "number": "13"
+    },
+    {
+     "key": "pace-neutrons/horace-euphonic-interface#4",
+     "kind": "pull",
+     "url": "https://github.com/pace-neutrons/horace-euphonic-interface/pull/4",
+     "number": "4"
+    },
+    {
+     "key": "brille/brillem#4",
+     "kind": "pull",
+     "url": "https://github.com/brille/brillem/pull/4",
+     "number": "4"
+    }
+   ],
+   "mentioned_paths": [
+    "uk.mathworks.com/help/matlab/call-python-libraries.html",
+    "uk.mathworks.com/help/matlab/ref/pyenv.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "documentation/adr/0009-brille-integration.md",
+   "identity": "documentation/adr/0009-brille-integration.md",
+   "adr_id": "9",
+   "title": "Integration of Brille within PACE projects",
+   "first_commit": "2020-11-29T15:49:22+00:00",
+   "first_sha": "e91d15522e76a18b469bc4e1cb08df5a4bf766d6",
+   "last_commit": "2020-12-01T10:20:41+00:00",
+   "author": "Duc Le",
+   "email": "duc.le@stfc.ac.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "[<-previous](0008-pace-syntax-guiding-principles.md) | next->\n\n# 9. Integration of Brille within PACE projects\n\nDate: 2020-Nov-29\n\n## Status\n\nAccepted\n\n\n## Context\n\n[brille](https://github.com/brille/brille) is a library for computing symmetry operations\nand linear interpolation within an irreducible part of the first Brillouin zone.\nWhilst its symmetry operations functionality can be used stand-alone,\nthe interpolation functionality should be integrated with codes\nwhich compute quantities in reciprocal space\n(such as [euphonic](https://github.com/pace-neutrons/euphonic) and [spinW](https://github.com/spinw/spinw))\nto make these programs more user friendly.\n\nAt present there are separate projects, [brilleu](https://github.com/brille/brilleu/)\nand [brillem](https://github.com/brille/brillem/) to achieve this integration.\nIn both cases brille/X interface constructs a brille object from X and handles calling the X method(s) \nto determine the information required for brille's interpolation.\nThis relationship could be flipped if each X constructs its own brille object and\nthen uses it to perform interpolation.\n\n## Decision\n\nA [meeting](https://stfc365.sharepoint.com/:b:/r/sites/PACEProject/Shared%20Documents/Meetings/PACE-General/20201001_brilleX_Xbrille.pdf?csf=1&web=1&e=9XBRUe)\nwas held and the decision was made that the integration of the interpolation functionality of brille\nshould not be done by the external projects `brilleu` and `brillem`.\nInstead, the interface between the calculator X and brille should be embedded within X which will\nconstruct is own brille object and then use this to perform the interpolation.\n\n## Consequences\n\n* Code in `brilleu` will either be merged into `euphonic` or `brilleu` will be a dependency of `euphonic`\n* This will allow `euphonic` to use `brille` to compute the density of states, the Debye-Waller factor or powder averaging.\n* Code specific to `spinW` in `brillem` will be moved to `spinW` itself,\nleaving a minimal `brillem` for Matlab users to access the functionality of `brille`.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "20Documents/Meetings/PACE-General/20201001_brilleX_Xbrille.pdf"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "documentation/adr/0008-pace-syntax-guiding-principles.md",
+   "identity": "documentation/adr/0008-pace-syntax-guiding-principles.md",
+   "adr_id": "8",
+   "title": "PACE Syntax Guiding Principles",
+   "first_commit": "2020-10-19T12:59:24+01:00",
+   "first_sha": "e23ea48fa37ebf329ab83d4e55058a22e511c51e",
+   "last_commit": "2020-12-01T10:20:41+00:00",
+   "author": "Duc Le",
+   "email": "duc.le@stfc.ac.uk",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "[<-previous](0007-developer-scripts-storage-location.md) | [next->](0009-brille-integration.md)\n\n# 8. PACE Syntax Guiding Principles\n\nDate: 2020-Oct-19\n\n## Status\n\nProposed\n\n\n## Context\n\nWhilst the core framework of PACE is the Horace (and Herbert) projects,\nPACE involves many other codes, including [Euphonic](https://github.com/pace-neutrons/Euphonic),\n[Brille](https://github.com/brille/brille) and [SpinW](https://spinw.org).\nThe way in which these programs interact with each other is presently unclear.\nFurthermore the programs are written in several different languages.\nIn this ADR we propose some guiding principles in the design of the interfaces\nbetween the programs or components which make up PACE.\nThis was discussed at a meeting whose\n[minutes are here.](https://stfc365.sharepoint.com/:w:/r/sites/PACEProject/Shared%20Documents/Meetings/PACE-General/pace_syntax_meeting1_minutes.docx))\n\n## Decision\n\nThe guiding principle for PACE-supported programs is **commonality**.\nThat is, interacting with the different programs of PACE should be **seamless**\nto the user, and the user interface presented to them should be **uniform**.\n\nThe uniform interface means that function names and how users specify parameters\nor arguments to functions in Matlab and Python flavours of PACE should align\nas closely as possible.\n\n## Consequences\n\nThere are several implications stemming from this guiding principle:\n\n* There should be a single downloadble distribution which bundles all the \nnecessary components (presently: Horace, Euphonic, Brille and SpinW).\n* User syntax should follow the same format for each program,\nand should be similar between Matlab and Python interfaces.\nSpecifically the same method and keyword names should be used.\n* Syntax should be \"Pythonic\" (prefer keyword to positional arguments;\nreasonable defaults for as many input arguments as practicable);\nThis applies to both Matlab and Python interfaces,\nsince the end goal is to migrate entirely to Python.\n* Since the Matlab and Python *languages*'s argument syntax are not a superset,\nexactly what (sub-set) of syntax PACE should use should be clearly defined\nin a separate architectural decisions record.\n* In the mean time, there should be both Matlab and Python interfaces for \nall functionalities (including handling polycrystalline/powder data).\n* There should be uniform API for interactions between the different programs\n(and with external third party programs).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "20Documents/Meetings/PACE-General/pace_syntax_meeting1_minutes.docx"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "documentation/adr/0007-developer-scripts-storage-location.md",
+   "identity": "documentation/adr/0007-developer-scripts-storage-location.md",
+   "adr_id": "7",
+   "title": "Developer scripts storage location",
+   "first_commit": "2020-07-28T08:56:33+01:00",
+   "first_sha": "db68a7658fdee62923a4f764f940b2c3189ca86a",
+   "last_commit": "2020-10-19T12:59:24+01:00",
+   "author": "Rebecca Fair",
+   "email": "rebecca.fair@stfc.ac.uk",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "[<-previous](0006-store-built-documentation-in-branch.md) | [next->](0008-pace-syntax-guiding-principles.md)\n\n# 7. Developer scripts storage location\n\nDate: 2020-Jul-15\n\n## Status\n\nProposed\n\n\n## Context\n\nWhen developing new algorithms and features for PACE-related software,\ndevelopers often create useful demo/visualisation scripts for their own use.\nThese scripts could be useful or interesting for other developers, and are\nimportant for reproducibility or justifying design decisions. They should be\nstored somewhere in version control so that they can be easily accessed by any\ndevelopers and referred to later. However, they are not intended for general\nuse and will not be actively maintained or tested. There are 2 main options:\n\n* Store them in a `dev_scripts` directory in each separate project repository\n* Store them in a `scripts` directory in `pace-developers`\n\nIf they're in the `dev_scripts` directory for each project repository:\n+ All in one place\n+ Scripts will be close to the code they are used for\n- Scripts may not work with the version of the code they are distributed with\n- It's unclear where scripts that use more than one project would go\n- Despite the folder being called `dev_scripts` people might expect the scripts\nto actually work as they're in the main project repository\n\nIf they're in a `scripts` directory in `pace-developers`:\n+ They can be kept close to the decision-making developer documentation that\nthey support\n+ A version can be specified for any project dependencies\n\n## Decision\n\nDeveloper scripts will be stored in an appropriately placed `scripts`\ndirectory in the `pace-developers` repository. Depending on whether the\nscript is tied to a particular software, or general algorithm development\nit could be stored in `pace-developers/euphonic/scripts` or\n`pace-developers/powder_averaging/scripts` for example.\n\n\n## Consequences\n\n* Scripts that are intended for development only should not be committed to\nthe master branch of main software repositories\n* Any development scripts committed to `pace-developers` should specify the\nexact version of any software they have been developed against. This should\nbe in the form:\n  - `vrelease.version` if if they have been developed against a release\n    version of the software\n  -  `vrelease.version+ncommits.commithash` (e.g. `v0.11+5.g1076c97`) if the\n     project uses\n     [versioneer](https://github.com/warner/python-versioneer)\n  - `vrelease.version+commithash` (e.g. `v0.11+g1076c97`) if the project does\n    not use versioneer (to avoid having to manually count the number of\n    commits since the last release)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "pace-developers/euphonic/scripts",
+    "pace-developers/powder_averaging/scripts"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "documentation/adr/0006-store-built-documentation-in-branch.md",
+   "identity": "documentation/adr/0006-store-built-documentation-in-branch.md",
+   "adr_id": "6",
+   "title": "Store built documentation in branch",
+   "first_commit": "2020-07-01T16:49:49+01:00",
+   "first_sha": "fbc040e77ea4b9c5fcb9c8250692b0ca2617b24b",
+   "last_commit": "2020-07-28T08:56:33+01:00",
+   "author": "Nick Battam",
+   "email": "nicholas.battam@stfc.ac.uk",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "[<-previous](0005-pace-projects-must-be-semantically-versioned.md) | [next->](0007-developer-scripts-storage-location.md)\n\n# 6. Store built documentation in branch\n\nDate: 2020-Jun-20\n\n## Status\n\nProposed\n\n\n\n## Context\n\nGitHub Pages support two [publishing sources](https://help.github.com/en/github/working-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site) for project documentation:\n\n- the `docs` folder on the `master` branch\n- the root folder of the `gh-pages` branch\n\na third option is to store the built project documentation in\n\n- documentation GitHub project. \n\n\n\nIf the built documentation is stored on the `master` branch:\n\n- the codebase includes built artifacts\n- any release tag needs to be created on the commit after that from which the build was executed\n- requires the CI server to make commits to the `master` branch\n- it's straightforward to manage document builds from branches other than `master`\n\n\n\nWhere the build artifacts on a separate branch:\n\n- harder to compare source with the built documentation and manage the build artifacts from branches,\n\n- cleanly separates build artefacts from source code\n\n  \n\nStoring built documentations in a separate GitHub repository:\n\n- offers clear separation between source and built documentation\n- carries an overhead or managing another repository\n- documentation will served at a URL that doesn't match the source: e.g. `pace-neutrons.github.io/horace-docs`\n\n\n\n## Decision\n\nBuilt documentation will be stored on the `gh-pages` branch.\n\n\n\n## Consequences\n\n- The build pipeline will need to move the built pages from source branch (`master`) to the publication branch  (`gh-pages`)\n- Any previously build documentation for the current project version must be deleted from the `gh-pages` branch.\n- Management of documentation builds for non-`master` branch will need to be considered on a per-project basis.\n- Non-`master` branch build documentation may be put in named folders on the `gh-pages` branch - these would need to be managed, i.e. deleted after the branch is merged or periodically.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "pace-neutrons.github.io/horace-docs"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "documentation/adr/0002-use-github-pages-for-user-documentation.md",
+   "identity": "documentation/adr/0002-use-github-pages-for-user-documentation.md",
+   "adr_id": "2",
+   "title": "Use GitHub Pages for user documentation",
+   "first_commit": "2020-07-01T14:29:36+01:00",
+   "first_sha": "fbf6f2620b8faa6c88b31f8343fd80d74c86f515",
+   "last_commit": "2020-07-01T16:49:49+01:00",
+   "author": "Nick Battam",
+   "email": "nicholas.battam@stfc.ac.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "[<-previous](0001-record-architecture-decisions.md) | [next->](0003-pace-projects-will-have-independent-documentation.md)\n\n# 2. Use GitHub Pages for user documentation\n\nDate: 2020-Jun-20\n\n## Status\n\nAccepted\n\n## Context\n\nA consistent platform is required for user documentation from the PACE projects: Brille, Euphonic and Horace/Herbert.\n\nTwo platforms support, are well used for this service:\n\n- [Read the Docs](https://readthedocs.org/)\n- [GitHub pages](https://pages.github.com/)\n\nBoth platforms will display documentation built by [Sphinx](https://www.sphinx-doc.org/) from reStructuredText source files.\n\nBrille includes compiled C libraries that contribute APIs to the project. The Read the Docs build/deploy pipeline does not support inclusion of documentation generated from C source.\n\n## Decision\n\nWe will use GitHub pages for all PACE project documentation.\n\n## Consequences\n\n- documentation will be available at URLs under `pace-neutrons.github.io` \n- GitHub pages can be configured to make the documentation available at any owned URL\n- sources for the documentation are stored alongside the source code\n- built documentation is stored in the GitHub\n- build pipelines for each project will be required to convert the source `rst` files to `html` for display\n- API documentation can be included for compiled C code\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "documentation/adr/0005-pace-projects-must-be-semantically-versioned.md",
+   "identity": "documentation/adr/0005-pace-projects-must-be-semantically-versioned.md",
+   "adr_id": "5",
+   "title": "PACE Projects must be semantically versioned",
+   "first_commit": "2020-07-01T14:29:36+01:00",
+   "first_sha": "fbf6f2620b8faa6c88b31f8343fd80d74c86f515",
+   "last_commit": "2020-07-01T16:49:49+01:00",
+   "author": "Nick Battam",
+   "email": "nicholas.battam@stfc.ac.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "[<-previous](0004-pace-documentation-link-to-projects.md) | [next->](0006-store-built-documentation-in-branch.md)\n\n# 5. PACE Projects must be semantically versioned\n\nDate: 2020-Jun-20\n\n## Status\n\nAccepted\n\n## Context\n\nThe PACE projects will evolve over time and breaking changes will be introduced. Users will need to be able to easily finding the correct documentation for their build.\n\n[Semantic versioning](https://semver.org/) defines a schema in which releases are given `major.minor.patch` version numbers where increments are made to the:\n- `major` version with incompatible API changes,\n- `minor` version when functionality is added in a backwards compatible manner, and\n- `patch` version for backwards compatible bug fixes.\n\nSphinx plugins are available that support multiple documentation versions ([sphinx-multiversion](https://pypi.org/project/sphinx-multiversion/)) - this will not work correctly for Brille where documentation is extracted from the build artifacts.\n\n## Decision\n\nProjects will be semantically versioned and documentation will be retained and be available for users to access for each major or minor version released. \n\nThere is no requirement to have patch-release specific documentation. \n\n## Consequences\n\n- Identification of breaking changes and extensions to the API requiring revised documentation will be easy for developers and users to identify\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "documentation/adr/0001-record-architecture-decisions.md",
+   "identity": "documentation/adr/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2020-07-01T14:29:36+01:00",
+   "first_sha": "fbf6f2620b8faa6c88b31f8343fd80d74c86f515",
+   "last_commit": "2020-07-01T14:29:36+01:00",
+   "author": "Nick Battam",
+   "email": "nicholas.battam@stfc.ac.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "<-previous | [next->](0002-use-githib-pages-for-user-documentation.md)\n\n# 1. Record architecture decisions\n\nDate: 2020-Jun-20\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as described by Michael Nygard in this article: http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions\n\n## Consequences\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's _adr-tools_ at https://github.com/npryce/adr-tools.\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "documentation/adr/0003-pace-projects-will-have-independent-documentation.md",
+   "identity": "documentation/adr/0003-pace-projects-will-have-independent-documentation.md",
+   "adr_id": "3",
+   "title": "PACE Projects will have independent documentation",
+   "first_commit": "2020-07-01T14:29:36+01:00",
+   "first_sha": "fbf6f2620b8faa6c88b31f8343fd80d74c86f515",
+   "last_commit": "2020-07-01T14:29:36+01:00",
+   "author": "Nick Battam",
+   "email": "nicholas.battam@stfc.ac.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "[<-previous](0002-use-github-pages-for-user-documentation.md) | [next->](0004-pace-documentation-link-to-projects.md)\n\n# 3. PACE Projects will have independent documentation\n\nDate: 2020-Jun-20\n\n## Status\n\nAccepted\n\n## Context\n\nPACE contains a number of independently developed and released projects with separate source and build pipelines.\n\nCoordination of documentation from projects using three different primary languages (MATLAB, Python, C) with varying release cycles will create tight coupling between the projects and their builds.\n\n\n\n## Decision\n\nEach project will maintain its own GitHub pages documentation that will be updated with the project's build-release-deploy pipeline.\n\n\n\n## Consequences\n\n- Project specific documentation will be directly accessible e.g. https://g5t.github.io/brille or https://pace-neutrons.github.io/euphonic \n- There will be no single landing page for PACE project documentation\n- If consistent style and layout is required between the projects this must be managed as the document configuration will be repeated across each project",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "documentation/adr/0004-pace-documentation-link-to-projects.md",
+   "identity": "documentation/adr/0004-pace-documentation-link-to-projects.md",
+   "adr_id": "4",
+   "title": "PACE documentation link to project documentation",
+   "first_commit": "2020-07-01T14:29:36+01:00",
+   "first_sha": "fbf6f2620b8faa6c88b31f8343fd80d74c86f515",
+   "last_commit": "2020-07-01T14:29:36+01:00",
+   "author": "Nick Battam",
+   "email": "nicholas.battam@stfc.ac.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "[<-previous](0003-pace-projects-will-have-independent-documentation.md) | [next->](0005-pace-projects-must-be-semantically-versioned.md)\n\n# 4. PACE documentation link to project documentation\n\nDate: 2020-Jun-20\n\n## Status\n\nAccepted\n\n## Context\n\nThe PACE project is a collection of independently developed and released tools. These tools are built in different technologies. \n\nCreating a single \"global project documentation\" release would introduce a tight coupling between the projects and create complexities around supporting multiple versions of documentation at a project level.\n\nGitHub pages provide an \"organization\" level documentation page. For PACE this will be at https://pace-neutrons.github.io. The documentation is displayed from a single folder or branch in an associated GitHub repository. \n\n## Decision\n\nThe organization-level documentation will provide a \"high-level\" overview of the project and contained tools, with links to the project-specific documentation URLs.\n\n## Consequences\n\n- The PACE project documentation will rarely change and provide a single landing page for users accessing the project.\n\n- The individual PACE tools are not constrained in their release process\n\n- There is no need to create a complex \"merge\" of documentation section from projects into one single document repository as part of the build processes",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 13,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "13"
+}

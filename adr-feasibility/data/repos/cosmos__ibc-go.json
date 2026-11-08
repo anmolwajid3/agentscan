@@ -1,0 +1,1034 @@
+{
+ "repo": "cosmos/ibc-go",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2021-02-10T16:22:12+01:00",
+ "last_commit": "2026-11-06T13:50:39+00:00",
+ "n_commits": 3145,
+ "n_authors": 260,
+ "n_files": 1896,
+ "n_code_files": 887,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 16,
+ "adrs": [
+  {
+   "path": "docs/architecture/adr-008-app-caller-cbs.md",
+   "identity": "docs/architecture/adr-008-app-caller-cbs.md",
+   "adr_id": "8",
+   "title": "ADR 008: Callback to IBC Actors",
+   "first_commit": "2023-09-19T13:47:08+02:00",
+   "first_sha": "68f7ab36d3f010bf1698b2a78ef199aa0e65ab69",
+   "last_commit": "2025-02-26T10:13:22+01:00",
+   "author": "Aditya",
+   "email": "adityasripal@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted, middleware implemented",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# ADR 008: Callback to IBC Actors\n\n## Changelog\n\n- 2022-08-10: Initial Draft\n- 2023-03-22: Merged\n- 2023-09-13: Updated with decisions made in implementation\n- 2025-02-24: RecvPacket callback error now returns error acknowledgement\n\n## Status\n\nAccepted, middleware implemented\n\n## Context\n\nIBC was designed with callbacks between core IBC and IBC applications. IBC apps would send a packet to core IBC. When the result of the packet lifecycle eventually resolved into either an acknowledgement or a timeout, core IBC called a callback on the IBC application so that the IBC application could take action on the basis of the result (e.g. unescrow tokens for ICS-20).\n\nThis setup worked well for off-chain users interacting with IBC applications.\n\nWe are now seeing the desire for secondary applications (e.g. smart contracts, modules) to call into IBC apps as part of their state machine logic and then do some actions on the basis of the packet result. Or to receive a packet from IBC and do some logic upon receipt.\n\nExample Usecases:\n\n- Send an ICS-20 packet, and if it is successful, then send an ICA-packet to swap tokens on LP and return funds to sender\n- Execute some logic upon receipt of token transfer to a smart contract address\n\nThis requires a second layer of callbacks. The IBC application already gets the result of the packet from core IBC, but currently there is no standardized way to pass this information on to an actor module/smart contract.\n\n## Definitions\n\n- Actor: an actor is an on-chain module (this may be a hardcoded module in the chain binary or a smart contract) that wishes to execute custom logic whenever IBC receives a packet flow that it has either sent or received. It **must** be addressable by a string value.\n\n## Decision\n\nCreate a middleware that can interface between IBC applications and smart contract VMs. The IBC applications and smart contract VMs will implement respective interfaces that will then be composed together by the callback middleware to allow a smart contract of any compatible VM to interact programmatically with an IBC application.\n\n## Data structures\n\nThe `CallbackPacketData` struct will get constructed from custom callback data in the application packet. The `CallbackAddress` is the IBC Actor address on which the callback should be called on. The `SenderAddress` is also provided to optionally allow a VM to ensure that the sender is the same as the callback address.\n\nThe struct also defines a `CommitGasLimit` which is the maximum gas a callback is allowed to use. If the callback exceeds this limit, the callback will panic and the tx will commit without the callback's state changes.\n\nThe `ExecutionGasLimit` is the practical limit of the tx execution that is set in the context gas meter. It is the minimum of the `CommitGasLimit` and the gas left in the context gas meter which is determined by the relayer's choice of tx gas limit. If `ExecutionGasLimit < CommitGasLimit`, then an out-of-gas error will revert the entire transaction without committing anything, allowing for a different relayer to retry with a larger tx gas limit.\n\nAny middleware targeting this interface for callback handling should define a global limit that caps the gas that a callback is allowed to take (especially on AcknowledgePacket and TimeoutPacket) so that a custom callback does not prevent the packet lifecycle from completing. However, since this is a global cap it is likely to be very large. Thus, users may specify a smaller limit to cap the amount of fees a relayer must pay in order to complete the packet lifecycle on the user's behalf.\n\n```go\n// Implemented by any packet data type that wants to support PacketActor callbacks\n// PacketActor's will be unable to act on any packet data type that does not implement\n// this interface. \ntype CallbackPacketData struct {\n    CallbackAddress: string\n    ExecutionGasLimit: uint64\n    SenderAddress: string\n    CommitGasLimit: uint64\n}\n```\n\nIBC Apps or middleware can then call the IBCActor callbacks like so in their own callbacks:\n\n### Callback Middleware\n\nThe CallbackMiddleware wraps an underlying IBC application along with a contractKeeper that delegates the callback to a virtual machine. This allows the Callback middleware to interface any compatible IBC application with any compatible VM (e.g. EVM, WASM) so long as the application implements the `CallbacksCompatibleModule` interface and the VM implements the `ContractKeeper` interface.\n\n```go\n// IBCMiddleware implements the ICS26 callbacks for the ibc-callbacks middleware given\n// the underlying application.\ntype IBCMiddleware struct {\n\tapp         types.CallbacksCompatibleModule\n\tics4Wrapper porttypes.ICS4Wrapper\n\n\tcontractKeeper types.ContractKeeper\n\n\t// maxCallbackGas defines the maximum amount of gas that a callback actor can ask the\n\t// relayer to pay for. If a callback fails due to insufficient gas, the entire tx\n\t// is reverted if the relayer hadn't provided the minimum(userDefinedGas, maxCallbackGas).\n\t// If the actor hasn't defined a gas limit, then it is assumed to be the maxCallbackGas.\n\tmaxCallbackGas uint64\n}\n```\n\n### Callback-Compatible IBC Application\n\nThe `CallbacksCompatibleModule` extends `porttypes.IBCModule` to include an `UnmarshalPacketData` function that allows the middleware to request that the underlying app unmarshal the packet data. This will then allow the middleware to retrieve the callback specific data from an arbitrary set of IBC application packets.\n\n```go\n// CallbacksCompatibleModule is an interface that combines the IBCModule and PacketDataUnmarshaler\n// interfaces to assert that the underlying application supports both.\ntype CallbacksCompatibleModule interface {\n\tporttypes.IBCModule\n\tporttypes.PacketDataUnmarshaler\n}\n\n// PacketDataUnmarshaler defines an optional interface which allows a middleware to\n// request the packet data to be unmarshaled by the base application.\ntype PacketDataUnmarshaler interface {\n\t// UnmarshalPacketData unmarshals the packet data into a concrete type\n\t// ctx, portID, channelID are provided as arguments, so that (if needed)\n\t// the packet data can be unmarshaled based on the channel version.\n\t// the version of the underlying app is also returned.\n\tUnmarshalPacketData(ctx sdk.Context, portID, channelID string, bz []byte) (interface{}, string, error)\n}\n```\n\nThe application's packet data must additionally implement the following interfaces:\n\n```go\n// PacketData defines an optional interface which an application's packet data structure may implement.\ntype PacketData interface {\n\t// GetPacketSender returns the sender address of the packet data.\n\t// If the packet sender is unknown or undefined, an empty string should be returned.\n\tGetPacketSender(sourcePortID string) string\n}\n\n// PacketDataProvider defines an optional interfaces for retrieving custom packet data stored on behalf of another application.\n// An existing problem in the IBC middleware design is the inability for a middleware to define its own packet data type and insert packet sender provided information.\n// A short term solution was introduced into several application's packet data to utilize a memo field to carry this information on behalf of another application.\n// This interfaces standardizes that behaviour. Upon realization of the ability for middleware's to define their own packet data types, this interface will be deprecated and removed with time.\ntype PacketDataProvider interface {\n\t// GetCustomPacketData returns the packet data held on behalf of another application.\n\t// The name the information is stored under should be provided as the key.\n\t// If no custom packet data exists for the key, nil should be returned.\n\tGetCustomPacketData(key string) interface{}\n}\n```\n\nThe callback data can be embedded in an application packet by providing custom packet data for source and destination callback in the custom packet data under the appropriate key.\n\n```jsonc\n// Custom Packet data embedded as a JSON object in the packet data\n\n// src callback custom data\n{\n  \"src_callback\": {\n    \"address\": \"callbackAddressString\",\n    // optional\n    \"gas_limit\": \"userDefinedGasLimitString\",\n  }\n}\n\n// dest callback custom data\n{\n  \"dest_callback\": {\n    \"address\": \"callbackAddressString\",\n    // optional\n    \"gas_limit\": \"userDefinedGasLimitString\",\n  }\n}\n\n// src and dest callback custom data embedded together\n{\n  \"src_callback\": {\n    \"address\": \"callbackAddressString\",\n    // optional\n    \"gas_limit\": \"userDefinedGasLimitString\",\n  },\n  \"dest_callback\": {\n    \"address\": \"callbackAddressString\",\n    // optional\n    \"gas_limit\": \"userDefinedGasLimitString\",\n  }\n}\n```\n\n## ContractKeeper\n\nThe `ContractKeeper` interface must be implemented by any VM that wants to support IBC callbacks. This allows for separation of concerns\nbetween the middleware which is handling logic intended for all VMs (e.g. setting gas meter, extracting callback data, emitting events), \nwhile the ContractKeeper can handle the specific details of calling into the VM in question.\n\nThe `ContractKeeper` **may** impose additional checks such as ensuring that the contract address is the same as the packet sender in source callbacks. \nIt may also disable certain callback methods by simply performing a no-op.\n\n```go\n// ContractKeeper defines the entry points exposed to the VM module which invokes a smart contract\ntype ContractKeeper interface {\n\t// IBCSendPacketCallback is called in the source chain when a PacketSend is executed. The\n\t// packetSenderAddress is determined by the underlying module, and may be empty if the sender is\n\t// unknown or undefined. The contract is expected to handle the callback within the user defined\n\t// gas limit, and handle any errors, or panics gracefully.\n\t// This entry point is called with a cached context. If an error is returned, then the changes in\n\t// this context will not be persisted, and the error will be propagated to the underlying IBC\n\t// application, resulting in a packet send failure.\n\t//\n\t// Implementations are provided with the packetSenderAddress and MAY choose to use this to perform\n\t// validation on the origin of a given packet. It is recommended to perform the same validation\n\t// on all source chain callbacks (SendPacket, AcknowledgementPacket, TimeoutPacket). This\n\t// defensively guards against exploits due to incorrectly wired SendPacket ordering in IBC stacks.\n\t//\n\t// The version provided is the base application version for the given packet send. This allows\n\t// contracts to determine how to unmarshal the packetData.\n\tIBCSendPacketCallback(\n\t\tcachedCtx sdk.Context,\n\t\tsourcePort string,\n\t\tsourceChannel string,\n\t\ttimeoutHeight clienttypes.Height,\n\t\ttimeoutTimestamp uint64,\n\t\tpacketData []byte,\n\t\tcontractAddress,\n\t\tpacketSenderAddress string,\n\t\tversion string,\n\t) error\n\t// IBCOnAcknowledgementPacketCallback is called in the source chain when a packet acknowledgement\n\t// is received. The packetSenderAddress is determined by the underlying module, and may be empty if\n\t// the sender is unknown or undefined. The contract is expected to handle the callback within the\n\t// user defined gas limit, and handle any errors, or panics gracefully.\n\t// This entry point is called with a cached context. If an error is returned, then the changes in\n\t// this context will not be persisted, but the packet lifecycle will not be blocked.\n\t//\n\t// Implementations are provided with the packetSenderAddress and MAY choose to use this to perform\n\t// validation on the origin of a given packet. It is recommended to perform the same validation\n\t// on all source chain callbacks (SendPacket, AcknowledgementPacket, TimeoutPacket). This\n\t// defensively guards against exploits due to incorrectly wired SendPacket ordering in IBC stacks.\n\t//\n\t// The version provided is the base application version for the given packet send. This allows\n\t// contracts to determine how to unmarshal the packetData.\n\tIBCOnAcknowledgementPacketCallback(\n\t\tcachedCtx sdk.Context,\n\t\tpacket channeltypes.Packet,\n\t\tacknowledgement []byte",
+   "truncated_text": true,
+   "discussion_refs": [
+    {
+     "key": "cosmos/ibc-go#1660",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc-go/issues/1660",
+     "number": "1660"
+    },
+    {
+     "key": "cosmos/ibc-go#3287",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/ibc-go/pull/3287",
+     "number": "3287"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-015-ibc-packet-receiver.md",
+   "identity": "docs/architecture/adr-015-ibc-packet-receiver.md",
+   "adr_id": "15",
+   "title": "ADR 015: IBC Packet Receiver",
+   "first_commit": "2021-04-26T15:42:28+02:00",
+   "first_sha": "3561ddf7336f71cac3fe0f4cc5dd5a78f0e2769f",
+   "last_commit": "2024-12-18T16:43:27+08:00",
+   "author": "colin axn\u00e9r",
+   "email": "25233464+colin-axner@users.noreply.github.com",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 8,
+   "text": "# ADR 015: IBC Packet Receiver\n\n## Changelog\n\n- 2019 Oct 22: Initial Draft\n\n## Context\n\n[ICS 26 - Routing Module](https://github.com/cosmos/ibc/tree/master/spec/core/ics-026-routing-module) defines a function [`handlePacketRecv`](https://github.com/cosmos/ibc/tree/master/spec/core/ics-026-routing-module#packet-relay).\n\nIn ICS 26, the routing module is defined as a layer above each application module\nwhich verifies and routes messages to the destination modules. It is possible to\nimplement it as a separate module, however, we already have the functionality to route\nmessages upon the destination identifiers in the baseapp. This ADR suggests\nto utilize existing `baseapp.router` to route packets to application modules.\n\nGenerally, routing module callbacks have two separate steps in them,\nverification and execution. This corresponds to the `AnteHandler`-`Handler`\nmodel inside the SDK. We can do the verification inside the `AnteHandler`\nin order to increase developer ergonomics by reducing boilerplate\nverification code.\n\nFor atomic multi-message transaction, we want to keep the IBC related\nstate modification to be preserved even the application side state change\nreverts. One of the example might be IBC token sending message following with\nstake delegation which uses the tokens received by the previous packet message.\nIf the token receiving fails for any reason, we might not want to keep\nexecuting the transaction, but we also don't want to abort the transaction\nor the sequence and commitment will be reverted and the channel will be stuck.\nThis ADR suggests new `CodeType`, `CodeTxBreak`, to fix this problem.\n\n## Decision\n\n`PortKeeper` will have the capability key that is able to access only the\nchannels bound to the port. Entities that hold a `PortKeeper` will be\nable to call the methods on it which are corresponding with the methods with\nthe same names on the `ChannelKeeper`, but only with the\nallowed port. `ChannelKeeper.Port(string, ChannelChecker)` will be defined to\neasily construct a capability-safe `PortKeeper`. This will be addressed in\nanother ADR and we will use insecure `ChannelKeeper` for now.\n\n`baseapp.runMsgs` will break the loop over the messages if one of the handlers\nreturns `!Result.IsOK()`. However, the outer logic will write the cached\nstore if `Result.IsOK() || Result.Code.IsBreak()`. `Result.Code.IsBreak()` if\n`Result.Code == CodeTxBreak`.\n\n```go\nfunc (app *BaseApp) runTx(tx Tx) (result Result) {\n  msgs := tx.GetMsgs()\n  \n  // AnteHandler\n  if app.anteHandler != nil {\n    anteCtx, msCache := app.cacheTxContext(ctx)\n    newCtx, err := app.anteHandler(anteCtx, tx)\n    if !newCtx.IsZero() {\n      ctx = newCtx.WithMultiStore(ms)\n    }\n\n    if err != nil {\n      // error handling logic\n      return res\n    }\n\n    msCache.Write()\n  }\n  \n  // Main Handler\n  runMsgCtx, msCache := app.cacheTxContext(ctx)\n  result = app.runMsgs(runMsgCtx, msgs)\n  // BEGIN modification made in this ADR\n  if result.IsOK() || result.IsBreak() {\n  // END\n    msCache.Write()\n  }\n\n  return result\n}\n```\n\nThe Cosmos SDK will define an `AnteDecorator` for IBC packet receiving. The\n`AnteDecorator` will iterate over the messages included in the transaction, type\n`switch` to check whether the message contains an incoming IBC packet, and if so\nverify the Merkle proof.\n\n```go\ntype ProofVerificationDecorator struct {\n  clientKeeper ClientKeeper\n  channelKeeper ChannelKeeper\n}\n\nfunc (pvr ProofVerificationDecorator) AnteHandle(ctx Context, tx Tx, simulate bool, next AnteHandler) (Context, error) {\n  for _, msg := range tx.GetMsgs() {\n    var err error\n    switch msg := msg.(type) {\n    case client.MsgUpdateClient:\n      err = pvr.clientKeeper.UpdateClient(msg.ClientID, msg.Header)\n    case channel.MsgPacket:\n      err = pvr.channelKeeper.RecvPacket(msg.Packet, msg.Proofs, msg.ProofHeight)\n    case channel.MsgAcknowledgement:\n      err = pvr.channelKeeper.AcknowledgementPacket(msg.Acknowledgement, msg.Proof, msg.ProofHeight)\n    case channel.MsgTimeoutPacket:\n      err = pvr.channelKeeper.TimeoutPacket(msg.Packet, msg.Proof, msg.ProofHeight, msg.NextSequenceRecv)\n    case channel.MsgChannelOpenInit;\n      err = pvr.channelKeeper.CheckOpen(msg.PortID, msg.ChannelID, msg.Channel)\n    default:\n      continue\n    }\n\n    if err != nil {\n      return ctx, err\n    }\n  }\n  \n  return next(ctx, tx, simulate)\n}\n```\n\nWhere `MsgUpdateClient`, `MsgPacket`, `MsgAcknowledgement`, `MsgTimeoutPacket`\nare `sdk.Msg` types correspond to `handleUpdateClient`, `handleRecvPacket`,\n`handleAcknowledgementPacket`, `handleTimeoutPacket` of the routing module,\nrespectively.\n\nThe side effects of `RecvPacket`, `VerifyAcknowledgement`,\n`VerifyTimeout` will be extracted out into separated functions,\n`WriteAcknowledgement`, `DeleteCommitment`, `DeleteCommitmentTimeout`, respectively,\nwhich will be called by the application handlers after the execution.\n\n`WriteAcknowledgement` writes the acknowledgement to the state that can be\nverified by the counter-party chain and increments the sequence to prevent\ndouble execution. `DeleteCommitment` will delete the commitment stored,\n`DeleteCommitmentTimeout` will delete the commitment and close channel in case\nof ordered channel.\n\n```go\nfunc (keeper ChannelKeeper) WriteAcknowledgement(ctx Context, packet Packet, ack []byte) {\n  keeper.SetPacketAcknowledgement(ctx, packet.GetDestPort(), packet.GetDestChannel(), packet.GetSequence(), ack)\n  keeper.SetNextSequenceRecv(ctx, packet.GetDestPort(), packet.GetDestChannel(), packet.GetSequence())\n}\n\nfunc (keeper ChannelKeeper) DeleteCommitment(ctx Context, packet Packet) {\n  keeper.deletePacketCommitment(ctx, packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())\n}\n\nfunc (keeper ChannelKeeper) DeleteCommitmentTimeout(ctx Context, packet Packet) {\n  k.deletePacketCommitment(ctx, packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())\n  \n  if channel.Ordering == types.ORDERED [\n    channel.State = types.CLOSED\n    k.SetChannel(ctx, packet.GetSourcePort(), packet.GetSourceChannel(), channel)\n  }\n}\n```\n\nEach application handler should call respective finalization methods on the `PortKeeper`\nin order to increase sequence (in case of packet) or remove the commitment\n(in case of acknowledgement and timeout).\nCalling those functions implies that the application logic has successfully executed.\nHowever, the handlers can return `Result` with `CodeTxBreak` after calling those methods\nwhich will persist the state changes that has been already done but prevent any further\nmessages to be executed in case of semantically invalid packet. This will keep the sequence\nincreased in the previous IBC packets(thus preventing double execution) without\nproceeding to the following messages.\nIn any case the application modules should never return state reverting result,\nwhich will make the channel unable to proceed.\n\n`ChannelKeeper.CheckOpen` method will be introduced. This will replace `onChanOpen*` defined\nunder the routing module specification. Instead of define each channel handshake callback\nfunctions, application modules can provide `ChannelChecker` function with the `AppModule`\nwhich will be injected to `ChannelKeeper.Port()` at the top level application.\n`CheckOpen` will find the correct `ChannelChecker` using the\n`PortID` and call it, which will return an error if it is unacceptable by the application.\n\nThe `ProofVerificationDecorator` will be inserted to the top level application.\nIt is not safe to make each module responsible to call proof verification\nlogic, whereas application can misbehave(in terms of IBC protocol) by\nmistake.\n\nThe `ProofVerificationDecorator` should come right after the default sybil attack\nresistant layer from the current `auth.NewAnteHandler`:\n\n```go\n// add IBC ProofVerificationDecorator to the Chain of\nfunc NewAnteHandler(\n  ak keeper.AccountKeeper, supplyKeeper types.SupplyKeeper, ibcKeeper ibc.Keeper,\n  sigGasConsumer SignatureVerificationGasConsumer) sdk.AnteHandler {\n  return sdk.ChainAnteDecorators(\n    NewSetUpContextDecorator(), // outermost AnteDecorator. SetUpContext must be called first\n    ...\n    NewIncrementSequenceDecorator(ak),\n    ibcante.ProofVerificationDecorator(ibcKeeper.ClientKeeper, ibcKeeper.ChannelKeeper), // innermost AnteDecorator\n  )\n}\n```\n\nThe implementation of this ADR will also create a `Data` field of the `Packet` of type `[]byte`, which can be deserialised by the receiving module into its own private type. It is up to the application modules to do this according to their own interpretation, not by the IBC keeper.  This is crucial for dynamic IBC.\n\nExample application-side usage:\n\n```go\ntype AppModule struct {}\n\n// CheckChannel will be provided to the ChannelKeeper as ChannelKeeper.Port(module.CheckChannel)\nfunc (module AppModule) CheckChannel(portID, channelID string, channel Channel) error {\n  if channel.Ordering != UNORDERED {\n    return ErrUncompatibleOrdering()\n  }\n  if channel.CounterpartyPort != \"bank\" {\n    return ErrUncompatiblePort()\n  }\n  if channel.Version != \"\" {\n    return ErrUncompatibleVersion()\n  }\n  return nil\n}\n\nfunc NewHandler(k Keeper) Handler {\n  return func(ctx Context, msg Msg) Result {\n    switch msg := msg.(type) {\n    case MsgTransfer:\n      return handleMsgTransfer(ctx, k, msg)\n    case ibc.MsgPacket:\n      var data PacketDataTransfer\n      if err := types.ModuleCodec.UnmarshalBinaryBare(msg.GetData(), &data); err != nil {\n        return err\n      }\n      return handlePacketDataTransfer(ctx, k, msg, data)\n    case ibc.MsgTimeoutPacket:\n      var data PacketDataTransfer\n      if err := types.ModuleCodec.UnmarshalBinaryBare(msg.GetData(), &data); err != nil {\n        return err\n      }\n      return handleTimeoutPacketDataTransfer(ctx, k, packet)\n    // interface { PortID() string; ChannelID() string; Channel() ibc.Channel }\n    // MsgChanInit, MsgChanTry implements ibc.MsgChannelOpen\n    case ibc.MsgChannelOpen: \n      return handleMsgChannelOpen(ctx, k, msg)\n    }\n  }\n}\n\nfunc handleMsgTransfer(ctx Context, k Keeper, msg MsgTransfer) Result {\n  err := k.SendTransfer(ctx,msg.PortID, msg.ChannelID, msg.Amount, msg.Sender, msg.Receiver)\n  if err != nil {\n    return sdk.ResultFromError(err)\n  }\n\n  return sdk.Result{}\n}\n\nfunc handlePacketDataTransfer(ctx Context, k Keeper, packet Packet, data PacketDataTransfer) Result {\n  err := k.ReceiveTransfer(ctx, packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetDestinationPort(), packet.GetDestinationChannel(), data)\n  if err != nil {\n    // TODO: Source chain sent invalid packet, shutdown channel\n  }\n  k.ChannelKeeper.WriteAcknowledgement([]byte{0x00}) // WriteAcknowledgement increases the sequence, preventing double spending\n  return sdk.Result{}\n}\n\nfunc handleCustomTimeoutPacket(ctx Context, k Keeper, packet CustomPacket) Result {\n  err := k.RecoverTransfer(ctx, packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetDestinationPort(), packet.GetDestinationChannel(), data)\n  if err != nil {\n    // This chain sent invalid packet or cannot recover the funds\n    panic(err)\n  }\n  k.ChannelKeeper.DeleteCommitmentTimeout(ctx, packet)\n  // packet timeout should not fail\n  return sdk.Result{}\n}\n\nfunc handleMsgChannelOpen(sdk.Context, k Keeper, msg MsgOpenChannel) Result {\n  k.AllocateEscrowAddress(ctx, msg.ChannelID())\n  return sdk.Result{}\n}\n```\n\n## Status\n\nProposed\n\n## Consequences\n\n### Positive\n\n- Intuitive interface for developers - IBC handlers do not need to care about IBC authentication\n- State change commitment logic is embedded into `baseapp.runTx` logic\n\n### Negative\n\n- Cannot support dynamic ports, routing is tied to the baseapp router\n\n### Neutral\n\n- Introduces new `AnteHandler` decorator.\n- Dynamic ports can be supported using hierarchical port identifier, see #5290 for detail\n\n## References\n\n- Relevant comment: [cosmos/ics#289](https://github.com/cosmos/ibc/issues/289#issuecomment-544533583)\n- [ICS26 - Routing Module](https://github.com/cosmos/ibc/tree/master/spec/core/ics-026-routing-module)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#5290",
+     "kind": "hash",
+     "url": "",
+     "number": "5290"
+    },
+    {
+     "key": "cosmos/ibc#289",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc/issues/289",
+     "number": "289"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-026-ibc-client-recovery-mechanisms.md",
+   "identity": "docs/architecture/adr-026-ibc-client-recovery-mechanisms.md",
+   "adr_id": "26",
+   "title": "ADR 026: IBC Client Recovery Mechanisms",
+   "first_commit": "2021-04-26T15:42:28+02:00",
+   "first_sha": "3561ddf7336f71cac3fe0f4cc5dd5a78f0e2769f",
+   "last_commit": "2024-12-18T16:43:27+08:00",
+   "author": "colin axn\u00e9r",
+   "email": "25233464+colin-axner@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "*Accepted*",
+   "replacement": null,
+   "n_commits": 11,
+   "text": "# ADR 026: IBC Client Recovery Mechanisms\n\n## Changelog\n\n- 2020/06/23: Initial version\n- 2020/08/06: Revisions per review & to reference version\n- 2021/01/15: Revision to support substitute clients for unfreezing\n- 2021/05/20: Revision to simplify consensus state copying, remove initial height\n- 2022/04/08: Revision to deprecate AllowUpdateAfterExpiry and AllowUpdateAfterMisbehaviour\n- 2022/07/15: Revision to allow updating of TrustingPeriod\n- 2023/09/05: Revision to migrate from gov v1beta1 to gov v1\n\n## Status\n\n*Accepted*\n\n## Context\n\n### Summary\n\nAt launch, IBC will be a novel protocol, without an experienced user-base. At the protocol layer, it is not possible to distinguish between client expiry or misbehaviour due to genuine faults (Byzantine behaviour) and client expiry or misbehaviour due to user mistakes (failing to update a client, or accidentally double-signing). In the base IBC protocol and ICS 20 fungible token transfer implementation, if a client can no longer be updated, funds in that channel will be permanently locked and can no longer be transferred. To the degree that it is safe to do so, it would be preferable to provide users with a recovery mechanism which can be utilised in these exceptional cases.\n\n### Exceptional cases\n\nThe state of concern is where a client associated with connection(s) and channel(s) can no longer be updated. This can happen for several reasons:\n\n1. The chain which the client is following has halted and is no longer producing blocks/headers, so no updates can be made to the client\n1. The chain which the client is following has continued to operate, but no relayer has submitted a new header within the unbonding period, and the client has expired\n    1. This could be due to real misbehaviour (intentional Byzantine behaviour) or merely a mistake by validators, but the client cannot distinguish these two cases\n1. The chain which the client is following has experienced a misbehaviour event, and the client has been frozen & thus can no longer be updated\n\n### Security model\n\nTwo-thirds of the validator set (the quorum for governance, module participation) can already sign arbitrary data, so allowing governance to manually force-update a client with a new header after a delay period does not substantially alter the security model.\n\n## Decision\n\nWe elect not to deal with chains which have actually halted, which is necessarily Byzantine behaviour and in which case token recovery is not likely possible anyways (in-flight packets cannot be timed-out, but the relative impact of that is minor).\n\n1. Require Tendermint light clients (ICS 07) to be created with the following additional flags\n    1. `allow_update_after_expiry` (boolean, default true). Note that this flag has been deprecated, it remains to signal intent but checks against this value will not be enforced.\n1. Require Tendermint light clients (ICS 07) to expose the following additional internal query functions\n    1. `Expired() boolean`, which returns whether or not the client has passed the trusting period since the last update (in which case no headers can be validated)\n1. Require Tendermint light clients (ICS 07) & solo machine clients (ICS 06) to be created with the following additional flags\n    1. `allow_update_after_misbehaviour` (boolean, default true). Note that this flag has been deprecated, it remains to signal intent but checks against this value will not be enforced.\n1. Require Tendermint light clients (ICS 07) to expose the following additional state mutation functions\n    1. `Unfreeze()`, which unfreezes a light client after misbehaviour and clears any frozen height previously set\n1. Add a new governance proposal with `MsgRecoverClient`.\n    1. Create a new Msg with two client identifiers (`string`) and a signer.\n    1. The first client identifier is the proposed client to be updated. This client must be either frozen or expired.\n    1. The second client is a substitute client. It carries all the state for the client which may be updated. It must have identical client and chain parameters to the client which may be updated (except for latest height, frozen height, and chain-id). It should be continually updated during the voting period.\n    1. If this governance proposal passes, the client on trial will be updated to the latest state of the substitute.\n    1. The signer must be the authority set for the ibc module.\n\n    Previously, `AllowUpdateAfterExpiry` and `AllowUpdateAfterMisbehaviour` were used to signal the recovery options for an expired or frozen client, and governance proposals were not allowed to overwrite the client if these parameters were set to false. However, this has now been deprecated because a code migration can overwrite the client and consensus states regardless of the value of these parameters. If governance would vote to overwrite a client or consensus state, it is likely that governance would also be willing to perform a code migration to do the same.\n\n    In addition, `TrustingPeriod` was initially not allowed to be updated by a client upgrade proposal. However, due to the number of situations experienced in production where the `TrustingPeriod` of a client should be allowed to be updated because of ie: initial misconfiguration for a canonical channel, governance should be allowed to update this client parameter.\n\n    In versions older than ibc-go v8, `MsgRecoverClient` was a governance proposal type `ClientUpdateProposal`. It has been removed and replaced by `MsgRecoverClient` in the migration from governance v1beta1 to governance v1.\n\n    Note that this should NOT be lightly updated, as there may be a gap in time between when misbehaviour has occurred and when the evidence of misbehaviour is submitted. For example, if the `UnbondingPeriod` is 2 weeks and the `TrustingPeriod` has also been set to two weeks, a validator could wait until right before `UnbondingPeriod` finishes, submit false information, then unbond and exit without being slashed for misbehaviour. Therefore, we recommend that the trusting period for the 07-tendermint client be set to 2/3 of the `UnbondingPeriod`.\n\nNote that clients frozen due to misbehaviour must wait for the evidence to expire to avoid becoming refrozen.\n\nThis ADR does not address planned upgrades, which are handled separately as per the [specification](https://github.com/cosmos/ibc/tree/master/spec/client/ics-007-tendermint-client#upgrades).\n\n## Consequences\n\n### Positive\n\n- Establishes a mechanism for client recovery in the case of expiry\n- Establishes a mechanism for client recovery in the case of misbehaviour\n- Constructing an ClientUpdate Proposal is as difficult as creating a new client\n\n### Negative\n\n- Additional complexity in client creation which must be understood by the user\n- Coping state of the substitute adds complexity\n- Governance participants must vote on a substitute client\n\n### Neutral\n\nNo neutral consequences.\n\n## References\n\n- [Prior discussion](https://github.com/cosmos/ibc/issues/421)\n- [Epoch number discussion](https://github.com/cosmos/ibc/issues/439)\n- [Upgrade plan discussion](https://github.com/cosmos/ibc/issues/445)\n- [Migration from gov v1beta1 to gov v1](https://github.com/cosmos/ibc-go/issues/3672)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "cosmos/ibc#421",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc/issues/421",
+     "number": "421"
+    },
+    {
+     "key": "cosmos/ibc#439",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc/issues/439",
+     "number": "439"
+    },
+    {
+     "key": "cosmos/ibc#445",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc/issues/445",
+     "number": "445"
+    },
+    {
+     "key": "cosmos/ibc-go#3672",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc-go/issues/3672",
+     "number": "3672"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-009-v6-ics27-msgserver.md",
+   "identity": "docs/architecture/adr-009-v6-ics27-msgserver.md",
+   "adr_id": "9",
+   "title": "ADR 009: ICS27 message server addition",
+   "first_commit": "2022-09-28T14:25:10+02:00",
+   "first_sha": "c582e8a4c80444913e51b7436d2a88773235d8a1",
+   "last_commit": "2024-07-03T11:23:46+03:00",
+   "author": "colin axn\u00e9r",
+   "email": "25233464+colin-axner@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted, implemented in v6 of ibc-go",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# ADR 009: ICS27 message server addition\n\n## Changelog\n\n- 2022/09/07: Initial draft\n\n## Status\n\nAccepted, implemented in v6 of ibc-go\n\n## Context\n\nICS 27 (Interchain Accounts) brought a cross-chain account management protocol built upon IBC.\nIt enabled chains to programmatically create accounts on behalf of counterparty chains which may enable a variety of authentication methods for this interchain account.\nThe initial release of ICS 27 focused on enabling authentication schemes that may not require signing with a private key, such as via on-chain mechanisms like governance.\n\nFollowing the initial release of ICS 27 it became evident that:\n\n- a default authentication module would enable more usage of ICS 27\n- generic authentication modules should be capable of authenticating an interchain account registration\n- application logic which wraps ICS 27 packet sends does not need to be associated with the authentication logic\n\n## Decision\n\nThe controller module should be simplified to remove the correlation between the authentication logic for an interchain account and the application logic for an interchain account.\nTo minimize disruption to developers working on the original design of the ICS 27 controller module, all changes will be made in a backwards compatible fashion.\n\n### Msg server\n\nTo achieve this, as stated by [@damiannolan](https://github.com/cosmos/ibc-go/issues/2026#issue-1341640594), it was proposed to:\n\n> Add a new `MsgServer` to `27-interchain-accounts` which exposes two distinct rpc endpoints:\n>\n> - `RegisterInterchainAccount`\n> - `SendTx`\n\nThis will enable any SDK (authentication) module to register interchain accounts and send transactions on their behalf.\nExamples of existing SDK modules which would benefit from this change include:\n\n- x/auth\n- x/gov\n- x/group\n\nThe existing go functions: `RegisterInterchainAccount()` and `SendTx()` will remain to operate as they did in previous release versions.\n\nThis will be possible for SDK v0.46.x and above.\n\n### Allow `nil` underlying applications\n\nAuthentication modules should interact with the controller module via the message server and should not be associated with application logic.\nFor now, it will be allowed to set a `nil` underlying application.\nA future version may remove the underlying application entirely.\n\nSee issue [#2040](https://github.com/cosmos/ibc-go/issues/2040)\n\n### Channel capability claiming\n\nThe controller module will now claim the channel capability in `OnChanOpenInit`.\nUnderlying applications will be passed a `nil` capability in `OnChanOpenInit`.\n\nChannel capability migrations will be added in two steps:\n\n- Upgrade handler migration which modifies the channel capability owner from the underlying app to the controller module\n- ICS 27 module automatic migration which asserts the upgrade handler channel capability migration has been performed successfully\n\nSee issue [#2033](https://github.com/cosmos/ibc-go/issues/2033)\n\n### Middleware enabled channels\n\nIn order to maintain backwards compatibility and avoid requiring underlying application developers to account for interchain accounts they did not register, a boolean mapping has been added to track the behaviour of how an account was created.\n\nIf the account was created via the legacy API, then the underlying application callbacks will be executed.\n\nIf the account was created with the new API (message server), then the underlying application callbacks will not be executed.\n\nSee issue [#2145](https://github.com/cosmos/ibc-go/issues/2145)\n\n### Future considerations\n\n[ADR 008](https://github.com/cosmos/ibc-go/pull/1976) proposes the creation of a middleware which enables callers of an IBC packet send to perform application logic in conjunction with the IBC application.\nThe underlying application can be removed at the availability of such a middleware as that will be the preferred method for executing application logic upon a ICS 27 packet send.\n\n### Miscellaneous\n\nIn order to avoid import cycles, the genesis types have been moved to their own directory.\nA new protobuf package has been created for the genesis types.\n\nSee PR [#2133](https://github.com/cosmos/ibc-go/pull/2133)\n\nAn additional field has been added to the `ActiveChannel` type to store the `IsMiddlewareEnabled` field upon genesis import/export.\n\nSee issue [#2165](https://github.com/cosmos/ibc-go/issues/2165)\n\n## Consequences\n\n### Positive\n\n- default authentication modules are provided (x/auth, x/group, x/gov)\n- any SDK authentication module may now be used with ICS 27\n- separation of authentication from application logic in relation to ICS 27\n- minimized disruption to existing development around ICS 27 controller module\n- underlying applications no longer have to handle capabilities\n- removal of the underlying application upon the creation of ADR 008 may be done in a minimally disruptive fashion\n- only underlying applications which registered the interchain account will perform application logic for that account (underlying applications do not need to be aware of accounts they did not register)\n\n### Negative\n\n- the security model has been reduced to that of the SDK. SDK modules may send packets for any interchain account.\n- additional maintenance of the messages added and the middleware enabled flag\n- underlying applications which will become ADR 008 modules are not required to be aware of accounts they did not register\n- calling legacy API vs the new API results in different behaviour for ICS 27 application stacks which have an underlying application\n\n### Neutral\n\n- A major release is required\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "cosmos/ibc-go#2026",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc-go/issues/2026",
+     "number": "2026"
+    },
+    {
+     "key": "#2040",
+     "kind": "hash",
+     "url": "",
+     "number": "2040"
+    },
+    {
+     "key": "cosmos/ibc-go#2040",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc-go/issues/2040",
+     "number": "2040"
+    },
+    {
+     "key": "#2033",
+     "kind": "hash",
+     "url": "",
+     "number": "2033"
+    },
+    {
+     "key": "cosmos/ibc-go#2033",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc-go/issues/2033",
+     "number": "2033"
+    },
+    {
+     "key": "#2145",
+     "kind": "hash",
+     "url": "",
+     "number": "2145"
+    },
+    {
+     "key": "cosmos/ibc-go#2145",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc-go/issues/2145",
+     "number": "2145"
+    },
+    {
+     "key": "cosmos/ibc-go#1976",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/ibc-go/pull/1976",
+     "number": "1976"
+    },
+    {
+     "key": "#2133",
+     "kind": "hash",
+     "url": "",
+     "number": "2133"
+    },
+    {
+     "key": "cosmos/ibc-go#2133",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/ibc-go/pull/2133",
+     "number": "2133"
+    },
+    {
+     "key": "#2165",
+     "kind": "hash",
+     "url": "",
+     "number": "2165"
+    },
+    {
+     "key": "cosmos/ibc-go#2165",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc-go/issues/2165",
+     "number": "2165"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-027-ibc-wasm.md",
+   "identity": "docs/architecture/adr-027-ibc-wasm.md",
+   "adr_id": "27",
+   "title": "ADR 27: Add support for Wasm based light client",
+   "first_commit": "2021-05-12T15:44:43+04:00",
+   "first_sha": "6dbf32f38ee39b5948bb99362871e72eb9faef50",
+   "last_commit": "2024-07-03T11:23:46+03:00",
+   "author": "Parth",
+   "email": "desaiparth08@gmail.com",
+   "status": "accepted",
+   "status_raw": "*Accepted and applied in v0.1.0 of 08-wasm*",
+   "replacement": null,
+   "n_commits": 9,
+   "text": "# ADR 27: Add support for Wasm based light client\n\n## Changelog\n\n- 26/11/2020: Initial Draft\n- 26/05/2023: Update after 02-client refactor and re-implementation by Strangelove\n- 13/12/2023: Update after upstreaming of module to ibc-go\n\n## Status\n\n*Accepted and applied in v0.1.0 of 08-wasm*\n\n## Abstract\n\nIn the Cosmos SDK light clients are currently hardcoded in Go. This makes upgrading existing IBC light clients or\nadding support for new light client a multi step process involving on-chain governance which is time-consuming.\n\nTo remedy this, we are proposing a Wasm VM to host light client bytecode, which allows easier upgrading of\nexisting IBC light clients as well as adding support for new IBC light clients without requiring a code release and \ncorresponding hard-fork event.\n\n## Context\n\nCurrently in ibc-go light clients are defined as part of the codebase and are implemented as modules under\n`modules/light-clients`. Adding support for new light clients or updating an existing light client in the event\nof a security issue or consensus update is a multi-step process which is both time-consuming and error-prone. \nIn order to enable new IBC light client implementations it is necessary to modify the codebase of ibc-go (if the light\nclient is part of its codebase), re-build chains' binaries, pass a governance proposal and validators upgrade their nodes.\n\nAnother problem stemming from the above process is that if a chain wants to upgrade its own consensus, it will \nneed to convince every chain or hub connected to it to upgrade its light client in order to stay connected. Due \nto the time-consuming process required to upgrade a light client, a chain with lots of connections needs to be \ndisconnected for quite some time after upgrading its consensus, which can be very expensive in terms of time and effort.\n\nWe are proposing simplifying this workflow by integrating a Wasm light client module that makes adding support for\nnew light clients a simple governance-gated transaction. The light client bytecode, written in Wasm-compilable Rust, \nruns inside a Wasm VM. The Wasm light client submodule exposes a proxy light client interface that routes incoming \nmessages to the appropriate handler function, inside the Wasm VM for execution.\n\nWith the Wasm light client module, anybody can add new IBC light client in the form of Wasm bytecode (provided they are \nable to submit the governance proposal transaction and that it passes) as well as instantiate clients using any created \nclient type. This allows any chain to update its own light client in other chains without going through the steps outlined above.\n\n## Decision\n\nWe decided to implement the Wasm light client module as a light client proxy that will interface with the actual light client\nuploaded as Wasm bytecode. To enable usage of the Wasm light client module, users need to add it to the list of allowed clients\nby updating the `AllowedClients` parameter in the 02-client submodule of core IBC.\n\n```go\nparams := clientKeeper.GetParams(ctx)\nparams.AllowedClients = append(params.AllowedClients, exported.Wasm)\nclientKeeper.SetParams(ctx, params)\n```\n\nAdding a new light client contract is governance-gated. To upload a new light client users need to submit \na [governance v1 proposal](https://docs.cosmos.network/main/modules/gov#proposals) that contains the `sdk.Msg` for storing \nthe Wasm contract's bytecode. The required message is `MsgStoreCode` and the bytecode is provided in the field `wasm_byte_code`:\n\n```proto\n// MsgStoreCode defines the request type for the StoreCode rpc.\nmessage MsgStoreCode {\n  // signer address\n  string signer = 1;\n  // wasm byte code of light client contract. It can be raw or gzip compressed\n  bytes wasm_byte_code = 2;\n}\n```\n\nThe RPC handler processing `MsgStoreCode` will make sure that the signer of the message matches the address of authority allowed to \nsubmit this message (which is normally the address of the governance module).\n\n```go\n// StoreCode defines a rpc handler method for MsgStoreCode\nfunc (k Keeper) StoreCode(goCtx context.Context, msg *types.MsgStoreCode) (*types.MsgStoreCodeResponse, error) {\n  if k.GetAuthority() != msg.Signer {\n    return nil, errorsmod.Wrapf(ibcerrors.ErrUnauthorized, \"expected %s, got %s\", k.GetAuthority(), msg.Signer)\n  }\n\n  ctx := sdk.UnwrapSDKContext(goCtx)\n  checksum, err := k.storeWasmCode(ctx, msg.WasmByteCode, ibcwasm.GetVM().StoreCode)\n  if err != nil {\n    return nil, errorsmod.Wrap(err, \"failed to store wasm bytecode\")\n  }\n\n  emitStoreWasmCodeEvent(ctx, checksum)\n\n  return &types.MsgStoreCodeResponse{\n    Checksum: checksum,\n  }, nil\n}\n```\n\nThe contract's bytecode is not stored in state (it is actually unnecessary and wasteful to store it, since\nthe Wasm VM already stores it and can be queried back, if needed). The checksum is simply the hash of the bytecode\nof the contract and it is stored in state in an entry with key `checksums` that contains the checksums for the bytecodes that have been stored.\n\n### How light client proxy works?\n\nThe light client proxy behind the scenes will call a CosmWasm smart contract instance with incoming arguments serialized \nin JSON format with appropriate environment information. Data returned by the smart contract is deserialized and\nreturned to the caller.\n\nConsider the example of the `VerifyClientMessage` function of `ClientState` interface. Incoming arguments are\npackaged inside a payload object that is then JSON serialized and passed to `queryContract`, which executes `WasmVm.Query` \nand returns the slice of bytes returned by the smart contract. This data is deserialized and passed as return argument.\n\n```go\ntype QueryMsg struct {\n  Status               *StatusMsg               `json:\"status,omitempty\"`\n  ExportMetadata       *ExportMetadataMsg       `json:\"export_metadata,omitempty\"`\n  TimestampAtHeight    *TimestampAtHeightMsg    `json:\"timestamp_at_height,omitempty\"`\n  VerifyClientMessage  *VerifyClientMessageMsg  `json:\"verify_client_message,omitempty\"`\n  CheckForMisbehaviour *CheckForMisbehaviourMsg `json:\"check_for_misbehaviour,omitempty\"`\n}\n\ntype verifyClientMessageMsg struct {\n  ClientMessage *ClientMessage `json:\"client_message\"`\n}\n\n// VerifyClientMessage must verify a ClientMessage. \n// A ClientMessage could be a Header, Misbehaviour, or batch update.\n// It must handle each type of ClientMessage appropriately. \n// Calls to CheckForMisbehaviour, UpdateSta\u00e5te, and UpdateStateOnMisbehaviour\n// will assume that the content of the ClientMessage has been verified\n// and can be trusted. An error should be returned\n// if the ClientMessage fails to verify.\nfunc (cs ClientState) VerifyClientMessage(\n  ctx sdk.Context,\n  _ codec.BinaryCodec,\n  clientStore storetypes.KVStore,\n  clientMsg exported.ClientMessage\n) error {\n  clientMessage, ok := clientMsg.(*ClientMessage)\n  if !ok {\n    return errorsmod.Wrapf(ibcerrors.ErrInvalidType, \"expected type: %T, got: %T\", &ClientMessage{}, clientMsg)\n  }\n\n  payload := QueryMsg{\n    VerifyClientMessage: &VerifyClientMessageMsg{ClientMessage: clientMessage.Data},\n  }\n  _, err := wasmQuery[EmptyResult](ctx, clientStore, &cs, payload)\n  return err\n}\n```\n\n### Global Wasm VM variable\n\nThe 08-wasm keeper structure keeps a reference to the Wasm VM instantiated in the keeper constructor function. The keeper uses \nthe Wasm VM to store the bytecode of light client contracts. However, the Wasm VM is also needed in the 08-wasm implementations of\nsome of the `ClientState` interface functions to initialise a contract, execute calls on the contract and query the contract. Since\nthe `ClientState` functions do not have access to the 08-wasm keeper, then it has been decided to keep a global pointer variable that\npoints to the same instance as the one in the 08-wasm keeper. This global pointer variable is then used in the implementations of\nthe `ClientState` functions. \n\n## Consequences\n\n### Positive\n\n- Adding support for new light client or upgrading existing light client is way easier than before and only requires single transaction instead of a hard-fork.\n- Improves maintainability of ibc-go, since no change in codebase is required to support new client or upgrade it.\n- The existence of support for Rust dependencies in light clients which may not exist in Go.\n\n### Negative\n\n- Light clients written in Rust need to be written in a subset of Rust which could compile in Wasm.\n- Introspecting light client code is difficult as only compiled bytecode exists in the blockchain.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "modules/light-clients"
+   ],
+   "implementation": {
+    "sha": "f57170b1d4dd202a3c6c1c61dcf302b6a9546405",
+    "date": "2022-08-08T18:38:29+02:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "modules/light-clients/06-solomachine/client_state.go",
+     "modules/light-clients/06-solomachine/client_state_test.go",
+     "modules/light-clients/06-solomachine/codec.go",
+     "modules/light-clients/06-solomachine/consensus_state.go",
+     "modules/light-clients/06-solomachine/consensus_state_test.go",
+     "modules/light-clients/06-solomachine/errors.go",
+     "modules/light-clients/06-solomachine/header.go",
+     "modules/light-clients/06-solomachine/header_test.go",
+     "modules/light-clients/06-solomachine/misbehaviour.go",
+     "modules/light-clients/06-solomachine/misbehaviour_handle.go",
+     "modules/light-clients/06-solomachine/misbehaviour_test.go",
+     "modules/light-clients/06-solomachine/module.go"
+    ]
+   }
+  },
+  {
+   "path": "docs/architecture/adr-001-coin-source-tracing.md",
+   "identity": "docs/architecture/adr-001-coin-source-tracing.md",
+   "adr_id": "1",
+   "title": "ADR 001: Coin Source Tracing",
+   "first_commit": "2021-04-26T15:42:28+02:00",
+   "first_sha": "3561ddf7336f71cac3fe0f4cc5dd5a78f0e2769f",
+   "last_commit": "2024-01-02T22:07:18+00:00",
+   "author": "colin axn\u00e9r",
+   "email": "25233464+colin-axner@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted, Implemented",
+   "replacement": null,
+   "n_commits": 7,
+   "text": "# ADR 001: Coin Source Tracing\n\n## Changelog\n\n- 2020-07-09: Initial Draft\n- 2020-08-11: Implementation changes\n\n## Status\n\nAccepted, Implemented\n\n## Context\n\nThe specification for IBC cross-chain fungible token transfers\n([ICS20](https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer)), needs to\nbe aware of the origin of any token denomination in order to relay a `Packet` which contains the sender\nand recipient addresses in the\n[`FungibleTokenPacketData`](https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures).\n\nThe Packet relay sending works based in 2 cases (per\n[specification](https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#packet-relay) and [Colin Axn\u00e9r](https://github.com/colin-axner)'s description):\n\n1. Sender chain is acting as the source zone. The coins are transferred\nto an escrow address (i.e locked) on the sender chain and then transferred\nto the receiving chain through IBC TAO logic. It is expected that the\nreceiving chain will mint vouchers to the receiving address.\n\n2. Sender chain is acting as the sink zone. The coins (vouchers) are burned\non the sender chain and then transferred to the receiving chain through IBC\nTAO logic. It is expected that the receiving chain, which had previously\nsent the original denomination, will unescrow the fungible token and send\nit to the receiving address.\n\nAnother way of thinking of source and sink zones is through the token's\ntimeline. Each send to any chain other than the one it was previously\nreceived from is a movement forwards in the token's timeline. This causes\ntrace to be added to the token's history and the destination port and\ndestination channel to be prefixed to the denomination. In these instances\nthe sender chain is acting as the source zone. When the token is sent back\nto the chain it previously received from, the prefix is removed. This is\na backwards movement in the token's timeline and the sender chain\nis acting as the sink zone.\n\n### Example\n\nAssume the following channel connections exist and that all channels use the port ID `transfer`:\n\n- chain `A` has channels with chain `B` and chain `C` with the IDs `channelToB` and `channelToC`, respectively\n- chain `B` has channels with chain `A` and chain `C` with the IDs `channelToA` and `channelToC`, respectively\n- chain `C` has channels with chain `A` and chain `B` with the IDs `channelToA` and `channelToB`, respectively\n\nThese steps of transfer between chains occur in the following order: `A -> B -> C -> A -> C`. In particular:\n\n1. `A -> B`: sender chain is source zone. `A` sends packet with `denom` (escrowed on `A`), `B` receives `denom` and mints and sends voucher `transfer/channelToA/denom` to recipient.\n2. `B -> C`: sender chain is source zone. `B` sends packet with `transfer/channelToA/denom` (escrowed on `B`), `C` receives `transfer/channelToA/denom` and mints and sends voucher `transfer/channelToB/transfer/channelToA/denom` to recipient.\n3. `C -> A`: sender chain is source zone. `C` sends packet with `transfer/channelToB/transfer/channelToA/denom` (escrowed on `C`), `A` receives `transfer/channelToB/transfer/channelToA/denom` and mints and sends voucher `transfer/channelToC/transfer/channelToB/transfer/channelToA/denom` to recipient.\n4. `A -> C`: sender chain is sink zone. `A` sends packet with `transfer/channelToC/transfer/channelToB/transfer/channelToA/denom` (burned on `A`), `C` receives `transfer/channelToC/transfer/channelToB/transfer/channelToA/denom`, and unescrows and sends `transfer/channelToB/transfer/channelToA/denom` to recipient.\n\nThe token has a final denomination on chain `C` of `transfer/channelToB/transfer/channelToA/denom`, where `transfer/channelToB/transfer/channelToA` is the trace information.\n\nIn this context, upon a receive of a cross-chain fungible token transfer, if the sender chain is the source of the token, the protocol prefixes the denomination with the port and channel identifiers in the following format:\n\n```typescript\nprefix + denom = {destPortN}/{destChannelN}/.../{destPort0}/{destChannel0}/denom\n```\n\nExample: transferring `100 uatom` from port `HubPort` and channel `HubChannel` on the Hub to\nEthermint's port `EthermintPort` and channel `EthermintChannel` results in `100\nEthermintPort/EthermintChannel/uatom`, where `EthermintPort/EthermintChannel/uatom` is the new\ndenomination on the receiving chain.\n\nIn the case those tokens are transferred back to the Hub (i.e the **source** chain), the prefix is\ntrimmed and the token denomination updated to the original one.\n\n### Problem\n\nThe problem of adding additional information to the coin denomination is twofold:\n\n1. The ever increasing length if tokens are transferred to zones other than the source:\n\nIf a token is transferred `n` times via IBC to a sink chain, the token denom will contain `n` pairs\nof prefixes, as shown on the format example above. This poses a problem because, while port and\nchannel identifiers have a maximum length of 64 each, the SDK `Coin` type only accepts denoms up to\n64 characters. Thus, a single cross-chain token, which again, is composed by the port and channels\nidentifiers plus the base denomination, can exceed the length validation for the SDK `Coins`.\n\nThis can result in undesired behaviours such as tokens not being able to be transferred to multiple\nsink chains if the denomination exceeds the length or unexpected `panics` due to denomination\nvalidation failing on the receiving chain.\n\n2. The existence of special characters and uppercase letters on the denomination:\n\nIn the SDK every time a `Coin` is initialized through the constructor function `NewCoin`, a validation\nof a coin's denom is performed according to a\n[Regex](https://github.com/cosmos/cosmos-sdk/blob/a940214a4923a3bf9a9161cd14bd3072299cd0c9/types/coin.go#L583),\nwhere only lowercase alphanumeric characters are accepted. While this is desirable for native denominations\nto keep a clean UX, it presents a challenge for IBC as ports and channels might be randomly\ngenerated with special and uppercase characters as per the [ICS 024 - Host\nRequirements](https://github.com/cosmos/ibc/tree/master/spec/core/ics-024-host-requirements#paths-identifiers-separators)\nspecification.\n\n## Decision\n\nThe issues outlined above, are applicable only to SDK-based chains, and thus the proposed solution\nare do not require specification changes that would result in modification to other implementations\nof the ICS20 spec.\n\nInstead of adding the identifiers on the coin denomination directly, the proposed solution hashes\nthe denomination prefix in order to get a consistent length for all the cross-chain fungible tokens.\n\nThis will be used for internal storage only, and when transferred via IBC to a different chain, the\ndenomination specified on the packed data will be the full prefix path of the identifiers needed to\ntrace the token back to the originating chain, as specified on ICS20.\n\nThe new proposed format will be the following:\n\n```go\nibcDenom = \"ibc/\" + hash(trace path + \"/\" + base denom)\n```\n\nThe hash function will be a SHA256 hash of the fields of the `DenomTrace`:\n\n```protobuf\n// DenomTrace contains the base denomination for ICS20 fungible tokens and the source tracing\n// information\nmessage DenomTrace {\n  // chain of port/channel identifiers used for tracing the source of the fungible token\n  string path = 1;\n  // base denomination of the relayed fungible token\n  string base_denom = 2;\n}\n```\n\nThe `IBCDenom` function constructs the `Coin` denomination used when creating the ICS20 fungible token packet data:\n\n```go\n// Hash returns the hex bytes of the SHA256 hash of the DenomTrace fields using the following formula:\n//\n// hash = sha256(tracePath + \"/\" + baseDenom)\nfunc (dt DenomTrace) Hash() tmbytes.HexBytes {\n  return tmhash.Sum(dt.Path + \"/\" + dt.BaseDenom)\n}\n\n// IBCDenom a coin denomination for an ICS20 fungible token in the format 'ibc/{hash(tracePath + baseDenom)}'. \n// If the trace is empty, it will return the base denomination.\nfunc (dt DenomTrace) IBCDenom() string {\n  if dt.Path != \"\" {\n    return fmt.Sprintf(\"ibc/%s\", dt.Hash())\n  }\n  return dt.BaseDenom\n}\n```\n\n### `x/ibc-transfer` Changes\n\nIn order to retrieve the trace information from an IBC denomination, a lookup table needs to be\nadded to the `ibc-transfer` module. These values need to also be persisted between upgrades, meaning\nthat a new `[]DenomTrace` `GenesisState` field state needs to be added to the module:\n\n```go\n// GetDenomTrace retrieves the full identifiers trace and base denomination from the store.\nfunc (k Keeper) GetDenomTrace(ctx Context, denomTraceHash []byte) (DenomTrace, bool) {\n  store := ctx.KVStore(k.storeKey)\n  bz := store.Get(types.KeyDenomTrace(traceHash))\n  if bz == nil {\n    return &DenomTrace, false\n  }\n\n  var denomTrace DenomTrace\n  k.cdc.MustUnmarshalBinaryBare(bz, &denomTrace)\n  return denomTrace, true\n}\n\n// HasDenomTrace checks if a the key with the given trace hash exists on the store.\nfunc (k Keeper) HasDenomTrace(ctx Context, denomTraceHash []byte)  bool {\n  store := ctx.KVStore(k.storeKey)\n  return store.Has(types.KeyTrace(denomTraceHash))\n}\n\n// SetDenomTrace sets a new {trace hash -> trace} pair to the store.\nfunc (k Keeper) SetDenomTrace(ctx Context, denomTrace DenomTrace) {\n  store := ctx.KVStore(k.storeKey)\n  bz := k.cdc.MustMarshalBinaryBare(&denomTrace)\n  store.Set(types.KeyTrace(denomTrace.Hash()), bz)\n}\n```\n\nThe `MsgTransfer` will validate that the `Coin` denomination from the `Token` field contains a valid\nhash, if the trace info is provided, or that the base denominations matches:\n\n```go\nfunc (msg MsgTransfer) ValidateBasic() error {\n  // ...\n  return ValidateIBCDenom(msg.Token.Denom)\n}\n```\n\n```go\n// ValidateIBCDenom validates that the given denomination is either:\n//\n//  - A valid base denomination (eg: 'uatom')\n//  - A valid fungible token representation (i.e 'ibc/{hash}') per ADR 001 https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-001-coin-source-tracing.md\nfunc ValidateIBCDenom(denom string) error {\n  denomSplit := strings.SplitN(denom, \"/\", 2)\n\n  switch {\n  case strings.TrimSpace(denom) == \"\",\n    len(denomSplit) == 1 && denomSplit[0] == \"ibc\",\n    len(denomSplit) == 2 && (denomSplit[0] != \"ibc\" || strings.TrimSpace(denomSplit[1]) == \"\"):\n    return sdkerrors.Wrapf(ErrInvalidDenomForTransfer, \"denomination should be prefixed with the format 'ibc/{hash(trace + \\\"/\\\" + %s)}'\", denom)\n\n  case denomSplit[0] == denom && strings.TrimSpace(denom) != \"\":\n    return sdk.ValidateDenom(denom)\n  }\n\n  if _, err := ParseHexHash(denomSplit[1]); err != nil {\n    return Wrapf(err, \"invalid denom trace hash %s\", denomSplit[1])\n  }\n\n  return nil\n}\n```\n\nThe denomination trace info only needs to be updated when token is received:\n\n- Receiver is **source** chain: The receiver created the token and must have the trace lookup already stored (if necessary *ie* native token case wouldn't need a lookup).\n- Receiver is **not source** chain: Store the received info. For example, during step 1, when chain `B` receives `transfer/channelToA/denom`.\n\n```go\n// SendTransfer\n// ...\n\n  fullDenomPath := token.Denom\n\n// deconstruct the token denomination into the denomination trace info\n// to determine if the sender is the source chain\nif strings.HasPrefix(token.Denom, \"ibc/\") {\n  fullDenomPath, err = k.DenomPathFromHash(ctx, token.Denom)\n  if err != nil {\n    return err\n  }\n}\n\nif types.SenderChainIsSource(sourcePort, sourceChannel, fullDenomPath) {\n//...\n```\n\n```go\n// DenomPathFromHash returns the full denomination path prefix from an ibc denom with a hash\n// component.\nfunc (k Keeper) DenomPathFromHash(ctx sdk.Context, denom string) (string, error) {\n  hexHash := denom[4:]\n  hash, err := ParseHexHash(hexHash)\n  if err != nil {\n    return \"\", Wrap(ErrInvalidDenomForTransfer, err.Error())\n  }\n\n  denomTrace, found := k.GetDenomTrace(ctx, hash)\n  if !found {\n    return \"\", Wrap(ErrTraceNotFound, hexHash)\n  }\n\n  fullD",
+   "truncated_text": true,
+   "discussion_refs": [
+    {
+     "key": "cosmos/cosmos-sdk#6755",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/cosmos-sdk/pull/6755",
+     "number": "6755"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/cosmos/cosmos-sdk/blob/a940214a4923a3bf9a9161cd14bd3072299cd0c9/types/coin.go",
+    "x/ibc-transfer",
+    "\"/\""
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-002-go-module-versioning.md",
+   "identity": "docs/architecture/adr-002-go-module-versioning.md",
+   "adr_id": "2",
+   "title": "ADR 002: Go module versioning",
+   "first_commit": "2022-01-07T11:21:54+01:00",
+   "first_sha": "3ff09277078f5289ba01cfcf6bfef592bb428aaa",
+   "last_commit": "2024-01-02T22:07:18+00:00",
+   "author": "colin axn\u00e9r",
+   "email": "25233464+colin-axner@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 7,
+   "text": "# ADR 002: Go module versioning\n\n## Changelog\n\n- 05/01/2022: initial draft\n\n## Status\n\nAccepted\n\n## Context\n\nThe IBC module was originally developed in the Cosmos SDK and released during the Stargate release series (v0.42).\nIt was subsequently migrated to its own repository, ibc-go.\nThe first official release on ibc-go was v1.0.0.\nv1.0.0 was decided to be used instead of v0.1.0 primarily for the following reasons:\n\n- Maintaining compatibility with the IBC specification v1 requires stronger support/guarantees.\n- Using the major, minor, and patch numbers allows for easier communication of what breaking changes are included in a release.\n- The IBC module is being used by numerous high value projects which require stability.\n\n### Problems\n\n#### Go module version must be incremented\n\nWhen a Go module is released under v1.0.0, all following releases must follow Go semantic versioning.\nThus when the go API is broken, the Go module major version **must** be incremented.\nFor example, changing the go package version from `v2` to `v3` bumps the import from `github.com/cosmos/ibc-go/v2` to `github.com/cosmos/ibc-go/v3`.\n\nIf the Go module version is not incremented then attempting to go get a module @v3.0.0 without the suffix results in:\n`invalid version: module contains a go.mod file, so major version must be compatible: should be v0 or v1, not v3`\n\nVersion validation was added in Go 1.13. This means that in order to release a v3.0.0 git tag without a /v3 suffix on the module definition, the tag must explicitly **not** contain a go.mod file.\nNot including a go.mod in our release is not a viable option.\n\n#### Attempting to import multiple go module versions for ibc-go\n\nAttempting to import two versions of ibc-go, such as `github.com/cosmos/ibc-go/v2` and `github.com/cosmos/ibc-go/v3`, will result in multiple issues.\n\nThe Cosmos SDK does global registration of error and governance proposal types.\nThe errors and proposals used in ibc-go would need to now register their naming based on the go module version.\n\nThe more concerning problem is that protobuf definitions will also reach a namespace collision.\nibc-go and the Cosmos SDK in general rely heavily on using extended functions for go structs generated from protobuf definitions.\nThis requires the go structs to be defined in the same package as the extended functions.\nThus, bumping the import versioning causes the protobuf definitions to be generated in two places (in v2 and v3).\nWhen registering these types at compile time, the go compiler will panic.\nThe generated types need to be registered against the proto codec, but there exist two definitions for the same name.\n\nThe protobuf conflict policy can be overridden via the environment variable `GOLANG_PROTOBUF_REGISTRATION_CONFLICT`, but it is possible this could lead to various runtime errors or unexpected behaviour (see [here](https://github.com/protocolbuffers/protobuf-go/blob/master/reflect/protoregistry/registry.go#L46)).\nMore information [here](https://developers.google.com/protocol-buffers/docs/reference/go/faq#namespace-conflict) on namespace conflicts for protobuf versioning.\n\n### Potential solutions\n\n#### Changing the protobuf definition version\n\nThe protobuf definitions all have a type URL containing the protobuf version for this type.\nChanging the protobuf version would solve the namespace collision which arise from importing multiple versions of ibc-go, but it leads to new issues.\n\nIn the Cosmos SDK, `Any`s are unpacked and decoded using the type URL.\nChanging the type URL thus is creating a distinctly different type.\nThe same registration on the proto codec cannot be used to unpack the new type.\nFor example:\n\nAll Cosmos SDK messages are packed into `Any`s. If we incremented the protobuf version for our IBC messages, clients which submitted the v1 of our Cosmos SDK messages would now be rejected since the old type is not registered on the codec.\nThe clients must know to submit the v2 of these messages. This pushes the burden of versioning onto relayers and wallets.\n\nA more serious problem is that the `ClientState` and `ConsensusState` are packed as `Any`s. Changing the protobuf versioning of these types would break compatibility with IBC specification v1.\n\n#### Moving protobuf definitions to their own go module\n\nThe protobuf definitions could be moved to their own go module which uses 0.x versioning and will never go to 1.0.\nThis prevents the Go module version from being incremented with breaking changes.\nIt also requires all extended functions to live in the same Go module, disrupting the existing code structure.\n\nThe version that implements this change will still be incompatible with previous versions, but future versions could be imported together without namespace collisions.\nFor example, let's say this solution is implemented in v3. Then\n\n`github.com/cosmos/ibc-go/v2` cannot be imported with any other ibc-go version\n\n`github.com/cosmos/ibc-go/v3` cannot be imported with any previous ibc-go versions\n\n`github.com/cosmos/ibc-go/v4` may be imported with ibc-go versions v3+\n\n`github.com/cosmos/ibc-go/v5` may be imported with ibc-go versions v3+\n\n## Decision\n\nSupporting importing multiple versions of ibc-go requires a non-trivial amount of complexity.\nIt is unclear when a user of the ibc-go code would need multiple versions of ibc-go.\nUntil there is an overwhelming reason to support importing multiple versions of ibc-go:\n\n**Major releases cannot be imported simultaneously**.\nReleases should focus on keeping backwards compatibility for go code clients, within reason.\nOld functionality should be marked as deprecated and there should exist upgrade paths between major versions.\nDeprecated functionality may be removed when no clients rely on that functionality.\nHow this is determined is to be decided.\n\n**Error and proposal type registration will not be changed between go module version increments**.\nThis explicitly stops external clients from trying to import two major versions (potentially risking a bug due to the instability of proto name collisions override).\n\n## Consequences\n\nThis only affects clients relying directly on the go code.\n\n### Positive\n\n### Negative\n\nMultiple ibc-go versions cannot be imported.\n\n### Neutral\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/cosmos/ibc-go/v2",
+    "github.com/cosmos/ibc-go/v3",
+    "github.com/protocolbuffers/protobuf-go/blob/master/reflect/protoregistry/registry.go",
+    "github.com/cosmos/ibc-go/v4",
+    "github.com/cosmos/ibc-go/v5"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-025-ibc-passive-channels.md",
+   "identity": "docs/architecture/adr-025-ibc-passive-channels.md",
+   "adr_id": "25",
+   "title": "ADR 025: IBC Passive Channels",
+   "first_commit": "2021-04-26T15:42:28+02:00",
+   "first_sha": "3561ddf7336f71cac3fe0f4cc5dd5a78f0e2769f",
+   "last_commit": "2024-01-02T22:07:18+00:00",
+   "author": "colin axn\u00e9r",
+   "email": "25233464+colin-axner@users.noreply.github.com",
+   "status": "deprecated",
+   "status_raw": "*deprecated*",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# ADR 025: IBC Passive Channels\n\n## Changelog\n\n- 2021-04-23: Change status to \"deprecated\"\n- 2020-05-23: Provide sample Go code and more details\n- 2020-05-18: Initial Draft\n\n## Status\n\n*deprecated*\n\n## Context\n\nThe current \"naive\" IBC Relayer strategy currently establishes a single predetermined IBC channel atop a single connection between two clients (each potentially of a different chain).  This strategy then detects packets to be relayed by watching for `send_packet` and `recv_packet` events matching that channel, and sends the necessary transactions to relay those packets.\n\nWe wish to expand this \"naive\" strategy to a \"passive\" one which detects and relays both channel handshake messages and packets on a given connection, without the need to know each channel in advance of relaying it.\n\nIn order to accomplish this, we propose adding more comprehensive events to expose channel metadata for each transaction sent from the `x/ibc/core/04-channel/keeper/handshake.go` and `x/ibc/core/04-channel/keeper/packet.go` modules.\n\nHere is an example of what would be in `ChanOpenInit`:\n\n```go\nconst (\n  EventTypeChannelMeta = \"channel_meta\"\n  AttributeKeyAction = \"action\"\n  AttributeKeyHops = \"hops\"\n  AttributeKeyOrder = \"order\"\n  AttributeKeySrcPort = \"src_port\"\n  AttributeKeySrcChannel = \"src_channel\"\n  AttributeKeySrcVersion = \"src_version\"\n  AttributeKeyDstPort = \"dst_port\"\n  AttributeKeyDstChannel = \"dst_channel\"\n  AttributeKeyDstVersion = \"dst_version\"\n)\n// ...\n// Emit Event with Channel metadata for the relayer to pick up and\n// relay to the other chain\n// This appears immediately before the successful return statement.\nctx.EventManager().EmitEvents(sdk.Events{\n  sdk.NewEvent(\n    types.EventTypeChannelMeta,\n    sdk.NewAttribute(types.AttributeKeyAction, \"open_init\"),\n    sdk.NewAttribute(types.AttributeKeySrcConnection, connectionHops[0]),\n    sdk.NewAttribute(types.AttributeKeyHops, strings.Join(connectionHops, \",\")),\n    sdk.NewAttribute(types.AttributeKeyOrder, order.String()),\n    sdk.NewAttribute(types.AttributeKeySrcPort, portID),\n    sdk.NewAttribute(types.AttributeKeySrcChannel, channelID),\n    sdk.NewAttribute(types.AttributeKeySrcVersion, version),\n    sdk.NewAttribute(types.AttributeKeyDstPort, counterparty.GetPortID()),\n    sdk.NewAttribute(types.AttributeKeyDstChannel, counterparty.GetChannelID()),\n    // The destination version is not yet known, but a value is necessary to pad\n    // the event attribute offsets\n    sdk.NewAttribute(types.AttributeKeyDstVersion, \"\"),\n  ),\n})\n```\n\nThese metadata events capture all the \"header\" information needed to route IBC channel handshake transactions without requiring the client to query any data except that of the connection ID that it is willing to relay.  It is intended that `channel_meta.src_connection` is the only event key that needs to be indexed for a passive relayer to function.\n\n### Handling Channel Open Attempts\n\nIn the case of the passive relayer, when one chain sends a `ChanOpenInit`, the relayer should inform the other chain of this open attempt and allow that chain to decide how (and if) it continues the handshake.  Once both chains have actively approved the channel opening, then the rest of the handshake can happen as it does with the current \"naive\" relayer.\n\nTo implement this behavior, we propose replacing the `cbs.OnChanOpenTry` callback with a new `cbs.OnAttemptChanOpenTry` callback which explicitly handles the `MsgChannelOpenTry`, usually by resulting in a call to `keeper.ChanOpenTry`.  The typical implementation, in `x/ibc-transfer/module.go` would be compatible with the current \"naive\" relayer, as follows:\n\n```go\nfunc (am AppModule) OnAttemptChanOpenTry(\n  ctx sdk.Context,\n  chanKeeper channel.Keeper,\n  portCap *capability.Capability,\n  msg channel.MsgChannelOpenTry,\n) (*sdk.Result, error) {\n  // Require portID is the portID transfer module is bound to\n  boundPort := am.keeper.GetPort(ctx)\n  if boundPort != msg.PortID {\n    return nil, sdkerrors.Wrapf(porttypes.ErrInvalidPort, \"invalid port: %s, expected %s\", msg.PortID, boundPort)\n  }\n\n  // BEGIN NEW CODE\n  // Assert our protocol version, overriding the relayer's suggestion.\n  msg.Version = types.Version\n  // Continue the ChanOpenTry.\n  res, chanCap, err := channel.HandleMsgChannelOpenTry(ctx, chanKeeper, portCap, msg)\n  if err != nil {\n    return nil, err\n  }\n  // END OF NEW CODE\n\n  // ... the rest of the callback is similar to the existing OnChanOpenTry\n  // but uses msg.* directly.\n```\n\nHere is how this callback would be used, in the implementation of `x/ibc/handler.go`:\n\n```go\n// ...\ncase channel.MsgChannelOpenTry:\n  // Lookup module by port capability\n  module, portCap, err := k.PortKeeper.LookupModuleByPort(ctx, msg.PortID)\n  if err != nil {\n    return nil, sdkerrors.Wrap(err, \"could not retrieve module from port-id\")\n  }\n  // Retrieve callbacks from router\n  cbs, ok := k.Router.GetRoute(module)\n  if !ok {\n    return nil, sdkerrors.Wrapf(port.ErrInvalidRoute, \"route not found to module: %s\", module)\n  }\n  // Delegate to the module's OnAttemptChanOpenTry.\n  return cbs.OnAttemptChanOpenTry(ctx, k.ChannelKeeper, portCap, msg)\n```\n\nThe reason we do not have a more structured interaction between `x/ibc/handler.go` and the port's module (to explicitly negotiate versions, etc) is that we do not wish to constrain the app module to have to finish handling the `MsgChannelOpenTry` during this transaction or even this block.\n\n## Decision\n\n- Expose events to allow \"passive\" connection relayers.\n- Enable application-initiated channels via such passive relayers.\n- Allow port modules to control how to handle open-try messages.\n\n## Consequences\n\n### Positive\n\nMakes channels into a complete\u00a0application-level abstraction.\n\nApplications have full control over initiating and accepting channels, rather than expecting a relayer to tell them when to do so.\n\nA passive relayer does not have to know what kind of channel (version string, ordering constraints, firewalling logic) the application supports.  These are negotiated directly between applications.\n\n### Negative\n\nIncreased event size for IBC messages.\n\n### Neutral\n\nMore IBC events are exposed.\n\n## References\n\n- The Agoric VM's IBC handler currently [accommodates `attemptChanOpenTry`](https://github.com/Agoric/agoric-sdk/blob/904b3a0423222a1b32893453e44bbde598473960/packages/cosmic-swingset/lib/ag-solo/vats/ibc.js#L546)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "x/ibc/core/04-channel/keeper/handshake.go",
+    "x/ibc/core/04-channel/keeper/packet.go",
+    "x/ibc-transfer/module.go",
+    "x/ibc/handler.go",
+    "github.com/Agoric/agoric-sdk/blob/904b3a0423222a1b32893453e44bbde598473960/packages/cosmic-swingset/lib/ag-solo/vats/ibc.js"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-006-02-client-refactor.md",
+   "identity": "docs/architecture/adr-006-02-client-refactor.md",
+   "adr_id": "6",
+   "title": "ADR 006: ICS-02 client refactor",
+   "first_commit": "2022-08-05T15:27:37+02:00",
+   "first_sha": "44541b8048a5f36c459b985b75c41b8be9252a1d",
+   "last_commit": "2023-12-18T13:34:31+02:00",
+   "author": "colin axn\u00e9r",
+   "email": "25233464+colin-axner@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted and applied in v7 of ibc-go",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# ADR 006: ICS-02 client refactor\n\n## Changelog\n\n- 2022-08-01: Initial Draft\n\n## Status\n\nAccepted and applied in v7 of ibc-go\n\n## Context\n\nDuring the initial development of the 02-client submodule, each light client supported (06-solomachine, 07-tendermint, 09-localhost) was referenced through hardcoding.\nHere is an example of the [code](https://github.com/cosmos/cosmos-sdk/commit/b93300288e3a04faef9c0774b75c13b24450ba1c#diff-c5f6b956947375f28d611f18d0e670cf28f8f305300a89c5a9b239b0eeec5064R83) that existed in the 02-client submodule:\n\n```go\nfunc (k Keeper) UpdateClient(ctx sdk.Context, clientID string, header exported.Header) (exported.ClientState, error) {\n  ...\n\n  switch clientType {\n  case exported.Tendermint:\n    clientState, consensusState, err = tendermint.CheckValidityAndUpdateState(\n    clientState, header, ctx.BlockTime(),\n    )\n  case exported.Localhost:\n    // override client state and update the block height\n    clientState = localhosttypes.NewClientState(\n    ctx.ChainID(), // use the chain ID from context since the client is from the running chain (i.e self).\n    ctx.BlockHeight(),\n    )\n  default:\n    err = types.ErrInvalidClientType\n  }\n```\n\nTo add additional light clients, code would need to be added directly to the 02-client submodule.\nEvidently, this would likely become problematic as IBC scaled to many chains using consensus mechanisms beyond the initial supported light clients.\nIssue [#6064](https://github.com/cosmos/cosmos-sdk/issues/6064) on the SDK addressed this problem by creating a more modular 02-client submodule.\nThe 02-client submodule would now interact with each light client via an interface.\nWhile, this change was positive in development, increasing the flexibility and adoptability of IBC, it also opened the door to new problems.\n\nThe difficulty of generalizing light clients became apparent once changes to those light clients were required.\nEach light client represents a different consensus algorithm which may contain a host of complexity and nuances.\nHere are some examples of issues which arose for light clients that are not applicable to all the light clients supported (06-solomachine, 07-tendermint, 09-localhost):\n\n### Tendermint non-zero height upgrades\n\nBefore the launch of IBC, it was determined that the golang implementation of [tendermint](https://github.com/tendermint/tendermint) would not be capable of supporting non-zero height upgrades.\nThis implies that any upgrade would require changing of the chain ID and resetting the height to 0.\nA chain is uniquely identified by its chain-id and validator set.\nTwo different chain ID's can be viewed as different chains and thus a normal update produced by a validator set cannot change the chain ID.\nTo work around the lack of support for non-zero height upgrades, an abstract height type was created along with an upgrade mechanism.\nThis type would indicate the revision number (the number of times the chain ID has been changed) and revision height (the current height of the blockchain).\n\nRefs:\n\n- Issue [#439](https://github.com/cosmos/ibc/issues/439) on IBC specification repository.\n- Specification changes in [#447](https://github.com/cosmos/ibc/pull/447)\n- Implementation changes for the abstract height type, [SDK#7211](https://github.com/cosmos/cosmos-sdk/pull/7211)\n\n### Tendermint requires misbehaviour detection during updates\n\nThe initial release of the IBC module and the 07-tendermint light client implementation did not support misbehaviour detection during update nor did it prevent overwriting of previous updates.\nDespite the fact that we designed the `ClientState` interface and developed the 07-tendermint client, we failed to detect even a duplicate update that constituted misbehaviour and thus should freeze the client.\nThis was fixed in PR [#141](https://github.com/cosmos/ibc-go/pull/141) which required light client implementations to be aware that they must handle duplicate updates and misbehaviour detection.\nMisbehaviour detection during updates is not applicable to the solomachine nor localhost.\nIt is also not obvious that `CheckHeaderAndUpdateState` should be performing this functionality.\n\n### Localhost requires access to the entire client store\n\nThe localhost has been broken since the initial version of the IBC module.\nThe localhost tried to be developed underneath the 02-client interfaces without special exception, but this proved to be impossible.\nThe issues were outlined in [#27](https://github.com/cosmos/ibc-go/issues/27) and further discussed in the attempted ADR in [#75](https://github.com/cosmos/ibc-go/pull/75).\nUnlike all other clients, the localhost requires access to the entire IBC store and not just the prefixed client store.\n\n### Solomachine doesn't set consensus states\n\nThe 06-solomachine does not set the consensus states within the prefixed client store.\nIt has a single consensus state that is stored within the client state.\nThis causes setting of the consensus state at the 02-client level to use unnecessary storage.\nIt also causes timeouts to fail with solo machines.\nPreviously, the timeout logic within IBC would obtain the consensus state at the height a timeout is being proved.\nThis is problematic for the solo machine as no consensus state is set.\nSee issue [#562](https://github.com/cosmos/ibc/issues/562) on the IBC specification repo.\n\n### New clients may want to do batch updates\n\nNew light clients may not function in a similar fashion to 06-solomachine and 07-tendermint.\nThey may require setting many consensus states in a single update.\nAs @seunlanlege [states](https://github.com/cosmos/ibc-go/issues/284#issuecomment-1005583679):\n\n> I'm in support of these changes for 2 reasons:\n>\n> - This would allow light clients to handle batch header updates in CheckHeaderAndUpdateState, for the special case of 11-beefy proving the finality for a batch of headers is much more space and time efficient than the space/time complexity of proving each individual headers in that batch, combined.\n>\n> - This also allows for a single light client instance of 11-beefy be used to prove finality for every parachain connected to the relay chain (Polkadot/Kusama). We achieve this by setting the appropriate ConsensusState for individual parachain headers in CheckHeaderAndUpdateState\n\n## Decision\n\n### Require light clients to set client and consensus states\n\nThe IBC specification states:\n\n> If the provided header was valid, the client MUST also mutate internal state to store now-finalised consensus roots and update any necessary signature authority tracking (e.g. changes to the validator set) for future calls to the validity predicate.\n\nThe initial version of the IBC go SDK based module did not fulfill this requirement.\nInstead, the 02-client submodule required each light client to return the client and consensus state which should be updated in the client prefixed store.\nThis decision lead to the issues \"Solomachine doesn't set consensus states\" and \"New clients may want to do batch updates\".\n\nEach light client should be required to set its own client and consensus states on any update necessary.\nThe go implementation should be changed to match the specification requirements.\nThis will allow more flexibility for light clients to manage their own internal storage and do batch updates.\n\n### Merge `Header`/`Misbehaviour` interface and rename to `ClientMessage`\n\nRemove `GetHeight()` from the header interface (as light clients now set the client/consensus states).\nThis results in the `Header`/`Misbehaviour` interfaces being the same.\nTo reduce complexity of the codebase, the `Header`/`Misbehaviour` interfaces should be merged into `ClientMessage`.\n`ClientMessage` will provide the client with some authenticated information which may result in regular updates, misbehaviour detection, batch updates, or other custom functionality a light client requires.\n\n### Split `CheckHeaderAndUpdateState` into 4 functions\n\nSee [#668](https://github.com/cosmos/ibc-go/issues/668).\n\nSplit `CheckHeaderAndUpdateState` into 4 functions:\n\n- `VerifyClientMessage`\n- `CheckForMisbehaviour`\n- `UpdateStateOnMisbehaviour`\n- `UpdateState`\n\n`VerifyClientMessage` checks the that the structure of a `ClientMessage` is correct and that all authentication data provided is valid.\n\n`CheckForMisbehaviour` checks to see if a `ClientMessage` is evidence of misbehaviour.\n\n`UpdateStateOnMisbehaviour` freezes the client and updates its state accordingly.\n\n`UpdateState` performs a regular update or a no-op on duplicate updates.\n\nThe code roughly looks like:\n\n```go\nfunc (k Keeper) UpdateClient(ctx sdk.Context, clientID string, header exported.Header) error {\n  ...\n\n  if err := clientState.VerifyClientMessage(clientMessage); err != nil {\n    return err\n  }\n  \n  foundMisbehaviour := clientState.CheckForMisbehaviour(clientMessage)\n  if foundMisbehaviour {\n    clientState.UpdateStateOnMisbehaviour(header)\n    // emit misbehaviour event\n    return \n  }\n  \n  clientState.UpdateState(clientMessage) // expects no-op on duplicate header\n  // emit update event\n  return\n}\n```\n\n### Add `GetTimestampAtHeight` to the client state interface\n\nBy adding `GetTimestampAtHeight` to the ClientState interface, we allow light clients which do non-traditional consensus state/timestamp storage to process timeouts correctly.\nThis fixes the issues outlined for the solo machine client.\n\n### Add generic verification functions\n\nAs the complexity and the functionality grows, new verification functions will be required for additional paths.\nThis was explained in [#684](https://github.com/cosmos/ibc/issues/684) on the specification repo.\nThese generic verification functions would be immediately useful for the new paths added in connection/channel upgradability as well as for custom paths defined by IBC applications such as Interchain Queries.\nThe old verification functions (`VerifyClientState`, `VerifyConnection`, etc) should be removed in favor of the generic verification functions.\n\n## Consequences\n\n### Positive\n\n- Flexibility for light client implementations\n- Well defined interfaces and their required functionality\n- Generic verification functions\n- Applies changes necessary for future client/connection/channel upgrabability features\n- Timeout processing for solo machines\n- Reduced code complexity\n\n### Negative\n\n- The refactor touches on sensitive areas of the ibc-go codebase\n- Changing of established naming (`Header`/`Misbehaviour` to `ClientMessage`)\n\n### Neutral\n\nNo notable consequences\n\n## References\n\nIssues:\n\n- [#284](https://github.com/cosmos/ibc-go/issues/284)\n\nPRs:\n\n- [#1871](https://github.com/cosmos/ibc-go/pull/1871)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#6064",
+     "kind": "hash",
+     "url": "",
+     "number": "6064"
+    },
+    {
+     "key": "cosmos/cosmos-sdk#6064",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/cosmos-sdk/issues/6064",
+     "number": "6064"
+    },
+    {
+     "key": "#439",
+     "kind": "hash",
+     "url": "",
+     "number": "439"
+    },
+    {
+     "key": "cosmos/ibc#439",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc/issues/439",
+     "number": "439"
+    },
+    {
+     "key": "#447",
+     "kind": "hash",
+     "url": "",
+     "number": "447"
+    },
+    {
+     "key": "cosmos/ibc#447",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/ibc/pull/447",
+     "number": "447"
+    },
+    {
+     "key": "cosmos/cosmos-sdk#7211",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/cosmos-sdk/pull/7211",
+     "number": "7211"
+    },
+    {
+     "key": "#141",
+     "kind": "hash",
+     "url": "",
+     "number": "141"
+    },
+    {
+     "key": "cosmos/ibc-go#141",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/ibc-go/pull/141",
+     "number": "141"
+    },
+    {
+     "key": "#27",
+     "kind": "hash",
+     "url": "",
+     "number": "27"
+    },
+    {
+     "key": "cosmos/ibc-go#27",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc-go/issues/27",
+     "number": "27"
+    },
+    {
+     "key": "#75",
+     "kind": "hash",
+     "url": "",
+     "number": "75"
+    },
+    {
+     "key": "cosmos/ibc-go#75",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/ibc-go/pull/75",
+     "number": "75"
+    },
+    {
+     "key": "#562",
+     "kind": "hash",
+     "url": "",
+     "number": "562"
+    },
+    {
+     "key": "cosmos/ibc#562",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc/issues/562",
+     "number": "562"
+    },
+    {
+     "key": "cosmos/ibc-go#284",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc-go/issues/284",
+     "number": "284"
+    },
+    {
+     "key": "#668",
+     "kind": "hash",
+     "url": "",
+     "number": "668"
+    },
+    {
+     "key": "cosmos/ibc-go#668",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc-go/issues/668",
+     "number": "668"
+    },
+    {
+     "key": "#684",
+     "kind": "hash",
+     "url": "",
+     "number": "684"
+    },
+    {
+     "key": "cosmos/ibc#684",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc/issues/684",
+     "number": "684"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-007-solomachine-signbytes.md",
+   "identity": "docs/architecture/adr-007-solomachine-signbytes.md",
+   "adr_id": "7",
+   "title": "ADR 007: Solo machine sign bytes",
+   "first_commit": "2022-08-10T11:13:22+02:00",
+   "first_sha": "68bedb7aff80075a6ddc23ed981d55d841c5d6ec",
+   "last_commit": "2023-12-12T01:31:15+07:00",
+   "author": "colin axn\u00e9r",
+   "email": "25233464+colin-axner@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted, applied in v7",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# ADR 007: Solo machine sign bytes\n\n## Changelog\n\n- 2022-08-02: Initial draft\n\n## Status\n\nAccepted, applied in v7\n\n## Context\n\nThe `06-solomachine` implementation up until ibc-go v7 constructed sign bytes using a `DataType` which described what type of data was being signed.\nThis design decision arose from a misunderstanding of the security implications.\nIt was noted that the proto definitions do not [provide uniqueness](https://github.com/cosmos/cosmos-sdk/pull/7237#discussion_r484264573) which is a necessity for ensuring two signatures over different data types can never be the same.\nWhat was missed is that the uniqueness is not provided by the proto definition, but by the usage of the proto definition.\nThe path provided by core IBC will be unique and is already encoded into the signature data.\nThus two different paths with the same data values will encode differently which provides signature uniqueness.\n\nFurthermore, the current construction does not support the proposed changes in the spec repo to support [Generic Verification functions](https://github.com/cosmos/ibc/issues/684).\nThis is because in order to verify a new path, a new `DataType` must be added for that path.\n\n## Decision\n\nRemove `DataType` and change the `DataType` in the `SignBytes` and `SignatureAndData` to be `Path`.\nThe new `Path` field should be bytes.\nRemove all `...Data` proto definitions except for `HeaderData`\nThese `...Data` definitions were created previously for each `DataType`.\nThe proto version of the solo machine proto definitions should be bumped to `v3`.\n\nThis removes an extra layer of complexity from signature construction and allows for support of generic verification.\n\n## Consequences\n\n### Positive\n\n- Simplification of solo machine signature construction\n- Support for generic verification\n\n### Negative\n\n- Breaks existing signature construction in a non-backwards compatible way\n- Solo machines must update to handle the new format\n- Migration required for solo machine client and consensus states\n\n### Neutral\n\nNo notable consequences\n\n## References\n\n- [#1141](https://github.com/cosmos/ibc-go/issues/1141)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "cosmos/cosmos-sdk#7237",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/cosmos-sdk/pull/7237",
+     "number": "7237"
+    },
+    {
+     "key": "cosmos/ibc#684",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc/issues/684",
+     "number": "684"
+    },
+    {
+     "key": "#1141",
+     "kind": "hash",
+     "url": "",
+     "number": "1141"
+    },
+    {
+     "key": "cosmos/ibc-go#1141",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc-go/issues/1141",
+     "number": "1141"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-003-ics27-acknowledgement.md",
+   "identity": "docs/architecture/adr-003-ics27-acknowledgement.md",
+   "adr_id": "3",
+   "title": "ADR 003: ICS27 Acknowledgement Format",
+   "first_commit": "2022-02-03T12:25:21+01:00",
+   "first_sha": "1021617e41007e3f68b7ad7ab4dcfc9a8cbb9658",
+   "last_commit": "2023-12-08T18:38:21+08:00",
+   "author": "colin axn\u00e9r",
+   "email": "25233464+colin-axner@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 8,
+   "text": "# ADR 003: ICS27 Acknowledgement Format\n\n## Changelog\n\n- January 28th, 2022: Initial Draft\n\n## Status\n\nAccepted\n\n## Context\n\nUpon receiving an IBC packet, an IBC application can optionally return an acknowledgement.\nThis acknowledgement will be hashed and written into state. Thus any changes to the information included in an acknowledgement are state machine breaking.\n\nICS27 executes transactions on behalf of a controller chain. Information such as the message result or message error may be returned from other SDK modules outside the control of the ICS27 module.\nIt might be very valuable to return message execution information inside the ICS27 acknowledgement so that controller chain interchain account auth modules can act upon this information.\nOnly deterministic information returned from the message execution is allowed to be returned in the packet acknowledgement otherwise the network will halt due to a fork in the expected app hash.\n\n## Decision\n\nAt the time of this writing, Tendermint includes the following information in the [ABCI.ResponseDeliverTx](https://github.com/tendermint/tendermint/blob/release/v0.34.13/types/results.go#L47-#L53):\n\n```go\n// deterministicResponseDeliverTx strips non-deterministic fields from\n// ResponseDeliverTx and returns another ResponseDeliverTx.\nfunc deterministicResponseDeliverTx(response *abci.ResponseDeliverTx) *abci.ResponseDeliverTx {\n  return &abci.ResponseDeliverTx{\n    Code:      response.Code,\n    Data:      response.Data,\n    GasWanted: response.GasWanted,\n    GasUsed:   response.GasUsed,\n  }\n}\n```\n\n### Successful acknowledgements\n\nSuccessful acknowledgements should return information about the transaction execution.\nGiven the deterministic fields in the `abci.ResponseDeliverTx`, the transaction `Data` can be used to indicate information about the transaction execution.\nThe `abci.ResponseDeliverTx.Data` will be set in the ICS27 packet acknowledgement upon successful transaction execution.\n\nThe format for the `abci.ResponseDeliverTx.Data` is constructed by the SDK.\n\nAt the time of this writing, the next major release of the SDK will change the format for constructing the transaction response data.\n\n#### v0.45 format\n\nThe current version, v0.45 constructs the transaction response as follows:\n\n```go\nproto.Marshal(&sdk.TxMsgData{\n  Data: []*sdk.MsgData{msgResponses...}, \n}\n```\n\nWhere `msgResponses` is a slice of `*sdk.MsgData`.\nThe `MsgData.MsgType` contains the `sdk.MsgTypeURL` of the `sdk.Msg` being executed.\nThe `MsgData.Data` contains the proto marshaled `MsgResponse` for the associated message executed.\n\n#### Next major version format\n\nThe next major version will construct the transaction response as follows:\n\n```go\nproto.Marshal(&sdk.TxMsgData{\n  MsgResponses: []*codectypes.Any{msgResponses...}, \n}\n```\n\nWhere `msgResponses` is a slice of the `MsgResponse`s packed into `Any`s.\n\n#### Forwards compatible approach\n\nA forwards compatible approach was deemed infeasible.\nThe `handler` provided by the `MsgServiceRouter` will only include the `*sdk.Result` and an error (if one occurred).\nIn v0.45 of the SDK, the `*sdk.Result.Data` will contain the MsgResponse marshaled data.\nHowever, the MsgResponse is not packed and marshaled as a `*codectypes.Any`, thus making it impossible from a generalized point of view to unmarshal the bytes.\nIf the bytes could be unmarshaled, then they could be packed into an `*codectypes.Any` in anticipation of the upcoming format.  \n\nIntercepting the MsgResponse before it becomes marshaled requires replicating this [code](https://github.com/cosmos/cosmos-sdk/blob/dfd47f5b449f558a855da284a9a7eabbfbad435d/baseapp/msg_service_router.go#L109-#L128).\nIt may not even be possible to replicate the linked code. The method handler would need to be accessed somehow.\n\nFor these reasons it is deemed infeasible to attempt a forwards compatible approach.\n\nICA auth developers can interpret which format was used when constructing the transaction response by checking if the `sdk.TxMsgData.Data` field is non-empty.\nIf the `sdk.TxMsgData.Data` field is not empty then the format for v0.45 was used, otherwise ICA auth developers can assume the transaction response uses the newer format.\n\n#### Decision\n\nReplicate the transaction response format as provided by the current SDK version.\nWhen the SDK version changes, adjust the transaction response format to use the updated transaction response format.\nInclude the transaction response bytes in the result channel acknowledgement.\n\nA test has been [written](https://github.com/cosmos/ibc-go/blob/v3.0.0/modules/apps/27-interchain-accounts/host/ibc_module_test.go#L716-#L774) to fail if the `MsgResponse` is no longer included in consensus.\n\n### Error acknowledgements\n\nAs indicated above, the `abci.ResponseDeliverTx.Code` is deterministic.\nUpon transaction execution errors, an error acknowledgement should be returned including the abci code.\n\nA test has been [written](https://github.com/cosmos/ibc-go/blob/v3.0.0/modules/apps/27-interchain-accounts/host/types/ack_test.go#L41-#L82) to fail if the ABCI code is no longer deterministic.\n\n## Consequences\n\n> This section describes the consequences, after applying the decision. All consequences should be summarized here, not just the \"positive\" ones.\n\n### Positive\n\n- interchain account auth modules can act upon transaction results without requiring a query module\n- transaction results align with those returned by execution of a normal SDK message.\n\n### Negative\n\n- the security assumptions of this decision rest on the inclusion of the ABCI error code and the Msg response in the ResponseDeliverTx hash created by Tendermint\n- events are non-deterministic and cannot be included in the packet acknowledgement\n\n### Neutral\n\nNo neutral consequences.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/tendermint/tendermint/blob/release/v0.34.13/types/results.go",
+    "github.com/cosmos/cosmos-sdk/blob/dfd47f5b449f558a855da284a9a7eabbfbad435d/baseapp/msg_service_router.go",
+    "github.com/cosmos/ibc-go/blob/v3.0.0/modules/apps/27-interchain-accounts/host/ibc_module_test.go",
+    "github.com/cosmos/ibc-go/blob/v3.0.0/modules/apps/27-interchain-accounts/host/types/ack_test.go"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-010-light-clients-as-sdk-modules.md",
+   "identity": "docs/architecture/adr-010-light-clients-as-sdk-modules.md",
+   "adr_id": "10",
+   "title": "ADR 010: IBC light clients as SDK modules",
+   "first_commit": "2023-02-22T12:54:05+01:00",
+   "first_sha": "07e3601a1f03dbc44ebd559b6ba276b3c836ec66",
+   "last_commit": "2023-11-06T16:02:37+08:00",
+   "author": "colin axn\u00e9r",
+   "email": "25233464+colin-axner@users.noreply.github.com",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# ADR 010: IBC light clients as SDK modules\n\n## Changelog\n\n- 12/12/2022: initial draft\n\n## Status\n\nProposed\n\n## Context\n\nibc-go has 3 main consumers:\n\n- IBC light clients\n- IBC applications\n- relayers\n\nRelayers listen and respond to events emitted by ibc-go while IBC light clients and applications are invoked by core IBC.\nCurrently there exists two different approaches to callbacks being invoked by core IBC.\n\nIBC light clients currently are invoked by a `ClientState` and `ConsensusState` interface as defined by [core IBC](https://github.com/cosmos/ibc-go/blob/v7.0.0/modules/core/exported/client.go#L36).\nThe 02-client submodule will retrieve the `ClientState` or `ConsensusState` from the IBC store in order to perform callbacks to the light client.\nThis design requires all required information for the light client to function to be stored in the `ClientState` or `ConsensusState` or potentially under metadata keys for a specific client instance.\nAdditional information may be provided by core IBC via the defined interface arguments if that information is generic enough to be useful to all IBC light clients.\nThis constraint has proved problematic as pass through clients (such as wasm) cannot maintain easy access to a VM instance.\nIn addition, without increasing the size of the defined `ClientState` interface, light clients are unable to take advantage of basic built-in SDK functionality such as genesis import/export and migrations.\n\nThe other approach used to perform callback logic is via registered SDK modules.\nThis approach is used by core IBC to interact with IBC applications.\nIBC applications will register their callbacks on the IBC router at compile time.\nWhen a packet comes in, core IBC will use the IBC router to lookup the registered callback functions for the provided packet.\nThe benefit of registered callbacks opposed to interface functions is that additional information may be accessed via external keepers.\nBecause the IBC applications are also SDK modules, they additionally get access to a host of functionality provided by the SDK.\nThis includes: genesis import/export, migrations, query/transaction CLI commands, type registration, gRPC query registration, and message server registration.\n\nAs described in [ADR 006](./adr-006-02-client-refactor.md), generalizing light client behaviour is difficult.\nIBC light clients will obtain greater flexibility and control via the registered SDK module approach.\n\n## Decision\n\nInstead of using two different approaches to invoking callbacks, IBC light clients should be invoked as SDK modules.\nOver time and as necessary, core IBC should adjust its interactions with light clients such that they are SDK modules as opposed to interfaces.\n\nOne immediate decision that has already been applied is to formalize light client type registration via the inclusion of an `AppModuleBasic` within the `ModuleManager` for a chain.\nThe [tendermint](https://github.com/cosmos/ibc-go/pull/2825) and [solo machine](https://github.com/cosmos/ibc-go/pull/2826) clients were refactored to include this `AppModuleBasic` implementation and core IBC will no longer include either type as registered by default.\n\nLonger term solutions include using internal module communication as described in [ADR 033](https://github.com/cosmos/cosmos-sdk/blob/main/docs/architecture/adr-033-protobuf-inter-module-comm.md) on the SDK.\nThe following functions should become callbacks invoked via intermodule communication:\n\n- `Status`\n- `GetTimestampAtHeight`\n- `VerifyMembership`\n- `VerifyNonMembership`\n- `Initialize`\n- `VerifyClientMessage`\n- `CheckForMisbehaviour`\n- `UpdateStateOnMisbehaviour`\n- `UpdateState`\n- `CheckSubstituteAndUpdateState`\n- `VerifyUpgradeAndUpdateState`\n\nThe ClientState interface should eventually be trimmed down to something along the lines of:\n\n```go\ntype ClientState interface {\n    proto.Message\n\n    ClientType() string\n    GetLatestHeight() Height\n    Validate() error\n\n    ZeroCustomFields() ClientState\n\n    // ADDITION\n    Route() string // route used for intermodule communication\n}\n```\n\nFor the most part, any functions which require access to the client store should likely not be an interface function of the `ClientState`.\n\n`ExportMetadata` should eventually be replaced by a light client's ability to import/export it's own genesis information.\n\n### Intermodule communication\n\nTo keep the transition from interface callbacks to SDK module callbacks as simple as possible, intermodule communication (when available) should be used to route to light client modules.\nWithout intermodule communication, a routing system would need to be developed/maintained to register callbacks.\nThis functionality of routing to another SDK module should and will be provided by the SDK.\nOnce it is possible to route to SDK modules, a `ClientState` type could expose the function `Route` which returns the callback route used to call the light client module.\n\n## Consequences\n\n### Positive\n\n- use a single approach for interacting with callbacks\n- greater flexibility and control for IBC light clients\n- does not require developing another routing system\n\n### Negative\n\n- requires breaking changes\n- requires waiting for intermodule communication\n\n### Neutral\n\nN/A\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "cosmos/ibc-go#2825",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/ibc-go/pull/2825",
+     "number": "2825"
+    },
+    {
+     "key": "cosmos/ibc-go#2826",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/ibc-go/pull/2826",
+     "number": "2826"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/cosmos/ibc-go/blob/v7.0.0/modules/core/exported/client.go"
+   ],
+   "implementation": {
+    "sha": "6c29d2ebf17002929c986fb45e83c2fecc76e6d3",
+    "date": "2023-09-04T18:30:49+02:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "modules/core/exported/client.go"
+    ]
+   }
+  },
+  {
+   "path": "docs/architecture/adr-004-ics29-lock-fee-module.md",
+   "identity": "docs/architecture/adr-004-ics29-lock-fee-module.md",
+   "adr_id": "4",
+   "title": "ADR 004: Lock fee module upon escrow out of balance",
+   "first_commit": "2022-04-06T17:35:20+02:00",
+   "first_sha": "4271027a5ab1e6faaa2edbc2b9840209c315afab",
+   "last_commit": "2023-09-20T11:20:00+03:00",
+   "author": "Aditya",
+   "email": "adityasripal@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# ADR 004: Lock fee module upon escrow out of balance\n\n## Changelog\n\n- 03/03/2022: initial draft\n\n## Status\n\nAccepted\n\n## Context\n\nThe fee module maintains an escrow account for all fees escrowed to incentivize packet relays.\nIt also tracks each packet fee escrowed separately from the escrow account. This is because the escrow account only maintains a total balance. It has no reference for which coins belonged to which packet fee.\nIn the presence of a severe bug, it is possible the escrow balance will become out of sync with the packet fees marked as escrowed.\nThe ICS29 module should be capable of elegantly handling such a scenario.\n\n## Decision\n\nWe will allow for the ICS29 module to become \"locked\" if the escrow balance is determined to be out of sync with the packet fees marked as escrowed.\nA \"locked\" fee module will not allow for packet escrows to occur nor will it distribute fees. All IBC callbacks will skip performing fee logic, similar to fee disabled channels.\n\nManual intervention will be needed to unlock the fee module.\n\n### Sending side\n\nSpecial behaviour will have to be accounted for in `OnAcknowledgementPacket`. Since the counterparty will continue to send incentivized acknowledgements for fee enabled channels, the acknowledgement will still need to be unmarshalled into an incentivized acknowledgement before calling the underlying application `OnAcknowledgePacket` callback.\n\nWhen distributing fees, a cached context should be used. If the escrow account balance would become negative, the current state changes should be discarded and the fee module should be locked using the uncached context. This prevents fees from being partially distributed for a given packetID.\n\n### Receiving side\n\n`OnRecvPacket` should remain unaffected by the fee module becoming locked since escrow accounts only affect the sending side.\n\n## Consequences\n\n### Positive\n\nThe fee module can be elegantly disabled in the presence of severe bugs.\n\n### Negative\n\nExtra logic is added to account for edge cases which are only possible in the presence of bugs.\n\n### Neutral\n\n## References\n\nIssues:\n\n- [#821](https://github.com/cosmos/ibc-go/issues/821)\n- [#860](https://github.com/cosmos/ibc-go/issues/860)\n\nPR's:\n\n- [#1031](https://github.com/cosmos/ibc-go/pull/1031)\n- [#1029](https://github.com/cosmos/ibc-go/pull/1029)\n- [#1056](https://github.com/cosmos/ibc-go/pull/1056)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#821",
+     "kind": "hash",
+     "url": "",
+     "number": "821"
+    },
+    {
+     "key": "cosmos/ibc-go#821",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc-go/issues/821",
+     "number": "821"
+    },
+    {
+     "key": "#860",
+     "kind": "hash",
+     "url": "",
+     "number": "860"
+    },
+    {
+     "key": "cosmos/ibc-go#860",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc-go/issues/860",
+     "number": "860"
+    },
+    {
+     "key": "#1031",
+     "kind": "hash",
+     "url": "",
+     "number": "1031"
+    },
+    {
+     "key": "cosmos/ibc-go#1031",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/ibc-go/pull/1031",
+     "number": "1031"
+    },
+    {
+     "key": "#1029",
+     "kind": "hash",
+     "url": "",
+     "number": "1029"
+    },
+    {
+     "key": "cosmos/ibc-go#1029",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/ibc-go/pull/1029",
+     "number": "1029"
+    },
+    {
+     "key": "#1056",
+     "kind": "hash",
+     "url": "",
+     "number": "1056"
+    },
+    {
+     "key": "cosmos/ibc-go#1056",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/ibc-go/pull/1056",
+     "number": "1056"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-005-consensus-height-events.md",
+   "identity": "docs/architecture/adr-005-consensus-height-events.md",
+   "adr_id": "5",
+   "title": "ADR 005: UpdateClient Events - ClientState Consensus Heights",
+   "first_commit": "2022-08-08T18:38:29+02:00",
+   "first_sha": "f57170b1d4dd202a3c6c1c61dcf302b6a9546405",
+   "last_commit": "2023-09-20T11:20:00+03:00",
+   "author": "colin axn\u00e9r",
+   "email": "25233464+colin-axner@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# ADR 005: UpdateClient Events - ClientState Consensus Heights\n\n## Changelog\n\n- 25/04/2022: initial draft\n\n## Status\n\nAccepted\n\n## Context\n\nThe `ibc-go` implementation leverages the [Cosmos-SDK's EventManager](https://github.com/cosmos/cosmos-sdk/blob/v0.45.4/docs/core/events.md#EventManager) to provide subscribers a method of reacting to application specific events.\nSome IBC relayers depend on the [`consensus_height`](https://github.com/cosmos/ibc-go/blob/v3.0.0/modules/core/02-client/keeper/events.go#L33) attribute emitted as part of `UpdateClient` events in order to run `07-tendermint` misbehaviour detection by cross-checking the details of the *Header* emitted at a given consensus height against those of the *Header* from the originating chain. This includes such details as:\n\n- The `SignedHeader` containing the commitment root.\n- The `ValidatorSet` that signed the *Header*.\n- The `TrustedHeight` seen by the client at less than or equal to the height of *Header*.\n- The last `TrustedValidatorSet` at the trusted height.\n\nFollowing the refactor of the `02-client` submodule and associated `ClientState` interfaces, it will now be possible for\nlight client implementations to perform such actions as batch updates, inserting `N` number of `ConsensusState`s into the application state tree with a single `UpdateClient` message. This flexibility is provided in `ibc-go` by the usage of the [Protobuf `Any`](https://developers.google.com/protocol-buffers/docs/proto3#any) field contained within the [`UpdateClient`](https://github.com/cosmos/ibc-go/blob/v3.0.0/proto/ibc/core/client/v1/tx.proto#L44) message.\nFor example, a batched client update message serialized as a Protobuf `Any` type for the `07-tendermint` lightclient implementation could be defined as follows:\n\n```protobuf\nmessage BatchedHeaders {\n  repeated Header headers = 1;\n}\n```\n\nTo complement this flexibility, the `UpdateClient` handler will now support the submission of [client misbehaviour](https://github.com/cosmos/ibc/tree/master/spec/core/ics-002-client-semantics#misbehaviour) by consolidating the `Header` and `Misbehaviour` interfaces into a single `ClientMessage` interface type:\n\n```go\n// ClientMessage is an interface used to update an IBC client.\n// The update may be done by a single header, a batch of headers, misbehaviour, or any type which when verified produces\n// a change to state of the IBC client\ntype ClientMessage interface {\n  proto.Message\n\n  ClientType() string\n  ValidateBasic() error\n}\n```\n\nTo support this functionality the `GetHeight()` method has been omitted from the new `ClientMessage` interface.\nEmission of standardised events from the `02-client` submodule now becomes problematic and is two-fold:\n\n1. The `02-client` submodule previously depended upon the `GetHeight()` method of `Header` types in order to [retrieve the updated consensus height](https://github.com/cosmos/ibc-go/blob/v3.0.0/modules/core/02-client/keeper/client.go#L90).\n2. Emitting a single `consensus_height` event attribute is not sufficient in the case of a batched client update containing multiple *Headers*.\n\n## Decision\n\nThe following decisions have been made in order to provide flexibility to consumers of `UpdateClient` events in a non-breaking fashion:\n\n1. Return a list of updated consensus heights `[]exported.Height` from the new `UpdateState` method of the `ClientState` interface.\n\n```go\n// UpdateState updates and stores as necessary any associated information for an IBC client, such as the ClientState and corresponding ConsensusState.\n// Upon successful update, a list of consensus heights is returned. It assumes the ClientMessage has already been verified.\nUpdateState(sdk.Context, codec.BinaryCodec, sdk.KVStore, ClientMessage) []Height\n```\n\n2. Maintain the `consensus_height` event attribute emitted from the `02-client` update handler, but mark as deprecated for future removal. For example, with tendermint lightclients this will simply be `consensusHeights[0]` following a successful update using a single *Header*.\n\n3. Add an additional `consensus_heights` event attribute, containing a comma separated list of updated heights. This provides flexibility for emitting a single consensus height or multiple consensus heights in the example use-case of batched header updates.\n\n## Consequences\n\n### Positive\n\n- Subscribers of IBC core events can act upon `UpdateClient` events containing one or more consensus heights.\n- Deprecation of the existing `consensus_height` attribute allows consumers to continue to process `UpdateClient` events as normal, with a path to upgrade to using the `consensus_heights` attribute moving forward.\n\n### Negative\n\n- Consumers of IBC core `UpdateClient` events are forced to make future code changes.\n\n### Neutral\n\n## References\n\nDiscussions:\n\n- [#1208](https://github.com/cosmos/ibc-go/pull/1208#discussion_r839691927)\n\nIssues:\n\n- [#594](https://github.com/cosmos/ibc-go/issues/594)\n\nPRs:\n\n- [#1285](https://github.com/cosmos/ibc-go/pull/1285)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#1208",
+     "kind": "hash",
+     "url": "",
+     "number": "1208"
+    },
+    {
+     "key": "cosmos/ibc-go#1208",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/ibc-go/pull/1208",
+     "number": "1208"
+    },
+    {
+     "key": "#594",
+     "kind": "hash",
+     "url": "",
+     "number": "594"
+    },
+    {
+     "key": "cosmos/ibc-go#594",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc-go/issues/594",
+     "number": "594"
+    },
+    {
+     "key": "#1285",
+     "kind": "hash",
+     "url": "",
+     "number": "1285"
+    },
+    {
+     "key": "cosmos/ibc-go#1285",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/ibc-go/pull/1285",
+     "number": "1285"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/cosmos/cosmos-sdk/blob/v0.45.4/docs/core/events.md",
+    "github.com/cosmos/ibc-go/blob/v3.0.0/modules/core/02-client/keeper/events.go",
+    "github.com/cosmos/ibc-go/blob/v3.0.0/proto/ibc/core/client/v1/tx.proto",
+    "github.com/cosmos/ibc-go/blob/v3.0.0/modules/core/02-client/keeper/client.go"
+   ],
+   "implementation": {
+    "sha": "f57170b1d4dd202a3c6c1c61dcf302b6a9546405",
+    "date": "2022-08-08T18:38:29+02:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "modules/core/02-client/keeper/client.go",
+     "modules/core/02-client/keeper/events.go",
+     "proto/ibc/core/client/v1/tx.proto"
+    ]
+   }
+  },
+  {
+   "path": "docs/architecture/adr-011-transfer-total-escrow-state-entry.md",
+   "identity": "docs/architecture/adr-011-transfer-total-escrow-state-entry.md",
+   "adr_id": "11",
+   "title": "ADR 011: ICS-20 transfer state entry for total amount of tokens in escrow",
+   "first_commit": "2023-06-01T09:05:32+02:00",
+   "first_sha": "6f628d9ff048309648e3cbba3afb1414dcb49f51",
+   "last_commit": "2023-09-20T11:20:00+03:00",
+   "author": "colin axn\u00e9r",
+   "email": "25233464+colin-axner@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted and applied in v7.1 of ibc-go",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR 011: ICS-20 transfer state entry for total amount of tokens in escrow\n\n## Changelog\n\n- 2023-05-24: Initial draft\n\n## Status\n\nAccepted and applied in v7.1 of ibc-go\n\n## Context\n\nEvery ICS-20 transfer channel has its own escrow bank account. This account is used to lock tokens that are transferred out of a chain that acts as the source of the tokens (i.e. when the tokens being transferred have not returned to the originating chain). This design makes it easy to query the balance of the escrow accounts and find out the total amount of tokens in escrow in a particular channel. However, there are use cases where it would be useful to determine the total escrowed amount of a given denomination across all channels where those tokens have been transferred out.\n\nFor example: assuming that there are three channels between Cosmos Hub to Osmosis and 10 ATOM have been transferred from the Cosmos Hub to Osmosis on each of those channels, then we would like to know that 30 ATOM have been transferred (i.e. are locked in the escrow accounts of each channel) without needing to iterate over each escrow account to add up the balances of each.\n\nFor a sample use case where this feature would be useful, please refer to Osmosis' rate limiting use case described in [#2664](https://github.com/cosmos/ibc-go/issues/2664).\n\n## Decision\n\n### State entry denom -> amount\n\nThe total amount of tokens in escrow (across all transfer channels) for a given denomination is stored in state in an entry keyed by the denomination: `totalEscrowForDenom/{denom}`.\n\n### Panic if amount is negative\n\nIf a negative amount is ever attempted to be stored, then the keeper function will panic:\n\n```go\nif coin.Amount.IsNegative() {\n  panic(fmt.Sprintf(\"amount cannot be negative: %s\", coin.Amount))\n}\n```\n\n### Delete state entry if amount is zero\n\nWhen setting the amount for a particular denomination, the value might be zero if all tokens that were transferred out of the chain have been transferred back. If this happens, then the state entry for this particular denomination will be deleted, since Cosmos SDK's `x/bank` module prunes any non-zero balances:\n\n```go\nif coin.Amount.IsZero() {\n  store.Delete(key) // delete the key since Cosmos SDK x/bank module will prune any non-zero balances\n  return\n}\n```\n\n### Bundle escrow/unescrow with setting state entry\n\nTwo new functions are implemented that bundle together the operations of escrowing/unescrowing and setting the total escrow amount in state, since these operations need to be executed together. \n\nFor escrowing tokens:\n\n```go\n// escrowToken will send the given token from the provided sender to the escrow address. It will also\n// update the total escrowed amount by adding the escrowed token to the current total escrow.\nfunc (k Keeper) escrowToken(ctx sdk.Context, sender, escrowAddress sdk.AccAddress, token sdk.Coin) error {\n  if err := k.bankKeeper.SendCoins(ctx, sender, escrowAddress, sdk.NewCoins(token)); err != nil {\n    // failure is expected for insufficient balances\n    return err\n  }\n\n  // track the total amount in escrow keyed by denomination to allow for efficient iteration\n  currentTotalEscrow := k.GetTotalEscrowForDenom(ctx, token.GetDenom())\n  newTotalEscrow := currentTotalEscrow.Add(token)\n  k.SetTotalEscrowForDenom(ctx, newTotalEscrow)\n\n  return nil\n}\n```\n\nFor unescrowing tokens:\n\n```go\n// unescrowToken will send the given token from the escrow address to the provided receiver. It will also\n// update the total escrow by deducting the unescrowed token from the current total escrow.\nfunc (k Keeper) unescrowToken(ctx sdk.Context, escrowAddress, receiver sdk.AccAddress, token sdk.Coin) error {\n  if err := k.bankKeeper.SendCoins(ctx, escrowAddress, receiver, sdk.NewCoins(token)); err != nil {\n    // NOTE: this error is only expected to occur given an unexpected bug or a malicious\n    // counterparty module. The bug may occur in bank or any part of the code that allows\n    // the escrow address to be drained. A malicious counterparty module could drain the\n    // escrow address by allowing more tokens to be sent back then were escrowed.\n    return errorsmod.Wrap(err, \"unable to unescrow tokens, this may be caused by a malicious counterparty module or a bug: please open an issue on counterparty module\")\n  }\n\n  // track the total amount in escrow keyed by denomination to allow for efficient iteration\n  currentTotalEscrow := k.GetTotalEscrowForDenom(ctx, token.GetDenom())\n  newTotalEscrow := currentTotalEscrow.Sub(token)\n  k.SetTotalEscrowForDenom(ctx, newTotalEscrow)\n\n  return nil\n}\n```\n\nWhen tokens need to be escrowed in `sendTransfer`, then `escrowToken` is called; when tokens need to be unescrowed on execution of the `OnRecvPacket`, `OnAcknowledgementPacket` or `OnTimeoutPacket` callbacks, then `unescrowToken` is called.\n\n### gRPC query endpoint and CLI to retrieve amount\n\nA gRPC query endpoint is added so that it is possible to retrieve the total amount for a given denomination:\n\n```proto\n// TotalEscrowForDenom returns the total amount of tokens in escrow based on the denom.\nrpc TotalEscrowForDenom(QueryTotalEscrowForDenomRequest) returns (QueryTotalEscrowForDenomResponse) {\n  option (google.api.http).get = \"/ibc/apps/transfer/v1/denoms/{denom=**}/total_escrow\";\n}\n\n// QueryTotalEscrowForDenomRequest is the request type for TotalEscrowForDenom RPC method.\nmessage QueryTotalEscrowForDenomRequest {\n  string denom = 1;\n}\n\n// QueryTotalEscrowForDenomResponse is the response type for TotalEscrowForDenom RPC method.\nmessage QueryTotalEscrowForDenomResponse {\n  cosmos.base.v1beta1.Coin amount = 1 [(gogoproto.nullable) = false];\n}\n```\n\nAnd a CLI query is also available to retrieve the total amount via the command line:\n\n```shell\nquery ibc-transfer total-escrow [denom]\n```\n\n## Consequences\n\n### Positive\n\n- Possibility to retrieve the total amount of a particular denomination in escrow across all transfer channels without iteration.\n\n### Negative\n\nNo notable consequences\n\n### Neutral\n\n- A new entry is added to state for every denomination that is transferred out of the chain.\n\n## References\n\nIssues:\n\n- [#2664](https://github.com/cosmos/ibc-go/issues/2664)\n\nPRs:\n\n- [#3019](https://github.com/cosmos/ibc-go/pull/3019)\n- [#3558](https://github.com/cosmos/ibc-go/pull/3558)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#2664",
+     "kind": "hash",
+     "url": "",
+     "number": "2664"
+    },
+    {
+     "key": "cosmos/ibc-go#2664",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc-go/issues/2664",
+     "number": "2664"
+    },
+    {
+     "key": "#3019",
+     "kind": "hash",
+     "url": "",
+     "number": "3019"
+    },
+    {
+     "key": "cosmos/ibc-go#3019",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/ibc-go/pull/3019",
+     "number": "3019"
+    },
+    {
+     "key": "#3558",
+     "kind": "hash",
+     "url": "",
+     "number": "3558"
+    },
+    {
+     "key": "cosmos/ibc-go#3558",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/ibc-go/pull/3558",
+     "number": "3558"
+    }
+   ],
+   "mentioned_paths": [
+    "totalEscrowForDenom/{denom}",
+    "x/bank"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-008-app-caller-cbs/adr-008-app-caller-cbs.md",
+   "identity": "docs/architecture/adr-008-app-caller-cbs/adr-008-app-caller-cbs.md",
+   "adr_id": "8",
+   "title": "ADR 008: Callback to IBC Actors",
+   "first_commit": "2023-03-22T11:43:05+01:00",
+   "first_sha": "7d23e0fd0fb9e2a3e96b1b22f3fb933e20344f0c",
+   "last_commit": "2023-09-19T13:47:08+02:00",
+   "author": "Aditya",
+   "email": "adityasripal@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted, packet callback interface implemented",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# ADR 008: Callback to IBC Actors\n\n## Changelog\n\n* 2022-08-10: Initial Draft\n* 2023-03-22: Merged\n\n## Status\n\nAccepted, packet callback interface implemented\n\n## Context\n\nIBC was designed with callbacks between core IBC and IBC applications. IBC apps would send a packet to core IBC. When the result of the packet lifecycle eventually resolved into either an acknowledgement or a timeout, core IBC called a callback on the IBC application so that the IBC application could take action on the basis of the result (e.g. unescrow tokens for ICS-20).\n\nThis setup worked well for off-chain users interacting with IBC applications.\n\nWe are now seeing the desire for secondary applications (e.g. smart contracts, modules) to call into IBC apps as part of their state machine logic and then do some actions on the basis of the packet result. Or to receive a packet from IBC and do some logic upon receipt.\n\nExample Usecases:\n- Send an ICS-20 packet, and if it is successful, then send an ICA-packet to swap tokens on LP and return funds to sender\n- Execute some logic upon receipt of token transfer to a smart contract address\n\nThis requires a second layer of callbacks. The IBC application already gets the result of the packet from core IBC, but currently there is no standardized way to pass this information on to an actor module/smart contract.\n\n## Definitions\n\n- Actor: an actor is an on-chain module (this may be a hardcoded module in the chain binary or a smart contract) that wishes to execute custom logic whenever IBC receives a packet flow that it has either sent or received. It **must** be addressable by a string value.\n\n## Decision\n\nCreate a standardized callback interface that actors can implement. IBC applications (or middleware that wraps IBC applications) can now call this callback to route the result of the packet/channel handshake from core IBC to the IBC application to the original actor on the sending chain. IBC applications can route the packet receipt to the destination actor on the receiving chain.\n\nIBC actors may implement the following interface:\n\n```go\ntype IBCActor interface {\n    // OnChannelOpen will be called on the IBCActor when the channel opens\n    // this will happen either on ChanOpenAck or ChanOpenConfirm\n    OnChannelOpen(ctx sdk.Context, portID, channelID, version string)\n\n    // OnChannelClose will be called on the IBCActor if the channel closes\n    // this will be called on either ChanCloseInit or ChanCloseConfirm and if the channel handshake fails on our end\n    // NOTE: currently the channel does not automatically close if the counterparty fails the handhshake so actors must be prepared for an OpenInit to never return a callback for the time being\n    OnChannelClose(ctx sdk.Context, portID, channelID string)\n\n    // IBCActor must also implement PacketActor interface\n    PacketActor\n}\n\n// PacketActor is split out into its own separate interface since implementors may choose\n// to only support callbacks for packet methods rather than supporting the full IBCActor interface\ntype PacketActor interface {\n    // OnRecvPacket will be called on the IBCActor after the IBC Application\n    // handles the RecvPacket callback if the packet has an IBC Actor as a receiver.\n    OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, relayer sdk.AccAddress) error\n\n    // OnAcknowledgementPacket will be called on the IBC Actor\n    // after the IBC Application handles its own OnAcknowledgementPacket callback\n    OnAcknowledgmentPacket(\n        ctx sdk.Context,\n        packet channeltypes.Packet,\n        ack exported.Acknowledgement,\n        relayer sdk.AccAddress,\n    ) error\n\n    // OnTimeoutPacket will be called on the IBC Actor\n    // after the IBC Application handles its own OnTimeoutPacket callback\n    OnTimeoutPacket(\n        ctx sdk.Context,\n        packet channeltypes.Packet,\n        relayer sdk.AccAddress,\n    ) error\n}\n```\n\nThe `CallbackPacketData` interface will get created to add `GetSourceCallbackAddress` and `GetDestCallbackAddress` methods. These may return an address\nor they may return the empty string. The address may reference an PacketActor or it may be a regular user address. If the address is not a PacketActor, the actor callback must continue processing (no-op). Any IBC application or middleware that uses these methods must handle these cases. In most cases, the `GetSourceCallbackAddress` will be the sender address and the `GetDestCallbackAddress` will be the receiver address. However, these are named generically so that implementors may choose a different contract address for the callback if they choose.\n\nThe interface also defines a `UserDefinedGasLimit` method. Any middleware targeting this interface for callback handling should cap the gas that a callback is allowed to take (especially on AcknowledgePacket and TimeoutPacket) so that a custom callback does not prevent the packet lifecycle from completing. However, since this is a global cap it is likely to be very large. Thus, users may specify a smaller limit to cap the amount of fees a relayer must pay in order to complete the packet lifecycle on the user's behalf.\n\nIBC applications which provide the base packet data type must implement the `CallbackPacketData` interface to allow `PacketActor` callbacks.\n\n```go\n// Implemented by any packet data type that wants to support PacketActor callbacks\n// PacketActor's will be unable to act on any packet data type that does not implement\n// this interface. \ntype CallbackPacketData interface {\n    // GetSourceCallbackAddress should return the callback address of a packet data on the source chain.\n    // This may or may not be the sender of the packet. If no source callback address exists for the packet, \n    // an empty string may be returned. \n    GetSourceCallbackAddress() string\n\n    // GetDestCallbackAddress should return the callback address of a packet data on the destination chain.\n    // This may or may not be the receiver of the packet. If no dest callback address exists for the packet, \n    // an empty string may be returned. \n    GetDestCallbackAddress() string\n\n    // UserDefinedGasLimit allows the sender of the packet to define inside the packet data\n    // a gas limit for how much the ADR-8 callbacks can consume. If defined, this will be passed\n    // in as the gas limit so that the callback is guaranteed to complete within a specific limit.\n    // On recvPacket, a gas-overflow will just fail the transaction allowing it to timeout on the sender side.\n    // On ackPacket and timeoutPacket, a gas-overflow will reject state changes made during callback but still\n    // commit the transaction. This ensures the packet lifecycle can always complete.\n    // If the packet data returns 0, the remaining gas limit will be passed in (modulo any chain-defined limit)\n    // Otherwise, we will set the gas limit passed into the callback to the `min(ctx.GasLimit, UserDefinedGasLimit())`\n    UserDefinedGasLimit() uint64\n}\n```\n\nIBC Apps or middleware can then call the IBCActor callbacks like so in their own callbacks:\n\n### Handshake Callbacks\n\nThe `OnChanOpenInit` handshake callback will need to include an additional field so that the initiating actor can be tracked and called upon during handshake completion.\nThe actor provided in the `OnChanOpenInit` callback will be the signer of the `MsgChanOpenInit` message. \n\n```go\nfunc OnChanOpenInit(\n    ctx sdk.Context,\n    order channeltypes.Order,\n    connectionHops []string,\n    portID string,\n    channelID string,\n    channelCap *capabilitytypes.Capability,\n    counterparty channeltypes.Counterparty,\n    version string,\n    actor string,\n) (string, error) {\n    acc := k.getAccount(ctx, actor)\n    ibcActor, ok := acc.(IBCActor)\n    if ok {\n        k.setActor(ctx, portID, channelID, actor)\n    }\n    \n    // continued logic\n}\n\nfunc OnChanOpenAck(\n    ctx sdk.Context,\n    portID,\n    channelID string,\n    counterpartyChannelID string,\n    counterpartyVersion string,\n) error {\n    // run any necessary logic first\n    // negotiate final version\n\n    actor := k.getActor(ctx, portID, channelID)\n    if actor != \"\" {\n        ibcActor, _ := acc.(IBCActor)\n        ibcActor.OnChanOpen(ctx, portID, channelID, version)\n    }\n\n    // the same actor will be used for channel closure\n}\n\nfunc OnChanCloseInit(\n    ctx sdk.Context,\n    portID,\n    channelID,\n) error {\n    // run any necesssary logic first\n\n    actor := k.getActor(ctx, portID, channelID)\n    if actor != \"\" {\n        ibcActor, _ := acc.(IBCActor)\n        ibcActor.OnChanClose(ctx, portID, channelID)\n    }\n    // cleanup state\n    k.deleteActor(ctx, portID, channelID)\n}\n\nfunc OnChanCloseConfirm(\n    ctx sdk.Context,\n    portID,\n    channelID string,\n) error {\n    // run any necesssary logic first\n\n    actor := k.getActor(ctx, portID, channelID)\n    if actor != \"\" {\n        ibcActor, _ := acc.(IBCActor)\n        ibcActor.OnChanClose(ctx, portID, channelID)\n    }\n    // cleanup state\n    k.deleteActor(ctx, portID, channelID)\n}\n```\n\nNOTE: The handshake calls `OnChanOpenTry` and `OnChanOpenConfirm` are explicitly left out as it is still to be determined how the actor of the `OnChanOpenTry` step should be provided. Initially only the initiating side of the channel handshake may support setting a channel actor, future improvements should allow both sides of the channel handshake to set channel actors. \n\n### PacketCallbacks\n\nNo packet callback API will need to change.\n\n```go\n// Call the IBCActor recvPacket callback after processing the packet\n// if the recvPacket callback exists. If the callback returns an error\n// then return an error ack to revert all packet data processing. \nfunc OnRecvPacket(\n    ctx sdk.Context,\n    packet channeltypes.Packet,\n    relayer sdk.AccAddress,\n) (ack exported.Acknowledgement) {\n    // run any necesssary logic first\n    // IBCActor logic will postprocess\n\n    // postprocessing should only if the underlying application\n    // returns a successful ack\n\n    // unmarshal packet data into expected interface\n    var cbPacketData callbackPacketData\n    unmarshalInterface(packet.GetData(), cbPacketData)\n\n    if cbPacketData == nil {\n        // the packet data does not implement the CallbackPacketData interface\n        // continue processing (no-op)\n        return\n    }\n\n    acc := k.getAccount(ctx, cbPacketData.GetDstCallbackAddress())\n    ibcActor, ok := acc.(IBCActor)\n    if ok {\n        // set gas limit for callback\n        gasLimit := getGasLimit(ctx, cbPacketData)\n        cbCtx = ctx.WithGasLimit(gasLimit)\n\n        err := ibcActor.OnRecvPacket(cbCtx, packet, relayer)\n\n        // deduct consumed gas from original context\n        ctx = ctx.WithGasLimit(ctx.GasMeter().RemainingGas() - cbCtx.GasMeter().GasConsumed())\n        if err != nil {\n            // NOTE: by returning an error acknowledgement, it is assumed that the\n            // base IBC application on the counterparty callback stack will be able\n            // to properly unmarshal the error acknowledgement. It should not expect\n            // some custom error acknowledgement. If it does, failed acknowledgements\n            // will be unsuccessfully processed which can be catastrophic in processing\n            // refund logic. \n            // \n            // If this issue is a serious concern, an ADR 8 implementation can construct its own\n            // acknowledgement type which wraps the underlying application acknowledgement. This \n            // would require deployment on both sides of the packet flow, in addition to version \n            // negotiation to enable the custom acknowledgement type usage. \n            // \n            // Future improvmenets should allow for each IBC application in a stack of\n            // callbacks to provide their own acknowledgement without disrupting the unmarshaling\n            // of an application above or below it in the stack. \n            return AcknowledgementError(err)\n        }\n    }\n    return\n}\n\n// Call the IBCActor acknowledgementPacket callback after proc",
+   "truncated_text": true,
+   "discussion_refs": [
+    {
+     "key": "cosmos/ibc-go#1660",
+     "kind": "issue",
+     "url": "https://github.com/cosmos/ibc-go/issues/1660",
+     "number": "1660"
+    },
+    {
+     "key": "cosmos/ibc-go#3287",
+     "kind": "pull",
+     "url": "https://github.com/cosmos/ibc-go/pull/3287",
+     "number": "3287"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/architecture/adr-027-ibc-wasm.md",
+   "identity": "docs/architecture/adr-027-ibc-wasm.md",
+   "commit": "6b21eeff5dc92378456226a4b2c7b32a5d982df4",
+   "date": "2024-03-11T20:35:37+01:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "*Draft, needs updates*",
+   "new_raw": "*Accepted and applied in v0.1.0 of 08-wasm*",
+   "replacement": null,
+   "message": "docs: update ADR 27 (#5815)",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Carlos Rodriguez",
+   "email": "carlos@interchain.io"
+  },
+  {
+   "path": "docs/architecture/adr-008-app-caller-cbs/adr-008-app-caller-cbs.md",
+   "identity": "docs/architecture/adr-008-app-caller-cbs/adr-008-app-caller-cbs.md",
+   "commit": "12c00ec85c1238a0b9075a14593485c60f0da729",
+   "date": "2023-03-22T17:30:10+01:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted, packet callback interface implemented",
+   "replacement": null,
+   "message": "imp: address ADR 8 review suggestions (#3319)",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "colin axn\u00e9r",
+   "email": "25233464+colin-axner@users.noreply.github.com"
+  },
+  {
+   "path": "docs/architecture/adr-008-app-caller-cbs/adr-008-app-caller-cbs.md",
+   "identity": "docs/architecture/adr-008-app-caller-cbs/adr-008-app-caller-cbs.md",
+   "commit": "68f7ab36d3f010bf1698b2a78ef199aa0e65ab69",
+   "date": "2023-09-19T13:47:08+02:00",
+   "old_state": "accepted",
+   "new_state": "deleted",
+   "old_raw": "Accepted, packet callback interface implemented",
+   "new_raw": "",
+   "replacement": null,
+   "message": "docs: update ADR8 (#4631)",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "deleted-without-replacement-pointer",
+   "author": "Aditya",
+   "email": "adityasripal@gmail.com"
+  }
+ ],
+ "ai_signals": [
+  {
+   "kind": "file:primary",
+   "name": "AGENTS.md",
+   "date": "2025-05-31T23:01:53+02:00",
+   "commit": "68270a3ffe223eb4a7bc0f6c24a916f110f4f905",
+   "evidence": "chore: experiment with agents file (#8449)",
+   "official": true,
+   "author": "Gjermund Garaba",
+   "email": "gjermund@garaba.net"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2025-12-04T05:52:43-05:00",
+   "commit": "421839a28af02841367aad2eb75f65e445e27b00",
+   "evidence": "feat: attestation light client (#8717)",
+   "official": true,
+   "author": "Gjermund Garaba",
+   "email": "gjermund@garaba.net"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Cursor <cursoragent@cursor.com>",
+   "date": "2026-08-12T14:07:10+00:00",
+   "commit": "ae841d41a58968f34ca570149884bbb9fe606338",
+   "evidence": "chore(deps): bump cosmos-sdk to v0.55.0, CometBFT to v0.40.0, Go to 1.26 (all modules) (#9011)",
+   "official": true,
+   "author": "dependabot[bot]",
+   "email": "49699333+dependabot[bot]@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-16T02:15:33+09:00",
+   "commit": "36d0659af3f4ffcb97f91f6065cd393544878acd",
+   "evidence": "fix(04-channel): reject packet timeouts on a future client revision (#9033)",
+   "official": true,
+   "author": "Lee MinGi",
+   "email": "55051805+lapidix@users.noreply.github.com"
+  }
+ ],
+ "signal_date": "2025-05-31T21:01:53+00:00",
+ "signal_kind": "file:primary",
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-eligible",
+ "adr_count_before_signal": 16,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-before-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "yes",
+ "buchgeher_adr_count": "6"
+}

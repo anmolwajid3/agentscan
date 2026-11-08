@@ -1,0 +1,20 @@
+{
+ "repo": "Quarterback16/NflManager",
+ "clone_ok": false,
+ "error": "Cloning into '/tmp/adr-clones/Quarterback16__NflManager'...\nfatal: could not read Username for 'https://github.com': terminal prompts disabled",
+ "group": "unavailable",
+ "adr_count": 0,
+ "adr_count_before_signal": 0,
+ "superseded_in_window": 0,
+ "adrs": [],
+ "status_changes": [],
+ "ai_signals": [],
+ "mentions": {},
+ "signal_date": null,
+ "signal_kind": null,
+ "likely_template": false,
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "5"
+}

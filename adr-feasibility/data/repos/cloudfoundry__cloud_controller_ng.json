@@ -1,0 +1,503 @@
+{
+ "repo": "cloudfoundry/cloud_controller_ng",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2012-04-24T16:39:32+00:00",
+ "last_commit": "2026-11-06T19:25:09-08:00",
+ "n_commits": 17538,
+ "n_authors": 991,
+ "n_files": 4981,
+ "n_code_files": 3745,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 8,
+ "adrs": [
+  {
+   "path": "decisions/0014-storage-clis-for-blobstore-operations.md",
+   "identity": "decisions/0014-storage-clis-for-blobstore-operations.md",
+   "adr_id": "14",
+   "title": "ADR: Introduce Storage CLIs for Blobstore Operations",
+   "first_commit": "2025-08-13T13:33:45+02:00",
+   "first_sha": "638d7e11355b096e70485e459d0350177c529b6a",
+   "last_commit": "2026-10-08T15:54:13+02:00",
+   "author": "Johannes Haass",
+   "email": "johannes.haass@sap.com",
+   "status": "accepted",
+   "status_raw": "\u2705 **Implemented** - Storage-CLI support is fully implemented for following Iaas Providers with native type names. | Provider | Status | Notes | |--------------|---------------------------|---------------------------------------------------------------------------------------------------------| | Azu",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# ADR: Introduce Storage CLIs for Blobstore Operations\n\n## Status\n\n\u2705 **Implemented** - Storage-CLI support is fully implemented for following Iaas Providers with native type names.\n\n| Provider     | Status                    | Notes                                                                                                   |\n|--------------|---------------------------|---------------------------------------------------------------------------------------------------------|\n| Azure        | \u2705 Implemented            | Uses [`storage-cli`](https://github.com/cloudfoundry/storage-cli/tree/main/azurebs) with native type `azurebs`                                               |\n| AWS          | \u2705 Implemented            | Uses [`storage-cli`](https://github.com/cloudfoundry/storage-cli/tree/main/s3) with native type `s3`                                                                |\n| GCP          | \u2705 Implemented            | Uses [`storage-cli`](https://github.com/cloudfoundry/storage-cli/tree/main/gcs) with native type `gcs`                                                              |\n| Alibaba Cloud| \u2705 Implemented            | Uses [`storage-cli`](https://github.com/cloudfoundry/storage-cli/tree/main/alioss) with native type `alioss`                                                  |\n\n**Configuration Migration Status:**\n- The `blobstore_provider` field accepts both native storage-cli type names AND legacy fog names\n- **Recommended:** Use native storage-cli type names (azurebs, s3, gcs, alioss)\n- **Legacy fog names** (AzureRM, AWS, Google, aliyun) still supported for backwards compatibility\n- **WebDAV/dav intentionally excluded** until fully supported\n- **Timeline:** Legacy fog name support to be removed May 2026\n\n\n## Update \u2014 July 2026: All Fog Gems Removed\n\nCloud Controller previously used the fog gem family to interface with blobstores like Azure, AWS, GCP, and Alibaba Cloud.\n\n> \u2705 **All fog gems have been fully removed** (fog-aws, fog-core, fog-azure-rm, fog-google, fog-aliyun).\n\nThe migration described in this ADR is complete. As a result:\n\n- The `blobstore_provider` field accepts native storage-cli type names (azurebs, s3, gcs, alioss, dav)\n- The legacy native WebDAV provider (`blobstore_type: webdav`) has been removed \u2014 use `blobstore_type: storage-cli` with `provider: dav` instead\n- **Legacy fog provider names** (AzureRM, AWS, Google, aliyun) are **no longer supported** \u2014 use native storage-cli type names (azurebs, s3, gcs, alioss)\n- \u2705 Enabled the removal of all fog related gems \u2014 fog-aws, fog-core, fog-azure-rm, fog-google, and fog-aliyun have all been removed\n\n\n## Context\n\nCloud Controller uses the fog gem family to interface with blobstores like Azure, AWS, GCP, and Alibaba Cloud.\nThese Ruby gems are largely unmaintained, introducing risks such as:\n* Dependency on deprecated SDKs (e.g., Azure SDK for Ruby)\n* Blocking Ruby version upgrades\n* Potential for unpatched CVEs\n\nBosh faces similar issues, as it is also written in Ruby and interacts with blobstores. To address this, Bosh introduced standalone CLI tools which shell out from Ruby to handle all blobstore operations:\n- https://github.com/cloudfoundry/bosh-azure-storage-cli\n- https://github.com/cloudfoundry/bosh-s3cli\n- https://github.com/cloudfoundry/bosh-gcscli\n- https://github.com/cloudfoundry/bosh-ali-storage-cli\n\nThis approach decouples core logic from Ruby gems and has proven to be robust in production.\nThese CLIs are implemented in Go and use the respective provider SDKs.\nAll Bosh storage CLIs implement a common interface with the following commands: `put`, `get`, `delete`, `exists`, and `sign`.\n\nA [PoC](https://github.com/cloudfoundry/cloud_controller_ng/pull/4397) has shown that `bosh-azure-storage-cli` can be successfully used in Cloud Controller to push apps.\n\nThis ADR does not propose breaking changes to existing Bosh storage CLI commands or their output, but outlines necessary additions to support Cloud Controller use cases. It highlights shared concerns and encourages collaboration between Bosh and Cloud Controller.\n\n## Decision\n\nCloud Controller will introduce support for CLI based blobstore clients, starting with Azure.\nSpecifically, we will:\n* Add a new blobstore client using `bosh-azure-storage-cli`\n* Shell out from Cloud Controller to perform blobstore operations\n* Allow opt-in via `blobstore_type` configuration parameter\n  * Desired configuration format (capi-release perspective):\n    ```YAML\n      packages:\n              app_package_directory_key: app-packages\n              blobstore_type: storage-cli\n              blobstore_provider: azurebs  # Native storage-cli type (RECOMMENDED)\n              # OR: blobstore_provider: AzureRM  # Legacy fog name (DEPRECATED)\n              connection_config:\n                azure_storage_access_key: <access_key>\n                azure_storage_account_name: <account_name>\n                container_name: app-packages\n                environment: AzureCloud\n              max_package_size: 1610612736\n    ```\n* Field `blobstore_provider` will be used to determine the corresponding storage CLI blobstore client class (same approach is used for fog)\n* The `fog_connection` field will be renamed to `connection_config` to make it independent\n* Values from `connection_config` are used to generate the corresponding config file for the Bosh storage CLIs\n    * Config generation could be moved away from ccng into capi-release to avoid duplication \n* During the transition phase existing parameters like `fog_connection` may be reused and/or supported in parallel    \n* Keep the `fog-azure-rm` backend during the transition\n\n* Algin with Foundational Infrastructure WG - [RFC-0043](https://github.com/cloudfoundry/community/blob/main/toc/rfc/rfc-0043-cc-blobstore-storage-cli.md)\n\nThe `bosh-azure-storage-cli` needs to be extended with the following commands:\n* `copy`\n* `list`\n* `properties`\n* `ensure-bucket-exists`\n\nOther providers (AWS, GCP, Alibaba Cloud) will follow. Each will require equivalent blobstore clients and support for the above commands.\nThis will eventually allow us to remove all fog related gems from Cloud Controller.\n\n\n## Consequences\n\n* Enables the removal of `fog-azure-rm` and all other fog related gems\n* Reduces long-term maintenance burden and potential security issues\n* Allows providers to be migrated independently\n* Increases initial complexity during migration phase\n* More maintainers/contributors for the Bosh storage CLIs\n\n\n* With more consumers, interface changes in the Bosh storage CLIs may require more coordination\n\n## Alternatives Considered\n\n* Replace fog with newer Ruby gems\n  *  \u2192 Maintenance risk persists and only a short-term solution\n  *  \u2192 Not possible for Azure because the used [azure-sdk-for-ruby](https://github.com/Azure/azure-sdk-for-ruby) is archived\n* Implement own blobstore client in Ruby \u2192 High development and testing effort\n\n\n## Out Of Scope\n\n* Support for CDNs (currently supported by fog)\n* Performance optimizations \n\n## Example Usage of `bosh-azure-storage-cli`\n\n### [Bosh](https://github.com/cloudfoundry/bosh/blob/main/src/bosh-director/lib/bosh/director/blobstore/azurestoragecli_blobstore_client.rb)\n```Ruby\ndef object_exists?(object_id)\n  begin\n    out, err, status = Open3.capture3(@azure_storage_cli_path.to_s, '-c', @config_file.to_s, 'exists', object_id.to_s)\n    return true if status.exitstatus.zero?\n    return false if status.exitstatus == 3\n  rescue Exception => e\n    raise BlobstoreError, e.inspect\n  end\n  raise BlobstoreError, \"Failed to check existence of az storage account object, code #{status.exitstatus}, output: '#{out}', error: '#{err}'\" unless status.success?\nend\n```\n\n### [Cloud Controller PoC](https://github.com/cloudfoundry/cloud_controller_ng/pull/4397)\n```Ruby\ndef exists?(blobstore_key)\n  key = partitioned_key(blobstore_key)\n  logger.info(\"[azure-blobstore] [exists?] Checking existence for: #{key}\")\n  status = run_cli('exists', key, allow_nonzero: true)\n\n  if status.exitstatus == 0\n    return true\n  elsif status.exitstatus == 3\n    return false\n  end\n\n  false\nrescue StandardError => e\n  logger.error(\"[azure-blobstore] [exists?] azure-storage-cli exists raised error: #{e.message} for #{key}\")\n  false\nend\n\n\ndef run_cli(command, *args, allow_nonzero: false)\n  logger.info(\"[azure-blobstore] Running azure-storage-cli: #{@cli_path} -c #{@config_file} #{command} #{args.join(' ')}\")\n  _, stderr, status = Open3.capture3(@cli_path, '-c', @config_file, command, *args)\n  return status if allow_nonzero\n\n  raise \"azure-storage-cli #{command} failed: #{stderr}\" unless status.success?\n\n  status\nend\n```",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "cloudfoundry/cloud_controller_ng#4397",
+     "kind": "pull",
+     "url": "https://github.com/cloudfoundry/cloud_controller_ng/pull/4397",
+     "number": "4397"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/cloudfoundry/community/blob/main/toc/rfc/rfc-0043-cc-blobstore-storage-cli.md",
+    "github.com/cloudfoundry/bosh/blob/main/src/bosh-director/lib/bosh/director/blobstore/azurestoragecli_blobstore_client.rb"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/0015-using-factory-bot-for-factories.md",
+   "identity": "decisions/0015-using-factory-bot-for-factories.md",
+   "adr_id": "15",
+   "title": "Using FactoryBot for Factories",
+   "first_commit": "2026-06-11T19:12:56+02:00",
+   "first_sha": "0a3a400f80e8aac4c8790ee19b295991baf85cdc",
+   "last_commit": "2026-06-11T19:12:56+02:00",
+   "author": "Philipp Thun",
+   "email": "philipp.thun@sap.com",
+   "status": "accepted",
+   "status_raw": "Accepted (supersedes [ADR 0002](0002-using-machinist-for-factories.md))",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 15: Using FactoryBot for Factories\n\nDate: 2026-05-23\n\n## Status\n\nAccepted (supersedes [ADR 0002](0002-using-machinist-for-factories.md))\n\n## Context\n\n[ADR 0002](0002-using-machinist-for-factories.md) (2019) decided to keep\n[machinist][machinist] after a partial migration to [factory_bot][factory_bot]\nhit friction with Sequel's mutual-foreign-key associations. Seven years later,\nthe situation has shifted:\n\n* `machinist` 1.0.6 has had no upstream activity since 2013. The \"maintained\n  fork\" mentioned in 0002 never materialised in a way that this project\n  consumed.\n* `machinist` 2.0 exists but is not a viable upgrade. It removed the Sequel\n  adapter we depend on, dropped `Sham`, and flipped `make` from a persisting\n  call to a non-persisting one \u2014 every existing call site would change\n  meaning.\n* `factory_bot` is actively maintained and well-known to anyone joining a\n  Ruby project.\n* The blocker described in 0002 \u2014 Sequel's mutual-foreign-key pattern, where\n  two records reference each other \u2014 turns out to be solvable cleanly in\n  `factory_bot` once a global `to_create` and `after(:create)` callbacks\n  with transient flags are used. None of these primitives required a special\n  Sequel adapter.\n\n## Decision\n\nReplace `machinist` with `factory_bot` as the test-data framework. The\n`machinist` gem and its supporting files (`spec/support/fakes/blueprints.rb`,\n`spec/support/machinist_monkey_patch.rb`) are removed; ~11k call sites of\n`Klass.make(...)` and `Klass.make_unsaved(...)` are converted to\n`create(:klass, ...)` and `build(:klass, ...)`; and ~130 blueprints become\nfactory definitions under `spec/support/factory_definitions/`.\n\n### Key technical decisions\n\nThe patterns below are what made the 2019 friction tractable.\n\n* **Global `to_create { |i| i.save; i.refresh }`** in\n  `spec/support/factories.rb`. This matches machinist's Sequel adapter,\n  which both saved and refreshed. Without the refresh, tests that mutate\n  associations after creation see Sequel's stale in-memory association\n  cache rather than the current DB state.\n\n* **`Sham` is preserved as a thin shim** (`spec/support/sham_shim.rb`) that\n  delegates `Sham.<name>` to `FactoryBot.generate(:sham_<name>)` sequences\n  defined in `spec/support/factories.rb`. The shim mirrors the original\n  `Sham.define` block 1:1, so existing call sites need no edits.\n\n* **Dynamic class \u2192 factory-name conversion** via\n  `klass.name.demodulize.underscore.to_sym` is used in matchers and\n  shared examples, so generic helpers continue to look up the right\n  factory when given any model class.\n\n* **Named blueprints become traits** \u2014 `Foo.blueprint(:bar)` turns into a\n  `trait :bar` on the `:foo` factory. Call sites move from\n  `Foo.make(:bar, x: 1)` to `create(:foo, :bar, x: 1)`.\n\n* **`build` replaces `make_unsaved`** for the (rare) cases that wanted an\n  unsaved instance.\n\n* **`:droplet_model` only auto-sets itself as the app's current droplet\n  when no `app:` override is supplied** (`set_as_current_droplet { app == :unset }`),\n  matching machinist's blueprint where the default `app` block only ran in\n  that case. Specs that previously relied on the auto-set side effect when\n  passing `app:` explicitly call `app.update(droplet:)`, just as the\n  pre-migration versions did.\n\n* **`:revision_sidecar_process_type_model` builds its parent with the\n  `:no_process_types` trait** so `FactoryBot.lint` does not collide with\n  the parent's `after_create` web row on the\n  `(revision_sidecar_guid, type)` unique constraint.\n\n## Consequences\n\n* New contributors no longer need to learn `machinist` first; `factory_bot`\n  is the de-facto Ruby standard.\n* The `machinist 1.0.6` dependency and its dependabot churn are gone.\n* `factory_bot` is actively maintained, so most future test-framework\n  upgrades happen via `bundle update` rather than via a custom monkey\n  patch (as `machinist_monkey_patch.rb` had to do).\n* Tooling that reasoned about `machinist` blueprints (e.g. spec generators,\n  custom rubocop cops) needs to be updated; none of it lived in this\n  repository.\n\n## Alternatives Considered\n\n* **Stay on `machinist 1.0.6`.** Rejected: unmaintained upstream, dependabot\n  noise, and the risk that some future Ruby/Sequel upgrade silently breaks\n  the gem.\n* **Upgrade to `machinist 2.0`.** Rejected: no Sequel adapter, no `Sham`,\n  and `make` no longer persists \u2014 the upgrade is effectively a rewrite of\n  every call site for less benefit than moving to `factory_bot`.\n* **Adopt a maintained fork of `machinist`.** No fork with meaningful\n  activity exists, and adopting one trades one unmaintained dependency for\n  another small one.\n\n[machinist]: https://github.com/notahat/machinist\n[factory_bot]: https://github.com/thoughtbot/factory_bot\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "spec/support/fakes/blueprints.rb",
+    "spec/support/machinist_monkey_patch.rb",
+    "spec/support/factory_definitions/",
+    "spec/support/factories.rb",
+    "spec/support/sham_shim.rb",
+    "machinist_monkey_patch.rb"
+   ],
+   "implementation": {
+    "sha": "51362aa3d10a412281885d5a1c5c8157f04e26cb",
+    "date": "2026-06-29T14:51:14+02:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "spec/support/factories.rb",
+     "spec/support/factory_definitions/app_annotation_model.rb",
+     "spec/support/factory_definitions/app_event.rb",
+     "spec/support/factory_definitions/app_label_model.rb",
+     "spec/support/factory_definitions/app_model.rb",
+     "spec/support/factory_definitions/app_usage_event.rb",
+     "spec/support/factory_definitions/build_annotation_model.rb",
+     "spec/support/factory_definitions/build_label_model.rb",
+     "spec/support/factory_definitions/build_model.rb",
+     "spec/support/factory_definitions/buildpack.rb",
+     "spec/support/factory_definitions/buildpack_annotation_model.rb",
+     "spec/support/factory_definitions/buildpack_label_model.rb"
+    ]
+   }
+  },
+  {
+   "path": "decisions/0013-migrating-int-to-bigint-for-primary-keys.md",
+   "identity": "decisions/0013-migrating-int-to-bigint-for-primary-keys.md",
+   "adr_id": "13",
+   "title": "Migrating `int` to `bigint` for `id` Primary Keys",
+   "first_commit": "2025-03-17T08:00:09+01:00",
+   "first_sha": "d611317194e675c6f61faafac5795829062a4ba4",
+   "last_commit": "2025-05-05T14:29:56+02:00",
+   "author": "Johannes Haass",
+   "email": "johannes.haass@sap.com",
+   "status": "proposed",
+   "status_raw": "Draft :construction:",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 13: Migrating `int` to `bigint` for `id` Primary Keys\nDate: 2025-04-04\n\n## Status\nDraft :construction:\n\n## Context\nThe primary key `id` columns in all database tables use the integer type, which has a maximum value of 2,147,483,647.\nAs foundations grow over time, the `id` values in some of these tables (e.g., events) are approaching this limit.\nIf the limit is reached, the cloud controller will be unable to insert new records, leading to critical failures in the CF API.\nE.g.:\n```\nPG::SequenceGeneratorLimitExceeded: ERROR:  nextval: reached maximum value of sequence \"events_id_seq\"\n```\nThe goal is to migrate these primary key `id` columns from `int` to `bigint` without causing downtime.\nThis migration must:\n- Avoid downtime since the CF API is actively used in production.\n- Handle tables with millions of records efficiently.\n- Provide a safe rollback mechanism in case of issues during the migration.\n- Be reusable for other tables in the future.\n- Ensure that migration only is executed when the new `id_bigint` column is fully populated.\n\nThe largest tables in a long-running foundation are `events`, `delayed_jobs`, `jobs`, and `app_usage_events`.\n\n## Decisions\n### PostgreSQL Only\nWe will implement the migration exclusively for PostgreSQL databases.\nThe reasons for this decision are:\n- **Organizational Usage**: Our organization exclusively uses PostgreSQL, not MySQL. This allows us to test the migration with copies of large production databases and perform a step-wise rollout from test environments to production.\n- **Support and Contribution**: Focusing on PostgreSQL enables us to identify and address any issues during the migration process. We can contribute solutions back to the migration procedure, benefiting the broader community.\n- **Deployment Environments**: We operate PostgreSQL instances across various hyperscalers. Successful migration in our environments increases confidence that it will work for others using PostgreSQL.\n- **Limited MySQL Exposure**: We lack access to production environments using MySQL and have limited expertise with it. Testing would be confined to community-owned test foundations, which do not reflect real-world production data. Additionally, the community uses a limited set of MySQL variants, reducing our ability to detect and resolve issues during a production rollout.\n- **Community Feedback**: Feedback from other organizations operating Cloud Foundry on MySQL indicates they would opt-out of this migration, as their foundations are smaller and unlikely to encounter the issues this migration addresses.\n\nWhile this approach results in somewhat inconsistent schemas between PostgreSQL and MySQL \u2014 specifically regarding the data types of primary and foreign keys \u2014 the application layer does not depend on these specifics.\nTherefore, no additional application logic is required to handle these differences.\n\nBy concentrating our efforts on PostgreSQL, we can ensure a robust and thoroughly tested migration process, leveraging our expertise and infrastructure to maintain the stability and scalability of the Cloud Controller database.\n\n### Opt-Out Mechanism\nOperators of smaller foundations, which are unlikely to ever encounter the integer overflow issue, may wish to avoid the risks and complexity associated with this migration.\nThey can opt-out of the migration by setting a flag in the CAPI-Release manifest.\nWhen this flag is set, all migration steps will result in a no-op but will still be marked as applied in the `schema_versions` table.\n\n*Important*: Removing the flag later will *not* re-trigger the migration. Operators must handle the migration manually if they choose to opt-out.\n\n### Scope\nThe `events` table will be migrated first as it has the most significant growth in `id` values.\nOther tables will be migrated at a later stage.\n\n### Newly Created Foundations\nFor newly created foundations, the `id` column for the `events` table will be created as `bigint` by default.\nThis will be implemented with migration step 1 and will be only applied, if the `events` table is empty.\n\n### Phased Migration\nThe migration will be conducted in multiple steps to ensure minimal risk.\n\n#### Step 1 - Preparation\n- If the opt-out flag is set, this step will be a no-op.\n- In case the target table is empty the type of the `id` column will be set to `bigint` directly.\n- Otherwise, the following steps will be executed:\n  - Add a new column `id_bigint` of type `bigint` to the target table. If the `id` column is referenced as a foreign key in other tables, also add an `<ref>_id_bigint` column in those referencing tables.\n  - Create triggers to keep `id_bigint` in sync with `id` when new records are inserted.\n  - Add constraints and indexes to `id_bigint` as required to match primary key and foreign key requirements.\n\n#### Step 2 - Backfill\n- Backfill will not be scheduled if the opt-out flag is set.\n- If the `id_bigint` column does not exist, backfill will be skipped or result in a no-op.\n- Use a batch-processing script (e.g. a delayed job) to populate `id_bigint` for existing rows in both the primary table and, if applicable, all foreign key references.\n- Table locks will be avoided by using a batch processing approach.\n- In case the table has a configurable cleanup duration (e.g. events), no backfill job will be created. The recommended procedure is to wait with the next migration step until the cleanup job has removed all records without `id_bigint` from the table. Additionally, there is a Rake task (`bundle exec rake 'db:bigint_backfill[table]'`) to manually force backfilling. This could be used in case the next migration step should be applied before the cleanup duration has passed. Performance implications on the database should be considered when running this task.\n- Backfill will be executed outside the migration due to its potentially long runtime.\n- If necessary the backfill will run for multiple weeks to ensure all records are processed.\n\n#### Step 3 - Migration\n- The migration is divided into two parts: a pre-check and the actual migration but both will be stored in a single migration script.\n- This step will be a no-op if the opt-out flag is set or the `id` column is already of type `bigint`.\n- All sql statements will be executed in a single transaction to ensure consistency.\n\n##### Step 3a - Migration Pre Check\n- In case the `id_bigint` column does not exist the migration will fail with a clear error message.\n- Add a `CHECK` constraint to verify that `id_bigint` is fully populated (`id_bigint == id & id_bigint != NULL`).\n- In case the backfill is not yet complete or the `id_bigint` column is not fully populated the migration will fail.\n- If pre-check fails, operators might need to take manual actions to ensure all preconditions are met as the migration will be retried during the next deployment.\n\n##### Step 3b - Actual Migration\n- Remove the `CHECK` constraint once verified.\n- Drop the primary key constraint on id.\n- If foreign keys exist, drop the corresponding foreign key constraints.\n- Remove the sync triggers.\n- Drop the old `id` column.\n- Rename the `id_bigint` column to `id`.\n- Add PK constraint on `id` column and configure `id` generator.\n- If foreign keys exist, rename `id_bigint` to `id` in referencing tables accordingly.\n\n### Database Specifics\n\n#### PostgreSQL\nThe default value of the `id` column could be either a sequence (for PostgreSQL versions < 10) or an identity column (for newer PostgreSQL versions).\nThis depends on the version of PostgreSQL which was used when the table was initially created.\nThe migration script needs to handle both cases.\n\n### Rollback Mechanism\nThe old `id` column is no longer retained, as the `CHECK` constraint ensures correctness during migration.\nStep 3b (switch over) will be executed in a single transaction and will be rolled back if any issues occur.\nIf unexpected issues occur, the migration will fail explicitly, requiring intervention.\nIf rollback is needed, either backups could be restored or the migration needs to be reverted manually.\n\n### Standardized Approach\nWrite reusable scripts for adding `id_bigint`, setting up triggers, backfilling data, and verifying migration readiness.\nThese scripts can be reused for other tables in the future.\n\n### Release Strategy\nSteps 1-2 will be released as a cf-deployment major release to ensure that the database is prepared for the migration.\nSteps 3-4 will be released as a subsequent cf-deployment major release to complete the migration.\nBetween these releases there should be a reasonable time to allow the backfill to complete.\n\nFor the `events` table there is a default cleanup interval of 31 days.\nTherefore, for the `events` table the gap between the releases should be around 60 days.\n\n## Consequences\n\n### Positive Consequences\n- Future-proofing the schema for tables with high record counts.\n- Minimal locking during step 3b (actual migration) could result in slower queries or minimal downtime.\n- A standardized process for similar migrations across the database.\n\n### Negative Consequences\n- Increased complexity in the migration process.\n- Potentially long runtimes for backfilling data in case tables have millions of records.\n- Requires careful coordination across multiple CAPI/CF-Deployment versions.\n- If backfilling encounters edge cases (e.g., missing cleanup jobs), the migration may be delayed until operators intervene.\n\n## Alternatives Considered\n\n### Switching to `guid` Field as Primary Key\nPros: Provides globally unique identifiers and eliminates the risk of overflow.\n\nCons: Might decrease query and index performance, requires significant changes for foreign key constraints, and introduces non-sequential keys.\n\nReason Rejected: The overhead and complexity outweighed the benefits for our use case.\n\n### Implementing Rollover for `id` Reuse\nPros: Delays the overflow issue by reusing IDs from deleted rows. Minimal schema changes.\n\nCons: Potential issues with foreign key constraints and increased complexity in the rollover process. Could be problematic for tables which do not have frequent deletions.\n\nReason Rejected: Might work well for tables like events, but not a universal solution for all tables where there is no guarantee of frequent deletions.\n\n### Direct Migration of `id` to `bigint` via `ALTER TABLE` Statement\nPros: One-step migration process.\n\nCons: Requires downtime, locks the table for the duration of the migration, and can be slow for tables with millions of records.\n\nReason Rejected: Downtimes are unacceptable for productive foundations.\n\n## Example Migration Scripts With PostgreSQL Syntax For `events` Table\n\n### Step 1 - Preparation\n```sql\nBEGIN;\n\n-- Add new BIGINT column\nALTER TABLE events ADD COLUMN id_bigint BIGINT;\n\n-- Ensure new inserts populate `id_bigint`\nCREATE OR REPLACE FUNCTION events_set_id_bigint_on_insert()\nRETURNS TRIGGER AS $$\nBEGIN\n    NEW.id_bigint := NEW.id;\nRETURN NEW;\nEND;\n$$ LANGUAGE plpgsql;\n\nDROP TRIGGER IF EXISTS trigger_events_set_id_bigint ON events;\n\nCREATE TRIGGER trigger_events_set_id_bigint\n    BEFORE INSERT ON events\n    FOR EACH ROW\n    EXECUTE FUNCTION events_set_id_bigint_on_insert();\n\nCOMMIT;\n```\n\n### Step 2 - Backfill\n```sql\nWITH batch AS (\n    SELECT id FROM events\n    WHERE id_bigint IS NULL\n    ORDER BY id\n    LIMIT 100000\n    FOR UPDATE SKIP LOCKED\n)\nUPDATE events\nSET id_bigint = events.id\nFROM batch\nWHERE events.id = batch.id;\n```\n\n### Step 3a - Migration Pre Check\n```sql\nALTER TABLE events ADD CONSTRAINT check_id_bigint_matches CHECK (id_bigint IS NOT NULL AND id_bigint = id);\n\n-- Alternative:\nSELECT COUNT(*) FROM events WHERE id_bigint IS DISTINCT FROM id;\n-- should return 0\n```\n\n### Step 3b - Actual Migration\n```sql\nBEGIN;\n\nALTER TABLE events DROP CONSTRAINT check_id_bigint_matches;\n\n-- Drop primary key constraint\nALTER TABLE events DROP CONSTRAINT events_pkey;\n\n-- Drop id_bigint sync trigger\nDROP TRIGGER IF EXISTS trigger_events_set_id_bigint ON events;\nDROP FUNCTION IF EXISTS events_set_id_bigint_on_insert();\n\n-- D",
+   "truncated_text": true,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.postgresql.org/message-id/10056.10575062"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/0009-services-orphan-mitigation.md",
+   "identity": "decisions/0009-services-bindings-orphan-mitigation.md",
+   "adr_id": "9",
+   "title": "Context:",
+   "first_commit": "2020-12-17T10:53:24+00:00",
+   "first_sha": "139ff73da55d556c853821287024152213652586",
+   "last_commit": "2021-03-23T15:36:02+00:00",
+   "author": "Marcela Campo",
+   "email": "mcampo@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# Context:\n\nThe aim of this document is to record how Orphan Mitigation (OM) for service instances and service bindings is implemented \nand the reasoning behind the decisions taken.\n\n[OSBAPI](https://github.com/openservicebrokerapi/servicebroker/blob/v2.15/spec.md#orphan-mitigation) defines \nOrphan Mitigation as the attempt(s) made by the platform (Cloud Controller) to clear up any resources that may have been \ncreated by a Service Broker during an operation that eventually failed. Consequences of having lingering resources in the \nbroker may include higher costs, resource quota consumption, etc.\n\nIn this scenario, one of two things can happen:\n1. The platform has no record of such resources.\n\n   In this case there is no way for the platform to list failed operations of resources that are not tracked by it. \n   As a result, it is possible the operator ignores such resources may have been created. \n   Even if the operator realizes the failed operation actually created some resources in the service broker, \n   destroying such resources would include direct interaction with the service broker as the platform does not \n   provide tools to delete resources it doesn't track.\n   \n1.  The platform still keeps a record of failed service resources.\n\n    In this case the platform can choose whether to perform OM or defer the choice of when to clean up failed resources \n    to the operator. Deferring to the operator can be beneficial as it allows for more troubleshooting.\n\nAs of this document, the Cloud Controller aims to comply with the OSBAPI 2.15 specification. \nThe specification states the platform may choose to leave the decision of when OM happens to the operator in case they \nneed to troubleshoot for any scenario. So whether Cloud Foundry performs OM in the scenarios OSBAPI outlines as requiring \nit or not is our choice, as long as there is another mechanism in the platform that the operator can use to remove failed \nresources at a later stage (i.e. `DELETE /v3/service_instances` or `DELETE /v3/service_credential_bindings`). \nCloud Foundry shouldn\u2019t perform OM in the scenarios OSBAPI says it is not needed.\n\n## V2\n\nv2 is not fully compliant with OSBAPI 2.15 version regarding OM. Changes needed to be compliant are not backwards compatible \nso it is difficult to introduce them without releasing a major version. The OM spec changed on OSBAPI v2.15 and thus, even \nwhen v2 was made compatible with that same version, not all scenarios behave the same. Also, in some scenarios the choice \nwas made to give the opportunity to the operator to troubleshoot and not automatically mitigate orphan resources. In other \nscenarios the choice was taken not to implement complicated OM logic in places where commands where available to delete \nresources and so clean up was deferred to the user.\n\nThere is also [this document](https://docs.google.com/document/d/11iXxAciCIQpCvrnzmGoEqQIbIVxpn6VDYlm_SVuq9TU/edit?usp=sharing) \nthat specifies what CC is doing in v2 and what it should be doing that has been shared with the community. \nAlthough effort has been put over time to keep it accurate, it is not 100% a reflection of what V2 really does.\n\n## V3\n\nIn v3 API all operations that require broker communication are done asynchronously. This is one of the main differences \nfrom v2 API. As a result of this approach CF always has a record of the resource that is being created or deleted. \nWhen the broker operation fails, CF still keeps a record of the resource e.g. if a create binding operation fails the CF\nwill have keep a record of that resource and set the state to `create failed`. This allows the operator to manually \nremove the failed resource and it means that there should not be any resources that the service broker has created and \nCF does not have a record of.\n\nHowever, we have chosen to keep performing orphan mitigation in many cases in order to keep some level of consistency \nwith the expected behaviour in v2 and to satisfy requirements and issues raised by users.\n\n\n# Provisioning\n\n## Scenarios when CF will perform OM:\n\nStatus code | Response Body |  OSBAPI advices OM |Notes\n:------------:| --------------|:--------------:| --------\n201 | malformed |  Yes |\n202 | malformed | No | If this happens, CF would not be able to record the broker response that might include important properties for continuing the async flow (e.g. operation_id).\n2xx | - |  Yes |\n422 | unexpected error | No | No resource should have been created, however attempting OM does not have any risks.\n5xx | - | Yes |\nClient Timeout | - | Yes |\n\n## Scenarios when CF will NOT perform OM:\n\nStatus code | Response Body |  OSBAPI advices OM |Notes\n:------------:| --------------|:--------------:| --------\n200 | Malformed | No |\n201 | Other (not malformed) | No |\n202 | Other (not malformed) | No |\n422 | Requires app/Async/Concurrency error | No |\n4xx | - | No |\n\n# Binding\n \n## Scenarios when CF will perform OM:\n\nStatus code | Response Body |  OSBAPI advices OM |Notes\n:------------:| --------------|:--------------:| --------\n 200 | bad data | No | If this happens, CF would not be able to record the broker response. Safest assumption is to delete the resource from the broker and allow the operator to start over.\n 201 | malformed |  Yes |\n 201 | bad data | No | If this happens, CF would not be able to record the broker response. Safest assumption is to delete the resource from the broker and allow the operator to start over.\n 202 | malformed | No | If this happens, CF would not be able to record the broker response that might include important properties for continuing the async flow (e.g. operation_id).\n 2xx | - |  Yes |\n 410 | - | No | This is not a valid error code for a `POST` request. No resource should have been created, however attempting OM does not have any risks.\n 422 | unexpected error | No | No resource should have been created, however attempting OM does not have any risks.\n 5xx | - | Yes |\n Client Timeout | - | Yes |\n\n## Scenarios when CF will NOT perform OM:\n\nStatus code | Response Body |  OSBAPI advices OM |Notes\n:------------:| --------------|:--------------:| --------\n 200 | Malformed | No |\n 201 | Other (not Malformed or Bad data) | No |\n 202 | Other (not Malformed or Bad data) | No |\n 422 | Requires app/Async/Concurrency error | No |\n 4xx | - | No |\n \n\nIn v3, in the case of any other CF internal error not related to the Broker response, CF does not perform OM. \nEven in case of failure, there is a record of the resource in the DB and the user is able to delete the resource after failure. \n\n# Handling service instances and bindings last operation broker responses\n\nCloud Foundry will not attempt any OM for any of the responses from instances or bindings Last Operation requests. \nWe decided to give the operator the possibility of troubleshooting and delete the resource when they see fit, in line with \n[SI behaviour](https://github.com/cloudfoundry/cloud_controller_ng/issues/1842) our users depend on.\n\n## Deprovisioning and Unbinding\n\nIn event of failure, Cloud Foundry will keep the record of the resource and the user can attempt to delete again. \nThere is not a clear benefit of implementing any OM logic for such straightforward scenario. \n\n## Changes from v2 to v3\nWhen possible we have kept the same OM implementation in v2 and v3. Cases when we have diverged have been documented in this doc.\n\nIn v3 all types of bindings, including service credentials bindings for apps and keys and service route bindings, \nhave the same OM behaviour.\n\n# Status\nAccepted\n\n# Consequences:\nThis document is a description of our reasoning about OM and its current implementation at the time of writing. \nThe behaviour for each use-case might change if OSBAPI advices new behaviour or our customers request other changes.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "cloudfoundry/cloud_controller_ng#1842",
+     "kind": "issue",
+     "url": "https://github.com/cloudfoundry/cloud_controller_ng/issues/1842",
+     "number": "1842"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/openservicebrokerapi/servicebroker/blob/v2.15/spec.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/0008-enhancing-api-error-codes.md",
+   "identity": "decisions/0008-enhancing-api-error-codes.md",
+   "adr_id": "8",
+   "title": "Context:",
+   "first_commit": "2020-06-29T14:04:19-07:00",
+   "first_sha": "9ff3b848b906b6afede3d65c36ac770b3709ff80",
+   "last_commit": "2020-07-06T11:50:51-07:00",
+   "author": "monamohebbi",
+   "email": "mmohebbi@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Context:\nIn V2, we attempted to have every error from any component of a cloud foundry deployment (~262 errors) in a single YAML file with strict pre-written messages. Due to the overwhelming number of errors, seemingly arbitrary error codes, and inflexible messages, neither clients nor developers were wholly pleased.\n\nIn V3, in order to improve on message flexibility, we switched to using error types that were specific to the module they are created in, and translate them all into generic API Errors (422 Unprocessable Entity, see figure 1) at the controller level. This, in theory, gave us the benefit of knowing the most possible amount of context before creating custom error messages.\n\n```\n422 Unprocessable Entity\n{\n       \"detail\": \"Relationships is not a hash.\",\n       \"title\": \"CF-UnprocessableEntity\",\n       \"code\": 10008\n}\n```\n*Figure 1: Currently Cloud Foundry API presents errors in a JSON-encoded string with three fields: detail, title, and code.*\n\nHowever, clients now typically use the detail field to determine the exact type of error. This can be a pain for clients. For example, the CloudFoundry CLI is forced to have complicated branching logic (see figure 6) to catch and interpret CAPI errors messages in order to be able to type check on errors. This code has drawbacks: the detail field is a free-form string, and thus is brittle. If CAPI wanted to change their error messages for product reasons, this could potentially break CLI code paths.\n\nOur aim is to retain helpful and context specific error messages, while also providing additional lower context, high level information that directly applies to client needs. \n\n# Decision:\nWe propose making greater use of the code and title field in the error. We will break out commonly used umbrella categorizations of errors into new classes of errors with different titles and codes, while maintaining their customized error messages. \n\nFor example, a common workflow in the CLI is swallowing CAPI uniqueness constraint errors on create actions to maintain idempotent behavior. Instead of searching for the unique error string that CAPI returns for each resource, as the CLI currently does, we would match on a more generic CAPI error such as figure 2.\n\n```\n422 Unprocessable Entity\n{\n       \"detail\": \"custom error message.\",\n       \"title\": \"NotUniqueError\",\n       \"code\": x\n}\n```\n*Figure 2: This error is a new error sub class of the 422 HTTP status error. The title and code would give a client high level information about what caused the error, while the detail would still be a custom string that is flexible to product needs, and could in many cases be returned directly to a user.*\n\n## Implementation\nThe majority of these errors are triggered by the Model-validation. A typical example is shown in figure 3.\n\n```\ndef create(message, organization:) \n    # redacted\nrescue Sequel::ValidationFailed => e\n    validation_error!(e, message)\nend\n```\n```\ndef validation_error!(error, message)\n    if error.errors.on([:organization_id, :name])&.include?(:unique)\n        error!(\"Space Quota '#{message.name}' already exists.\")\n    end\n    error!(error.message)\nend\n```\n*Figure 3: full code snippet can be found [here](https://github.com/cloudfoundry/cloud_controller_ng/blob/ef1a2df185aed77ea657c6015f9d457e353449b9/app/actions/space_quotas_create.rb#L6-L44)*\n\nThen this error is converted to our usual `CF-UnprocessableEntity` error in figure 4.\n\n```\ndef create\n    # redacted.\n    space_quota = SpaceQuotasCreate.new.create(message, organization: org)\n    render status: :created, json: Presenters::V3::SpaceQuotaPresenter.new(\n      space_quota,\n      visible_space_guids: permission_queryer.readable_space_guids\n    )\nrescue SpaceQuotasCreate::Error => e\n    unprocessable!(e.message)\nend\n```\n*Figure 4: full code snippet can be found [here](https://github.com/cloudfoundry/cloud_controller_ng/blob/ef1a2df185aed77ea657c6015f9d457e353449b9/app/controllers/v3/space_quotas_controller.rb#L14-L31)*\n\nIn our proposal, we raise our new class of error in `CloudController::SpaceQuotasCreate` and return it directly to the user (figure 5).\n\n```\ndef validation_error!(error, message)\n    if error.errors.on([:organization_id, :name])&.include?(:unique)\n        CloudController::Errors::ApiError.new_from_details('NotUniqueError', \"Space Quota name must be unique in organization\")\n    end\n    error!(error.message)\nend\n```\n```\ndef create\n     # redacted.\n     space_quota = SpaceQuotasCreate.new.create(message, organization: org)\n     render status: :created, json: Presenters::V3::SpaceQuotaPresenter.new(\n       space_quota,\n       visible_space_guids: permission_queryer.readable_space_guids\n    )\nrescue SpaceQuotasCreate::Error => e\n    unprocessable!(e.message) \nend\n```\n*Figure 5: Note that the function `error` defined in `validation_error!` returns an error of type `Error` scoped to the module `SpaceQuotasCreate`- the same type that we are rescuing in the controller. By changing the type of the error raised in the action to the desired type, we can return the error directly to the client.*\n\nIn this example, the final message string is already set in the action, so we will not lose anything by also defining the type there as well. Our aim is not to define every possible type of error as its own class; doing so might encourage future developers to reuse errors or create errors that might not have the most detailed information. In some cases, it might be better to leave information a client needs in the detail string if it breaks patterns in a dangerous way. Maintaining the patterns and structure of the API is also a priority. Our aim is to find commonly used logical units of errors that are simple to separate. As a first iteration, we plan to extract errors to condense the error branching in the V7 CLI as much as possible. We can break out further cases as needed based on future requests and user feedback. \n\n# Status\nAccepted\n\n# Consequences:\n\n## Benefits:\nThis would benefit to Clients such as the CLI which have resorted to large (11+) case statements to untangle the type of error (see figure 6).\n\n```\ncase strings.Contains(errorString,\n\t\t\"Route already exists\"):\n\t\treturn ccerror.RouteNotUniqueError{UnprocessableEntityError: err}\n```\n*Figure 6: full case statement [here](https://github.com/cloudfoundry/cli/blob/ea2b61d623157647a6fbb35f63b16549fce68151/api/cloudcontroller/ccv3/errors.go#L141-L178)*\n\nThe 7 different checks for not-unique errors would be replaced by a single check, making the code simpler to understand and more robust:\n\n```\ncase errorResponse.Code == x:\n\t\treturn ccerror.NotUniqueError{}\n```\n\n## Concerns:\n* There is a potential to create API Errors specialized to the places that they are thrown, rather than at the highest level. We will have to be careful not to be too liberal with this pattern and might end up with some inconsistency around how we throw errors (i.e throwing an API error directly in the action for the uniqueness validation constraint case, while rescuing a generic SpaceQuotaCreate::Error for all other cases in the example).\n* Error umbrellas might be ambiguous. It might be unclear which umbrella a future error would be placed under, and we would not have much flexibility to restructure after entering error types into our contracts with clients.\n* It is unclear if existing clients are dependent on the the `CF-UnprocessableEntity` error structure existing the way it does.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/cloudfoundry/cloud_controller_ng/blob/ef1a2df185aed77ea657c6015f9d457e353449b9/app/actions/space_quotas_create.rb",
+    "github.com/cloudfoundry/cloud_controller_ng/blob/ef1a2df185aed77ea657c6015f9d457e353449b9/app/controllers/v3/space_quotas_controller.rb",
+    "github.com/cloudfoundry/cli/blob/ea2b61d623157647a6fbb35f63b16549fce68151/api/cloudcontroller/ccv3/errors.go"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/0007-implementing-v3-roles.md",
+   "identity": "decisions/0007-implementing-v3-roles.md",
+   "adr_id": "7",
+   "title": "Implementing the V3 role resource",
+   "first_commit": "2020-06-22T09:19:19-07:00",
+   "first_sha": "c5d06a0b3f65b1a93a764c4f05f2b79c399a03c2",
+   "last_commit": "2020-06-24T16:54:03-07:00",
+   "author": "Reid Mitchell",
+   "email": "rmitchell@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 7. Implementing the V3 role resource\n\nDate: 2020-06-19\n\n## Status\n\nAccepted\n\n## Context\n\nThe Cloud Controller controls permission to API resources by maintaining \"roles\" for each user.\nFor example, a user who has the \"space auditor\" role for a given space is granted access to read\nproperties of the space and resources within the space, but has fewer privileges than a \"space\ndeveloper\" of the same space has.\n\nIn V2, these roles were modeled as associations between a user and a space (or a user and an\norganization, for org-level roles). Clients could view and modify roles with endpoints like the\nfollowing:\n\n- `PUT /v2/organizations/:org_guid/auditors/:user_guid` (to make a user an org auditor)\n- `GET /v2/spaces/:space_guid/developers` (to list users who are space developers in this space)\n- `DELETE /v2/spaces/:space_guid/managers/:user_guid` (to remove a user's space manager role)\n- `PUT /v2/users/:user_guid/managed_spaces/:space_guid` (to make a user a space manager)\n\nNote that it was possible to access these associations from either direction: either by going\nthrough the user to get their list of managed spaces, or by going through the space to get\nits list of users who are space managers.\n\nThis led to a large number of endpoints that all achieved very similar things. We had separate\nendpoints for each role type, and separate endpoints for orgs, spaces, and users.\n\nIn V3, we aimed to redesign this model to cut down on the number of endpoints and to simplify\nusage patterns. This led us to promote the concept of \"role\" into its own top-level resource,\nso that roles could be managed with their own, smaller set of endpoints (e.g. `POST /v3/roles`,\n`GET /v3/roles`).\n\nThe basic idea of a V3 role is that it has a `type` (e.g. `space_auditor`) and a relationship to\na user and either a space (for space roles) or an org (for org roles):\n\n```json\n{\n  \"guid\": \"example-space-auditor-role-guid\",\n  \"created_at\": \"timestamp\",\n  \"updated_at\": \"timestamp\",\n  \"type\": \"space_auditor\",\n  \"relationships\": {\n    \"user\": { \"data\": { \"guid\": \"guid-of-user-with-role\" } },\n    \"space\": { \"data\": { \"guid\": \"guid-of-audited-space\" } } \n  }\n}\n```\n\nSince V3 uses the same underlying database as V2, and since we wanted the old V2 endpoints to still be \nusable alongside the new V3 endpoints, we had to think carefully about how to implement this new resource \non top of the existing data. This posed several challenges.\n\n### Challenges\n\nThe way roles were modeled in the database reflected how the V2 endpoints are structured. This meant\nthat there were 7 simple join tables, each representing a single role type and its associations with\na user and a space/org. For example, the `spaces__auditors` table only had two columns: `user_id` and\n`space_id`.\n\nSince V3 roles are a first-class resource, they need to have their own `guid`, `created_at`, and \n`updated_at` fields (to fit with the V3 pattern). The `guid` is especially important, since it enables\nendpoints like `GET /v3/roles/:role_guid` and `DELETE /v3/roles/:role_guid`.\n\nThis raised the question of how to add these three fields to the database. Since they were new, we knew \nwe would need a schema migration to add them.\n\nAll CCDB migrations are complicated by a few facts:\n- User environments may have several API instances talking to the same database.\n  During a rolling platform upgrade, migrations are run while the first API instance updates, but the rest of\n  the API instances will still have the \"old\" code talking to the \"new\" (migrated) database. This means migrations\n  must always be backwards-compatible.\n- We cannot control exactly when migrations are run in user environments.\n\n### Potential approaches\n\nWe considered several different approaches, each with their own trade-offs.\n\n#### Create a new `roles` table in the database\n\nThis would mean migrating all data from the 7 role-specific join tables into a single table. This table would\nhave columns including `guid`, `type`, `user_id`, `space_id`, `organization_id`, etc.\n\nThis was appealing because the data would closely match the V3 model of roles. Accessing and listing roles would then\nbe straightforward in V3; they would work like most other resources.\n\nHowever, this meant a potentially huge, long-running migration to fill the new table, leading to API\ndowntime while the migration completes. Plus, there was no clear solution for rolling upgrades: the old API \ninstances would continue talking to the old tables. What happens to data that is added/removed from those\ntables while the migration is occurring? When the migration finishes, could we ever drop the old tables? Or\nwould we have to maintain the same data in two different places indefinitely? Even if this worked, we would \nhave to refactor all V2 role-related endpoints to fetch from this new table.\n\nThe risks for this seemed too high, so we moved on.\n\n#### Create a `roles` view to union the existing tables\n\nThis would mean introducing a new SQL view that was backed by a large `UNION` query. The idea was to\nmake a pseudo-table that combined the existing 7 tables into one, to make it easier to work with.\n\nWe quickly realized this would only work as a read-only view; inserts into views are only supported\nfor a small subset of simple views, and ours would not qualify. Still, we continued to explore it, figuring\nwe could do inserts and deletes on the underlying tables and only use the view as a convenience\nwhen fetching/listing roles.\n\nWe got as far as [pushing the migration](https://github.com/cloudfoundry/cloud_controller_ng/commit/30bec825d9cfb2e1780e2faa80afaf672b9cfaa8),\nbut quickly had to [revert it](https://github.com/cloudfoundry/cloud_controller_ng/commit/d697e9684ad9e52a7dcdbf5a414ded9d7dcfd64f) \nbecause it did not work on MySQL. We ran into errors like `Mysql2::Error: View's SELECT contains a subquery in the FROM clause`.\n\nIt seems like later versions of MySQL may support this, but CC attempts to be compatible with old versions of MySQL\nas well, so we abandoned this approach.\n\n#### Change V3 role usage patterns so we only hit one table at a time\n\nThis would mean changing the proposed V3 roles endpoints. Instead of `GET /v3/roles/:guid`, you would use\nrequests like `GET /v3/roles?user_guids=<user-guid>&space_guids=<space-guid>&types=space_auditor`. The idea\nwas to work around the fact that roles did not have their own unique `guid` field; instead, they would be\nuniquely identified by a combination of their `type`/`user_guid`/`space_guid` (for space roles).\n\nThis might have let us get away with not changing the underlying schema at all. We could structure the endpoints\nsuch that we usually only had to talk to one of the 7 underlying tables at a time, and for listing we would\nfigure something else out.\n\nWe decided against this because it introduced strange, non-standard UX patterns. We did not like the idea of\nnegatively impacting the UX (introducing long-lasting complexity) because we could not figure out how to resolve\nthe short-term complexity of doing the upgrade/migration.\n\n## Decision\n\nIn the end, we settled on a solution that enabled the originally-proposed roles endpoints and did not involve\nmigrating any data to different tables. The basic gist:\n\n- Write migrations to add `guid`/`created_at`/`updated_at` columns to the 7 underlying tables and to generate\n  values to populate these columns.\n- Introduce a [`Role`](https://github.com/cloudfoundry/cloud_controller_ng/blob/758ea3f877108f4eb1245511c1bbeb131a8db7c8/app/models/runtime/role.rb) \n  Sequel model backed by a union query dataset (instead of a table). This lets us\n  do things like `Role.where(guid: \"some-guid\")` and `role.type`, even though there is no single underlying\n  table.\n- Write a [\"just-in-time migration\"](https://github.com/cloudfoundry/cloud_controller_ng/commit/758ea3f877108f4eb1245511c1bbeb131a8db7c8#diff-ac970dd55811571623bb022e1337ca08R44) \n  to fill in `guid`s for any roles that don't have them. This handles the edge case where roles are added to\n  the underlying tables by other API instances while the migration is occurring. On creation, these roles would not\n  have been given `guid`s, so we needed to make sure we assigned one to them.\n\n### Lessons learned while implementing\n\nOur [first attempt](https://github.com/cloudfoundry/cloud_controller_ng/commit/714dc93e7f058adfc2ec26dc9ad1915a540da710) \nto write these migrations used two migrations: one to add the new columns to all 7 tables, and one to fill in \nthose columns in all 7 tables. This occasionally led to \n[deadlocks](https://github.com/cloudfoundry/cloud_controller_ng/issues/1363) during the migration,\nso we later [further split those migrations into separate migrations](https://github.com/cloudfoundry/cloud_controller_ng/commit/acc3b6f295104ab92f345320e38ada5a7910af5d)\nfor each table.\n\nAlso, that first attempt added a column to each table called `guid`, following the usual pattern for our tables. Unfortunately, \nthis made some existing queries fail with errors like `PG::AmbiguousColumn: ERROR:  column reference \"guid\" is ambiguous\nLINE 1: SELECT \"guid\" FROM \"users\" INNER JOIN \"spaces_developers\" ON...`. These `JOIN` queries could not\ntell which `guid` we were referring to (since `users` had one, and so did `spaces_developers`). We noticed this\nin the unit tests locally and [tried to fix it by modifying the queries](https://github.com/cloudfoundry/cloud_controller_ng/commit/714dc93e7f058adfc2ec26dc9ad1915a540da710#diff-d3ad36b06a43420958a22dc15a34090bR57).\n\nHowever, this was a more serious problem: it meant that our migrations were not\nbackwards-compatible, since the \"old\" code running on non-upgraded API instances would still briefly have the \nambiguous queries once the migrations finished. This was caught by the pipeline job that tests specifically for \nbackwards compatibility. We reverted our changes and [re-attempted them](https://github.com/cloudfoundry/cloud_controller_ng/commit/a2f9a2f4d9328f98106d050522f2232702143a27#diff-4d5978c450820709830e77453d63f408), \nthis time calling the new column `role_guid` on each of the 7 tables. This resolved both problems, but it left\nus with a strange inconsistency in how these columns are named. If you are ever wondering why these columns are\ncalled `role_guid` instead of `guid`, this is why!\n\n## Consequences\n\n### Benefits\n\n- We achieved the simpler usage patterns that the `/v3/roles` endpoints were designed to provide.\n- We did not need to move any existing data around in migrations. We only needed to do some (relatively small)\n  schema migrations to add new columns, and then data migrations to fill in those columns. This has the benefit\n  of being faster for customers upgrading and of being less risky. There is still only one source of truth for \n  roles data: the 7 underlying tables that already existed.\n- V2 code mostly works as-is with this approach, since the underlying data is the same.\n\n### Risks\n\n- Long-term, it may be confusing that we have these 7 tables representing the single concept of a role. This\n  may be especially true if V2 code is ever deprecated and removed, since at that point there would be no need to keep\n  the data separate. However, we don't have a clear timeline for this, and the recent Kubernetes work has raised\n  more questions about the implementations of roles in CC, so we don't know enough today to solve this future problem.\n- Since there were a total of 14+ migrations added to achieve this, it may add some time to users' upgrades when\n  they bump to the version of CC that has V3 roles. However, this is a one-time cost, and since this work was done\n  in October-December (several months before writing this), we believe many operators have already upgraded.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "cloudfoundry/cloud_controller_ng#1363",
+     "kind": "issue",
+     "url": "https://github.com/cloudfoundry/cloud_controller_ng/issues/1363",
+     "number": "1363"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/cloudfoundry/cloud_controller_ng/blob/758ea3f877108f4eb1245511c1bbeb131a8db7c8/app/models/runtime/role.rb",
+    "/v3/roles"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/0006-refactoring-interactions-with-kubernetes-resources.md",
+   "identity": "decisions/0006-refactoring-interactions-with-kubernetes-resources.md",
+   "adr_id": "6",
+   "title": "Refactoring Interactions with Kubernetes Resources",
+   "first_commit": "2020-05-11T19:38:24-07:00",
+   "first_sha": "228a0d7ebdc47dc6275e30e608b888251f578915",
+   "last_commit": "2020-05-28T11:54:52-07:00",
+   "author": "Jaskanwal Pawar",
+   "email": "jpawar@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# 6. Refactoring Interactions with Kubernetes Resources\n\nDate: 2020-05-11\n\n## Status\n\nAccepted\n\n## Context\n\nThe various components deployed via `cloud_controller_ng` interact with the\nKubernetes API to perform CRUD operations on a variety of Kubernetes Custom\nResource Definitions (CRDs) which are created in the context of a `cf-for-k8s`\ndeployment such that the Kubernetes API becomes the source of truth for those CF\ndomain objects (e.g. route resources for apps and build/image resources for app\nbuilds).\n\nCurrently, we have individual clients which interact with a specific Kubernetes\nAPI group which translates to a client which is scoped to only a particular\ngrouping of Kubernetes resources. Currently there are two clients: one to\ninteract with `kpack`-related resources and one to to interact with app\nnetworking-related resources.\n\nWe have found that there is an increasing amount of code duplication and shared\nlogic/concerns between these two clients and any other such clients we might\nintroduce, so we would like to take note of some refactoring ideas to mitigate\nsuch concerns.\n\n## Decision\n\nThe existing clients currently take on two responsibilities which we'd like to\nsplit out:\n1. Translate an object from the CC database into a Kubernetes resource JSON\n   object\n1. Propagate Kubernetes resource JSON to the Kubernetes API and perform any\n   required error handling\n\n#### Translate an object from the CC database\n\nProposing creating some sort of translation layer which will take various CC\ndomain objects from the CC database and construct their equivalent Kubernetes\nCRs (e.g. CC route object => Route CR).\n\nSeems like this would be difficult to achieve generically, so our first pass can\nprobably just create a class for each object which needs to be translated.\n\n#### Propagate the Kubernetes resource JSON\n\nWe would like to propose creating a single, generic Kubernetes client which\naccepts JSON form of any Kubernetes resource and simply propagates the desired\nresource to the Kubernetes API. This single, generic client should also continue\nto provide elegant, traceable error handling at least as well as we currently\ndo in the existing `route_crd_client` and the `kpack_client`.\n\nThis client should also be the single place where Kubernetes-related properties\nwe expose are configured and validated.\n\nWould be helpful for this generic client to also provide some sort of\nvalidation, especially if we're providing it with raw JSON.\n\nSomething to consider is also providing a generic Kubernetes resource template\nwith common resource keys to extend from instead of providing the entire JSON\ncontent for a particular resource. For example, all Kubernetes resource contain\na top-level `metadata` key with various nested keys that are often defined\nsuch as `name` or `labels` or `namespace`.\n\n## Consequences\n\n#### Benefits:\n- We now only have to configure our interaction with Kubernetes in a single\n  place which should make configuration errors more discoverable\n  - Implementing this proposal should also some configuration validation we\n    don't currently have\n- Single, generic client will help mitigate some frustrations we've been having\n  in conditionally testing only parts of the CC that need an interaction with\n  Kubernetes\n  - There's a function `kubernetes_api_configured?` which is implemented in a\n    few places that is a source of some of this frustration\n  - Primary source of frustration is that the dependency locator attempts to\n    instantiate a Kubernetes client always on startup which we don't need for\n    most tests\n- Single, generic client will also provide for a cleaner separation of concerns\n  and make following the code paths for these interactions easier\n\n#### Risks:\n- without introducing a third class that wraps the two described, this will make callers more difficult to test -- tests will either need to mock the adapter or have knowledge about what it will send to the client.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/0001-record-architecture-decisions.md",
+   "identity": "decisions/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2019-03-26T15:01:54-07:00",
+   "first_sha": "e1fc2abaa3ba66241b049915aab9c385565b71a4",
+   "last_commit": "2019-03-26T15:01:54-07:00",
+   "author": "Mike Kenyon",
+   "email": "mkenyon@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record architecture decisions\n\nDate: 2019-03-26\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as [described by Michael Nygard](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions).\n\n## Consequences\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's [adr-tools](https://github.com/npryce/adr-tools).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "decisions/0009-services-bindings-orphan-mitigation.md",
+   "identity": "decisions/0009-services-bindings-orphan-mitigation.md",
+   "commit": "7d460d466f28560f570fad6b7f36b9e45fee6b0d",
+   "date": "2021-03-15T14:28:52+00:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Draft",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "Added SI related info for orphan mitigation",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Felisia Martini",
+   "email": "fmartini@pivotal.io"
+  },
+  {
+   "path": "decisions/0009-services-orphan-mitigation.md",
+   "identity": "decisions/0009-services-bindings-orphan-mitigation.md",
+   "commit": "35fd2ed400744432e530f769407728a148bb62ed",
+   "date": "2021-03-23T15:36:02+00:00",
+   "old_state": "accepted",
+   "new_state": "accepted",
+   "old_raw": "Accepted",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "Edit name of ADR to not point only to bindings",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Felisia Martini",
+   "email": "fmartini@pivotal.io"
+  },
+  {
+   "path": "decisions/0008-enhancing-api-error-codes.md",
+   "identity": "decisions/0008-enhancing-api-error-codes.md",
+   "commit": "526bbf881dc9a3336d5989c8d1ffbea0d6c3ba7b",
+   "date": "2020-07-06T11:50:51-07:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "Update 0008-enhancing-api-error-codes.md",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "MerricdeLauney",
+   "email": "mdelauney@pivotal.io"
+  },
+  {
+   "path": "decisions/0007-implementing-v3-roles.md",
+   "identity": "decisions/0007-implementing-v3-roles.md",
+   "commit": "36303ca0df861b52c352149f3ed54b86b2adba9f",
+   "date": "2020-06-24T16:54:03-07:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "Update 0007-implementing-v3-roles.md",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Reid Mitchell",
+   "email": "rmitchell@pivotal.io"
+  },
+  {
+   "path": "decisions/0006-refactoring-interactions-with-kubernetes-resources.md",
+   "identity": "decisions/0006-refactoring-interactions-with-kubernetes-resources.md",
+   "commit": "81a6441fa4fa273b57d55f47d9b982eaf469dcb6",
+   "date": "2020-05-13T14:53:38-07:00",
+   "old_state": "proposed",
+   "new_state": "deleted",
+   "old_raw": "Proposed",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Revert \"Add ADR for refactoring k8s clients\"",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "deleted-without-replacement-pointer",
+   "author": "Connor Braa",
+   "email": "cbraa@pivotal.io"
+  },
+  {
+   "path": "decisions/0006-refactoring-interactions-with-kubernetes-resources.md",
+   "identity": "decisions/0006-refactoring-interactions-with-kubernetes-resources.md",
+   "commit": "493e0490e56228cc2fbf022f4be29d0f6ca81a99",
+   "date": "2020-05-28T11:54:52-07:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "Update decisions/0006-refactoring-interactions-with-kubernetes-resources.md",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Chris Selzo",
+   "email": "cselzo@pivotal.io"
+  }
+ ],
+ "ai_signals": [
+  {
+   "kind": "file:primary",
+   "name": "AGENTS.md",
+   "date": "2026-01-22T14:41:38-08:00",
+   "commit": "a1cfd7d2a66a832008b18eafba6b37fdf0dd100a",
+   "evidence": "ralph: initial commit before loop",
+   "official": true,
+   "author": "Greg Cobb",
+   "email": "gcobb@vmware.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-03-12T17:12:37-04:00",
+   "commit": "3f6934491b801788f9900236040776b39b9aee0f",
+   "evidence": "HTTP Type Health Readiness Check Update (#4891)",
+   "official": true,
+   "author": "Peter Levine",
+   "email": "pete.levine@broadcom.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-05-26T17:22:06-04:00",
+   "commit": "3e6ba4da1769cc2d8107a201562d91029a069df3",
+   "evidence": "Add IndexLink schema to handle index link's metadata field (#1051)",
+   "official": true,
+   "author": "Peter Levine",
+   "email": "pete.levine@broadcom.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Cursor <cursoragent@cursor.com>",
+   "date": "2026-06-05T13:53:43-04:00",
+   "commit": "4da09ec304eaeb19511737d24cec41335a438775",
+   "evidence": "Introduce oasdiff and oasdiff breaking changes workflow on PR to main (#1053)",
+   "official": true,
+   "author": "Peter Levine",
+   "email": "pete.levine@broadcom.com"
+  }
+ ],
+ "signal_date": "2026-01-22T22:41:38+00:00",
+ "signal_kind": "file:primary",
+ "mentions": {
+  "strict": [
+   {
+    "sha": "f8acc5a19509cbe02f97c21e4965ac3e3ec74c51",
+    "date": "2018-02-26T11:28:12-08:00",
+    "subject": "Notify Copilot on route creation/mapping"
+   },
+   {
+    "sha": "9625ed4dd7da58dd644d603829e0639df0482b8b",
+    "date": "2018-02-26T16:03:54-08:00",
+    "subject": "Style tweaks and fix a merge conflict for copilot handling"
+   },
+   {
+    "sha": "7b817565dfaf539ca2248a010dec6f387061878d",
+    "date": "2018-02-26T16:10:36-08:00",
+    "subject": "Remove locally vendored cf-copilot"
+   },
+   {
+    "sha": "ed8e5b9159dd38793f15dca7c04d6722adbafc3a",
+    "date": "2018-02-27T17:13:30-08:00",
+    "subject": "Merge pull request #1100 from cf-routing/wip-copilot-tdd-153187076"
+   },
+   {
+    "sha": "1491a4e099e26c0e3c77e9f4294fb756c28d833a",
+    "date": "2018-02-27T17:01:38-08:00",
+    "subject": "Call to copilot handler when unmapping route [#153804450]"
+   },
+   {
+    "sha": "6ef21b06e7c6acfd293b8aafa79646f4e630c5ce",
+    "date": "2018-02-28T19:57:12-08:00",
+    "subject": "Add Copilot config to clock and worker schema"
+   },
+   {
+    "sha": "7c61ce619607d59c7df117217cdc80d9ffc58aa5",
+    "date": "2018-03-07T17:22:21-08:00",
+    "subject": "move the call to copilot from RouteMappingDelete to RouteMappingModel#on_destroy"
+   },
+   {
+    "sha": "323de594c8d894d4f8a4ca4cc162bbe03c5ce32e",
+    "date": "2018-03-12T17:02:45-07:00",
+    "subject": "Revert \"move the call to copilot from RouteMappingDelete to\""
+   },
+   {
+    "sha": "fae05c28d243c447e4a1c12ede3bae471bc9e27b",
+    "date": "2018-03-26T12:29:31-07:00",
+    "subject": "Update Copilot when capi process guids have new diego process guids"
+   },
+   {
+    "sha": "b0c7c4097e59d9a0b0147dbaf9532835727e1a0f",
+    "date": "2018-03-27T15:27:17-07:00",
+    "subject": "Do not force master copilot gem [#155382710]"
+   },
+   {
+    "sha": "03a71d6f185d7416a12d4758ec5d2c102df8a1ae",
+    "date": "2018-04-12T16:06:34-07:00",
+    "subject": "adds copilot bulk syncing first pass"
+   },
+   {
+    "sha": "e25795241c802d5cd1c2e9c6719151adf23b4835",
+    "date": "2018-04-12T16:21:00-07:00",
+    "subject": "Merge branch 'wip-copilot-sync'"
+   }
+  ],
+  "strict_count": 38,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-eligible",
+ "adr_count_before_signal": 7,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-before-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "10"
+}

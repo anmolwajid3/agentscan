@@ -1,0 +1,268 @@
+{
+ "repo": "alphagov/re-build-systems",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2018-05-04T12:34:31+01:00",
+ "last_commit": "2019-02-06T15:32:11+00:00",
+ "n_commits": 538,
+ "n_authors": 18,
+ "n_files": 50,
+ "n_code_files": 0,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 7,
+ "adrs": [
+  {
+   "path": "docs/architecture/decisions/0008-do-not-switch-from-efs-to-ebs.md",
+   "identity": "docs/architecture/decisions/0008-do-not-switch-from-efs-to-ebs.md",
+   "adr_id": "8",
+   "title": "Do not switch from EFS to EBS",
+   "first_commit": "2018-09-07T17:25:05+01:00",
+   "first_sha": "bd085764bdec7f772c368513cc2bdf9a0bc7e65c",
+   "last_commit": "2018-09-07T17:25:05+01:00",
+   "author": "Daniel Roseman",
+   "email": "daniel.roseman@digital.cabinet-office.gov.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 8. Do not switch from EFS to EBS\n\nDate: 2018-09-07\n\n## Status\n\nAccepted\n\n## Context\n\nTo guide our work, we need to decide whether we use AWS\u2019 Elastic File System\n(EFS) or Elastic Block Store (EBS) as the cloud storage service for our Jenkins\nbuild. \n\nThe decision is needed as it will impact on the team\u2019s work and may be affected\nby wider GDS or Government strategy. \n\n## Decision\n\nBased on the below pros and cons, we have decided to remain with EFS as the\ncloud storage service, until such a time that there is a strategic need to\nchange. \n\nBecause of the way in which the team has compartmentalised the architecture\nof and approach to this Jenkins build, it is eminently possible to move to EBS\nat any point. It also means that further development of the system will not make\nit more complicated to do so. \n\nIt is for this reason that the decision is not to carry out this work in\nanticipation of it being needed, but rather focus on existing required work and\nonly carry out the work of converting to EBS should the need arise, at which\npoint that work would need to be prioritised.\n\n## Consequences\n\n### Pros and cons of each approach\n\n**EFS**\n\nPros:\n\n* You only pay for what you use\n\nCons:\n\n* AWS does not provide EFS in London yet\n* It is more expensive than EBS\n* Requires a specific binary (EFS utils) to be compiled\n* Uses Network File System (NFS), which has a bad reputation although is not a\nproblem in the context of this system\n\n**EBS**\n\nPros:\n\n* Can be used in London\n* Cheaper than EFS\n* Allows for snapshots to be taken, making it easier to backup than EFS\n\nCons:\n\n* You need to know (predict) your storage needs \n* An increased overhead for the team to monitor usage and then respin the\ninfrastructure if more storage is needed\n* Only one server can mount an EBS volume at a time\n* A technological approach to servers mounting an EBS volume makes respinning\nthe infrastructure error-prone\n\n### Work required to revert to EBS\n\n* Need to design a process for users to define the EBS volume size and then to\ndo the resizing (respinning the infrastructure, etc.)\n* Requires changes to the Terraform code\n* Requires changes to user data\n* Requires redocumenting\n* Need to add monitoring of storage usage (to inform the need to increase or\ndecrease the size of the EBS volume)\n\n### Other considerations\n\n* If sovereignty of data (i.e. keeping code and data on UK soil in certain\npost-EU-Exit scenarios) is an issue, it may also be worth considering that other\nAWS services are global (cannot be regionally specified)\n  * It may be that Information Assurance (IA) takes a different stance with those\nservices, however, as they are perhaps less likely to hold or transport\nsensitive data\n* Even if the decision is made that all Platform as a Service (PaaS) tenancy\nmust remain in the UK, our current Jenkins could still \u2018push\u2019 to a UK-based\nPaaS; however, this would need IA approval, depending on which elements of the\nservice and build pipeline are considered to be sensitive (and therefore must\nremain in the UK). PaaS confirmed on 29/08/2018 that this is currently possible\nand there are no intentions to change this\n* GOV.UK\u2019s approach to using EBS could negate the technical consideration that\nmakes respinning the infrastructure prohibitively error-prone\n* EFS does not support versioning or snapshots; backups are managed by third\nparty software. AWS does provide an appliance to assist in backing up EFS,\nwhich is essentially a VM running rsync to a date stamped backup directory on\nanother EFS instance.\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/decisions/0006-buildah-discovery.md",
+   "identity": "docs/architecture/decisions/0006-buildah-discovery.md",
+   "adr_id": "6",
+   "title": "Buildah Discovery Work",
+   "first_commit": "2018-09-03T11:36:37+01:00",
+   "first_sha": "90083231f8f278fb664c7135fadda6d8b9b5b1eb",
+   "last_commit": "2018-09-05T10:44:05+01:00",
+   "author": "Stephen Ford",
+   "email": "stephen.ford@digital.cabinet-office.gov.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 6. Buildah Discovery Work\n\nDate: 2018-09-03\n\n## Status\n\nAccepted\n\n## Context\n\nThere is a desire from users to be able to build docker images as an artifact from their jobs, this creates a security problem because of technical limitations within docker.  This ADR is the result of discovery work to discern whether there are alternative solutions to building docker images securely.  The discovery focussed on evaluating the software product called [Buildah].\n\n## Technical Problem\n\nAs the workers run within a docker container, they may need to build another docker image as an artifact.  To do so requires that the host servers docker socket be exposed to the worker container.  The docker daemon runs as root and has full control of the host server, meaning malicious code running within the workers docker container could trivially gain access to the host system by mounting (via -v) the host systems root.\n\nAs Docker does not support RBAC to control and restrict access to its socket there is no way provided by docker to prevent this privilege escalation method occuring.  \n\nBuildah solves this problem by being able to build a docker container without the need to use docker and the vulnerable socket.\n\n## Buildah Discovery Notes\n\n1. Needs root access to run buildah commands - requires the same privileges as docker to run\n1. Is a bit ackward to install, but we could package it up, meaning we'd have to maintain it\n1. Requires non-standard repos (ppas) for installation\n\t- ppa:alexlarsson/flatpak (lead flatpak developer)\n\t- ppa:gophers/archive (go)\n\t- ppa:projectatomic/ppa (buildah official repo)\n1. Builds the image and then we need to send to local docker, docker.io or ECR (if compatible) so that the image can be used\n1. Worked well overall\n1. Supports\n\t1. --build-arg\n\t1. --volume\n\t1. [Documentation](https://github.com/projectatomic/buildah/blob/master/docs/buildah-bud.md)\n1.  Recommend that re-build creates a container specifically for buildah, and have that run and create artifact docker images which are then upload somewhere ready for consumption\n1. If buildah artifact images are stored on the worker\n\t1. will be faster to build then run\n\t1. mean we have to manage those images (nuking old ones)\n\t1. may need to expose the docker socket (and re-introduce the problem we are trying to avoid)\n1. If buildah images are stored on docker.io\n\t1. images will need to be uploaded after creation, then downloaded again to be executed, making things slower\n1. If uploaded to a public docker.io\n\t1. we'd need to be careful about exposing secrets\n1. If uploaded to a private docker.io\n\t1. data sovereignty concern\n\t1. work upon secrets management to allow the the upload and download\n1. If docker images stored within ecr\n\t1. not 100% certain this is possible as it is not specifically noted\n\t1. should be fast\n\t1. can be managed by iam roles, endpoints, security groups etc\n\t1. can be version controlled and kept private\n1. Other similar tools to Buildah and comparison table [here](https://github.com/GoogleContainerTools/kaniko#comparison-with-other-tools)\n\n## Decision\n\nBuildah addresses the problems of docker container privilege escalation, is feature rich to support typical use cases (as it is feature compatible with docker), and provides us a means in which to provide docker image artifacts.\n\n## Consequences\n\nThere was no indepth discovery of alternative products which may be more appropriate.  Further discovery on other products might be neccessary.  \n\n\n[Buildah]: https://www.redhat.com/en/blog/daemon-haunted-container-world-no-longer-introducing-buildah-10\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/projectatomic/buildah/blob/master/docs/buildah-bud.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/decisions/0007-add-ability-to-import-custom-jobs.md",
+   "identity": "docs/architecture/decisions/0007-add-ability-to-import-custom-jobs.md",
+   "adr_id": "7",
+   "title": "Provide ability for the user to import custom jobs",
+   "first_commit": "2018-09-04T10:18:33+01:00",
+   "first_sha": "f2fcf1b4aa0f5522f49e589af0d8012955be5faa",
+   "last_commit": "2018-09-04T11:41:41+01:00",
+   "author": "daniele-occhipinti",
+   "email": "contact@danieleocchipinti.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 7. Provide ability for the user to import custom jobs\n\nDate: 2018-08-24\n\n## Status\n\nAccepted\n\n## Context\n\nWe need the user to be able to define Jenkins jobs in code and be able to import them into Jenkins.\n\nWe have identified a number of ways to do this:\n\n1. Define jobs with Groovy and inject the script, as we do for the Jenkins configuration\n2. Automatically create the jobs by scanning a Github account\n3. [Jenkins Job Builder]\n4. [Job DSL plugin]\n\n### Option 1\nThis is the easiest for us as we don't need to implement anything new. We can use the mechanism of injecting Groovy script which is already available. It is also relatively easy for the user to use. The code for the jobs and configuration can't exceed 16 KB, which is a limitation, but we believe that is enough for compact Jenkins installations (a Jenkins with hundreds of jobs is an anti-pattern). [The limit] is because we use [user data] to implement this option.\n\n### Option 2\n Jenkins provides a way to scan a Github organisation or accounts for repositories containing pipeline configurations in a Jenkinsfile. This should be quite easy for the user but the implementation can be quite complex. This option would require the user to pass extra parameters to the Jenkins Terraform module: at least one regular expression to filter the repositories to match, and a Github personal token. The token is needed because scanning Github as an unauthenticated user is extremely slow but only takes a few minutes for a user with authentication. As the module needs a token as an input, there is extra complexity around managing that secret. This would be relatively straightforward to do using the UI but providing this solution as code would be quite involved.\n\n### Option 3\n (Jenkins Job Builder) is probably the most commonly used at GDS (it's used by Notify, Digital Marketplace) - people generally like it but some issues were pointed out like a difficulty in upgrading to a newer version or in escaping quotes correctly. [GOV.UK] and Pay use a more ad-hoc, homebrewed approach. Both groups rely on Puppet or Chef to inject their jobs into Jenkins. We allow users to install their configuration management tool via cloud-init, so the user is still free to override any mechanism we provide.\n\n### Option 4\n This hasn't been explored in great detail as we felt we'd already found a good solution. However, if we revisit the decision made in this PR, this tool should be evaluated more thoroughly.\n\n## Decision\n\nWe decided to implement solution 1 to keep things simple and because of time constraints. Options two and three can still be used but will not be supported. In the future, we may consider to change to another solution if we feel there is the user need.\n\n## Consequences\n\nThe user is able to import jobs into Jenkins that are defined in code, the definition of the jobs and configuration can't exceed 16 KB.\n\n[Jenkins Job Builder]: https://docs.openstack.org/infra/jenkins-job-builder/#jenkins-job-builder\n[Job DSL plugin]: https://github.com/jenkinsci/job-dsl-plugin\n[GOV.UK]: https://docs.publishing.service.gov.uk/manual/testing-projects.html\n[user data]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html\n[The limit]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "docs.publishing.service.gov.uk/manual/testing-projects.html",
+    "docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html",
+    "docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/decisions/0004-pin-versions-of-jenkins-and-plugins.md",
+   "identity": "docs/architecture/decisions/0004-pin-versions-of-jenkins-and-plugins.md",
+   "adr_id": "4",
+   "title": "Pin versions of Jenkins and plugins",
+   "first_commit": "2018-08-06T12:11:14+01:00",
+   "first_sha": "a1751faa7f334452baef04d785eaf9e2bd5ed463",
+   "last_commit": "2018-08-06T12:11:14+01:00",
+   "author": "Daniel Roseman",
+   "email": "daniel.roseman@digital.cabinet-office.gov.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 4. Pin versions of Jenkins and plugins\n\nDate: 2018-08-06\n\n## Status\n\nAccepted\n\n## Context\n\nTo guide our work, we need to decide on our approach to supporting (or not)\na build system that we may provide. This document outlines the pros and cons of\npossible options and recommends an approach. \n\nOnce decided, this decision will be used to hold further workshops to design the\nprocesses and technology required to put that approach into practice. \n\n### The options\n\nWe discussed 3 options that affect our support approach, plus a fourth that\ninvolves a third party and does not necessarily affect the way we support our\nproduct. As such, the fourth does not have pros and cons articulated below. \n\n1. Release a working and stable infrastructure as code. Unpinned versions, so \n   each fresh installation includes the latest versions of everything.\n2. Host it (essentially become a SaaS provider) and maintain a limited suite of\n   plugins.\n3. Periodically release stable versions of Jenkins (as code), with a suite of\n   plugins with their versions pinned. Provide guidance on upgrading with each\n   release.\n4. Pay for an externally hosted (and therefore maintained) version of Jenkins.\n   Don\u2019t provide anything ourselves except recommendation and perhaps a little\n   guidance\n\nHybrids of some of these are possible. For example, we could have Jenkins as\ncode (1 or 3) for those who need more configurability whilst also\nrecommending/paying for an externally hosted thing (4). Or we could both provide\ncode (1 / 3) and also host something (2). \n\n### Option 1: Infrastructure as code only\n\n**Pros**\n\n* Supposedly more secure (because latest versions include security updates)\n* Encourages good behaviour (not providing a black box solution forces teams to\nengage with the solution)\n\n**Cons**\n\n* Implicit trust up-stream means security vulnerabilities could be introduced\n* Everything could break each time a new version is released (we can\u2019t ensure\n  compatibility)\n* The build becomes unreproducible\n* Build versions can\u2019t be tracked\n* Latest versions would only be installed for fresh installs, so potentially\n  increasing divergence from secure versions\n\n### Option 2: Host Jenkins ourselves\n\n**Pros**\n\n* Teams transfer all of the \u2018cons\u2019 to us\n* Teams don\u2019t need certain expertises\n* We can enforce upgrades (security)\n\n**Cons**\n\n* Expensive (people, infrastructure, etc.)\n* Cost recovery has to be dealt with\n* Cost might be a barrier to adoption\n* Less configurable for teams\n* Residual unused instances have to be managed\n* Have to manage OLAs/SLAs\n* Need MTM/SMT agreement\n* Service becomes a single point of failure for all service teams using it\n  (up-time, etc.)\n\n### Option 3: Release stable pinned versions periodically\n\n**Pros**\n\n* Users are reassured that it will work\n* ^ therefore lower barrier to adoption\n* Central point for monitoring security fixes\n* Automated testing (integration/acceptance) of version compatibility, etc. is\n  possible\n* Guidance and optimised workflow = easier for teams to do things properly\n\n**Cons**\n\n* Someone has to stay current (security and updates)\n* Someone has to maintain and update it\n* Limited plugins: the fewer we support the more teams have to support (but may\n  not)\n* Limited plugins: if teams use a lot around GDS then maybe puts pressure on us\n  to provide more in our 'limited' suite\n\n\n## Decision\n\nBased on the above pros and cons, we recommend that option 3 (perhaps with\noption 4 as well, depending on user needs that are uncovered) is the best\noption. \n\n## Consequences\n\nWe will support a limited set of plugins which will be pinned to specific\nversions. We will need to agree a release cycle for supported versions, and\ndocument an upgrade process.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/decisions/0003-https-implementation.md",
+   "identity": "docs/architecture/decisions/0003-https-implementation.md",
+   "adr_id": "3",
+   "title": "HTTPS implementation",
+   "first_commit": "2018-06-25T10:53:18+01:00",
+   "first_sha": "de4642898aac90cd2bee3922eb0d32282b9e652c",
+   "last_commit": "2018-06-29T10:20:23+01:00",
+   "author": "daniele-occhipinti",
+   "email": "contact@danieleocchipinti.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 1. HTTPS implementation\n\nDate: 2018-06-25\n\n## Status\n\nAccepted\n\n## Context\n\nWe needed to implement HTTPS and TLS termination as part of the template we offer in our MVP.\n\nWe identified 4 ways to get that done.\n\n\n### Technique #1 - using existing nginx inside the Jenkins container\n\nOur Jenkins master container has nginx installed in it. We can install the certificates and keys\nthere. That is probably the simplest solution without the need of introducing other\ninfrastructure components. Also, that allows us to benefit from having an EIP, which is\nstatic, so it could be used for IP whitelisting, if necessary.\n \nHowever, the installation and renewal of certificates has to be done manually, which is a major downside.\n\n\n### Technique #2 - using ELB\n\nWe introduce an ELB in front of the existing infrastructure, like so:\n\nDNS resolution -> ELB -> Jenkins master EC2\n\nCompared to #1, the major benefit is the ability to manage the provisioning of the certificate fully within AWS using [AWS Certificate Manager](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/ssl-server-cert.html).\n\nThe downsides is not having an EIP (for whitelisting) and that automatic renewal of the certificate meaning higher operational overhead.\n\n\n\t\n### Technique #3 - using ELB with ASG\n\nThis is like Technique #2 but we introduce an ASG (auto-scaling group) for the EC2 master instance.\n\nBy using ACM, ELB and ASG together, it allows AWS to manage the certificate provisioning and renewal, thus removing any operational overhead.\n\n\n\n### Technique #4 - using a NLB\n\nLike #2 but with a Network Load Balancer (NLB), like so:\n\nDNS resolution -> EIP -> NLB -> ELB -> Jenkins master EC2\n\nThe advantage is that we can have an EIP. However, we probably need Cloudwatch\nto detect changes in the EIP which would trigger a Lambda to register the new EIP with the NLB, this is a suggested solution from AWS, but the downsides is that it is complex, expensive and difficult to manage.\n\n\n## Decision\n\nAfter exploring and understanding all of the techniques and discussion within the team, option 3 was chosen. \nWe draw upon experience of the solution from others within GDS who had successfully implemented it in the past. \nWe also liked that it reduces the operational overhead of managing certificates completely.\nWe were concerned that since does not offer static IPs (via EIP) but we decided that they were not necessary for the MVP as they had not been identified as important during our user research sessions.\n\n\n## Consequences\n\nOur MVP supports HTTPS without the need to manually issue a certificate, which keeps the provisioning of our\nJenkins simple and quick.\n\nAs a consequence of implementing #3 we have to provision the system in a non-UK region, this introduced data sovereignty concerns. The need to use a non-UK region is because some AWS services (EFS) are not yet available in the UK.",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#1",
+     "kind": "hash",
+     "url": "",
+     "number": "1"
+    },
+    {
+     "key": "#2",
+     "kind": "hash",
+     "url": "",
+     "number": "2"
+    },
+    {
+     "key": "#3",
+     "kind": "hash",
+     "url": "",
+     "number": "3"
+    },
+    {
+     "key": "#4",
+     "kind": "hash",
+     "url": "",
+     "number": "4"
+    }
+   ],
+   "mentioned_paths": [
+    "docs.aws.amazon.com/elasticloadbalancing/latest/classic/ssl-server-cert.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/decisions/0002-use-containers-and-multiple-boxes.md",
+   "identity": "docs/architecture/decisions/0002-use-containers-and-multiple-boxes.md",
+   "adr_id": "2",
+   "title": "Use containers and multiple boxes",
+   "first_commit": "2018-06-26T09:14:23+01:00",
+   "first_sha": "25db7977193e19b42d09464f8c753b133067be2f",
+   "last_commit": "2018-06-26T09:14:23+01:00",
+   "author": "Daniel Roseman",
+   "email": "daniel.roseman@digital.cabinet-office.gov.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 2. Use containers and multiple boxes\n\nDate: 2018-06-25\n\n## Status\n\nAccepted\n\n## Context\n\nThe aim of this project is to allow teams to quickly create their own Jenkins\nplatform, running on AWS.\n\nJenkins has a master/agent architecture, where a single master node can trigger\njobs running on multiple agents. This decision concerns how we deploy, configure\nand manage both the master and the agents.\n\n## Decision\n\n\nWe will make both the master and the agents Docker containers, running on\nseparate managed EC2 instances. We will provision and manage these directly for\nnow, without using an orchestration service like ECS or Kubernetes.\n\n### Use of separate instances\n\nHaving separate instances for the master and the workers increases security by\nmaking it impossible for code running in worker jobs to affect the master.\n\nIn addition, this allows for teams to increase capacity by adding extra worker\nboxes as required.\n\n### Use of Docker for master\n\nRunning the master in Docker makes it easy to deploy and upgrade. This improves\nteams' abilities to quickly respond when new Jenkins versions are released in\nresponse to security vulnerabilities, for example.\n\nIn addition, using Docker means that the configuration can be kept in the git\nrepository along with the rest of the code, rather than managed via the Jenkins\nUI.\n\n### Use of Docker for agents\n\nRunning the workers as Docker containers allows isolation of each job, ensuring\nthat each job starts from a known state, making it possible to target a specific\nconfiguration via the Jenkinsfile, and increasing security by making it\nimpossible for the job to affect the underlying VM.\n\n### Not using orchestration frameworks\n\nAlthough some teams at GDS are experimenting with ECS, the Jenkins service is\nsimple enough that it is not worth introducing the added complexity for this\nproject.\n\n## Consequences\n\nThe current architecture does not allow jobs to create new Docker images as part\nof their steps. Some teams are using this functionality, so their Jenkinsfiles\nwill require changes.\n\nSupporting this would be possible by creating an additional worker which mounts\nthe Docker socket on the box within the agent container, although this may have\nsecurity implications.\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/decisions/0001-record-architecture-decisions.md",
+   "identity": "docs/architecture/decisions/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2018-05-22T17:38:37+01:00",
+   "first_sha": "683240ec821f13db9d3249180f6ec821bfd83178",
+   "last_commit": "2018-05-22T17:38:37+01:00",
+   "author": "daniele-occhipinti",
+   "email": "contact@danieleocchipinti.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record architecture decisions\n\nDate: 2018-05-22\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as described by Michael Nygard in \n[documenting architecture decisions](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions)\n\n## Consequences\n\nSee Michael Nygard's article, linked above.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/architecture/decisions/0003-https-implementation.md",
+   "identity": "docs/architecture/decisions/0003-https-implementation.md",
+   "commit": "22be972111398cb8a70d6093bd613bff4f094286",
+   "date": "2018-06-29T10:20:23+01:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "Add ADR for HTTPS implementation",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "daniele-occhipinti",
+   "email": "contact@danieleocchipinti.com"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 7,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "7"
+}

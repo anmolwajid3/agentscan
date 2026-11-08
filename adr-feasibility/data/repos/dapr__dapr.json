@@ -1,0 +1,806 @@
+{
+ "repo": "dapr/dapr",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2019-06-20T15:18:26-07:00",
+ "last_commit": "2026-11-06T15:06:32+00:00",
+ "n_commits": 7247,
+ "n_authors": 397,
+ "n_files": 5160,
+ "n_code_files": 3793,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 0,
+ "adrs": [],
+ "status_changes": [],
+ "ai_signals": [
+  {
+   "kind": "file:primary",
+   "name": ".github/copilot-instructions.md",
+   "date": "2026-02-23T15:24:04+00:00",
+   "commit": "af1d144142f5008f5ef49ca7724174c5d159fe14",
+   "evidence": "Add .github/copilot-instructions.md for Copilot coding agent onboarding (#9534)",
+   "official": true,
+   "author": "Copilot",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-02-23T15:24:04+00:00",
+   "commit": "af1d144142f5008f5ef49ca7724174c5d159fe14",
+   "evidence": "Add .github/copilot-instructions.md for Copilot coding agent onboarding (#9534)",
+   "official": true,
+   "author": "Copilot",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-02-24T16:30:34+00:00",
+   "commit": "635c5c6919150e9130c36dadad6e99ad08254a09",
+   "evidence": "Fix E2E KinD flakiness: actor concurrency log polling and input binding call count range (#9533)",
+   "official": true,
+   "author": "Copilot",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-03-02T19:56:49+00:00",
+   "commit": "856e8b2c5b27b0e73c8d8a151a2393b2bf0bcfa0",
+   "evidence": "Bump Go to 1.26.0 and fix golangci-lint modernize/prealloc failures (#9573)",
+   "official": true,
+   "author": "Copilot",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-03-04T20:58:23+00:00",
+   "commit": "2b72b45528129cb9fbcbc7a66b7d31b7b67ec3c4",
+   "evidence": "Integration: Breakup resiliency app tests (#9544)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-03-05T22:07:20+00:00",
+   "commit": "07499071f1cc3911e8873524a41bed05c8e67152",
+   "evidence": "hotreload: simplify disk loader triggers and move reconciler to event loop (#9574)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-03-06T11:54:57+00:00",
+   "commit": "61a7a7cbd54f76d5931eb0b2cc4742466eb90900",
+   "evidence": "Stalled workflow retention deletion (#9588)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-03-06T20:41:25+00:00",
+   "commit": "1148edb57f868ed9656e5b1c08bfd1527a2a8170",
+   "evidence": "fix: Reset bulk subscribe timer after maxMessagesCount flush (#9562)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-03-16T13:30:05+00:00",
+   "commit": "b4a8b9401e01cc38f4a8f0e01af230b3d6458eca",
+   "evidence": "Fix actor placement version check (#9639)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-03-17T11:34:57+00:00",
+   "commit": "08c8b0a2f1786bbae26d2901f011a6bb96c24bdd",
+   "evidence": "test: fix flaky actor reminder e2e tests by polling instead of fixed sleep (#9620)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-03-24T12:42:15+00:00",
+   "commit": "42bfae5006fa6f8feec8148fabfc72aeec33dd6e",
+   "evidence": "Actors: h2c: actor invocation 200 with empty body (#9676)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-03-25T19:12:20+00:00",
+   "commit": "48f52bb737c8a0c3f03d9867d3bfbb8151532b5c",
+   "evidence": "Fix placement connection and dissemination chrun (#9689)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-04-08T08:28:06-07:00",
+   "commit": "60cd667f903e4dd70a66a3d80ffaeaf5ffc29745",
+   "evidence": "feat(mcp): add init mcp server resource (#9685)",
+   "official": true,
+   "author": "Sam",
+   "email": "sam@diagrid.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-04-09T12:37:30-03:00",
+   "commit": "f2d61989b20a4a7e9238edbc19ab2fcbe76dc47a",
+   "evidence": "hotreload: Configuration, HTTPEndpoint, and Resiliency (#9582)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-04-10T09:11:12-07:00",
+   "commit": "30d4ffe834f1c0f7538a5e24c7dd6d562a71d9da",
+   "evidence": "feat(mcp): add crd clientset for cli mcp cmd (#9742)",
+   "official": true,
+   "author": "Sam",
+   "email": "sam@diagrid.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-04-16T14:56:33-03:00",
+   "commit": "018d77928d1129e128674175cf1d25eef75b344c",
+   "evidence": "Version-Skew: fix (#9794)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-04-20T05:10:39-05:00",
+   "commit": "0e892d4a2b0167e7a44e0cf10e47583ec4d69a19",
+   "evidence": "Scheduler fix fatal crash on server restart due to duplicate controller registration (#9688)",
+   "official": true,
+   "author": "Cassie Coyle",
+   "email": "cassie@diagrid.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-04-30T13:35:44-07:00",
+   "commit": "7bf9adbd5775f669bd2004befc982c2c8490a9b6",
+   "evidence": "Sidecar Injector supports Native Sidecars (#9450)",
+   "official": true,
+   "author": "Alek Hrycaiko",
+   "email": "alekhrycaiko@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-04T23:13:07+01:00",
+   "commit": "11015aee64ad9e93eed136fdb811486f13e3e84b",
+   "evidence": "fix: remove availability zone requirement from AKS test clusters (#9840)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-05-11T11:47:23-05:00",
+   "commit": "d16e4deddd9cd06d9239edade0737963182d7ea5",
+   "evidence": "feat(mcp): add built-in mcp wf orchestration engine for mcpserver crd (#9731)",
+   "official": true,
+   "author": "Sam",
+   "email": "sam@diagrid.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-05-14T08:30:23-03:00",
+   "commit": "13ae82367378654310a84301741651c3bd889242",
+   "evidence": "scheduler: tune embedded etcd for workflow read/write profile (#9942)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-05-25T13:05:53+01:00",
+   "commit": "b7b2a02ecde173dde53a546bae668481ddcb215a",
+   "evidence": "Potential fix for pull request finding",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-05-25T18:34:14+01:00",
+   "commit": "88c8025a4dca974e364dbe30eec1a017362386c4",
+   "evidence": "workflow: save inbox event before creating wake-up reminder (#10008)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-06-01T04:16:28-07:00",
+   "commit": "3be34e38bd0332efbbea553f076e9cedbdec71db",
+   "evidence": "fix(grpc): remove singleton connection limit for local app (#9492)",
+   "official": true,
+   "author": "Flern",
+   "email": "37188135+Flern@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-06-09T10:52:20+02:00",
+   "commit": "8ee6725df7645c26ff55c06f275501fd4b771446",
+   "evidence": "fix(wfengine/state): fail load on missing history/inbox keys + recoverable retry (#10058)",
+   "official": true,
+   "author": "Javier Aliaga",
+   "email": "javier@diagrid.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-06-09T20:17:38+01:00",
+   "commit": "68bad09d5a6f73191e0ab0d2b1e94a6adee20485",
+   "evidence": "Workflow: Harden external-event delivery (#10072)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-06-10T15:40:29+01:00",
+   "commit": "1f65008564390645a5526a62908602c87b932b4a",
+   "evidence": "Adds v1.18.0 release notes. (#10085)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-07-07T23:50:33+02:00",
+   "commit": "395aca68b186bafcfca2355bcb18d93c5729821e",
+   "evidence": "Test hot-reload when kubernetes secret references update their value (#10164)",
+   "official": true,
+   "author": "Albert Callarisa",
+   "email": "albert@diagrid.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-07-15T19:27:56+01:00",
+   "commit": "a62c66ffdbaf00258b5bbf609268e59b9d3dac82",
+   "evidence": "Workflow: Fail child when target child ID is already in use (#10197)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-07-28T22:21:36+02:00",
+   "commit": "57951e87b60ce68974af86689c4cbb9c4ffe8c7f",
+   "evidence": "feat(metrics): add workflow execution buckets configuration (#10187)",
+   "official": true,
+   "author": "pablochacin",
+   "email": "pablochacin@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-07-30T00:10:34+05:30",
+   "commit": "35a729ae8fc0bfe2ea0816a7953b51f8d1702176",
+   "evidence": "fix(runtime): make binding OPTIONS probe timeout configurable (#10220)",
+   "official": true,
+   "author": "Advait Mishra",
+   "email": "177329696+Advait2912@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-07-31T14:45:37-03:00",
+   "commit": "afb22f809c5915f7682880f6e360a9a2a1a68b5d",
+   "evidence": "Add integration tests for stateful-history workflow delivery (#10142)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-08-06T10:32:41-03:00",
+   "commit": "f16eaffea3dc818aab98931ba43463b03c1d8c60",
+   "evidence": "workflow: ack activity-result reminders for purged instances (#10332)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-08-13T15:50:03+00:00",
+   "commit": "8d325525c8e0629a21e529af6fa37289eab6d53e",
+   "evidence": "perf: workflow: jittered exponential reminder backoff (#10344)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-08-24T16:42:39+00:00",
+   "commit": "eebd81239884f5fd0a0905b52dc252974051ae7f",
+   "evidence": "workflow: actors: drop blocking completion-waiter paths (#10396)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-08-28T19:23:11+00:00",
+   "commit": "6cf57abafdb73804256f005e534ba383c8aafed5",
+   "evidence": "workflow: allow meta watch on stalled workflow (#10428)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-09-02T14:11:20+00:00",
+   "commit": "382383600348d6b4118665dd7b88eb2d18018275",
+   "evidence": "integration: pin the execution ID contract on workflow work items (#10446)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>",
+   "date": "2026-09-17T18:41:20+00:00",
+   "commit": "d31c4a642b60a18da8fc24cd93c910b0b2fafc43",
+   "evidence": "Add Workflow and Scheduler Grafana dashboards, extend system services (#10496)",
+   "official": true,
+   "author": "Mirel",
+   "email": "15373565+MyMirelHub@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-01T14:50:08+00:00",
+   "commit": "717c3e3acdce9f9bdcd241e805e1ec8b33ae0ff1",
+   "evidence": "fix(diagnostics): give each meter its own size and payload-ratio aggregations (#10591)",
+   "official": true,
+   "author": "Fabian Martinez",
+   "email": "46371672+famarting@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-10-01T17:14:37+00:00",
+   "commit": "68b3871d716c73f57c3a05298be370944526bb41",
+   "evidence": "fix(hotreload): resolve a component's secrets exactly once on update (#10526)",
+   "official": true,
+   "author": "Fabian Martinez",
+   "email": "46371672+famarting@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-05T14:56:33+00:00",
+   "commit": "bff91305e2263579325f547fcc337ab626a56ffb",
+   "evidence": "e2e: do not build actorphp for Windows (#10615)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-05T15:04:47+00:00",
+   "commit": "fadbbc9c4bb0fd90397b9fdae16a4f725204a225",
+   "evidence": "tests: wait for one-shot job deletes before etcdleader ends (#10621)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-05T15:10:51+00:00",
+   "commit": "ed84130e14c192fc9d1a859aa61dfa74a0edd60d",
+   "evidence": "e2e: retry reminder registration until the actor app accepts it (#10619)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-05T15:16:32+00:00",
+   "commit": "0861c0465b4a4ef607a89bdf0f6b7730df286404",
+   "evidence": "tests: keep every package in the perf report when DAPR_PERF_TEST lists several (#10614)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-05T15:19:51+00:00",
+   "commit": "fb46452ac1c08944355bd7c8ff0db8e40ee86424",
+   "evidence": "ci: run KinD e2e on Kubernetes 1.35, 1.36 and 1.37 (#10618)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-05T15:46:36+00:00",
+   "commit": "5a8f06143bceb3150440d8a486032375d0eb1055",
+   "evidence": "e2e: use 1.18 and 1.17 sidecars for the N-1 and N-2 compatibility apps (#10617)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-05T16:16:08+00:00",
+   "commit": "c78587169b8218bf21cc63bc7251c718b388750b",
+   "evidence": "Update deps for CVE: go-chi/chi v5.3.2, golang.org/x/image v0.45.0 (#10616)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-06T17:12:20+00:00",
+   "commit": "46b24124a7a031ad87fe923f4155fab335b59931",
+   "evidence": "wfengine: unregister workflow actors with a context the stream cannot cancel (#10620)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-06T17:16:04+00:00",
+   "commit": "1aaa3c0698a3eac1a99882f5af1e944cc91c736c",
+   "evidence": "actors: take no in-flight claim for a failed actor lookup (#10624)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-06T17:24:23+00:00",
+   "commit": "172c83d503a3ba97e6cf4718f55efab21c39fb4e",
+   "evidence": "wfengine: keep watching after a stale completion on the watch fallback (#10622)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+   "date": "2026-10-06T17:36:22+00:00",
+   "commit": "86086643c771b145d85519e345781516e27ea050",
+   "evidence": "feat(daprd): register the generic pubsub.amqp component type (#10502)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-06T19:05:13+00:00",
+   "commit": "8e6d6a11eb06e45cce30ff8a4532858c3030c6e7",
+   "evidence": "workflow: executor: forward parked results when a rebalance halts the actor (#10623)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-07T13:22:39+00:00",
+   "commit": "ec2ac5faec9ad249d4c7051d4475e76ed257027a",
+   "evidence": "Forward informational responses without committing the final status (#10582)",
+   "official": true,
+   "author": "Yingzi Zhang",
+   "email": "164733623+LindseyZ1205@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-10-12T15:46:08+00:00",
+   "commit": "3e0e436dd23edd2f1518c6e9dc2a9d5a0cb79188",
+   "evidence": "scheduler: ignore placement detection cancelled by shutdown (#10728)",
+   "official": true,
+   "author": "Josh van Leeuwen",
+   "email": "me@joshvanl.dev"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-13T13:58:28+00:00",
+   "commit": "0604d82e794bb625587f2421c94f959eb4c7f933",
+   "evidence": "workflow: a busy parent workflow is not a failed activity result publish (#10744)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-10-14T15:44:15-05:00",
+   "commit": "397d859cdb511b315798461f3552b691c23b6830",
+   "evidence": "Binary store building block support (#10367)",
+   "official": true,
+   "author": "Whit Waldo",
+   "email": "whit.waldo@innovian.net"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Cursor <cursoragent@cursor.com>",
+   "date": "2026-10-16T15:17:51+00:00",
+   "commit": "7d381078e0d4d8fc2a109c3e195a1f36f9d28ba7",
+   "evidence": "sentry: scope Kubernetes validator pod cache to injected pods (#10802)",
+   "official": true,
+   "author": "Amit Hampal",
+   "email": "41132099+ahampal@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-10-19T18:31:59+00:00",
+   "commit": "00d57da0505255a26b4841b10993c5d81e0221ee",
+   "evidence": "fix: start a root span for pubsub deliveries with no inbound trace context (#10511)",
+   "official": true,
+   "author": "Mirel",
+   "email": "15373565+MyMirelHub@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-10-20T14:49:17+00:00",
+   "commit": "04215fd7eb2666910d9afd1a6d672ca3862bd1ae",
+   "evidence": "feat: search and vector blocks (#9974)",
+   "official": true,
+   "author": "Mike Nguyen",
+   "email": "hey@mike.ee"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-22T13:10:36+02:00",
+   "commit": "d23b217aded4ad9bb8bb2ad49d8be4cdaa2ed929",
+   "evidence": "chore: pin components-contrib v1.19.0 (#10898)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-22T15:20:12+02:00",
+   "commit": "c926bf102dcdcf5a14c5c5572bbb6d4e27baae63",
+   "evidence": "docs: add the v1.19.0 release notes (#10899)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T11:36:11+00:00",
+   "commit": "6686c0db8503db216af464a9618e85966ad8dc65",
+   "evidence": "actors: close the placement connection when a stream fails to open or ends (#10912)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T13:21:29+00:00",
+   "commit": "389422328d94a35b4d205866d8f81e6c0ddc2288",
+   "evidence": "workflow: stop the executor factory's deactivation goroutine with its context (#10897)",
+   "official": true,
+   "author": "Fabian Martinez",
+   "email": "46371672+famarting@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T14:15:55+00:00",
+   "commit": "49741c24f62bf62ae99904ead6cf029029feb51b",
+   "evidence": "docs: add the v1.19.1 and v1.18.10 release notes for the placement connection leak (#10916)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-27T12:37:34+00:00",
+   "commit": "ce93de6d6373286577f1c6e82e6ecc537345527c",
+   "evidence": "workflow: host the workflow actor types as fallback while no daprd has an executor (staged operations 1/2) (#10909)",
+   "official": true,
+   "author": "Fabian Martinez",
+   "email": "46371672+famarting@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-28T18:54:30+01:00",
+   "commit": "350ca0a6ed43256199611f7399110fe629794751",
+   "evidence": "workflow: stop flooding daprd when the last executor of an app leaves (#10953)",
+   "official": true,
+   "author": "Fabian Martinez",
+   "email": "46371672+famarting@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-28T20:10:12+01:00",
+   "commit": "cded45ab94c54c6776f4f4666b2e7131ecad9c24",
+   "evidence": "deps: bump modernc.org/sqlite to v1.42.2 to stop leaking read transactions (#10948)",
+   "official": true,
+   "author": "Fabian Martinez",
+   "email": "46371672+famarting@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-28T20:47:44+00:00",
+   "commit": "1275498c0fb56a93e0361090bf4e7b8bb0c35467",
+   "evidence": "scheduler: serve in-flight and undeliverable job gauges on /metrics/scaling (#10950)",
+   "official": true,
+   "author": "Fabian Martinez",
+   "email": "46371672+famarting@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-30T13:38:57+00:00",
+   "commit": "f2baba403d85baae280896911aef59329b8f9279",
+   "evidence": "docs: add the v1.19.1 release note for the SQLite driver update (#11009)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-04T12:07:05+00:00",
+   "commit": "c10b835a32769ae3c3d03b82d5aa0147ed7bca47",
+   "evidence": "deps: bump github.com/go-jose/go-jose/v4 to v4.1.6 (#10945)",
+   "official": true,
+   "author": "Nelson Parente",
+   "email": "nelson_parente@live.com.pt"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-05T11:57:55+00:00",
+   "commit": "889485b8802ea397fa046fa2f9eb10a1f8040b19",
+   "evidence": "tests: stop actors/deactivation/idle/global double-deactivating abc/123 (#11060)",
+   "official": true,
+   "author": "Fabian Martinez",
+   "email": "46371672+famarting@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-05T12:17:13+00:00",
+   "commit": "41ac782a803c1908b3d35d182b1884c2a70590a6",
+   "evidence": "workflow: return at once from staged operations and count them (staged operations 2/2) (#10910)",
+   "official": true,
+   "author": "Fabian Martinez",
+   "email": "46371672+famarting@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-06T13:46:21+00:00",
+   "commit": "2dab9fd3f1d3ad7994f9924ff429fe270618a993",
+   "evidence": "workflow: tell the caller when an operation was staged (staged operations 3) (#11061)",
+   "official": true,
+   "author": "Fabian Martinez",
+   "email": "46371672+famarting@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "Copilot <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-02-23T15:24:04+00:00",
+   "commit": "af1d144142f5008f5ef49ca7724174c5d159fe14",
+   "evidence": "Add .github/copilot-instructions.md for Copilot coding agent onboarding (#9534)",
+   "official": true,
+   "author": "Copilot",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "Copilot <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-02-24T16:30:34+00:00",
+   "commit": "635c5c6919150e9130c36dadad6e99ad08254a09",
+   "evidence": "Fix E2E KinD flakiness: actor concurrency log polling and input binding call count range (#9533)",
+   "official": true,
+   "author": "Copilot",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "Copilot <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-03-02T19:56:49+00:00",
+   "commit": "856e8b2c5b27b0e73c8d8a151a2393b2bf0bcfa0",
+   "evidence": "Bump Go to 1.26.0 and fix golangci-lint modernize/prealloc failures (#9573)",
+   "official": true,
+   "author": "Copilot",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  }
+ ],
+ "signal_date": "2026-02-23T15:24:04+00:00",
+ "signal_kind": "file:primary",
+ "mentions": {
+  "strict": [
+   {
+    "sha": "af1d144142f5008f5ef49ca7724174c5d159fe14",
+    "date": "2026-02-23T15:24:04+00:00",
+    "subject": "Add .github/copilot-instructions.md for Copilot coding agent onboarding (#9534)"
+   },
+   {
+    "sha": "737f7eda2d5c0fa234e97e0f7eb6d319ca4b72ec",
+    "date": "2026-03-26T12:51:34+00:00",
+    "subject": "CoPilot: reduce top level review comment (#9663)"
+   }
+  ],
+  "strict_count": 2,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-native",
+ "adr_count_before_signal": 0,
+ "superseded_in_window": 0,
+ "eligibility_reason": "ai-native",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "yes",
+ "buchgeher_adr_count": "24"
+}

@@ -1,0 +1,374 @@
+{
+ "repo": "superwerker/superwerker",
+ "clone_ok": true,
+ "error": null,
+ "description": "superwerker can help you get started with the AWS Cloud quickly without investing in consultants or devoting time to extensive research. superwerker is a free, open-source solution that lets you quickly set up an AWS Cloud environment following best practices for security and efficiency so you can f",
+ "first_commit": "2020-06-28T18:32:24+02:00",
+ "last_commit": "2026-09-19T08:08:39+02:00",
+ "n_commits": 1013,
+ "n_authors": 29,
+ "n_files": 221,
+ "n_code_files": 103,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 9,
+ "adrs": [
+  {
+   "path": "docs/adrs/control-tower.md",
+   "identity": "docs/adrs/0002-aws-control-tower.md",
+   "adr_id": "",
+   "title": "Control Tower (CT) as a foundation for a secure multi-account setup",
+   "first_commit": "2020-09-24T13:00:02+02:00",
+   "first_sha": "fea199f413c97f7ce728f8fbbb0ef67b977f7bce",
+   "last_commit": "2024-04-25T18:04:27+02:00",
+   "author": "Soenke Ruempler",
+   "email": "soenke.ruempler@superluminar.io",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 16,
+   "text": "# Control Tower (CT) as a foundation for a secure multi-account setup\n\n**Note:** This is outdated and partially replaced by [Control Tower Cloudformation ADR](./control-tower-cloudformation.md)\n\n## Context\n\nAWS proposes multi-account architectures as best practice (see, e.g. [Well-Architected Framework SEC1](https://wa.aws.amazon.com/wat.question.SEC_1.en.html)), so superwerker is following this best practice.\n\nImplementing least privilege for humans (as opposed to, e.g., lambda execution roles) is currently far too complex to be handled sensibly. Therefore giving humans relatively complete access (minus integrity protection via SCPs) but limit this broad access to clearly defined security boundaries (= one or more AWS accounts with specific content/workloads in them) is the only sensible way forward.\n\nControl Tower (CT) is the native service as the foundation for a secure multi-account setup. Since superwerker prefers to use native services whenever possible, it uses CT.\n\n## Decision\n\n- ~~Since CT has no API yet, automate it via [awsapilib](https://awsapilib.readthedocs.io/en/latest/usage.html#usage-for-controltower)~~\n- To keep it simple, superwerker can be installed into regions that Control Tower supports. Choosing a home region for Control Tower / AWS SSO has no impact on other resources' multi regionality.\n- Since CT uses AWS SSO, it is set as the default login and AWS account switching solution.\n- superwerker promotes using the Control Tower Account Factory for enrolling/vending new accounts\n- Enabling additional CT Guardrails: we know they exist but defer the decision (i.e., wait for CT support and APIs)\n- VPC creation: we know the created VPCs are quite useless and inconsistent (e.g., multi-region setups), but we wait until we build a network feature for this.\n\n## Consequences\n\n- superwerker only supports regions supported by CT\n- CT implies additional costs (e.g., Config Rules), which is covered by our design decision to enable services which negligible costs\n- The CT LZ set up/update/repair has to be supervised since it fails sometimes and has to be restarted -> #61\n- superwerker provides links to how-tos for wiring existing IdPs like Google Workspace, AzureAD, etc. -> #20\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#61",
+     "kind": "hash",
+     "url": "",
+     "number": "61"
+    },
+    {
+     "key": "#20",
+     "kind": "hash",
+     "url": "",
+     "number": "20"
+    }
+   ],
+   "mentioned_paths": [
+    "/control-tower-cloudformation.md",
+    "wa.aws.amazon.com/wat.question.SEC_1.en.html",
+    "awsapilib.readthedocs.io/en/latest/usage.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/living-documentation.md",
+   "identity": "docs/adrs/living-documentation.md",
+   "adr_id": "",
+   "title": "Living Documentation",
+   "first_commit": "2021-01-19T13:23:14+01:00",
+   "first_sha": "ea74ed65b7fa68a5bc7f373565e0f6a606d97242",
+   "last_commit": "2024-04-25T18:04:27+02:00",
+   "author": "Soenke Ruempler",
+   "email": "soenke.ruempler@superluminar.io",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# Living Documentation\n\n## Context\n\nA dashboard with more information and deep-links to resources, e.g. setting up SSO with existing identity providers, GuardDuty/Security Hub dashboards.\n\n## Decision\n\n- Create a CloudWatch Dashboard in the AWS management account. The CW dashboard a) ensures a deep link which can be used to link from the README.md and b) ensures the user is authorized to access the information.\n- Display DNS delegation state and setup instructions\n- Data is fetched when the dashboard is opened or refreshed \n\n## Consequences\n\n- CW Dashboards with lambda invocations once require approval of user\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/control-tower-cloudformation.md",
+   "identity": "docs/adrs/control-tower-cloudformation.md",
+   "adr_id": "",
+   "title": "Rollout of Control Tower Landing Zone via Cloudformation",
+   "first_commit": "2024-01-19T11:53:03+01:00",
+   "first_sha": "9a5ea542bc6fa08019a39d3f334c123030be78de",
+   "last_commit": "2024-02-26T12:50:16+01:00",
+   "author": "peermuellerxw",
+   "email": "43608581+peermuellerxw@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Rollout of Control Tower Landing Zone via Cloudformation\n\n## Context\n\nSince the official release by AWS of the Control Tower [Landing Zone APIs](https://aws.amazon.com/about-aws/whats-new/2023/11/automate-aws-control-tower-zone-operations-apis/) as well as [Cloudformation integration](https://docs.aws.amazon.com/controltower/latest/userguide/lz-apis-cfn-launch.html), we can simplify the rollout of Control Tower and no rely on [awsapilib](https://awsapilib.readthedocs.io/en/latest/usage.html#usage-for-controltower) anymore (also see [Control tower ADR](./control-tower.md)). \n\n## Decision\n\n- We will create Control Tower Landing Zone via Cloudformation\n- All Prerequisites (Accounts, Organisation, IAM resources) will be managed by Cloudformation as well\n\n## Consequences\n\n- Create & Destroy of Landing Zone is handled by Cloudformation allowing us to remove previous workarounds, such as using unoffical APIs \n- We don't need to rely on a event from EventBridge when Control Tower Landing Zone setup is finished. This event was not reliable in the past (only triggered on initial install, not on subsequent installation within an account). Using Cloudformation we can use standard wait condition and dependencies to trigger additional features that rely on completed Landing Zone setup (such as Guardduty or Backup).\n- To update existing superwerker installations (v.0.17.2 and previous), [Cloudformation Import](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resource-import.html) needs to be used. This specifically applies to CfnAccount (LogArchive and Audit Account) and the CfnLandingZone itself. See [Upgrade Instructions](../updates/update_0.17.2.md).\n- This enables a simplified automated testing setup without any wait conditions or pulling of statuses.\n- [Control Tower Updates](https://docs.aws.amazon.com/controltower/latest/userguide/release-notes.html) are enabled by superwerker cloudformation updates",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "docs.aws.amazon.com/controltower/latest/userguide/lz-apis-cfn-launch.html",
+    "awsapilib.readthedocs.io/en/latest/usage.html",
+    "/control-tower.md",
+    "docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resource-import.html",
+    "/updates/update_0.17.2.md",
+    "docs.aws.amazon.com/controltower/latest/userguide/release-notes.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/rootmail.md",
+   "identity": "docs/adrs/rootmail.md",
+   "adr_id": "",
+   "title": "RootMail (_RML_)",
+   "first_commit": "2021-01-04T15:04:12+01:00",
+   "first_sha": "34accfb53164eaa68084aea9be47b27522a03108",
+   "last_commit": "2022-02-12T08:38:59+01:00",
+   "author": "Joern Barthel",
+   "email": "joern.barthel@kreuzwerker.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# RootMail (_RML_)\n\n## Context\n\nEach AWS account needs one unique email address (the so-called \"AWS account root user email address\").\n\nAccess to these email addresses must be adequately secured since they provide privileged access to AWS accounts, such as account deletion procedures.\n\nAntipatterns to such implementation include:\n\n- Using the CTOs private mailbox to handle root mails\n- Using no convention / arbitrary root mails, controlled by various users (sometimes using private mailboxes that are not controlled by the company owning the accounts)\n- Using mailing lists with an uncontrollable number of recipients\n- Using no strong keys as unphishable MFA tokens\n- Using non-existent / invalid / no longer controlled email addresses\n\nThe superwerker secure setup includes the following considerations:\n\n- Mailboxes should enjoy at least the same level of security as the associated AWS account - this makes it easier to leverage existing security controls (such as CloudTrail audit logs or SSO MFA authentication) instead of recreating them for e.g. a third-party email solution\n- Mailboxes should be used exclusively for one purpose - this avoids phishing and spearphishing risks and reduces the chance of missing important mails\n- Mailboxes should not be shared (e.g., not be mailing lists) to identify principals in audit trails\n- Root emails should be generated uniformly to avoid operator error that could result in the address being not controlled\n- Root emails must be collision-free\n\n## Decision\n\n- The RootMail feature is mandatory because:\n  - the ControlTower stack depends upon it, since RootMail provides the two email addresses (audit, log archive) necessary for Control Tower setup.\n  - (future) automations, such as automated AWS account creation for workloads.\n- A subdomain associated Route53 DNS hosted zone is setup (e.g. `aws.mycompany.test`) that contains the necessary configurations of AWS SES for receiving root emails - this style is chosen to make it convenient to delegate from a company domain and to enable continuous integration testing that does not require a new domain for every build\n- This subdomain handles all root emails for all superwerker provisioned member accounts\n- Email address are generated using random aliases (e.g. `root+22c29f9d33ad@aws.mycompany.test`)\n- Emails sent to such aliases automatically create AWS SSM OpsCenter Ops Items\n- Emails are partially classified as e.g. \"Password Reset Requested\" etc.\n- KMS encryption is deferred to a later release of superwerker\n\n### Mail Receiving\n\n- Receiving emails with SES is only available in `eu-west-1`, `us-east-1` and `us-west-2`, so we use `eu-west-1` as the fixed region for receiving emails. If requested, we will add a flexible setting for receiving emails.\n- OpsItems will be created in the superwerker home region regardless of the configured region for receiving emails.\n\n## Consequences\n\n- Users have to control a domain (e.g. `mycompany.test`) and configure their subdomain delegation (e.g. `aws.mycompany.test`) during the superwerker setup phase - the superwerker setup will wait until the delegation is \"live\".\n- All received emails are processed in `eu-west-1`\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/backup.md",
+   "identity": "docs/adrs/backup.md",
+   "adr_id": "",
+   "title": "Backups with AWS Backup",
+   "first_commit": "2021-01-19T11:16:27+01:00",
+   "first_sha": "45381ec71db86e0553d82332c5ed3d5a626a91bf",
+   "last_commit": "2021-05-20T08:18:01+02:00",
+   "author": "Soenke Ruempler",
+   "email": "soenke@ruempler.eu",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Backups with AWS Backup\n\n## Context\n\nA well-architected AWS setup includes backups for non-transient resources like RDS/Aurora, DynamoDB, EBS etc. so superwerker should protect users by enabling backups automatically.\nSince superwerker prefers the usage of native AWS services, AWS Backup is used.\n\n## Decision\n\n- Backups of resources are created daily for 30 days\n- The default AWS Backup vault is used per AWS account\n- For convenience, we auto-create the [Default Service Role for AWS Backup](https://docs.aws.amazon.com/aws-backup/latest/devguide/iam-service-roles.html#default-service-roles)\n- Snapshots are currently not protected via integrity protection SCP, only AWS Backup role should delete snapshots. This is descoped for now. #120\n- Use AWS Organizations backup policies to enable backups across the entire AWS Organization\n- We use service-managed stack sets to roll out the required resources across the AWS Organization.\n- AWS Backup does not currently support backing up all resources of a particular type in an AWS account. Either ARNs or tags have to be specified. Workaround:\n  - Set a resource tag `superwerker:backup` to valid values of `daily` or `none`. Resources with tag set to `daily` are backed up daily defined by the backup policy. AWS Organizations tag policies to enforce `superwerker:backup` is set to valid values.\n  - Since [tag enforcement has no effect on resources that are created without tags](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_tag-policies-enforcement.html), we set up an AWS Config Rule `required-tags` to check if tags have been set on backup-eligible resources; if not set, set tags via AWS Config Rules Remediation\n  - Organizational Config Rules or Conformance Packs can be used to roll out AWS Config rules and/or remediation, but not to roll out the required IAM roles, so:\n    - We use CloudFormation StackSets for rolling out required IAM roles in sub-accounts.\n    - We use AWS Config organizational conformance packs to roll out AWS Config rules and remediation since rolling out AWS Config rules via StackSets would lead to the following race condition: once a new sub-account is enrolled, the stack set would immediately start to roll out AWS Config rules to the new sub-account, but this would fail since the AWS Config recorder would not yet have been created by Control Tower.\n    - Om the other hand, conformance packs wait until the AWS config recorder is created before rolling out AWS Config rules and remediation\n    - Conformance packs provide integrity protection of AWS config rules and remediation configs out of the box.\n    - Trade-offs:\n      - We are aware that conformance packs need an additional S3 bucket, and overall they imitate / reimplement parts of CloudFormation StackSets.\n      - The conformance pack tries to enable Config rules in all sub-accounts. Existing sub-accounts must have an enabled AWS config recorder, at least at superwerker installation time, otherwise the installation would fail.\n    - We don't use AWS Config organizational rules because they don't support rolling out the remediation.\n- No support for cross-region / cross-account backups (though we know the AWS features exist) currently to keep it simple.\n- Since EFS is currently [not supported by AWS Config](https://docs.aws.amazon.com/config/latest/developerguide/resource-config-reference.html), it's currently not automatically tagged and thus not automatically backed up\n- Since AWS Config Rule with compliance resource type `AWS::RDS::DBCluster` and source identifier `REQUIRED_TAGS` [are currently not supported](https://docs.aws.amazon.com/config/latest/developerguide/required-tags.html), RDS Clusters are currently not automatically tagged and thus not automatically backed up.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#120",
+     "kind": "hash",
+     "url": "",
+     "number": "120"
+    }
+   ],
+   "mentioned_paths": [
+    "docs.aws.amazon.com/aws-backup/latest/devguide/iam-service-roles.html",
+    "docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_tag-policies-enforcement.html",
+    "docs.aws.amazon.com/config/latest/developerguide/resource-config-reference.html",
+    "docs.aws.amazon.com/config/latest/developerguide/required-tags.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/notifications.md",
+   "identity": "docs/adrs/notifications.md",
+   "adr_id": "",
+   "title": "Notifications",
+   "first_commit": "2021-03-10T13:46:36+01:00",
+   "first_sha": "a510a0860048480c11bff4543efe3143855c5db9",
+   "last_commit": "2021-03-18T16:48:41+01:00",
+   "author": "sbstjn",
+   "email": "mail@sbstjn.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# Notifications\n\n## Context\n\nsuperwerker creates an OpsItem in Systems Manager OpsCenter for each email received by the [RootMail](rootmail.md) feature. Without notifications for new OpsItems, users need to check the OpsCenter for new items manually and might miss important information regarding their AWS accounts and resources.\n\n## Decision\n\n- Use CloudWatch Events to trigger an AWS Lambda function whenever a new OpsItem is created.\n    - OpsCenter / OpsItem supports SNS notifications, but the desired SNS topic Arn needs to be provided explicitly whenever an OpsItem is created. Therefore, we decided against this native feature.\n- Publish a message to an SNS topic for every new OpsItem.\n - Use SNS, since subscriptions and email verification work out-of-the-box with CloudFormation tooling.\n - Use native email subscriptions for SNS to notify a specified email address about new messages.\n - We decided against using SES for email notifications since this would lead to several additional steps like verifying sender and recipient domains or email addresses.\n- We decided against (re-)using the existing root email address of the management AWS account since we would need to keep this in sync with the SNS subscription (because the management account root email adress can be changed). And we wanted to keep the notification feature simple.\n- If no email address is provided, no SNS topic is created.\n\n## Consequences\n\n- Users can provide an email address for notifications when creating the superwerker CloudFormation stack.\n- Users need to verify the SNS subscription for the provided email address.\n- Users will receive an email about every new OpsItem in OpsCenter.\n- Users need to take care of handling OpsItems (e.g., close them).\n- SNS email subscriptions do not allow the full range of email capabilities/customizations (which SES would).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/guardduty.md",
+   "identity": "docs/adrs/nnnn-guardduty.md",
+   "adr_id": "",
+   "title": "GuardDuty (GD) for threat detection",
+   "first_commit": "2020-10-09T13:29:04+02:00",
+   "first_sha": "15c27dd9034f720a139e5c73cc6d2ca6ebb01d38",
+   "last_commit": "2021-01-07T11:42:52+01:00",
+   "author": "Soenke Ruempler",
+   "email": "soenke.ruempler@superluminar.io",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# GuardDuty (GD) for threat detection\n\n## Context\n\nsuperwerker provides a secure baseline and configures security related services by default.\n\nSince GuardDuty (GD) is a native AWS service to find possible security threats and breaches, superwerker enables it for all AWS accounts.\n\n## Decision\n\n- Use delegated administrator feature\n- Delegate Administrator into Control Tower `Audit` account, since Control Tower also delegates AWS Config Rules Compliance findings into the Audit Account\n- Enable GD for existing Control Tower core accounts (Management, Audit, Log Archive) and all future member accounts\n- Use Control Tower `Setup/UpdateLandingZone` Lifecycle events to start the setup of Delegated Administrator\n- Enable [S3 data protection](https://aws.amazon.com/blogs/aws/new-using-amazon-guardduty-to-protect-your-s3-buckets/) by default\n\n## Consequences\n\n- For an aggregated view, superwerker users have to log into the Audit Account.\n- Findings are aggregated in Security Hub\n- Enrolled AWS accounts cannot leave or disable GD (feature of Delegated Administeator)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "Setup/UpdateLandingZone"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/securityhub.md",
+   "identity": "docs/adrs/securityhub.md",
+   "adr_id": "",
+   "title": "AWS Security Hub (SH) for central security alert management, checks and mitigation",
+   "first_commit": "2021-01-05T11:54:45+01:00",
+   "first_sha": "921d59d6e240ac9c187c78f198766bb055a80575",
+   "last_commit": "2021-01-05T11:54:45+01:00",
+   "author": "Joern Barthel",
+   "email": "joern.barthel@kreuzwerker.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# AWS Security Hub (SH) for central security alert management, checks and mitigation\n\n## Context\n\nSince Security Hub is a native AWS service for central security alert management, checks and mitigation, superwerker enables it for all AWS accounts.\n\n## Decision\n\n- Enable SH for existing Control Tower core accounts (master, Audit, Log Archive) and all future member accounts\n- Use Control Tower `Setup/UpdateLandingZone` Lifecycle events to start the invite setup for SH\n- The delegated administrator feature is currently not supported by Lambda and/or SSM Automation runtimes - since upgrading the current mechanism to this feature as soon as it's available is officially supported we're postponing this (#70); this subsequently requires us to implement integrity protection\n- SH out-of-the-box complains about a lot of security check issues - this has been scoped out from 1.0 (#99)\n\n## Consequences\n\n- For an aggregated view, superwerker users have to log into the Audit Account.\n- Enrolled AWS accounts cannot leave or disable SH (feature of our integrity protection)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#70",
+     "kind": "hash",
+     "url": "",
+     "number": "70"
+    },
+    {
+     "key": "#99",
+     "kind": "hash",
+     "url": "",
+     "number": "99"
+    }
+   ],
+   "mentioned_paths": [
+    "Setup/UpdateLandingZone"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/budget.md",
+   "identity": "docs/adrs/budget.md",
+   "adr_id": "",
+   "title": "Budget - Report and Alerting (_BRA_)",
+   "first_commit": "2021-01-04T12:10:13+01:00",
+   "first_sha": "58d34063d6691304e7c5cb598e43401db044590b",
+   "last_commit": "2021-01-04T12:10:13+01:00",
+   "author": "Joern Barthel",
+   "email": "joern.barthel@kreuzwerker.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "\n# Budget - Report and Alerting (_BRA_)\n\n## Context\n\nIn it's current form, superwerker provides a rudimentary budget reporting and alerting that leverages a dynamic forecast of existing usage patterns. Currently Cost and Usage (_CUR_) reports do not provide a basic \"what am I spending currently and how does the spend develop\" report which superwerker aims to substitute with this feature.\n\n## Decision\n\n - BRA starts with an initial budget of 100 USD\n - At the beginning of every month, this budget is replaced by a rolling average of the last three months\n - A CUR budget alert is created using 100% of the forecasted rolling average budget - this implements a basic warning of \"we spend more than usual (= the rolling average of the last three months)\"\n - We are currently not implementing overrides / parameterization for this feature - we need to test initially if the logic of this feature is sufficient before adding more features\n - We are ignoring credits in the BRA in order to reflect the actual usage, not the actual spend - in situations where customers are burning credits we nevertheless want to create an awareness of cost baselines as soon as possible\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/adrs/nnnn-aws-control-tower.md",
+   "identity": "docs/adrs/0002-aws-control-tower.md",
+   "commit": "da25e1da0f1e72a8492d685d745e3ddbf7dee3f1",
+   "date": "2020-10-08T14:57:57+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename 0002-aws-control-tower.md to nnnn-aws-control-tower.md",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Soenke Ruempler",
+   "email": "soenke.ruempler@superluminar.io"
+  },
+  {
+   "path": "docs/adrs/control-tower.md",
+   "identity": "docs/adrs/0002-aws-control-tower.md",
+   "commit": "051504f89ed7a7b8608a43532ba4f0fa8435bdf3",
+   "date": "2021-01-04T15:38:18+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "chore: rename filename for Control Tower ADR",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "sbstjn",
+   "email": "mail@sbstjn.com"
+  },
+  {
+   "path": "docs/adrs/guardduty.md",
+   "identity": "docs/adrs/nnnn-guardduty.md",
+   "commit": "cf0982c21af60ab798b1b2b1c5ec665e4a7f6642",
+   "date": "2021-01-04T15:40:55+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "chore: rename filename for GuardDuty ADR",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "sbstjn",
+   "email": "mail@sbstjn.com"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 9,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "sourcegraph:docs_adrs;buchgeher-2022",
+ "stars": "552",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "8"
+}

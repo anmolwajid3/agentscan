@@ -1,0 +1,527 @@
+{
+ "repo": "ministryofjustice/cloud-platform",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2018-03-23T16:47:17+00:00",
+ "last_commit": "2026-11-05T15:40:49+00:00",
+ "n_commits": 3431,
+ "n_authors": 94,
+ "n_files": 300,
+ "n_code_files": 5,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 6,
+ "adrs": [
+  {
+   "path": "architecture-decision-record/cp30/ADR-017-logging-and-log-management.md",
+   "identity": "architecture-decision-record/cp30/ADR-017-logging-and-log-management.md",
+   "adr_id": "17",
+   "title": "ADR-017: Logging and Log Management Architecture",
+   "first_commit": "2026-09-15T17:46:39+01:00",
+   "first_sha": "5f67a31593fb80dd0e48778f9a2704620068e7b8",
+   "last_commit": "2026-10-23T09:37:57+01:00",
+   "author": "nguforw-moj",
+   "email": "nguforw+moj@amazon.co.uk",
+   "status": "proposed",
+   "status_raw": "** Proposed \u2014 Phase 1 PoC validation required. The OpenSearch deployment model (the",
+   "replacement": null,
+   "n_commits": 7,
+   "text": "# ADR-017: Logging and Log Management Architecture\n\n**Status:** Proposed \u2014 Phase 1 PoC validation required. The OpenSearch deployment model (the\n\"OpenSearch \u2014 Full-Text Log Search\" section) is Accepted and in build (#8420), conditional on\nsecurity sign-off on logical isolation.\n**Date:** 2026-07-22 (OpenSearch deployment model merged in October)\n**Decision Maker:** AWS ProServe / MoJ Principal Technical Architect\n**Category:** Observability\n\nThis ADR now also covers the OpenSearch deployment model, previously a separate doc also numbered\n017; the two were merged into one.\n\n---\n\n## Context\n\n**Problem Statement:** The current Cloud Platform logging architecture relies on Fluent Bit shipping application logs to a self-managed OpenSearch cluster (~$54k/month) that serves as both full-text search and a \"log dump.\" Additionally, logs are forwarded to Palo Alto Cortex XSIAM for SOC security monitoring via S3 \u2192 SQS and CloudWatch \u2192 Firehose patterns. The new multi-cluster, multi-account platform (CP3) requires a logging architecture that:\n\n- Supports multiple log consumers (operations, search, security/SOC) without duplicating log data unnecessarily\n- Reduces the current $54k/month OpenSearch cost through right-sizing, tiered storage, and lifecycle management\n- Provides structured logging standards to improve queryability\n- Maintains the existing Cortex XSIAM integration for SOC\n- Scales across 22 clusters and 8-9 BUs with namespace-scoped access control\n- Operates within UK data residency requirements (eu-west-2)\n\n**Requirements:** FR-204 (log aggregation and full-text search), FR-206 (observability guardrails \u2014 log volume), FR-207 (platform component observability), FR-208 (structured logging standards), NFR-004 (UK data residency), NFR-101 (managed services), NFR-106 (cost impact analysis)\n\n**Constraints:**\n- UK data residency required \u2014 all log storage in eu-west-2 (NFR-004)\n- No Lambda (NFR-003)\n- SOC integration via Palo Alto Cortex XSIAM must be preserved (existing pattern)\n- EKS Auto Mode \u2014 platform-managed components emit logs via CloudWatch Vended Logs\n- Current costs: OpenSearch ~$54k/month, self-managed Grafana ~\u00a37k/month\n- 20 May meeting: full-text search is important, cannot dispense with OpenSearch; avoid moving logs across accounts for ingestion (cost concern)\n- 07 May meeting: logs should go to a central store first, then optionally to per-BU search\n\n---\n\n## Decision\n\n**A multi-destination Fluent Bit pipeline with S3 as the durable log archive, CloudWatch Logs for operational querying, and OpenSearch for full-text search.** SOC forwarding to Cortex XSIAM is maintained via the existing S3 \u2192 SQS pull pattern.\n\nThe architecture separates log concerns by consumer:\n\n| Consumer | Purpose | Destination | Retention |\n|----------|---------|-------------|-----------|\n| Operations (platform team) | Real-time troubleshooting, recent log tailing | CloudWatch Logs | 30 days (configurable) |\n| Full-text search (all engineers) | Historical investigation, pattern discovery | OpenSearch | Hot: 14 days, Warm: 90 days |\n| Security/SOC | Threat detection, incident response | Cortex XSIAM (via S3 \u2192 SQS) | Per SOC policy |\n| Archive/compliance | Long-term retention, audit | S3 (lifecycle to Glacier) | 1 year+ (per policy) |\n\n### Pipeline Architecture\n\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502  EKS Cluster (per BU account)                                       \u2502\n\u2502                                                                     \u2502\n\u2502  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510    \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510  \u2502\n\u2502  \u2502 App Pods \u2502\u2500\u2500\u2500\u25b6\u2502 Fluent Bit DaemonSet                          \u2502  \u2502\n\u2502  \u2502 (stdout) \u2502    \u2502                                               \u2502  \u2502\n\u2502  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518    \u2502  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510   \u2502  \u2502\n\u2502                  \u2502  \u2502Output: \u2502  \u2502Output:  \u2502  \u2502Output:    \u2502   \u2502  \u2502\n\u2502  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510    \u2502  \u2502   S3    \u2502  \u2502CloudWatch\u2502  \u2502OpenSearch \u2502   \u2502  \u2502\n\u2502  \u2502 Platform \u2502\u2500\u2500\u2500\u25b6\u2502  \u2502(primary)\u2502  \u2502  Logs    \u2502  \u2502(optional) \u2502   \u2502  \u2502\n\u2502  \u2502Components\u2502    \u2502  \u2514\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2518  \u2514\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2518  \u2514\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2518   \u2502  \u2502\n\u2502  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518    \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518  \u2502\n\u2502                          \u2502            \u2502               \u2502             \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n                           \u2502            \u2502               \u2502\n                           \u25bc            \u25bc               \u25bc\n                    \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510 \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n                    \u2502  S3 Bucket \u2502 \u2502CloudWatch\u2502  \u2502 OpenSearch  \u2502\n                    \u2502 (per-BU)   \u2502 \u2502  Logs    \u2502  \u2502  Service   \u2502\n                    \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2518 \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n                           \u2502\n                    \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n                    \u2502 SQS Queue   \u2502\n                    \u2502(S3 events)  \u2502\n                    \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n                           \u2502\n                           \u25bc\n                    \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510       \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n                    \u2502Cortex XSIAM \u2502       \u2502 S3 Lifecycle     \u2502\n                    \u2502  (SOC)      \u2502       \u2502 \u2192 Glacier (1yr+) \u2502\n                    \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518       \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n\n\nEKS Control Plane Logs:\n    EKS \u2500\u2500\u25b6 CloudWatch Logs \u2500\u2500\u25b6 Firehose \u2500\u2500\u25b6 Cortex XSIAM\n\nEKS Auto Mode Component Logs (Karpenter, EBS CSI, LB Controller, VPC CNI):\n    CloudWatch Vended Logs \u2500\u2500\u25b6 CloudWatch Logs (+ optional S3 delivery)\n```\n\n### Log Classification\n\n| Log Type | Sources | Destinations | Access |\n|----------|---------|--------------|--------|\n| Application logs | Pod stdout/stderr | S3, CloudWatch, OpenSearch | App team (own namespace) |\n| Platform component logs | Argo CD, Gatekeeper, Gateway API, cert-manager, ExternalDNS | S3, CloudWatch, OpenSearch | Platform team |\n| EKS control plane logs | API server, audit, authenticator, controller manager, scheduler | CloudWatch \u2192 Firehose \u2192 Cortex XSIAM | Platform team + SOC |\n| EKS Auto Mode component logs | Karpenter, EBS CSI, LB controller, VPC CNI IPAM | CloudWatch (Vended Logs) | Platform team |\n| Kubernetes audit logs | API server audit | CloudWatch \u2192 Firehose \u2192 Cortex XSIAM | Platform team + SOC |\n| VPC Flow Logs | VPC ENIs | S3 \u2192 SQS \u2192 Cortex XSIAM | Platform team + SOC |\n| CloudTrail logs | AWS API calls | S3 \u2192 SQS \u2192 Cortex XSIAM | Platform team + SOC |\n| DNS query logs | Route 53 Resolver | S3 \u2192 SQS \u2192 Cortex XSIAM | Platform team + SOC |\n\n---\n\n## Options Evaluated\n\n### Option A: Fluent Bit Multi-Output (S3 + CloudWatch + OpenSearch) \u2014 SELECTED\n\nFluent Bit ships logs directly to multiple destinations from its output plugins. S3 is the primary durable store (cheapest per-GB, feeds SOC via existing pattern). CloudWatch provides real-time operational queries. OpenSearch provides full-text search.\n\n**Pros:**\n- Single collection agent handles all routing \u2014 no intermediate hops for application logs\n- S3 as primary archive is the cheapest durable storage (~$0.023/GB/month standard, ~$0.004/GB Glacier)\n- Preserves existing Cortex XSIAM pattern (S3 \u2192 SQS) with no architectural change\n- Fluent Bit back-pressure and retry per output \u2014 failure in one destination doesn't block others\n- No cross-account log transfer for the primary archive (S3 in same account as cluster)\n- CloudWatch retention kept short (30 days) to control cost \u2014 long-term in S3\n- OpenSearch output can be optional per cluster (non-live clusters may not need it)\n\n**Cons:**\n- Fluent Bit manages three output plugins \u2014 more configuration complexity per cluster\n- Fluent Bit S3 plugin buffers to local disk \u2014 requires adequate node storage\n- If Fluent Bit pod restarts, buffered-but-undelivered logs may be lost (mitigated by filesystem buffer on host path)\n\n### Option B: Fluent Bit \u2192 CloudWatch Only \u2192 Subscription Filters to Downstream\n\nAll logs go to CloudWatch Logs first, then subscription filters route to S3 (archive), OpenSearch (search), and Firehose (SOC).\n\n**Pros:**\n- Single output from Fluent Bit (simpler agent config)\n- CloudWatch handles durability and fan-out\n- Native CloudWatch features (Logs Insights, metric filters, alarms) available immediately\n\n**Cons:**\n- CloudWatch ingestion cost: $0.50/GB (eu-west-2) \u2014 at scale this dominates cost\n- Subscription filter limitation: max 2 subscription filters per log group \u2014 constrains fan-out\n- CloudWatch \u2192 Firehose \u2192 OpenSearch is not supported (documented AWS limitation)\n- Subscription filter to OpenSearch requires Lambda (violates NFR-003) or direct subscription (complex cross-account)\n- All logs pass through CloudWatch before reaching archive \u2014 adds latency and cost for the SOC/archive path\n- Cross-account subscription filters add IAM complexity\n\n### Option C: Fluent Bit \u2192 Firehose \u2192 S3/OpenSearch\n\nFluent Bit ships to Amazon Data Firehose, which handles buffering and delivery to S3 and OpenSearch.\n\n**Pros:**\n- Firehose provides managed buffering and retry (more reliable than Fluent Bit S3 plugin alone)\n- Single Firehose stream can deliver to both S3 and OpenSearch simultaneously\n- Firehose handles format transformation (e.g., converting to Parquet for S3)\n\n**Cons:**\n- Firehose cost: $0.029/GB ingestion + S3 storage \u2014 more expensive than direct S3 writes\n- Firehose adds latency (60-second minimum buffer interval for S3, configurable)\n- Per-stream throughput limits (quota management at scale)\n- Requires Firehose delivery stream per cluster or per log group \u2014 operational overhead at 22 clusters\n- Less flexible filtering \u2014 Fluent Bit's native filtering is richer than Firehose transformation\n\n### Option D: Fluent Bit \u2192 S3 Only (with Athena for Search)\n\nAll logs go to S3 in a queryable format (Parquet/JSON). Use Athena or S3 Select for ad-hoc queries instead of OpenSearch.\n\n**Pros:**\n- Cheapest possible architecture \u2014 S3 storage only\n- No OpenSearch operational cost ($54k/month saving)\n- Athena queries are pay-per-query \u2014 no idle infrastructure cost\n\n**Cons:**\n- Athena query latency (seconds to minutes) \u2014 not suitable for real-time troubleshooting\n- No live tail or streaming log view\n- Engineers lose the familiar OpenSearch Dashboards/Kibana UX for log exploration\n- 20 May meeting explicitly confirmed \"full-text search is important, cannot dispense with OpenSearch\"\n- Poor experience for incident response where speed matters\n\n---\n\n## Selected Approach: Option A with Refinements\n\nOption A is selected as the baseline architecture. Key refinements:\n\n1. **S3 as the durable primary** \u2014 All logs land in S3 regardless of other destinations. This is the cheapest store, feeds the SOC, and provides the compliance archive.\n2. **CloudWatch for operational use** \u2014 Short retention (30 days default), used for real-time tailing and Logs Insights queries during active troubleshooting.\n3. **OpenSearch for full-text search** \u2014 Provides the rich search experience engineers need for historical investigation. Receives logs via Fluent Bit direct output (not via CloudWatch subscription filters, avoiding the Lambda/cost issue).\n4. **SOC forwarding unchanged** \u2014 S3 bucket notifications \u2192 SQS \u2192 Cortex XSIAM pulls. Same pattern as today. EKS control plane logs continue via CloudWatch \u2192 Firehose \u2192 Cortex XSIAM.\n\n### PoC Evaluation Items\n\nThe following must be validated during Phase 1 PoC:\n\n| Item | Question | How to Measure |\n|------|----------|----------------|\n| Fluent Bit S3 reliability | Does the S3 output plugin handle back-pressure and node restarts without log loss? | Deploy on PoC cluster, simulate high-volume logging, kill Fluent Bit pods, verify no gaps in S3 |\n| CloudWatch cost at scale | What is the projected CloudWatch ingestion cost for 22 clusters? | Measure log volume on PoC cluster, extrapolate |\n| OpenSearch sizing | Can a right-sized OpenSearch domain serve full-text search at projected volume for <$20k/month? | Deploy OpenSearch, ingest PoC logs, measure query performance and cost |\n| OpenSearch account placement | Centralised (one cluster) vs per-BU (multiple clusters) \u2014 which model works? | See evaluation criteria below |\n| Fluent Bit parsing | Do the parsers handle",
+   "truncated_text": true,
+   "discussion_refs": [
+    {
+     "key": "#8420",
+     "kind": "hash",
+     "url": "",
+     "number": "8420"
+    },
+    {
+     "key": "#8430",
+     "kind": "hash",
+     "url": "",
+     "number": "8430"
+    },
+    {
+     "key": "#8592",
+     "kind": "hash",
+     "url": "",
+     "number": "8592"
+    },
+    {
+     "key": "#49240",
+     "kind": "hash",
+     "url": "",
+     "number": "49240"
+    },
+    {
+     "key": "hashicorp/terraform-provider-aws#49240",
+     "kind": "issue",
+     "url": "https://github.com/hashicorp/terraform-provider-aws/issues/49240",
+     "number": "49240"
+    },
+    {
+     "key": "#19947",
+     "kind": "hash",
+     "url": "",
+     "number": "19947"
+    },
+    {
+     "key": "#8623",
+     "kind": "hash",
+     "url": "",
+     "number": "8623"
+    },
+    {
+     "key": "#8419",
+     "kind": "hash",
+     "url": "",
+     "number": "8419"
+    },
+    {
+     "key": "#8585",
+     "kind": "hash",
+     "url": "",
+     "number": "8585"
+    },
+    {
+     "key": "#8501",
+     "kind": "hash",
+     "url": "",
+     "number": "8501"
+    },
+    {
+     "key": "ministryofjustice/cloud-platform#8415",
+     "kind": "issue",
+     "url": "https://github.com/ministryofjustice/cloud-platform/issues/8415",
+     "number": "8415"
+    },
+    {
+     "key": "ministryofjustice/cloud-platform#8419",
+     "kind": "issue",
+     "url": "https://github.com/ministryofjustice/cloud-platform/issues/8419",
+     "number": "8419"
+    },
+    {
+     "key": "ministryofjustice/cloud-platform#8420",
+     "kind": "issue",
+     "url": "https://github.com/ministryofjustice/cloud-platform/issues/8420",
+     "number": "8420"
+    },
+    {
+     "key": "ministryofjustice/cloud-platform#8421",
+     "kind": "issue",
+     "url": "https://github.com/ministryofjustice/cloud-platform/issues/8421",
+     "number": "8421"
+    },
+    {
+     "key": "ministryofjustice/cloud-platform#8422",
+     "kind": "issue",
+     "url": "https://github.com/ministryofjustice/cloud-platform/issues/8422",
+     "number": "8422"
+    },
+    {
+     "key": "ministryofjustice/cloud-platform#8430",
+     "kind": "issue",
+     "url": "https://github.com/ministryofjustice/cloud-platform/issues/8430",
+     "number": "8430"
+    },
+    {
+     "key": "ministryofjustice/cloud-platform#8501",
+     "kind": "issue",
+     "url": "https://github.com/ministryofjustice/cloud-platform/issues/8501",
+     "number": "8501"
+    }
+   ],
+   "mentioned_paths": [
+    "runbooks.cloud-platform.service.justice.gov.uk/logs-to-soc-cortex-xsiam.html",
+    "cluster:admin/opendistro/reports/*",
+    "cluster:admin/opensearch/ql/*",
+    "indices:data/read/point_in_time/*",
+    "cluster:admin/opendistro/alerting/*",
+    "cluster:admin/opendistro/ad/*",
+    "cluster:admin/opendistro/asynchronous_search/*",
+    "indices:data/write/*",
+    "cluster:admin/settings/update",
+    "restapi:admin/*",
+    "opensearch.tf",
+    "amg.tf",
+    "arn:aws:iam::aws:contextProvider/IdentityCenter",
+    "docs.aws.amazon.com/opensearch-service/latest/developerguide/application-getting-started.html",
+    "docs.aws.amazon.com/opensearch-service/latest/developerguide/configure-client-fluentbit.html",
+    "logs/<cluster>/",
+    "opensearch-ingestion.tf",
+    "logs/",
+    "docs.aws.amazon.com/opensearch-service/latest/developerguide/configure-client-s3.html",
+    "docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html",
+    "docs.aws.amazon.com/AmazonS3/latest/userguide/EventBridge.html",
+    "docs.aws.amazon.com/opensearch-service/latest/developerguide/osis-best-practices.html",
+    "/platform/{cluster}/{component}",
+    "ministryofjustice/cloud-platform",
+    "docs.aws.amazon.com/eks/latest/userguide/auto-managed-component-logs.html",
+    "docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html",
+    "docs.aws.amazon.com/AmazonECS/latest/developerguide/firelens-docker-buffer-limit.html",
+    "docs.aws.amazon.com/opensearch-service/latest/developerguide/ultrawarm.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "architecture-decision-record/cp30/ADR-017-opensearch-deployment-model.md",
+   "identity": "architecture-decision-record/cp30/ADR-017-opensearch-deployment-model.md",
+   "adr_id": "17",
+   "title": "ADR-017: OpenSearch Deployment Model",
+   "first_commit": "2026-09-30T09:56:20+01:00",
+   "first_sha": "d0eb04b2f8baf2cf678dae2f38838c493a53e584",
+   "last_commit": "2026-10-19T17:56:37+01:00",
+   "author": "masrafp-moj",
+   "email": "masrafp+moj@amazon.co.uk",
+   "status": "accepted",
+   "status_raw": "** Accepted (Oct) \u2014 **single shared OpenSearch cluster** with per-business-unit indexes and logical isolation. Conditional on security sign-off (see \"Security review strategy\"). Reverses an earlier per-business-unit decision, which is kept below as a considered alternative and a possible future opti",
+   "replacement": null,
+   "n_commits": 9,
+   "text": "# ADR-017: OpenSearch Deployment Model\n\n**Status:** Accepted (Oct) \u2014 **single shared OpenSearch cluster** with per-business-unit indexes and logical isolation. Conditional on security sign-off (see \"Security review strategy\"). Reverses an earlier per-business-unit decision, which is kept below as a considered alternative and a possible future option. Build in progress (#8420).\n**Parent:** [ADR-017: Logging and Log Management Architecture](ADR-017-logging-and-log-management.md)\n**Related ticket:** [cloud-platform#8420](https://github.com/ministryofjustice/cloud-platform/issues/8420) (child of #8415)\n**Category:** Observability / Logging\n**Owner:** Cloud Platform team. Produced during the AWS ProServe CP3 engagement; maintained by\nthe platform team thereafter.\n\n---\n\n## Purpose\n\nADR-017 picks OpenSearch for full-text log search. This page records how it is deployed: the\nmodel chosen, why, the alternatives considered, the trade-offs (including CloudWatch and tracing),\nand what is still open. It is a **living document** \u2014 updated as the build progresses.\n\nThe decisions it covers:\n\n1. **Service model** \u2014 provisioned (managed) OpenSearch. Serverless was considered and dropped.\n2. **Placement** \u2014 a single shared cluster, with each business unit's logs in its own index.\n3. **Cost** \u2014 compared across models, and against today's ~$54k/month.\n4. **Build-out** \u2014 public endpoint for now (private once VPN exists), audit logging on, per-index\n   retention, logical isolation via fine-grained access control.\n\nOut of scope: the Cortex XSIAM / SOC forwarding path (a separate concern on the S3 side), and\nthe tracing decision itself (ADR-005 \u2014 noted here only where it touches the logging choice).\n\n---\n\n## Decision\n\n**A single shared OpenSearch cluster, with each business unit separated by in-cluster controls \u2014\nnot one cluster per business unit.**\n\nEach business unit's logs go into **its own index** (today they share a single index, so every\nuser can see every other team's logs). Business units are kept apart by **logical isolation** \u2014\nfine-grained access control with index-level permissions, document- and field-level security \u2014\nrather than by a physical account boundary. Full managed OpenSearch; Serverless is not used (D2).\n\n### Why shared\n\n- **Over-provisioning, not the model, is the biggest cost.** The current cluster has ~211 TB of\n  hot disk provisioned but only ~22% used. That is a sizing problem fixed by right-sizing, and it\n  is independent of how many clusters there are.\n- **Every cluster carries a standing cost** for its own master nodes, regardless of use. Per-BU\n  clusters multiply that across many small clusters; a shared cluster retires most of it.\n- **Noisy neighbour is manageable inside a shared cluster** \u2014 per-index isolation, search\n  backpressure, per-request resource limits, and dedicated node pools for heavy tenants. This was\n  the main thing that had pointed to per-BU.\n- **Per-BU retention does not need separate clusters** \u2014 per-index lifecycle (ISM) policies handle\n  differing retention within one cluster.\n- **Physical isolation is not a hard requirement.** Logical isolation is accepted, consistent with\n  the approach already agreed for Grafana.\n- **Shared now keeps the option open** to split per-BU later; the reverse migration would be very\n  hard.\n\n> **Conditional on security sign-off.** The shared model depends on the security function\n> accepting logical isolation in place of a physical account boundary. That has not yet been\n> confirmed \u2014 see \"Security review strategy\". If security mandates physical separation for a data\n> classification, that subset reverts to per-BU (Option B, below).\n\n---\n\n## Alternatives considered\n\nThree placement models were worked through in detail. They are kept here so the analysis is not\nlost, and because **Option B (per-BU) remains the documented fallback** if security requires\nphysical separation.\n\n| Option | What it is | Isolation | Ops effort | Main trade-off |\n|---|---|---|---|---|\n| **A \u2014 Shared cluster, per-BU index (CHOSEN)** | One cluster for everyone; each BU's logs in its own index, visible only to that BU. One filing cabinet, a locked drawer per team. | Logical (index-level roles) | Lowest \u2014 one cluster | Noisy neighbour \u2014 mitigated by in-cluster controls |\n| **B \u2014 Cluster per BU, in BU accounts** | Each BU its own cluster in its own AWS account. Fully separate. | Physical (account boundary) | Highest \u2014 8\u20139 clusters across accounts | Most to run; standing master-node cost per cluster |\n| **C \u2014 Cluster per BU, one account** | Each BU its own cluster, all in one shared account. | Physical (cluster boundary) | High \u2014 8\u20139 clusters | Middle ground |\n\n**Why A (shared) was chosen over B and C.** A was originally ruled out on noisy-neighbour grounds\nfrom lived experience. The reconsideration \u2014 once the cost breakdown landed \u2014 is that the\nnoisy-neighbour risk is **addressable with in-cluster controls** (per-index isolation,\nbackpressure, resource limits, dedicated node pools). With that risk handled, A's advantages\ndominate: lowest standing cost (no per-cluster master nodes multiplied across BUs), and the saving\nis really in right-sizing, which A does not block. B and C both remove noisy neighbour but at the\ncost of 8\u20139 clusters, each with its own master-node standing charge.\n\n**Why Option B is kept as a future option.** B gives the strongest isolation \u2014 a physical account\nboundary \u2014 and fits the \"BU resources in BU accounts\" principle. If security mandates physical\nseparation (for all log data, or a specific classification), B is the fallback, in whole or for\nthat subset. Moving shared \u2192 per-BU later is feasible; the reverse is not, which is why starting\nshared is the lower-risk order.\n\n### Diagrams\n\n**Option A \u2014 one shared cluster, per-BU indexes (chosen)**\n\n```mermaid\nflowchart TB\n  subgraph BUA[\"BU-A cluster (EKS + Fluent Bit)\"]\n    FBA[\"Fluent Bit\"]\n  end\n  subgraph BUB[\"BU-B cluster (EKS + Fluent Bit)\"]\n    FBB[\"Fluent Bit\"]\n  end\n  subgraph OBS[\"Shared OpenSearch (platform account)\"]\n    OS[\"OpenSearch domain<br/>index: bu-a-*, bu-b-*, ...\"]\n    DASH[\"OpenSearch Dashboards<br/>(Identity Center SSO)\"]\n  end\n  FBA -- \"write bu-a-*\" --> OS\n  FBB -- \"write bu-b-*\" --> OS\n  OS --> DASH\n  DASH -. \"BU-A sees bu-a-* only<br/>BU-B sees bu-b-* only<br/>(index-level roles)\" .-> OS\n```\n\nEvery BU's Fluent Bit writes into one shared cluster, each to its own index. Index-level roles\nmean a BU sees only its own logs. One cluster to run; isolation is logical.\n\n| Pros | Cons |\n|---|---|\n| Lowest standing cost \u2014 one cluster, one set of master nodes | Noisy neighbour (mitigated by in-cluster controls) |\n| Least to manage and patch | Isolation is logical, not physical |\n| Matches how we do Grafana today | One cluster down = everyone down |\n| Single place to search | Needs careful FGAC + per-index design |\n\n**Option B \u2014 one cluster per BU, in each BU's account (fallback)**\n\n```mermaid\nflowchart TB\n  subgraph BUA[\"BU-A account\"]\n    FBA[\"Fluent Bit\"] --> OSA[\"OpenSearch domain (BU-A)\"]\n    OSA --> DA[\"Dashboards (BU-A SSO)\"]\n  end\n  subgraph BUB[\"BU-B account\"]\n    FBB[\"Fluent Bit\"] --> OSB[\"OpenSearch domain (BU-B)\"]\n    OSB --> DB[\"Dashboards (BU-B SSO)\"]\n  end\n  PE[\"Platform engineers<br/>(assume-role into each account)\"]\n  PE -. admin .-> OSA\n  PE -. admin .-> OSB\n```\n\nEach BU its own cluster in its own account. Strongest isolation, no noisy neighbour \u2014 but 8\u20139\nclusters to run, each carrying its own master-node standing cost, and the platform team must\nassume-role into each account.\n\n**Option C \u2014 one cluster per BU, all in one account**\n\nSame as B but all clusters in one account: no cross-account hop for the platform team, but weaker\nisolation (cluster boundary only) and it doesn't fit \"BU resources in BU accounts\". Same cluster\ncount and standing cost as B.\n\n### Cost analysis behind the choice\n\nA per-cluster cost breakdown of the whole OpenSearch estate (49 clusters), snapshot taken\n**5 October 2026**, measured the platform-vs-user split. Point-in-time view of the clusters as\nconfigured on that date, not a specific billing month.\n\n| | $/month | Share |\n|---|---|---|\n| **Platform logging clusters** (what this work replaces) | ~$71,800 | **70%** |\n| **User-deployed clusters** (teams' own search clusters) | ~$31,000 | 30% |\n| **Whole OpenSearch estate** | ~$102,800 | 100% |\n\nThe platform logging clusters are ~70% of all OpenSearch spend \u2014 four clusters: `cp-live-app-logs`\n(~$59,400), the older Elasticsearch logging cluster (~$8,300), `cp-live-2-app-logs` (~$2,200),\n`cp-live-modsec-audit` (~$2,000).\n\n**Over-provisioning is the key signal.** `cp-live-app-logs` has **~211 TB of hot (gp3) disk\nprovisioned but only ~47 TB used \u2014 about 22%** (18 data nodes \u00d7 a fixed 12 TB volume). The root\ncause is known: during an incident the tiering stopped moving logs from hot to warm, the hot disk\nwas scaled up fast to stop it filling (3 TB \u2192 4 \u2192 8 \u2192 12 TB per node in a month), the tiering was\nfixed, but the disk was **never scaled back down**. It is leftover emergency headroom, not a size\nanyone would choose. The ISM tiering is now working (hot\u2192warm after ~1 day). So the saving is in\n**right-sizing it back**, which is independent of the deployment model \u2014 reinforcing that the\nmodel is not where the money is. (Source: the current live cluster's Terraform config,\n`app-opensearch.tf`, read from the infrastructure repo.)\n\n> **Treat these as relative, not exact.** Built from AWS Pricing API **on-demand** rates on each\n> cluster's current config as if it ran all month \u2014 higher than the real bill (no reserved-\n> instance/savings-plan discounts, no mid-month changes). For comparison, not billing.\n> Figures derived from the AWS Pricing API against each cluster's current configuration.\n\n**On the standing cost that drives the choice:** each per-BU cluster needs its own master nodes\n(~\u00a31.5k/month equivalent per cluster), a cost that exists regardless of utilisation. Across many\nsmall BU clusters this adds up \u2014 and it is the main cost a shared cluster avoids.\n\n---\n\n## Security review strategy\n\nThe shared-cluster decision rests on the security function accepting **logical** isolation in\nplace of a physical account boundary. That is the gating risk, so it is tested with security\nearly, not assumed.\n\n**The ask \u2014 one clear question:**\n\n> We propose a single shared OpenSearch cluster for platform logs, with business units separated\n> by in-cluster controls rather than separate AWS accounts. Is logical isolation acceptable for\n> this log data, or is physical separation mandated for any data classification?\n\nA yes/no on physical separation is the decision. If physical separation is required for a subset\n(e.g. a particular classification), that subset uses Option B (per-BU) and the rest is shared.\n\n**How the review is run:**\n- **Lead with the Grafana precedent** \u2014 logical isolation is already accepted there, so this\n  extends an accepted pattern rather than proposing a new one.\n- **Bring the controls as the mitigation** \u2014 the table in \"Security hardening\" below.\n- **Be explicit about the limit** \u2014 this is logical, not physical, isolation (shared nodes and\n  storage). Stating it up front gets the real answer faster.\n- **Demonstrate on the dev cluster** \u2014 a business-unit role that can see only its own index, a\n  field-masking example, and a denied cross-index query in the audit log.\n- **Record the outcome here** \u2014 whatever security decides (logical accepted, or physical required\n  for X) is captured in this ADR with owner and date, as the justification for the model.\n\n**Open questions to resolve before the review:** who owns security sign-off for platform logging;\nwhether any data classification triggers a physical-separation rule; any BU with a\ncontractual/regulatory override. (Retention is now settled \u2014 see D13.)\n\n## Security hardening\n\nThe chosen model shares a baseline with the per-BU fallback; what differs is **where the isolation\nbetween business units comes from**. Grounded in AWS ",
+   "truncated_text": true,
+   "discussion_refs": [
+    {
+     "key": "#8420",
+     "kind": "hash",
+     "url": "",
+     "number": "8420"
+    },
+    {
+     "key": "ministryofjustice/cloud-platform#8420",
+     "kind": "issue",
+     "url": "https://github.com/ministryofjustice/cloud-platform/issues/8420",
+     "number": "8420"
+    },
+    {
+     "key": "#8415",
+     "kind": "hash",
+     "url": "",
+     "number": "8415"
+    },
+    {
+     "key": "#8585",
+     "kind": "hash",
+     "url": "",
+     "number": "8585"
+    },
+    {
+     "key": "#8419",
+     "kind": "hash",
+     "url": "",
+     "number": "8419"
+    },
+    {
+     "key": "#8592",
+     "kind": "hash",
+     "url": "",
+     "number": "8592"
+    }
+   ],
+   "mentioned_paths": [
+    "app-opensearch.tf",
+    "ministryofjustice/cloud-platform",
+    "amg.tf",
+    "opensearch.tf",
+    "cluster/",
+    "cluster:admin/opendistro/reports/*",
+    "indices:admin/aliases*",
+    "cluster:admin/opensearch/ql/*",
+    "indices:data/read/point_in_time/*",
+    "cluster:admin/opendistro/alerting/*",
+    "cluster:admin/opendistro/ad/*",
+    "cluster:admin/opendistro/asynchronous_search/*",
+    "indices:admin/create",
+    "mapping/put",
+    "settings/update",
+    "indices:admin/index_template/*",
+    "indices:admin/template/*",
+    "indices:data/write/*",
+    "cluster:admin/opendistro/ism/*",
+    "cluster:admin/snapshot/*",
+    "cluster:admin/settings/update",
+    "restapi:admin/*",
+    "/aws/vendedlogs/",
+    "aws/es",
+    "docs.aws.amazon.com/opensearch-service/latest/developerguide/fgac.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "architecture-decision-record/cp30/ADR-019-user-terraform-deployment-workflow.md",
+   "identity": "architecture-decision-record/cp30/ADR-019-user-terraform-deployment-workflow.md",
+   "adr_id": "19",
+   "title": "ADR-019: User Terraform Deployment Workflow",
+   "first_commit": "2026-10-08T14:05:33+01:00",
+   "first_sha": "55561f535474ff95cf1dbcaf7c0e0489d25ad95a",
+   "last_commit": "2026-10-08T14:05:33+01:00",
+   "author": "JakeBroughton",
+   "email": "46027440+JakeBroughton@users.noreply.github.com",
+   "status": "proposed",
+   "status_raw": "** Proposed - draft",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR-019: User Terraform Deployment Workflow\n\n**Status:** Proposed - draft  \n**Date:** 2026-10-06  \n**Decision Maker:** Cloud Platform team, subject to AWS and security agreement  \n**Category:** CICD/Infrastructure\n\n## Context\n\nTeams define AWS resources in each product's `resources` folder in `container-platform-environments`. Each product has one or more environments, and each environment corresponds to a Kubernetes namespace. Terraform runs separately for each environment, using a workspace and the appropriate BU nonlive or live account.\n\nThe workflow needs to identify which products and environments are affected by a change, then run Terraform in the right workspace with the right account, role, state, and runner. It could use a separate workflow for each team or BU, or one shared workflow with a job matrix. A shared workflow keeps the common logic in one place, while separate workflows could help with scale or isolation if needed later. Since teams can have any number of environments with arbitrary names, the workflow should get its targets from platform-controlled configuration rather than a fixed list of jobs.\n\nThis decision covers Terraform deployment only. Argo CD continues to manage workloads and namespace baselines under [ADR-018](ADR-018-deployment-model-flexibility-gitops-vs-push-cd.md).\n\n## Decision\n\nUse GitHub Actions and adapt suitable Modernisation Platform patterns. Start with one platform-owned workflow that reads the affected products and environments from platform-controlled configuration, then runs a matrix of jobs. Each job applies the product's resources in the environment's workspace, using the configured account, roles, state, and runner. Targets run independently. Separate workflows for each team or BU can be considered later if the shared workflow causes problems with scale, isolation, or operations. Whether to use reusable workflows internally is an implementation detail.\n\nDo not introduce Terraform components initially. A component is a separate infrastructure layer with its own state and deployment, such as networking followed by compute. Modernisation Platform uses this pattern for complex workloads. Container Platform will initially target more straightforward, Kubernetes-native applications, so each product environment will be treated as one deployment unit. Layered deployments also require more workflow customisation to model dependencies and determine and enforce apply order between layers. Revisit components if workload complexity requires independently managed layers.\n\n### Deployments\n\n![Terraform AWS resource deployment through a pull request](../../architecture/container-platform/diagrams/terraform_pr_deployment.drawio.png)\n\n- On pull requests, plan product-level resources in the affected environment workspaces.\n- Allow optional nonlive applies before merge, gated by approval of the specific revision and targets. Environments that allow pre-merge deployments should indicate this in their configuration file.\n- After merge, automatically create a fresh plan and apply changes to all affected product and environment workspaces in their configured accounts. Do not carry a pull-request planfile forward to apply after merge. There are no post-merge approval gates. Teams should expect merged changes to apply as soon as capacity and deployment locks allow.\n- Do not order deployments between targets in the same deployment phase. Each target runs independently, subject to concurrency controls. A team can use one pull request for a phased rollout: optionally apply eligible nonlive targets before merge, then merge to trigger the post-merge workflow for all affected targets, including live ones. The post-merge workflow does not guarantee an order between environments within either phase. Teams that need a strict sequence, such as dev > staging > preprod > prod, must use separate environment-targeted pull requests, merging each after checking the previous deployment. In particular, preprod and prod are both live-tier targets, so one pull request affecting both will not deploy to preprod first. A priority and dependency system would be difficult to maintain when environments can have arbitrary names and each product can have any number of them.\n\n### State and Roles\n\n- One state bucket per BU, in that BU's live account, holding both nonlive and live state. Each Terraform folder has one backend configuration with one bucket shared by its workspaces, so the proposed workspace model cannot split nonlive and live state between account-local buckets.\n- Use a Terraform workspace for each product environment (the environment corresponding to a Kubernetes namespace) to separate that environment's state.\n- The workflow assumes a role scoped to the target's state. The Terraform provider assumes a separate role with permission to manage resources in the destination account.\n- Nonlive jobs therefore need restricted state access in a live account, but must not receive live resource permissions.\n\n### Concurrency and Runners\n\n- Set each job's concurrency group from the state identity: BU, product, and environment workspace. Use the same key before and after merge so runs against one workspace are serialized, while different workspaces can run at the same time. Do not include the pull request, commit, or workflow run ID in the key, since that could let runs against the same state overlap. \n- Teams wait for their own product environments, not unrelated teams. Shared runner capacity could still cause queues.\n- The 256-job matrix limit is only a concern for platform-wide changes. For those runs, follow the Modernisation Platform approach of splitting work into batches. Ordinary team-scoped runs are not expected to reach the limit.\n- Prefer GitHub-hosted runners for AWS-only deployments where security and connectivity allow.\n- It is not yet known whether user modules need to change Kubernetes state. If they do not, deployments will not need private runners for Kubernetes access. If they do, use private runners only for Terraform stages that need the private EKS endpoint. Other stages could use GitHub-hosted runners. Confirm whether the workflow can choose a runner for each stage, such as init, plan, or apply, based on the module, backend, and provider requirements.\n- Private-runner scaling speed and maximum capacity are unknown. Other applicable GitHub Actions limits are TBC.\n\n### Recovery and Security\n\n- Teams can rerun failed deployments themselves. Each retry must create a fresh plan and must not let an older revision overwrite a newer deployment.\n- Separate roles are not enough because Terraform can run code with the job's credentials. Enforce target isolation through IAM and state bucket policies, not just matrix selection.\n\n## Consequences\n\nTeams can test nonlive changes before merge and deploy without waiting for approval afterwards. Multiple pull requests applying to the same BU, product, and environment workspace share state. Concurrency controls serialize those runs, but do not resolve conflicting changes: one branch's apply can overwrite or undo another branch's changes. Teams must coordinate overlapping development and resolve conflicts on a best-efforts basis; the platform workflow will not reconcile them. Planning afresh after merge avoids applying a stale pull-request planfile, but the applied plan is not guaranteed to be identical to the one reviewed before merge.\n\nThere is no native staged rollout between environments, including environments within the same tier. Teams must manage the environment-targeted pull-request sequence themselves and ensure shared Terraform changes do not unintentionally target later environments.\n\nTarget-scoped state and concurrency avoid a single platform-wide deployment queue. Separate BU state buckets limit the state-access and recovery blast radius to a BU, but both tiers depend on that BU's live account for state. Losing access to that account or bucket would prevent Terraform operations in both tiers. Where private runners are needed, their capacity and scaling remain unproven.\n\n## References\n\n- [Design user resources workflow #8490](https://github.com/ministryofjustice/cloud-platform/issues/8490)\n- [Enable user AWS resources #8489](https://github.com/ministryofjustice/cloud-platform/issues/8489)\n- [ADR-002: GitOps Fleet Management](ADR-002-argocd-gitops-fleet-management.md)\n- [Modernisation Platform environments](https://github.com/ministryofjustice/modernisation-platform-environments)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#8490",
+     "kind": "hash",
+     "url": "",
+     "number": "8490"
+    },
+    {
+     "key": "ministryofjustice/cloud-platform#8490",
+     "kind": "issue",
+     "url": "https://github.com/ministryofjustice/cloud-platform/issues/8490",
+     "number": "8490"
+    },
+    {
+     "key": "#8489",
+     "kind": "hash",
+     "url": "",
+     "number": "8489"
+    },
+    {
+     "key": "ministryofjustice/cloud-platform#8489",
+     "kind": "issue",
+     "url": "https://github.com/ministryofjustice/cloud-platform/issues/8489",
+     "number": "8489"
+    }
+   ],
+   "mentioned_paths": [
+    "/../architecture/container-platform/diagrams/terraform_pr_deployment.drawio.png"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "architecture-decision-record/cp30/ADR-002-argocd-gitops-fleet-management.md",
+   "identity": "architecture-decision-record/cp30/ADR-002-argocd-gitops-fleet-management.md",
+   "adr_id": "2",
+   "title": "ADR-002: GitOps Fleet Management \u2014 EKS Capability for Argo CD vs. Self-Managed Argo CD",
+   "first_commit": "2026-08-21T08:43:09+01:00",
+   "first_sha": "bfd97f350539530565ba8be6081ae0a028fa4fa2",
+   "last_commit": "2026-10-07T22:51:58+01:00",
+   "author": "nguforw-moj",
+   "email": "nguforw+moj@amazon.co.uk",
+   "status": "accepted",
+   "status_raw": "** Accepted",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# ADR-002: GitOps Fleet Management \u2014 EKS Capability for Argo CD vs. Self-Managed Argo CD\n\n**Status:** Accepted  \n**Date:** 2026-05-07  \n**Updated:** 2026-08-27 \u2014 recorded the two-hub (one per environment tier) model as the baseline, superseding the earlier single-hub design.  \n**Updated:** 2026-09-22 \u2014 added the BU-user Argo CD UI access model (Identity Center role mappings plus per-BU AppProject roles), resolving cloud-platform#8548. The original ADR specified deployment-side tenant isolation but never defined how BU engineers reach the Argo CD UI.  \n**Updated:** 2026-10-07 \u2014 recorded that the BU \u2192 parent group name mapping now has a single source of truth (`business-units.json` in modernisation-platform-environments), consumed by both the `cluster` (layer-1) and `cluster-core` (layer-2) components, so the two layers can no longer drift (cloud-platform#8558).  \n**Decision Maker:** AWS ProServe / MoJ Principal Technical Architect  \n**Category:** Compute / Integration\n\n---\n\n## Context\n\n**Problem Statement:** The multi-cluster, multi-account architecture requires centralised GitOps deployment orchestration. The platform team cannot manually push deployments to 20+ private-endpoint EKS clusters in separate accounts. A hub-and-spoke Argo CD model is required to provide unified visibility and declarative state management.\n\n**Requirements:** FR-014 (GitOps deployment model), FR-010 (automated cluster provisioning), NFR-006 (multi-cluster), NFR-007 (private cluster endpoints), NFR-002 (GitHub Actions integration)\n\n**Constraints:**\n- Cluster API endpoints are private (NFR-007) \u2014 Argo CD must reach spoke clusters without public endpoint or complex network configuration\n- Cross-account access is required (spoke clusters in BU accounts, hub in management account)\n- No Lambda (NFR-003)\n- GitHub is the source control platform (NFR-002)\n- EKS Capability for Argo CD was GA in November 2025 \u2014 not available when the candidate baseline PDF was written\n\n---\n\n## Decision\n\n**We will use the EKS Capability for Argo CD as the managed GitOps controller, deployed as two hubs \u2014 one per environment tier (non-live and live) \u2014 with per-BU AppProject-based separation enforcing tenant isolation within each tier.**\n\nThis provides AWS-managed HA, upgrades, and native cross-account private cluster connectivity via EKS ARN + Access Entries \u2014 without VPC peering or TGW routing between accounts. Each hub runs a single Argo CD Capability instance (EKS limits one Argo CD Capability per cluster) and manages only the spokes in its own tier: the `cloud-platform-nonlive` hub manages non-live spokes, and the `cloud-platform-live` hub manages live spokes. Environment isolation is therefore structural \u2014 live and non-live credentials never co-reside on the same hub compute. Within each tier, a per-BU AppProject model provides tenant isolation, where each project's destination allowlist restricts deployments to a single cluster ARN.\n\n### AppProject Hierarchy\n\nThe AppProject model provides three layers of isolation: environment separation (live vs. non-live), BU-to-BU isolation, and platform vs. workload separation.\n\n**Platform projects (2 total):**\n\n| AppProject | Destinations | Sources | Sync Policy | Purpose |\n|------------|-------------|---------|-------------|---------|\n| `platform-live` | All live cluster ARNs (platform namespaces only) | Platform infrastructure repos | Manual | Platform add-ons (Gatekeeper, ADOT, Fluent Bit, ExternalDNS, LBC) on live clusters |\n| `platform-nonlive` | All non-live cluster ARNs (platform namespaces only) | Platform infrastructure repos | Auto-sync | Same platform stack on non-live clusters |\n\n**BU workload projects (2 per BU = ~16-18 total):**\n\n| AppProject | Destinations | Sources | Sync Policy | Purpose |\n|------------|-------------|---------|-------------|---------|\n| `bu1-live` | BU1 live cluster ARN only, workload namespaces | `github.com/ministryofjustice/bu1-*` | Manual | BU1 application deployments to live |\n| `bu1-nonlive` | BU1 non-live cluster ARN only, workload namespaces | `github.com/ministryofjustice/bu1-*` | Auto-sync | BU1 application deployments to non-live |\n| `bu2-live` | BU2 live cluster ARN only | `github.com/ministryofjustice/bu2-*` | Manual | BU2 live deployments |\n| `bu2-nonlive` | BU2 non-live cluster ARN only | `github.com/ministryofjustice/bu2-*` | Auto-sync | BU2 non-live deployments |\n| ... | ... | ... | ... | Same pattern for all 8-9 BUs |\n\n**Total: ~20 AppProjects** (2 platform + 8-9 BUs \u00d7 2 environments)\n\n### BU Isolation Guardrails\n\nEach BU AppProject enforces:\n\n| Guardrail | Mechanism | Effect |\n|-----------|-----------|--------|\n| Cluster isolation | `spec.destinations` restricted to single cluster ARN | BU1 project cannot deploy to BU2's cluster |\n| Source isolation | `spec.sourceRepos` restricted to BU's repos | BU1 cannot reference BU2's manifests |\n| Privilege restriction | `spec.namespaceResourceWhitelist` | BU teams can only create workload resources (Deployment, Service, Ingress, ConfigMap, Secret, HPA) |\n| Escalation prevention | `spec.clusterResourceBlacklist` | BU teams cannot create ClusterRole, ClusterRoleBinding, Namespace, or CRDs |\n\n### Multi-Namespace Support Within a BU\n\nEach BU has multiple application teams, each with one or more namespaces within the BU's cluster. Argo CD uses a Git directory-based ApplicationSet to generate one Application per namespace:\n\n```yaml\napiVersion: argoproj.io/v1alpha1\nkind: ApplicationSet\nmetadata:\n  name: bu1-live-apps\n  namespace: argocd\nspec:\n  generators:\n    - git:\n        repoURL: https://github.com/ministryofjustice/bu1-deployments\n        revision: main\n        directories:\n          - path: \"apps/*\"\n  template:\n    metadata:\n      name: \"bu1-live-{{path.basename}}\"\n    spec:\n      project: bu1-live\n      source:\n        repoURL: https://github.com/ministryofjustice/bu1-deployments\n        targetRevision: main\n        path: \"{{path}}\"\n      destination:\n        server: \"arn:aws:eks:eu-west-2:111111111111:cluster/bu1-live\"\n        namespace: \"{{path.basename}}\"\n      syncPolicy:\n        automated: false  # Manual sync for live\n```\n\nAdding a new app = adding a directory to the BU's deployment repo. The ApplicationSet generates the Argo CD Application automatically.\n\n**Namespace isolation within a BU** is enforced by Kubernetes (not Argo CD AppProjects):\n- EKS Access Entries map team identity to namespace-scoped RoleBindings\n- Gatekeeper admission policies block cross-namespace resource creation\n- Git-level access control (CODEOWNERS, branch protection) prevents Team A from modifying Team B's manifests\n\n### Isolation Layers (Defence in Depth)\n\n```\nLayer 1: AWS Account boundary     BU1 live account \u2260 BU2 live account (hard isolation)\nLayer 2: AppProject destinations  bu1-live can ONLY reach BU1's live cluster ARN\nLayer 3: AppProject sources       bu1-live can ONLY pull from BU1's repos\nLayer 4: Kubernetes RBAC          Team A can only modify resources in their namespace\nLayer 5: Gatekeeper admission     Blocks cross-namespace resource creation\nLayer 6: Git access control       CODEOWNERS prevents Team A editing Team B's manifests\n```\n\n### BU-User Argo CD UI Access (cloud-platform#8548)\n\nThe isolation layers above govern the **deployment path** \u2014 what a BU's Argo CD Applications may pull and where they may deploy. They say nothing about the **human path**: which people can open the Argo CD UI, and what they see once inside. The original ADR assumed BU teams interact only through Git and `kubectl`, so no UI access model was defined. In practice BU engineers need read-only visibility of their own deployments in the UI. Access was only ever exercised as `cloud-platform-engineers` and `container-platform-aws`, which both hold default ADMIN, so the gap went unnoticed until a BU user reported an empty Applications list.\n\nThe EKS managed Argo CD capability exposes access as two independent layers (see [Configure Argo CD permissions](https://docs.aws.amazon.com/eks/latest/userguide/argocd-permissions.html)). Both are required \u2014 either alone yields no useful access:\n\n| Layer | Control | Grants | Where configured |\n|-------|---------|--------|------------------|\n| UI entry | Capability `rbacRoleMappings` (global `VIEWER`) | Log in to the Argo CD UI. On its own shows **zero** Applications \u2014 global roles gate Argo CD itself, not project-scoped resources. | `cluster` component (`argocd_rbac_role_mappings`) |\n| App visibility | Per-BU AppProject `roles` (`applications, get, <project>/*`) | See that BU's Applications, read-only, scoped to the BU's own project. | `cluster-core` component (generated per BU AppProject) |\n\nBecause visibility is granted per AppProject, a BU only ever sees its own Applications \u2014 cross-BU isolation in the shared hub UI is a consequence of the layer-2 grant, not a separate control. Read-only (`VIEWER` + `applications, get`) is deliberate: BU teams observe deployments but do not sync, create, or delete from the UI (GitOps drives changes through Git).\n\nVerified on the non-live hub (2026-09-22): a BU group mapped to global `VIEWER` with no project role sees an empty UI; adding the project `roles` grant makes exactly that BU's Applications visible and no others.\n\n### BU-to-Identity-Group Mapping\n\nBoth layers key on a **stable per-BU IAM Identity Center group**, not the per-squad groups that `product.yaml` uses for AWS/EKS access. This is the deliberate asymmetry that keeps the Argo CD configuration static:\n\n- **AWS account / EKS access** is driven by `product.yaml access[].group` \u2014 squad-level groups (e.g. `hmpps-sre`), scoped per-cluster and per-namespace, churning as teams onboard.\n- **Argo CD UI access** is driven by the **BU parent group** \u2014 one per BU, read-only, BU-wide.\n\nThe BU parent groups are the children of the `business-units` GitHub team. GitHub surfaces a nested child team's members in the parent team's membership (the team members API marks them `inherited=true`, distinct from directly-added members), and it is the parent group's full membership that syncs to Identity Center. So no per-team churn reaches the Argo CD config: a squad team nested under its BU parent contributes its members to the parent automatically, and the only Argo CD change is onboarding a brand-new BU, which already requires a `bu_configs` edit.\n\n**Operational dependency \u2014 squad teams must be nested under their BU parent.** This model relies on that nesting being done. It is the established org convention (verified: `hmpps-developers` includes both directly-added members and `inherited=true` members surfaced purely through child teams), but it is not automatic. A squad team created as a standalone team, not nested under its BU parent, still gets AWS/EKS access through `product.yaml` (which keys on the squad group directly) but its members will **not** appear in the BU parent group, so they get no Argo CD UI access until the team is nested. This is the one recurring manual step: when creating a new squad team, nest it under its BU parent. It is easy to forget precisely because the AWS-access path does not depend on it.\n\n#### Groups in use (onboarded BUs)\n\nThese four BUs have `bu_configs` entries and clusters today. The `VIEWER` mapping and AppProject role are wired for each:\n\n| BU code | Clusters | BU parent group (GitHub team \u2192 IdC) | Evidence |\n|---------|----------|-------------------------------------|----------|\n| `octo` | `container-platform-octo-{nonlive,live}` | `office-of-the-cto` | Child teams are `octo-*` (`octo-engineering`, `octo-architecture`, `octo-hosting`). OCTO = Office of the CTO. |\n| `laa` | `container-platform-laa-{nonlive,live}` | `laa` | Direct name match; child teams `laa-*`. |\n| `hmpps` | `container-platform-hmpps-{nonlive,live}` | `hmpps-developers` | Child teams `hmpps-*` (verified `hmpps-sre` members \u2286 `hmpps-developers`). |\n| `cd` | `container-platform-cd-{nonlive,live}` | `central-digital` | Only `central-digital-*` BU team space; no other `cd-*` candidate. |\n\n**Reviewers: ",
+   "truncated_text": true,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "business-units.json",
+    "github.com/ministryofjustice/bu1-*",
+    "github.com/ministryofjustice/bu2-*",
+    "docs.aws.amazon.com/eks/latest/userguide/argocd-permissions.html",
+    "product.yaml",
+    "terraform/environments/cloud-platform/",
+    "docs.aws.amazon.com/eks/latest/userguide/capabilities.html",
+    "docs.aws.amazon.com/eks/latest/userguide/argocd.html",
+    "docs.aws.amazon.com/eks/latest/userguide/argocd-comparison.html",
+    "development-cluster-deploy.yml",
+    "cluster/locals.tf"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "architecture-decision-record/cp30/ADR-005-observability-amp-amg-adot.md",
+   "identity": "architecture-decision-record/cp30/ADR-005-observability-amp-amg-adot.md",
+   "adr_id": "5",
+   "title": "ADR-005: Observability Stack \u2014 Metrics, Dashboards, and Alerting",
+   "first_commit": "2026-09-09T23:36:07+01:00",
+   "first_sha": "f1f65e1f94ea6f514d72823c3fbaaf9134b66442",
+   "last_commit": "2026-10-07T22:51:58+01:00",
+   "author": "nguforw-moj",
+   "email": "nguforw+moj@amazon.co.uk",
+   "status": "proposed",
+   "status_raw": "** Proposed \u2014 Phase 1 PoC validation required (metrics backend); AMG placement decided 2026-09-07; BU metric isolation implemented 2026-09-16 (cloud-platform#8509); tier-split AMG decided 2026-10-03 (cloud-platform#8235, #8560); shared BU\u2192parent-group source of truth 2026-10-07 (cloud-platform#8558)",
+   "replacement": null,
+   "n_commits": 8,
+   "text": "# ADR-005: Observability Stack \u2014 Metrics, Dashboards, and Alerting\n\n**Status:** Proposed \u2014 Phase 1 PoC validation required (metrics backend); AMG placement decided 2026-09-07; BU metric isolation implemented 2026-09-16 (cloud-platform#8509); tier-split AMG decided 2026-10-03 (cloud-platform#8235, #8560); shared BU\u2192parent-group source of truth 2026-10-07 (cloud-platform#8558)  \n**Date:** 2026-05-07 (updated 2026-05-12, 2026-09-07, 2026-09-16, 2026-10-03, 2026-10-07)  \n**Decision Maker:** AWS ProServe / MoJ Principal Technical Architect  \n**Category:** Compute\n\n---\n\n## Context\n\n**Problem Statement:** The current observability stack (self-managed Grafana ~\u00a37,000/month, OpenSearch used as log dump, AlertManager) has high operational overhead and is not configured for daily use. The new multi-cluster platform requires a managed observability solution with cross-cluster aggregation, namespace-scoped access, direct engineer access without access-request barriers, and UK data residency.\n\n**Requirements:** FR-012 (shared observability, direct engineer access), FR-202 (self-service alerts), NFR-101 (managed observability stack), NFR-004 (UK data residency). Log-related requirements (FR-204, FR-208) are addressed in [ADR-017](ADR-017-logging-and-log-management.md).\n\n**Constraints:**\n- UK data residency required (NFR-004)\n- No Lambda (NFR-003)\n- IAM Identity Center already required (ADR-004) \u2014 AMG dependency is already satisfied\n- Current self-managed Grafana costs ~\u00a37,000/month\n- MoJ team has existing Grafana skills (current self-managed stack)\n- 07 May meeting: logs should go to CloudWatch first, then optionally to per-BU OpenSearch\n- 20 May meeting: full-text search is important, cannot dispense with OpenSearch; platform team defines clusters, app teams consume without admin access; explore placement in Platform Services account; avoid moving logs around for ingestion (cost concern)\n\n---\n\n## Decision\n\n**Both approaches will be deployed on the Phase 1 PoC cluster for comparative evaluation. The final decision will be made before Phase 2 based on PoC findings.**\n\n**Option A (baseline):** AMP + AMG + ADOT \u2014 full Prometheus-native pipeline with Grafana UX  \n**Option D (challenger):** CloudWatch Container Insights + AMG (querying CloudWatch as data source) \u2014 simpler pipeline, fewer moving parts\n\nBoth options use Amazon Managed Grafana for the dashboard UX (team familiarity) and Fluent Bit + CloudWatch Logs for log aggregation. The difference is the metrics backend: AMP (Prometheus-compatible, PromQL) vs. CloudWatch Metrics (native, CloudWatch query language).\n\n### PoC Evaluation Criteria\n\n| Criterion | Weight | How to Measure |\n|-----------|--------|----------------|\n| Operational complexity | High | Number of components to configure, cross-account setup effort, failure modes |\n| Query capability | High | Can engineers write the queries they need? PromQL vs. CloudWatch Metrics Insights |\n| Alert scalability | High | 100-rule AMG limit vs. 5,000 CloudWatch Alarms \u2014 does the limit matter at PoC scale? |\n| Namespace-scoped access | Medium | How easily can BU teams see only their data in each approach? |\n| Ingestion cost at projected scale | Medium | Estimate ingestion cost for 22 clusters \u00d7 expected metric cardinality (AMP samples ingested vs. CloudWatch custom metrics) |\n| Storage cost at projected scale | Medium | Estimate storage cost at the platform's target retention: AMP GB-month vs. CloudWatch per-metric-month, projected as cardinality \u00d7 retention; include sensitivity to longer retention |\n| Team adoption friction | Medium | Which approach do MoJ engineers find easier to use? |\n\n### Decision Gate\n\nThe PoC team will produce a comparison report by Phase 1 Week 10 covering the criteria above. The final observability architecture decision will be included in the Phase 2 go/no-go recommendation (US-008).\n\n---\n\n## Research Conducted\n\n### Option A: AMP + AMG + ADOT (SELECTED)\n\n**Research Confidence:** High\n\n| Source | URL | Key Finding |\n|--------|-----|-------------|\n| AWS Observability Accelerator | https://aws.amazon.com/solutions/guidance/monitoring-amazon-eks-workloads-using-amazon-managed-services-for-prometheus-and-grafana/ | Terraform-based; AMP + AMG + ADOT pattern; EKS-specific dashboards |\n| Cross-Account AMG | https://aws.amazon.com/blogs/opensource/setting-up-amazon-managed-grafana-cross-account-data-source-using-customer-managed-iam-roles/ | Single AMG workspace; cross-account AMP data sources via IAM roles |\n| AMG Quotas | https://docs.aws.amazon.com/grafana/latest/userguide/AMG_quotas.html | 100 alert rules per workspace (hard limit) \u2014 must be planned for |\n| AMP Quotas | https://docs.aws.amazon.com/prometheus/latest/userguide/AMP_quotas.html | 50M active series per workspace; auto-adjusting |\n| Observability Research | observability-research.md | eu-west-2 confirmed available; Identity Center SSO integration |\n\n**Capabilities Verified:**\n- AMG requires IAM Identity Center \u2014 confirmed (aligned with ADR-004)\n- Cross-account AMP data sources via customer-managed IAM roles \u2014 verified\n- Folder-level access control per BU in AMG \u2014 verified\n- Terraform provider for AMG workspace, data sources, dashboards \u2014 verified\n- ADOT EKS add-on available in eu-west-2 \u2014 confirmed\n- CloudWatch Container Insights + Fluent Bit for logs (FluentD deprecated February 2025) \u2014 verified\n\n### Option B: Self-Managed Prometheus + Grafana\n\n**Research Confidence:** High\n\n| Source | URL | Key Finding |\n|--------|-----|-------------|\n| Current MoJ stack | .apex/customer-context.md | Self-managed Grafana ~\u00a37,000/month; compute management problematic |\n| Thanos/Cortex for multi-cluster | General research | Thanos requires sidecar per Prometheus; complex HA |\n\n**Capabilities Verified:**\n- Full Prometheus/Grafana feature parity \u2014 confirmed\n- Current cost: ~\u00a37,000/month confirmed as pain point \u2014 confirmed\n- Multi-cluster: requires Thanos or Cortex (additional operational complexity) \u2014 confirmed\n- Platform team manages upgrades, HA, storage, scaling \u2014 confirmed operational overhead\n\n### Option D: CloudWatch Container Insights + AMG (querying CloudWatch) \u2014 CHALLENGER\n\n**Research Confidence:** High\n\n| Source | URL | Key Finding |\n|--------|-----|-------------|\n| CloudWatch Container Insights | https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Container-Insights-EKS.html | Native EKS integration; automatic cluster/node/pod metrics; zero-config |\n| AMG CloudWatch Data Source | https://docs.aws.amazon.com/grafana/latest/userguide/using-amazon-cloudwatch-in-AMG.html | AMG queries CloudWatch directly; cross-account via IAM |\n| CloudWatch Cross-Account | https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Cross-Account-Cross-Region.html | Delegated admin for cross-account metric/log visibility |\n| CloudWatch Alarms | https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html | 5,000 alarms per region (adjustable); no hard limit concern |\n\n**Capabilities Verified:**\n- Container Insights: automatic EKS metrics (cluster, node, pod, container) \u2014 verified\n- AMG can query CloudWatch as a data source (no AMP needed) \u2014 verified\n- CloudWatch cross-account observability via delegated admin \u2014 verified\n- CloudWatch Alarms: 5,000 per region (adjustable) \u2014 no 100-rule constraint\n- Fluent Bit \u2192 CloudWatch Logs: same log pipeline as Option A \u2014 verified\n- No ADOT collector needed (Container Insights agent handles metrics) \u2014 verified\n- No AMP workspace provisioning per cluster \u2014 simpler setup\n- CloudWatch Metrics Insights query language (not PromQL) \u2014 confirmed trade-off\n\n**Key advantages over Option A:**\n- Fewer moving parts (no ADOT, no AMP, no cross-account AMP IAM roles)\n- No 100-alert-rule constraint (CloudWatch Alarms scale to 5,000+)\n- No Identity Centre dependency for alerting (only for AMG dashboard access)\n- Single metrics+logs pipeline (CloudWatch handles both)\n\n**Key disadvantages vs. Option A:**\n- No PromQL \u2014 CloudWatch uses its own query language\n- Less flexible dashboard building (CloudWatch data source in Grafana is less expressive than Prometheus)\n- Custom application metrics require CloudWatch EMF format or custom metric API calls (vs. Prometheus scraping)\n\n### Option C: Datadog\n\n**Research Confidence:** Medium\n\n| Source | URL | Key Finding |\n|--------|-----|-------------|\n| Datadog EKS Integration | https://docs.datadoghq.com/integrations/amazon_eks/ | Per-host pricing; multi-cluster native; UK region available |\n| BRD Recommendation | MoJ Container Platform BRD v1.1 | \"Check existing Datadog/Grafana Cloud licensing before finalising\" |\n\n**Capabilities Verified:**\n- Native multi-cluster observability \u2014 verified\n- Per-host pricing can be expensive at scale \u2014 verified\n- UK data residency: Datadog EU region (not AWS-native) \u2014 confirmed\n- MoJ may have existing Datadog licensing \u2014 unknown (BRD open item)\n\n---\n\n## Capability Mapping\n\n| Requirement | Option A (AMP+AMG+ADOT) | Option D (CloudWatch+AMG) | Evidence |\n|-------------|-------------------------|---------------------------|----------|\n| FR-012: Direct engineer access | AMG folder permissions + Identity Center groups | AMG folder permissions (same UX) + CloudWatch IAM | AMG docs |\n| NFR-101: Managed observability | AWS-managed; 3 services to configure | AWS-managed; 1 service (CloudWatch) + AMG | AMP/CW docs |\n| NFR-004: UK data residency | AMP and AMG in eu-west-2 | CloudWatch and AMG in eu-west-2 | Regional availability |\n| FR-202: Self-service alerts | AMG alert rules (100-rule hard limit) | CloudWatch Alarms (5,000/region, adjustable) + AMG | AMG/CW Quotas |\n| FR-012: Platform alerts before BU | AMP Alert Manager + SNS | CloudWatch Alarms + SNS (no limit concern) | CW docs |\n| PromQL support | Native (AMP is Prometheus-compatible) | Not available (CloudWatch query language) | AMP/CW docs |\n| Custom app metrics | Prometheus scraping via ADOT | CloudWatch EMF or PutMetricData API | ADOT/CW docs |\n| Operational complexity | Medium (ADOT + AMP + AMG + cross-account IAM) | Low (Container Insights toggle + AMG) | Architecture assessment |\n\n---\n\n## Unknowns and Assumptions\n\n| Item | Type | Impact | Mitigation |\n|------|------|--------|------------|\n| AMG 100 alert rules limit at scale (Option A) | Risk | Medium \u2014 8-9 BUs \u00d7 N rules may approach limit | Platform-critical alerts in AMP Alert Manager; BU alerts in AMG; OR use Option D (CloudWatch Alarms, no limit) |\n| PromQL investment vs. fresh start | Unknown | High \u2014 determines whether Option A's PromQL advantage matters | PoC evaluation: if MoJ has no existing PromQL to migrate, Option D's simpler pipeline may win |\n| CloudWatch custom metric cost at high cardinality | Risk | Medium \u2014 CloudWatch per-metric pricing can be expensive with high-cardinality labels | PoC: measure actual metric cardinality on PoC cluster; compare AMP vs. CW cost |\n| Team preference for query language | Unknown | Medium \u2014 affects daily usability | PoC: have MoJ engineers try both PromQL (AMP) and CloudWatch Metrics Insights; gather feedback |\n\n---\n\n## Phase 1 PoC Validation Plan\n\nBoth Option A and Option D will be deployed on the PoC cluster:\n\n**Option A deployment:**\n- ADOT Collector DaemonSet (EKS add-on)\n- AMP workspace (single, for PoC cluster)\n- AMG workspace with AMP data source\n\n**Option D deployment:**\n- CloudWatch Container Insights (EKS Auto Mode native)\n- AMG workspace with CloudWatch data source (same AMG workspace, additional data source)\n\n**Evaluation activities (Phase 1 Weeks 6\u201310):**\n1. Deploy both pipelines on PoC cluster simultaneously\n2. Build equivalent dashboards in AMG using both data sources\n3. Create equivalent alert rules (AMP Alert Manager vs. CloudWatch Alarms)\n4. Measure: setup time, cross-account configuration effort, query expressiveness\n5. Have 2-3 MoJ engineers use both approaches for 2 weeks; gather preference feedback\n6. Produce cost impact analysis comparing current observability tooling vs both proposed options at full scale (22 clusters \u00d7 projected metric ",
+   "truncated_text": true,
+   "discussion_refs": [
+    {
+     "key": "#8560",
+     "kind": "hash",
+     "url": "",
+     "number": "8560"
+    },
+    {
+     "key": "ministryofjustice/modernisation-platform-environments#19165",
+     "kind": "pull",
+     "url": "https://github.com/ministryofjustice/modernisation-platform-environments/pull/19165",
+     "number": "19165"
+    },
+    {
+     "key": "#8509",
+     "kind": "hash",
+     "url": "",
+     "number": "8509"
+    }
+   ],
+   "mentioned_paths": [
+    "docs.aws.amazon.com/grafana/latest/userguide/AMG_quotas.html",
+    "docs.aws.amazon.com/prometheus/latest/userguide/AMP_quotas.html",
+    "apex/customer-context.md",
+    "docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Container-Insights-EKS.html",
+    "docs.aws.amazon.com/grafana/latest/userguide/using-amazon-cloudwatch-in-AMG.html",
+    "docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Cross-Account-Cross-Region.html",
+    "docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html",
+    "locals.tf",
+    "oidc.tf",
+    "grafana-objects.tf",
+    "business-units.json",
+    "terraform/environments/cloud-platform/",
+    "product.yaml"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "architecture-decision-record/cp30/ADR-018-deployment-model-flexibility-gitops-vs-push-cd.md",
+   "identity": "architecture-decision-record/cp30/ADR-018-deployment-model-flexibility-gitops-vs-push-cd.md",
+   "adr_id": "18",
+   "title": "ADR-018: Deployment Model \u2014 GitOps Monorepo Mandated as the Target, Push-Based CD as a Transitional Exception",
+   "first_commit": "2026-08-21T08:43:09+01:00",
+   "first_sha": "bfd97f350539530565ba8be6081ae0a028fa4fa2",
+   "last_commit": "2026-08-27T11:23:58+01:00",
+   "author": "nguforw-moj",
+   "email": "nguforw+moj@amazon.co.uk",
+   "status": "accepted",
+   "status_raw": "** Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR-018: Deployment Model \u2014 GitOps Monorepo Mandated as the Target, Push-Based CD as a Transitional Exception\n\n**Status:** Accepted\n**Date:** 2026-07-24\n**Updated:** 2026-08-27 \u2014 GitOps via ArgoCD from the shared monorepo (Path A) is now the mandated target deployment model. GitOps from per-team repos (Path B) is documented for potential future consideration but is not part of the current decision, owing to drift and per-repo operational overhead concerns. Push-based CD (Path C) is retained only as a time-boxed migration exception. To be revisited if teams face strong, well-evidenced opposition.\n**Decision Maker:** AWS ProServe / MoJ Principal Technical Architect\n**Category:** Integration / Compute\n\n---\n\n## Context\n\n**Problem Statement:** ADR-002 selected the EKS Capability for Argo CD as the platform's GitOps controller. Application engineering teams have raised a concern: adopting ArgoCD signals a move away from the push-based CI/CD pipelines they have already built and operate. The platform needs a position on whether GitOps is mandatory for all workloads, or whether teams can continue deploying with their existing pipelines.\n\n**Requirements:** FR-014 (GitOps deployment model), FR-009 (security baseline enforcement), NFR-006 (multi-cluster fleet), NFR-007 (private cluster endpoints), and the implicit requirement of tenant team autonomy and low migration friction.\n\n**Constraints:**\n- The platform is multi-tenant across BU accounts; namespace-level guardrails (PSA restricted, default-deny NetworkPolicy, Gatekeeper constraints) must apply regardless of how workloads are deployed.\n- Spoke cluster API endpoints are private (NFR-007). Any push-based pipeline needs a network and credential path to reach them.\n- The platform team is small; every supported deployment path carries an ongoing operational cost.\n- App teams have existing, working CI/CD investment that has organisational value.\n\n---\n\n## Decision\n\n**We will mandate GitOps via ArgoCD from the shared monorepo (Path A) as the target deployment model for all workloads. The platform owns the namespace security baseline via ArgoCD in every case, and GitOps from the monorepo is the expected mechanism for workload deployment. Per-team GitOps repos (Path B) are documented for potential future consideration only. Push-based deployment (Path C) is supported only as a time-boxed migration exception for teams with existing pipelines, not as a permanent co-equal option.**\n\nThe platform owns namespace creation, RBAC, NetworkPolicy, and quota via the `app-baseline` chart reconciled by ArgoCD (ADR-015). The target state is that workloads are also deployed through ArgoCD from the shared `container-platform-environments` monorepo. A team may deploy with its own push pipeline only during an agreed migration window, under the exception process below.\n\nDeployment paths:\n\n| Path | Namespace baseline | Workload deployment | Cluster credentials in team CI | Status |\n|------|-------------------|---------------------|-------------------------------|--------|\n| **A \u2014 GitOps monorepo** | Platform via ArgoCD | ArgoCD from shared `container-platform-environments` repo | None | Target (current decision) |\n| **B \u2014 GitOps own-repo** | Platform via ArgoCD | ArgoCD from the team's own repo (ApplicationSet points at it) | None | Documented for future consideration; not adopted |\n| **C \u2014 Push to namespace** | Platform via ArgoCD | Team's existing pipeline (`helm`/`kubectl`) into the pre-provisioned namespace | Scoped, namespace-only | Transitional exception |\n\nPath A is the decision: GitOps from the shared monorepo. Path B (per-team repos) is not adopted now \u2014 it risks configuration drift across many repos and adds per-repo operational overhead for a small platform team \u2014 but is documented below so it can be reconsidered later if there is a clear need. Path C is a transitional exception with a migration expectation, not a free choice a team can settle on indefinitely.\n\n---\n\n## GitOps + ArgoCD vs Traditional Push CD\n\nA framing point that addresses the core concern: **GitOps replaces the CD half, not CI.** Teams keep their build, test, lint, scan, and image-publish pipelines. Only the final \"apply to cluster\" step changes \u2014 from a pipeline running `kubectl apply` (push) to ArgoCD reconciling the cluster to match Git (pull).\n\n### Advantages of GitOps/ArgoCD\n\n- **No cluster credentials in CI.** With the EKS-managed ArgoCD reaching spokes via EKS Access Entries, no BU pipeline holds a kubeconfig or cluster-admin credential. This removes a large credential-distribution attack surface across many tenant pipelines.\n- **Drift detection and self-heal.** ArgoCD continuously reconciles desired vs live state; manual cluster edits are reverted. Push CD only knows state at deploy time.\n- **Git as single source of truth.** Every change to running state is a reviewed commit; rollback is `git revert`.\n- **Fleet-scale consistency with guardrails.** One hub manages many spokes with per-BU AppProjects enforcing which repos, clusters, and resource kinds are permitted (ADR-002). Replicating those guardrails across N independent push pipelines is materially harder.\n\n### Costs of GitOps/ArgoCD\n\n- **New tool and mental model.** Pull-based reconciliation, sync waves, health/sync status, and app-of-apps carry a genuine learning curve. The engineers' concern is legitimate.\n- **Debugging indirection.** \"I merged, why isn't it live?\" now spans ArgoCD sync status, reposerver cache, and generator behaviour rather than one pipeline log.\n- **Two-repo workflow (Path A).** App code and deployment manifests live in separate repos. Teams used to an integrated single-repo deploy feel the split. Path B (per-team repos) could reduce this friction and is noted as a possible future option, but is not adopted now.\n- **Imperative steps need patterns.** DB migrations, one-off jobs, and dynamic secret injection require sync hooks or External Secrets rather than an inline pipeline step.\n- **Less imperative release control.** \"Deploy exactly now, in this order, with this manual gate\" needs extra tooling compared to a scripted pipeline.\n\n### Summary\n\nFor a platform team operating a multi-tenant fleet, GitOps is the industry standard and the security and consistency benefits are strong. For an individual app team with a working, well-understood pipeline, the marginal benefit is smaller and the switching cost is front-loaded. This cost is a one-off migration expense rather than a reason to run two deployment models permanently: a single, uniform target keeps fleet-level operability simple for a small platform team. GitOps is therefore the mandated target, and the push-based path exists to smooth the transition, not to be a standing alternative.\n\n---\n\n## Transitional Push-Based Deployment (Path C \u2014 Exception)\n\nGitOps is the target, but a team migrating from an established push pipeline may need time to get there. Path C exists for that transition. It is an exception, granted per team for a bounded period, not a permanent operating mode.\n\n**Exception process:**\n1. The team requests a Path C exception from the platform team, with a migration intent to Path A or B.\n2. The platform team agrees a time-boxed window and records the exception (owning team, reason, target GitOps path, review date).\n3. The exception is reviewed at the agreed date; it is renewed only if migration is genuinely blocked, otherwise the team is expected to be on GitOps.\n\n**How Path C works during the window:**\n1. Platform provisions the namespace and baseline (RBAC, NetworkPolicy, quota) via ArgoCD \u2014 same as every other team.\n2. The team receives a namespace-scoped credential (EKS Access Entry mapped to a namespace RoleBinding, or IRSA) \u2014 not cluster admin.\n3. The team's existing pipeline deploys workloads into that namespace using their current `helm`/`kubectl` steps.\n\n**What Path C gives up:** cluster credentials return to the team's CI (the main security benefit of GitOps is lost for that tenant), and drift becomes the team's responsibility since ArgoCD does not reconcile their workloads. These are the reasons it is transitional rather than permanent.\n\n**Network path:** private spoke endpoints (NFR-007) mean a push pipeline needs connectivity. Options are self-hosted runners in a VPC with a route to the cluster, or EKS API access via a bastion/relay. This is an operational prerequisite the team must accept for the duration of the exception.\n\n**What is not negotiable regardless of path:** the namespace security baseline (PSA restricted, default-deny NetworkPolicy, Gatekeeper constraints) is enforced at the Kubernetes admission layer, not by ArgoCD. A push pipeline is subject to the same admission control as a GitOps sync. Teams needing privileged workloads or baseline exemptions are having a platform-policy conversation, not a CI/CD one.\n\n---\n\n## Alternatives Considered\n\n### Option 1: GitOps as one of several co-equal, permanently-supported paths \u2014 REJECTED (superseded)\n\nThis was the earlier position in this ADR: GitOps recommended, but push-to-namespace offered as a standing accommodation a team could settle on indefinitely.\n\n**Why Rejected:** Running two deployment models permanently doubles the platform team's support and documentation surface and leaves fleet-wide \"what is deployed where\" partially unanswerable for push-based tenants. Without a clear target, teams have no signal to converge, so the split becomes permanent by default. The platform wants a single, clear target model; the switching cost for teams with mature pipelines is real but is a one-off migration expense, not a reason to carry two models forever.\n\n**Pros:** Lowest short-term friction; no team has to change anything.\n**Cons:** Permanent dual operating model; higher ongoing platform cost; weaker fleet consistency and visibility; no convergence signal.\n\n### Option 2: No deployment standard (teams do whatever) \u2014 REJECTED\n\n**Why Rejected:** Without platform ownership of the namespace baseline, multi-tenant guardrails become inconsistent and unenforceable at fleet scale. Loses the central value of the hub/spoke model.\n\n**Pros:** Maximum team autonomy; zero migration friction.\n**Cons:** No consistent guardrail enforcement; no fleet-level visibility; undermines the rationale for a managed platform.\n\n### Option 3: GitOps from per-team repos (Path B) \u2014 DEFERRED (documented for future consideration)\n\nUnder Path B, each team keeps its deployment manifests in its own repo and an ApplicationSet points ArgoCD at it, rather than everyone sharing the `container-platform-environments` monorepo. This keeps GitOps' security and drift-detection benefits while giving teams a single-repo feel.\n\n**Why Deferred (not adopted now):** many per-team repos multiply the surface where configuration can drift between what each repo declares and the platform's baseline expectations, and each additional repo and its ApplicationSet wiring is ongoing operational overhead for a small platform team. The monorepo keeps configuration and review in one place. Path B is documented here so it can be reconsidered if a clear need emerges (for example, teams with strong single-repo requirements or scaling limits on the monorepo).\n\n**Pros:** Single-repo developer experience while staying on GitOps; no cluster credentials in CI; keeps drift detection.\n**Cons:** Drift risk spread across many repos; per-repo ApplicationSet and review overhead; weaker central visibility than a monorepo.\n\n### Chosen: GitOps monorepo (Path A) mandated as the target, push-based (Path C) as a transitional exception\n\nGitOps from the shared monorepo (Path A) is the single target model. Per-team GitOps repos (Path B) are deferred and documented for future consideration. Push-based deployment (Path C) is retained only as a time-boxed migration exception so teams with existing pipelines are not forced to rebuild everything on day one, but the expectation is convergence on Path A. This gives the clear target the platform wants while keep",
+   "truncated_text": true,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "architecture-decision-record/cp30/ADR-017-opensearch-deployment-model.md",
+   "identity": "architecture-decision-record/cp30/ADR-017-opensearch-deployment-model.md",
+   "commit": "41b60303d9dcacbbb50f101b5ebf42f5c6b593c2",
+   "date": "2026-10-02T09:49:28+01:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "** Proposed \u2014 PoC in progress (#8420)",
+   "new_raw": "** Accepted \u2014 Option B chosen (30 Sept); build in progress (#8420)",
+   "replacement": null,
+   "message": "docs(adr): record Option B decision, CloudWatch/tracing trade-offs, cross-cluster search (#8420)",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "masrafp-moj",
+   "email": "masrafp+moj@amazon.co.uk"
+  },
+  {
+   "path": "architecture-decision-record/cp30/ADR-017-opensearch-deployment-model.md",
+   "identity": "architecture-decision-record/cp30/ADR-017-opensearch-deployment-model.md",
+   "commit": "b506b7733f8eb4c01f67a99f46c4474b084c6bce",
+   "date": "2026-10-19T17:56:37+01:00",
+   "old_state": "accepted",
+   "new_state": "deleted",
+   "old_raw": "** Accepted (Oct) \u2014 **single shared OpenSearch cluster** with per-business-unit indexes and logical isolation. Conditional on security sign-off (see \"Security review strategy\"). Reverses an earlier per-business-unit decision, which is kept below as a considered alternative and a possible future opti",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Merge the two ADR-017s into one",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "deleted-without-replacement-pointer",
+   "author": "masrafp-moj",
+   "email": "masrafp+moj@amazon.co.uk"
+  },
+  {
+   "path": "architecture-decision-record/cp30/ADR-002-argocd-gitops-fleet-management.md",
+   "identity": "architecture-decision-record/cp30/ADR-002-argocd-gitops-fleet-management.md",
+   "commit": "3be4e00f839f152ebcea9318ac82a0f6c251b172",
+   "date": "2026-08-27T10:19:43+01:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "** Proposed",
+   "new_raw": "** Accepted",
+   "replacement": null,
+   "message": "docs(cp30): record two-hub ArgoCD model in ADR-002",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "nguforw-moj",
+   "email": "nguforw+moj@amazon.co.uk"
+  },
+  {
+   "path": "architecture-decision-record/cp30/ADR-018-deployment-model-flexibility-gitops-vs-push-cd.md",
+   "identity": "architecture-decision-record/cp30/ADR-018-deployment-model-flexibility-gitops-vs-push-cd.md",
+   "commit": "a2697e8665ab4b2f85b64cfe2961c6676eff6cdd",
+   "date": "2026-08-27T11:23:58+01:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "** Proposed",
+   "new_raw": "** Accepted",
+   "replacement": null,
+   "message": "docs(cp30): mandate GitOps monorepo as target model in ADR-018",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "nguforw-moj",
+   "email": "nguforw+moj@amazon.co.uk"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 6,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "32"
+}

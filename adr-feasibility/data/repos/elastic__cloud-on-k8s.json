@@ -1,0 +1,95 @@
+{
+ "repo": "elastic/cloud-on-k8s",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2018-10-30T12:17:04+01:00",
+ "last_commit": "2026-11-06T17:13:42+01:00",
+ "n_commits": 5796,
+ "n_authors": 193,
+ "n_files": 2096,
+ "n_code_files": 1346,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 0,
+ "adrs": [],
+ "status_changes": [],
+ "ai_signals": [
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2025-11-05T08:15:35-06:00",
+   "commit": "751b6c47412d299c344abb089b95aca163e257f0",
+   "evidence": "Add EKS documentation for deployer. (#8846)",
+   "official": true,
+   "author": "Michael Montgomery",
+   "email": "mmontg1@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Claude Opus 4.5 <noreply@anthropic.com>",
+   "date": "2026-01-15T18:53:33+08:00",
+   "commit": "fcb4eb11c7c895066388b59c782331d8cc137979",
+   "evidence": "feat(helm): add kubeAPIServerPort configuration option (#8980)",
+   "official": true,
+   "author": "lif",
+   "email": "1835304752@qq.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-03-23T14:19:11+01:00",
+   "commit": "26a850b010529b442c218770c2639965ca04abeb",
+   "evidence": "Improve OCP cluster cleanup to handle missing installer state (#9245)",
+   "official": true,
+   "author": "Michael Morello",
+   "email": "michael.morello@elastic.co"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Cursor <cursoragent@cursor.com>",
+   "date": "2026-08-10T09:38:50+02:00",
+   "commit": "c96603c5f6665bcf050c808f5ea86e77f5e1ba8b",
+   "evidence": "Document ResourcesAwareManagement Elasticsearch condition (#9669)",
+   "official": true,
+   "author": "Michael Morello",
+   "email": "michael.morello@elastic.co"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Cursor <cursoragent@cursor.com>",
+   "date": "2026-08-27T15:43:18+03:00",
+   "commit": "19fe7c653c23cc141cb73b1be29a829429db1e00",
+   "evidence": "Keep AutoOps certificate volume names within 63 characters (#9698)",
+   "official": true,
+   "author": "Daniel Baruch",
+   "email": "152905497+danielba79@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Cursor <cursoragent@cursor.com>",
+   "date": "2026-09-07T17:28:15+02:00",
+   "commit": "4db581e15d9591877a828ffac619cfbf3a8d9f05",
+   "evidence": "Fix flaky tests (#9721)",
+   "official": true,
+   "author": "simitt",
+   "email": "5555349+simitt@users.noreply.github.com"
+  }
+ ],
+ "signal_date": "2025-11-05T14:15:35+00:00",
+ "signal_kind": "coauthor",
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-native",
+ "adr_count_before_signal": 0,
+ "superseded_in_window": 0,
+ "eligibility_reason": "ai-native",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "13"
+}

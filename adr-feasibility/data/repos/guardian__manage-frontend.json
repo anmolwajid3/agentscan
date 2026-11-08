@@ -1,0 +1,121 @@
+{
+ "repo": "guardian/manage-frontend",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2018-04-05T17:02:45+01:00",
+ "last_commit": "2026-11-06T14:35:45+00:00",
+ "n_commits": 7285,
+ "n_authors": 123,
+ "n_files": 766,
+ "n_code_files": 705,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 0,
+ "adrs": [],
+ "status_changes": [],
+ "ai_signals": [
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-02-25T13:28:55+00:00",
+   "commit": "ce04d4cd8ba4bb45c55c4f7100b28bf3d6712a73",
+   "evidence": "Switch Billing Frequency Success and Error routes (#1613)",
+   "official": true,
+   "author": "andresilva-guardian",
+   "email": "andre.silva.mindera@guardian.co.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Cursor <cursoragent@cursor.com>",
+   "date": "2026-07-06T09:45:50+01:00",
+   "commit": "cac4ed20665d971da0d91d35f5dfa2ba39ee9eea",
+   "evidence": "Fix upgrade discount copy and formatting (post #1642)",
+   "official": true,
+   "author": "(Admin) Jonathan Ruda",
+   "email": "admin.jonathan.ruda@J7G4LH7XRF-PT002602.local"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Cursor <cursoragent@cursor.com>",
+   "date": "2026-08-27T09:11:18+01:00",
+   "commit": "9f69c9d1e5783ee2f88fc25f128dba861603a77a",
+   "evidence": "Update Extra accounts copy and invitee leave experience",
+   "official": true,
+   "author": "(Admin) Jonathan Ruda",
+   "email": "admin.jonathan.ruda@J7G4LH7XRF-PT002602.local"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-11-06T14:14:51+00:00",
+   "commit": "4ee702479415572a41d0c829afc9bab3ae0fd957",
+   "evidence": "Upgrade GuCDK to 62 for default ALB access logging",
+   "official": true,
+   "author": "Rupert Bates",
+   "email": "Rupert.Bates@guardian.co.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-11-06T14:19:30+00:00",
+   "commit": "0e27bb6d99e23420703cdd2c94c5b2f3af34a19a",
+   "evidence": "Move GuCDK migration notes to PR description",
+   "official": true,
+   "author": "Rupert Bates",
+   "email": "Rupert.Bates@guardian.co.uk"
+  }
+ ],
+ "signal_date": "2026-02-25T13:28:55+00:00",
+ "signal_kind": "coauthor",
+ "mentions": {
+  "strict": [
+   {
+    "sha": "6ee86ad596612ecfea39c7ebc416b08474cf6d8d",
+    "date": "2026-02-09T10:25:49+00:00",
+    "subject": "Copilot suggestions"
+   },
+   {
+    "sha": "e052049520b777c3f33f9352a02b2f097a1603de",
+    "date": "2026-02-09T10:39:20+00:00",
+    "subject": "Copilot suggestions"
+   },
+   {
+    "sha": "d7238bc12f6f4e65bc97bb2b0dc169f63fcf09ed",
+    "date": "2026-02-09T10:52:01+00:00",
+    "subject": "Copilot suggestions"
+   },
+   {
+    "sha": "b8a331c2f31b93a82486a16d585c03bf5c37164e",
+    "date": "2026-02-09T11:07:25+00:00",
+    "subject": "Copilot suggestions"
+   },
+   {
+    "sha": "d67eae8d4bbc0daf59721b3be2895a3c02d47101",
+    "date": "2026-02-09T11:12:08+00:00",
+    "subject": "Copilot suggestions"
+   },
+   {
+    "sha": "091b90dccd2e058cbecb0dd55b6338762b188a9f",
+    "date": "2026-02-09T11:19:43+00:00",
+    "subject": "Copilot suggestions"
+   },
+   {
+    "sha": "e8e09dbfc451c74e03baf32f873a9d9c06b01295",
+    "date": "2026-07-06T10:54:41+01:00",
+    "subject": "copilot suggestions"
+   }
+  ],
+  "strict_count": 7,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-native",
+ "adr_count_before_signal": 0,
+ "superseded_in_window": 0,
+ "eligibility_reason": "ai-native",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "6"
+}

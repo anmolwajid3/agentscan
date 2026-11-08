@@ -1,0 +1,508 @@
+{
+ "repo": "cloudfoundry/cli",
+ "clone_ok": true,
+ "error": null,
+ "description": "The official command line client for Cloud Foundry",
+ "first_commit": "2013-08-19T08:53:03-06:00",
+ "last_commit": "2026-11-06T19:13:59-08:00",
+ "n_commits": 12584,
+ "n_authors": 511,
+ "n_files": 3308,
+ "n_code_files": 3103,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 12,
+ "adrs": [
+  {
+   "path": "doc/adr/0005-v7-push-transforms-manifest-before-applying.md",
+   "identity": "doc/adr/0005-v7-push-transforms-manifest-before-applying.md",
+   "adr_id": "5",
+   "title": "V7 `cf push` Transforms Manifest Before Applying",
+   "first_commit": "2019-09-16T16:59:14-07:00",
+   "first_sha": "b0b84408139e90254139fc20be2187967f7136bd",
+   "last_commit": "2024-08-30T11:15:41-04:00",
+   "author": "Supraja Narasimhan",
+   "email": "snarasimhan@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# 5. V7 `cf push` Transforms Manifest Before Applying\n\nDate: 2019-09-16\n\n## Status\n\nAccepted\n\n## Context\n\n> _The issue motivating this decision, and any context that influences or constrains the decision._\n\n**NOTE:** This ADR builds on ideas introduced in [the last `push` refactor](/doc/adr/0004-v7-push-refactor.md). If you haven't read that ADR, please do so before reading this one.\n\nAs the V3 Acceleration Team was working on the V7 CLI version of `cf push`, we found that the implementation made certain features difficult (or impossible) to implement. We refactored the first part of `cf push` as described below to solve some of these problems.\n\n### The dream of the server-side manifest\n\nIn December 2018, the CAPI, CLI, and V3 Acceleration teams began discussing the idea of \"server-side manifests\", in which CAPI would build endpoints that received a manifest and made the necessary changes on the API side. Previously, the `push` manifest file was a concept invented and implemented fully by the CLI.\n\nThe results of this work were the V3 [app manifest](https://v3-apidocs.cloudfoundry.org#app-manifest) and [space manifest](https://v3-apidocs.cloudfoundry.org#space-manifest) endpoints.\n\nOne part of the dream of server-side manifests was that the CLI would no longer need to have any knowledge of manifest contents. The `push` command would pass manifest contents directly to the API without ever parsing the YAML. The API would apply the manifest as given, and the CLI would then upload source code for staging.\n\nThe goal of this was to allow CAPI to add additional manifest features (i.e. properties) without requiring any implementation changes on the CLI side.\n\nSee here for more on this topic, including the original goals of server-side manifests:\n* [V3 Server-Side Multi-App Manifests](https://docs.google.com/document/d/1z-0Ev-QCtuoT8nJCoNaVJmkMPNk4PYi_VGWzc8CwBIs/edit#)\n* [Server Side Manifest Exploration](https://docs.google.com/document/d/1HKNz5Qaza9fx8QSQp4oWqzcg3Sv1tkyEhm_6qQFaQAM/edit#heading=h.qt2a8po833hn)\n\n### Adding support for diffing\n\nAt this point in time, V7 `push` does not print diff output like it does in V6. This is a feature of V6 `push` that we got a lot of positive feedback about, and it is the last piece of `push` we need to implement for parity with V6.\n\nThe diff output is meant to show the difference between the current state of the pushed apps and the desired state (as represented by the manifest and flag overrides), like this:\n\n```diff\n$ cf push -i 3\nPushing from manifest to org org / space space as admin...\nUsing manifest file /home/pivotal/workspace/cf-acceptance-tests/assets/dora/manifest.yml\nGetting app info...\nUpdating app with these attributes...\n  name:                dora\n  path:                /home/pivotal/go/src/github.com/cloudfoundry/cf-acceptance-tests/assets/dora\n  command:             bundle exec rackup config.ru -p $PORT\n  disk quota:          1G\n  health check type:   port\n- instances:           2\n+ instances:           3\n  memory:\n\n  stack:               cflinuxfs4\n  routes:\n    dora.sheer-shark.lite.cli.fun\n```\n\nWhen we set out to explore adding the diff output to V7, we found there was **no straightforward way to do so**. In V6, we were already parsing the whole manifest and \"actualizing\" each property individually, but with V7, we intentionally didn't parse the whole manifest, so we did not have knowledge of the full desired state. Without this knowledge, we could not do the comparison necessary to output the diff.\n\n### Unfixable bugs due to overrides being handled too late\n\nThere was a whole class of bugs that could not be fixed in V7 `push` before this refactor. These were cases where a manifest property value is invalid, but the corresponding flag override is acceptable. For example, you might have `memory_in_mb: 2000GB` in your manifest, which is over your quota, but you push with `-m 20MB`, which is fine.\n\nPrior to this change, manifest properties and flag overrides were handled in separate API calls. Manifest properties were applied first exactly as they are in the manifest file. Then if the apply-manifest request was successful, the flag overrides would be handled (e.g. by sending a request to scale the memory to the number specified by the `-m` flag). But if the manifest was invalid (e.g. had a memory setting that would put an app over its quota), the apply-manifest step would fail before even getting to the override step.\n\nWe believe this was confusing and unexpected behavior for users: if a user passes `-m 20MB`, they would expect that to be the only number that mattered (not the memory value they're overriding in the manifest).\n\nHere is an example of such a bug:\n* [**CLI** user should not get a failed push when flag overrides are below quota limits but manifest values are above](https://www.pivotaltracker.com/story/show/167576661)\n\n## Decision\n\n> _The change that we're proposing or have agreed to implement._\n\nWe refactored the first half of V7 `push` (all of the steps that come before uploading source code and creating a new droplet). Read on for details.\n\n### How did `push` work before this change?\n\nBefore this change, `push` preserved manifest properties exactly as-is and sent these to the apply-manifest endpoint.\nThe flag overrides would be handled after applying the manifest was complete.\n\n### How does `push` work after this change?\n\nNow, `push` parses the manifest into an in-memory representation of the manifest. It transforms its representation of the manifest based on the given flag overrides, and then generates new YAML to send to the apply-manifest endpoint.\n\nThe effect of this is that we eliminate the extra steps of \"fixing\" the app after the apply-manifest step runs. For example, we no longer need to send additional requests to scale an app's process when the `-i 4` flag is given. Instead, the manifest that we send to the API will have been modified to say `instances: 4`. See below for a detailed explanation of how this works.\n\nIn addition, the API is now fully responsible for handling the logic of validating and resolving conflicts between manifest properties.\n\n### Case study: Lifecycle of a flag override\n\nTo see how this is implemented, we will follow the path that a flag override takes from the user, through the code, to the API.\n\nImagine a user runs `cf push -i 4`, with a manifest that looks like:\n\n```yaml\napplications:\n- name: dora\n  instances: 2\n```\n\nThe `PushCommand` parses the manifest as-written and the given flag overrides. It passes them into `HandleFlagOverrides`, which returns a transformed manifest:\n\n```go\nfunc (cmd PushCommand) Execute(args []string) error {\n    //...\n    transformedManifest, err := cmd.Actor.HandleFlagOverrides(baseManifest, flagOverrides)\n    if err != nil {\n        return err\n    }\n    //...\n}\n```\n\nThe `HandleFlagOverrides` method is another example of the hexagonal pattern established in [this refactor](/doc/adr/0004-v7-push-refactor.md). It passes the manifest through a sequence of functions (`TransformManifestSequence`):\n\n```go\nfunc (actor Actor) HandleFlagOverrides(baseManifest pushmanifestparser.Manifest, flagOverrides FlagOverrides) (pushmanifestparser.Manifest, error) {\n\tnewManifest := baseManifest\n\n\tfor _, transformPlan := range actor.TransformManifestSequence { // <== sequence of transform functions\n\t\tvar err error\n\t\tnewManifest, err = transformPlan(newManifest, flagOverrides)\n\t\tif err != nil {\n\t\t\treturn pushmanifestparser.Manifest{}, err\n\t\t}\n\t}\n\n\treturn newManifest, nil\n}\n```\n\nHere is the list of functions in the transform sequence:\n\n```go\nactor.TransformManifestSequence = []HandleFlagOverrideFunc{\n    // app name override must come first, so it can trim the manifest\n    // from multiple apps down to just one\n    HandleAppNameOverride,\n\n    HandleInstancesOverride, // <== instances transform function!\n    HandleStartCommandOverride,\n    HandleHealthCheckTypeOverride,\n    HandleHealthCheckEndpointOverride,\n    HandleHealthCheckTimeoutOverride,\n    HandleMemoryOverride,\n    HandleDiskOverride,\n    HandleNoRouteOverride,\n    HandleRandomRouteOverride,\n\n    // this must come after all routing related transforms\n    HandleDefaultRouteOverride,\n\n    HandleDockerImageOverride,\n    HandleDockerUsernameOverride,\n    HandleStackOverride,\n    HandleBuildpacksOverride,\n    HandleStrategyOverride,\n    HandleAppPathOverride,\n    HandleDropletPathOverride,\n}\n```\n\nThis is the `HandleInstancesOverride` method, which is responsible for transforming the manifest based on the `-i/--instances` flag, if given:\n\n```go\nfunc HandleInstancesOverride(manifest pushmanifestparser.Manifest, overrides FlagOverrides) (pushmanifestparser.Manifest, error) {\n    if overrides.Instances.IsSet {\n        if manifest.ContainsMultipleApps() {\n            return manifest, translatableerror.CommandLineArgsWithMultipleAppsError{}\n        }\n\n        webProcess := manifest.GetFirstAppWebProcess()\n        if webProcess != nil {\n            webProcess.Instances = &overrides.Instances.Value\n        } else {\n            app := manifest.GetFirstApp()\n            app.Instances = &overrides.Instances.Value\n        }\n    }\n\n    return manifest, nil\n}\n```\n\nAfter the manifest is transformed, we generate the following new YAML that is sent to the apply-manifest endpoint:\n\n```yaml\napplications:\n- name: dora\n  instances: 4 # <== updated!\n```\n\nFrom the API's point of view, there are no \"flag overrides\". The override behavior is resolved fully on the CLI side before the manifest is ever applied.\n\n## Consequences\n\n> _What becomes easier or more difficult to do and any risks introduced by the change that will need to be mitigated._\n\n### Cleaner separation of concerns between CLI and API\n\nOne key outcome is that we have achieved a clearer separation of concerns between the CLI and the API when it comes to the manifest. The idea of \"flag overrides\" has always been a CLI-only concept, but there were cases where the responsibilities were getting blurred.\n\nFor example, consider `no-route`, which is available as a flag (`--no-route`) or as a manifest property (`no-route: true`). Before this refactor, in order to apply the manifest exactly as written but still allow the overriding behavior that the CLI required, we introduced `no_route` as a query parameter on the apply-manifest endpoint. So, when `--no-route` was given, the resulting request would look like `POST /v3/spaces/:guid/apply_manifest?no_route=true`. Although this worked, it was an example of a specific, one-off solution to a broader problem. We did not want to add query parameters for every overridable manifest property, and it was an instance of making the API overly-tailored to the CLI's use case.\n\nWith this change, the `--no-route` override is handled fully on the CLI side, before applying the manifest, since flag overrides are the CLI's business. We were able to remove the `no_route` query parameter from the API endpoint and clean up some related code on the API side.\n\n### Server-side manifests: closer to or further from the dream?\n\nIf the goal of server-side manifests was to push as much as possible of the work related to validating/applying/resolving configuration changes to the API side, then this refactor gets us much closer to that goal. The CLI now leans fully on the API to apply the manifest, rather than applying the manifest and then \"correcting\" the configuration with additional API calls.\n\nHowever, if the goal of server-side manifests was for the CLI to know as little as possible about the contents of the manifest, then this refactor is a deliberate departure from that goal. In order to apply the flag overrides, the CLI must parse almost the entire manifest.\n\n#### Risks\n\nWith server-side manifests, we wanted to allow CAPI to introduce new manifest properties that could be leveraged by users (in their manifests) without requiring code changes in the CLI. The **biggest risk** is that after this refactor, CAPI could make a change to the manifest specification that",
+   "truncated_text": true,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "home/pivotal/workspace/cf-acceptance-tests/assets/dora/manifest.yml",
+    "home/pivotal/go/src/github.com",
+    "-i/--instances"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0004-v7-push-refactor.md",
+   "identity": "doc/adr/0004-v7-push-refactor.md",
+   "adr_id": "4",
+   "title": "V7 `cf push` Refactor",
+   "first_commit": "2019-07-02T15:57:20-07:00",
+   "first_sha": "7b48fde7b343bf946622abe9f9c3d8d961665bfb",
+   "last_commit": "2022-12-01T18:57:26-05:00",
+   "author": "Reid Mitchell",
+   "email": "rmitchell@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# 4. V7 `cf push` Refactor\n\nDate: 2019-07-02\n\n## Status\n\nAccepted\n\n## Context\n\n_The issue motivating this decision, and any context that influences or constrains the decision._\n\nAs the V3 Acceleration Team was developing the V7 version of `cf push`, the team saw opportunities to structure the code to make it easier to understand and maintain. In general, the `push` command logic is some of the most complex in the codebase, and this command was still considered experimental, so it seemed like the right time and place to invest our energy in refactoring.\n\nIn the V6 CLI, the code for `push` was split roughly into two methods: `Conceptualize` and `Actualize`. `Conceptualize` was responsible for taking user input (flags, manifest properties, etc) and generating a \"push plan\" for each app that is being pushed (a struct containing various pieces of information needed to create/push/update the app). `Actualize` was responsible for taking these push plans and, based on the plans, taking the necessary actions to complete the push process. The refactor preserves the spirit of this division, but prevents these two methods from growing too large and unmaintainable.\n\nSome of the goals of the refactor were:\n\n- Make it easier to add features to `push` (e.g. new flags, new options for flags, new manifest properties)\n- Make it easier to unit test the components of the `push` workflow. This means meant splitting the command into several smaller functions that can be tested individually but composed into sequences based on the given user input.\n\n## Decision\n\n_The change that we're proposing or have agreed to implement._\n\nBoth the `Conceptualize` and `Actualize` parts of the push process have been split up and refactored in a manner inspired by [hexagonal architecture](https://medium.com/@nicolopigna/demystifying-the-hexagon-5e58cb57bbda).\n\n### Hexagonal architecture\n\nFor our purposes, \"hexagonal architecture\" means the following:\n\n- There is one place in the code responsible for calling a given sequence of functions in order. The output of one function is passed in as input to the next function.\n- All of these functions have the same signature.\n- The central place where the functions are called is agnostic to what the functions are doing.\n- Any new features/branches/logic should be added to one or more of these functions (or, a new function should be added to encapsulate it). We generally shouldn't need to touch the place where the functions are called.\n\n### Splitting up `Conceptualize`\n\nWhat was previously called `Conceptualize` now looks roughly like this:\n\n_Note: We are still iterating on this code, so it may evolve over time and no longer look exactly like this. Still, the code below illustrates the idea we were going for._\n\n```go\nvar pushPlans []PushPlan\n\nfor _, manifestApplication := range getEligibleApplications(parser, appNameArg) {\n    plan := PushPlan{\n        OrgGUID:   orgGUID,\n        SpaceGUID: spaceGUID,\n    }\n\n    for _, updatePlan := range actor.PreparePushPlanSequence {\n        var err error\n        plan, err = updatePlan(plan, overrides, manifestApplication)\n        if err != nil {\n            return nil, err\n        }\n    }\n\n    pushPlans = append(pushPlans, plan)\n}\n\nreturn pushPlans, nil\n```\n\nThis is the central place where all of the \"prepare push plan\" functions are called. We loop through `actor.PreparePushPlanSequence`, an array of functions, and call each one with a push plan. They each have the opportunity to **return a modified push plan**, which then gets **passed into the next function**.\n\nIn this case, each function is also called with `overrides` and `manifestApplication`, which represent user input (in the form of flags and manifest properties, respectively). This lets each function inspect the user input and modify the push plan accordingly.\n\nWhen this loop completes, the original push plan has flowed through each function in the sequence and has been modified to include information based on the given flags/manifest.\n\nLet's now look at how `actor.PreparePushPlanSequence` is defined:\n\n```go\nactor.PreparePushPlanSequence = []UpdatePushPlanFunc{\n    SetupApplicationForPushPlan,\n    SetupDockerImageCredentialsForPushPlan,\n    SetupBitsPathForPushPlan,\n    SetupDropletPathForPushPlan,\n    actor.SetupAllResourcesForPushPlan,\n    SetupDeploymentStrategyForPushPlan,\n    SetupNoStartForPushPlan,\n    SetupNoWaitForPushPlan,\n    SetupSkipRouteCreationForPushPlan,\n    SetupScaleWebProcessForPushPlan,\n    SetupUpdateWebProcessForPushPlan,\n}\n```\n\nThis is just a simple array with a bunch of functions that all conform to the correct interface (they all have type `UpdatePushPlanFunc`).\n\nHere is an example of one of them:\n\n```go\nfunc SetupScaleWebProcessForPushPlan(pushPlan PushPlan, overrides FlagOverrides, manifestApp manifestparser.Application) (PushPlan, error) {\n\tif overrides.Memory.IsSet || overrides.Disk.IsSet || overrides.Instances.IsSet {\n\t\tpushPlan.ScaleWebProcessNeedsUpdate = true\n\n\t\tpushPlan.ScaleWebProcess = v7action.Process{\n\t\t\tType:       constant.ProcessTypeWeb,\n\t\t\tDiskInMB:   overrides.Disk,\n\t\t\tInstances:  overrides.Instances,\n\t\t\tMemoryInMB: overrides.Memory,\n\t\t}\n\t}\n\treturn pushPlan, nil\n}\n```\n\nThis simple function populates fields on the push plan based on flag overrides and returns the enhanced push plan, making it easy to test on its own.\n\nWhen all of the functions have run and updated the push plan, the \"actualize\" step doesn't need to know about flags and manifest properties anymore; it only needs to receive a push plan because all user input has been resolved and combined into the push plan object.\n\n### Splitting up `Actualize`\n\nThere is still (at the time of this writing) a function called `Actualize`, but it now looks like this:\n\n```go\nfor _, changeAppFunc := range actor.ChangeApplicationSequence(plan) {\n    plan, warnings, err = changeAppFunc(plan, eventStream, progressBar)\n    warningsStream <- warnings\n    if err != nil {\n        errorStream <- err\n        return\n    }\n    planStream <- plan\n}\n```\n\nThis is quite similar to the loop through `actor.PreparePushPlanSequence` above. We loop through `actor.ChangeApplicationSequence(plan)`, which returns an array of functions, and we call each one with the push plan. Each one returns a push plan that then gets passed into the next function.\n\n_Note: The rest of that code uses streams to report progress, errors, and warnings, but this is not the focus of this ADR (and we may end up changing this as well)._\n\nThe **biggest difference** from `Conceptualize` is that instead of being a static list of functions (like `actor.PreparePushPlanSequence`), `actor.ChangeApplicationSequence` is a function that takes in a push plan and returns an array of `ChangeApplicationFunc`s. This allows us to dynamically build up the sequence of actions we run based on the push plan, rather than run the same sequence every time.\n\nLet's look at how that works:\n\n```go\nactor.ChangeApplicationSequence = func(plan PushPlan) []ChangeApplicationFunc {\n    var sequence []ChangeApplicationFunc\n    sequence = append(sequence, actor.GetUpdateSequence(plan)...)\n    sequence = append(sequence, actor.GetPrepareApplicationSourceSequence(plan)...)\n    sequence = append(sequence, actor.GetRuntimeSequence(plan)...)\n    return sequence\n}\n```\n\nThis function is responsible for building up the sequence based on the given plan. It delegates to three helpers, each of which builds up a subsequence of actions. Here's one of them:\n\n```go\nfunc ShouldCreateBitsPackage(plan PushPlan) bool {\n\treturn plan.DropletPath == \"\" && !plan.DockerImageCredentialsNeedsUpdate\n}\n\n// ...\n\nfunc (actor Actor) GetPrepareApplicationSourceSequence(plan PushPlan) []ChangeApplicationFunc {\n\tvar prepareSourceSequence []ChangeApplicationFunc\n\tswitch {\n\tcase ShouldCreateBitsPackage(plan):\n\t\tprepareSourceSequence = append(prepareSourceSequence, actor.CreateBitsPackageForApplication)\n\tcase ShouldCreateDockerPackage(plan):\n\t\tprepareSourceSequence = append(prepareSourceSequence, actor.CreateDockerPackageForApplication)\n\tcase ShouldCreateDroplet(plan):\n\t\tprepareSourceSequence = append(prepareSourceSequence, actor.CreateDropletForApplication)\n\t}\n\treturn prepareSourceSequence\n}\n```\n\nIn this case, we only want to include one of these three functions in the final sequence, which is determined based on properties of the push plan.\n\nSince all of these functions are small and straightforward on their own, they are easy to unit test. They can be **composed together in different sequences to build up different push workflows** (based on different flags/manifests), and this is where the refactor really starts to pay off.\n\n## Consequences\n\n_What becomes easier or more difficult to do and any risks introduced by the change that will need to be mitigated._\n\n### What becomes easier?\n\nFiguring out where to write the code to add a new flag becomes easier. Consider [this recent commit](https://github.com/cloudfoundry/cli/commit/9dbddd165ae77dbc33e7dc34ae896e6f880ce3ff), which added the `--no-wait` flag to the V7 `push` command. These were the bulk of the changes needed to add this new branch to the workflow:\n\n- [New, three-line method](https://github.com/cloudfoundry/cli/commit/9dbddd165ae77dbc33e7dc34ae896e6f880ce3ff#diff-8efa044476f78f1ca7dbe0f90addeca4) implementing the `UpdatePushPlanFunc` interface, plus [unit tests for it](https://github.com/cloudfoundry/cli/commit/9dbddd165ae77dbc33e7dc34ae896e6f880ce3ff#diff-03f194b5c186fb49de70b64082df2191)\n- [One-line change](https://github.com/cloudfoundry/cli/commit/9dbddd165ae77dbc33e7dc34ae896e6f880ce3ff#diff-d84d0497f89a03505f051cbe0a418739) to the actor to add this new method to the `ChangeApplicationSequence`\n- [Simple change](https://github.com/cloudfoundry/cli/commit/9dbddd165ae77dbc33e7dc34ae896e6f880ce3ff#diff-59e4c63c96b86434900c067fc7d0e49f) to pass the new push plan property as into the methods that need it\n\nThere are more changes in that commit, but that highlights the parts relevant to this ADR.\n\n### What becomes harder?\n\nIt is slightly harder to grasp how all these pieces fit together at first glance. For the arrays of functions detailed above, it is not immediately clear where or how they are called (since that is abstracted away into a different part of the codebase). We believe that after spending time understanding the new structure of things, developers will appreciate how straightforward it is to make changes.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0007-integration-vs-command-test.md",
+   "identity": "doc/adr/0007-integration-vs-command-test.md",
+   "adr_id": "7",
+   "title": "ADR 7: Test Coverage: Integration vs. Command",
+   "first_commit": "2020-03-27T14:33:33-07:00",
+   "first_sha": "851ccc10905dc0a03f2602314782e8a8b8b63a32",
+   "last_commit": "2022-12-01T18:57:26-05:00",
+   "author": "Mona Mohebbi",
+   "email": "mmohebbi@pivotal.io",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# ADR 7: Test Coverage: Integration vs. Command\n\n## Status\n\nProposed\n\n## Context\n\nThe integration tests' coverage (e.g.\n`integration/v7/isolated/create_org_command_test.go`) overlaps with the command\ntests' (`command/v7/create_org_command_test.go`), and this causes confusion\nfor developers\u2014does a test belong in integration, command, or both? This ADR\ngives guidelines in order to assist developers making that decision.\n\n## Decision\n\nWe want to separate [black\nbox](https://en.wikipedia.org/wiki/Black-box_testing) and [white\nbox](https://en.wikipedia.org/wiki/White-box_testing) testing, where\nblack box testing (functionality of an application) is done at the\nintegration level, and white box testing (internal structures or\nworkings of an application) is done at the unit (command) level.\n\n#### Integration\nIntegration tests should continue to test things from a user's perspective:\n\n- Build contexts around use cases\n- Test output based on story parameters and the style guides.\n\nFor example, the following behavior (from the `unbind-security-group`\nstory) should be tested at the integration level because it describes\noutput/functionality:\n\n> When `cf unbind-security-group` attempts to unbind a running security group\n> that is not bound to a space, it should return the following:\n>\n> ```\n> Security group my-group not bound to space my-space for lifecycle phase 'running'.\n> OK\n>\n> TIP: If Dynamic ASG's are enabled, changes will automatically apply for running and staging applications. Otherwise, changes will require an app restart (for running) or restage (for staging) to apply to existing applications.\n> ```\n\nTo do so, we would have to make a `BeforeEach()` that creates the scenario\nlaid out in the story and write expectations on each line of output in\nthe order they are listed. For example, from\n`integration/v7/global/unbind_security_group_command_test.go` (edited\nfor readability):\n\n```golang\nBeforeEach(func() {\n\tport := \"8443\"\n\tdescription := \"some-description\"\n\tsomeSecurityGroup := helpers.NewSecurityGroup(securityGroupName, \"tcp\", \"127.0.0.1\", &port, &description)\n\thelpers.CreateSecurityGroup(someSecurityGroup)\n\thelpers.CreateSpace(spaceName)\n})\n\nWhen(\"the space isn't bound to the security group in any lifecycle\", func() {\n\tIt(\"successfully runs the command\", func() {\n\t\tsession := helpers.CF(\"unbind-security-group\", securityGroupName, orgName, spaceName)\n\t\tEventually(session).Should(Say(`Unbinding security group %s from org %s / space %s as %s\\.\\.\\.`, securityGroupName, orgName, spaceName, username))\n\t\tEventually(session.Err).Should(Say(`Security group %s not bound to space %s for lifecycle phase 'running'\\.`, securityGroupName, spaceName))\n\t\tEventually(session).Should(Say(\"OK\"))\n\t\tEventually(session).Should(Say(`TIP: If Dynamic ASG's are enabled, changes will automatically apply for running and staging applications. Otherwise, changes will require an app restart \\(for running\\) or restage \\(for staging\\) to apply to existing applications\\.`))\n\t\tEventually(session).Should(Exit(0))\n\t})\n})\n```\n\n#### Command (Unit)\nIn unit tests we want to break away from this perspective. We\nwant to organize our tests by the [line of\nsight](https://engineering.pivotal.io/post/go-flow-tests-like-code/)\nmethod, where we cover code paths as we see them.\n\n<!-- Brian is really uncomfortable linking to something he wrote -->\n\nIn general, every `if err != nil {` should have a corresponding `When(\"actor returns an\nerror\", func() {`, but in most cases we do not need to test different\npossible errors that could be returned.\n\nHere's an example from `bind-security-group` code and unit test:\n\n```golang\nsecurityGroup, warnings, err := cmd.Actor.GetSecurityGroup(cmd.RequiredArgs.SecurityGroupName)\ncmd.UI.DisplayWarnings(warnings)\nif err != nil {\n\treturn err\n}\n```\n\n```golang\nIt(\"Retrieves the security group information\", func() {\n\tExpect(fakeActor.GetSecurityGroupCallCount).To(Equal(1))\n\tsecurityGroupName := fakeActor.GetSecurityGroupArgsForCall(0)\n\tExpect(securityGroupName).To(Equal(cmd.RequiredArgs.SecurityGroupName))\n})\n\nIt(\"prints the warnings\", func() {\n\tExpect(testUI.Err).To(Say(getSecurityGroupWarning[0]))\n})\n\nWhen(\"an error is encountered getting the provided security group\", func() {\n\tvar expectedErr error\n\n\tBeforeEach(func() {\n\t\texpectedErr = errors.New(\"get security group error\")\n\t\tfakeActor.GetSecurityGroupReturns(\n\t\t\tresources.SecurityGroup{},\n\t\t\tv7action.Warnings{\"get security group warning\"},\n\t\t\texpectedErr)\n\t})\n\n\tIt(\"returns the error and displays all warnings\", func() {\n\t\tExpect(executeErr).To(MatchError(expectedErr))\n\t})\n})\n```\n\n## Consequences\n\n- Since this is not a very big change, we are not expecting to lose any\n  coverage or increase run times. This is mostly for organization\n  purposes.\n\n- There are no plans to retrofit existing tests to adhere to this ADR.\n\n- These recommendations should not have any noticeable impact on the\n  time it takes our unit and integration tests to complete; our\n  integration are much lighter weight than other codebases.\n\n## References\n\n<https://testing.googleblog.com/2015/04/just-say-no-to-more-end-to-end-tests.html>\n\n<https://kentcdodds.com/blog/write-tests>\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "integration/v7/isolated/create_org_command_test.go",
+    "command/v7/create_org_command_test.go",
+    "integration/v7/global/unbind_security_group_command_test.go",
+    "testing.googleblog.com/2015/04/just-say-no-to-more-end-to-end-tests.html"
+   ],
+   "implementation": {
+    "sha": "bb6076f31b74dd7e3e44f9db32043e4470e2b301",
+    "date": "2020-11-30T22:02:21+00:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "command/v7/create_org_command_test.go",
+     "integration/v7/isolated/create_org_command_test.go"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/0012-de-version-v8-code-base.md",
+   "identity": "doc/adr/0012-de-version-v8-code-base.md",
+   "adr_id": "12",
+   "title": "De-version the V8 Code Base",
+   "first_commit": "2021-07-18T13:53:24-07:00",
+   "first_sha": "d0f0647b22f7e7158fcfcc34ffe083bb1d37a70d",
+   "last_commit": "2022-12-01T18:57:26-05:00",
+   "author": "Jenna Goldstrich",
+   "email": "jenna.goldstrich2@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# 1. De-version the V8 Code Base\n\n\n## Status\n\nAccepted\n\n## Context\n\n### What do you mean by de-version?\n\nDe-version in this context means to remove the concept of a version from most of the CLI's codepaths and directory structure outside of the actual version command.\n\nIn the v7 code base, and in the current (as of 8/19/2021) version of v8, there are many places in the code which reference either the CLI version, or the CAPI version (command/v6, command/v7, v3action, v7action, v2v3action, etc). This makes it harder to develop in especially for folks without the historical context on the versioning schemes of both the CLI.\n\nAfter [PR #2180](https://github.com/cloudfoundry/cli/pull/2180) we should be in a state where most of the v6 cruft should be gone, but we will still be left with several places in the code base where there is still mention of v7 in the v8 code base, below you can find a list of all of the places I can find along with suggestions for changing them.\n\n* command/common/command_list_v7* => refactor to command list\n* command/v7 => command/ (just maybe putting all the commands in the root command folder)\n* actor/v7action => actor/ (putting all the actor files in the root actor path)\n* actor/v7pushaction => actor/pushaction\n* integration/v7 => integration/tests\n* Makefile ivi (integration versioned isolated) command => change to ii (integration isolated)\n* Makefile integration versioned global (ivg) => see above\n* cf/ legacy directory => maybe rename it to something like legacy-cf, and put a README describing \n\n## Decision\n\nPR Accepted, pending implementation\n\n## Consequences\n\nIf I am a relatively new contributor to the CLI and I want to make a change to a command I can much easier figure out the code relevant code path. I don't need to know what v6 or v7 are to make changes to v8.\n\nV7 and V8 diverge, meaning that future bugfixes that occur on both the v7 and v8 branch could be more challenging to cherry-pick between branches, as the file paths will be different.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#2180",
+     "kind": "pull",
+     "url": "",
+     "number": "2180"
+    },
+    {
+     "key": "cloudfoundry/cli#2180",
+     "kind": "pull",
+     "url": "https://github.com/cloudfoundry/cli/pull/2180",
+     "number": "2180"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0002-develop-v6-and-v7-on-master-simultaneously.md",
+   "identity": "doc/adr/0002-develop-v6-and-v7-on-master-simultaneously.md",
+   "adr_id": "2",
+   "title": "Develop v6 and v7 on main simultaneously",
+   "first_commit": "2018-10-19T11:51:23-07:00",
+   "first_sha": "571e9b23b552de687334f6cdd8a405a8ed549f38",
+   "last_commit": "2022-10-23T20:02:31-04:00",
+   "author": "Greg Cobb",
+   "email": "gcobb@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 2. Develop v6 and v7 on main simultaneously\n\nDate: 2018-09-25\n\n## Status\n\nAccepted\n\n## Context\n\n_The issue motivating this decision, and any context that influences or constrains the decision._\n\nWe have two teams developing the CLI. \nOne (CLI) is building out functionality (such as a better UAA and login experience) for the current, stable v6 releases. \nOne (VAT) is dropping compatibility with CAPI v2 to more quickly integrate with and build out CAPI v3. \nVAT is doing so in v7 releases of the CLI.\n\nFor the last three weeks, \nVAT has been developing on a long-running _vat_ branch based on v6.39. \nPart of the goals for VAT include \nincorporating all 7-10 new epics that will be built on _main_,\nalong with sharing any bugfixes back and forth between the two branches.\nVAT has been tracking which commits should be cherry-picked back and forth each day, \nresulting in significant overhead and bookkeeping.\nRather than continuously merging two long-running branches into each other, \nthe VAT team proposes to develop on _main_ simultaneously with CLI.\nThis would allow the CAPI v3 acceleration work to proceed faster.\n\nThe CLI team is constrained by needing to continue shipping stable versions of v6. \nThere would be increased risk of shipping unstable versions, \ngiven that the VAT team's work involves modifying existing code\nfor which there are no integration tests.\nThe VAT team would bear little of this risk\nand would reap most of the benefit.\n\n## Decision\n\n_The change that we're proposing or have agreed to implement._\n\nVAT is proposing to have both teams develop in the _main_ branch simultaneously.\n \nOne code base would be building two different versions of the binary.\nThe v6 binary would not include any v7 actors or commands.\nIntegration tests will need to split to represent v6 behaviour vs v7 behaviour.\nWe will need two separate command lists.\nThe main.go file can either be copied as two separate packages \nor as a single file that relies on go build flags to determine the version.\nAny v6 commands that are already backed by v3 endpoints will need to be carefully dealt with\nin order to ensure backwards compatibility when working with the v6 CLI.\nSeveral packages are differentiated by a v2/v3 prefix,\nbut should be v6/v7 going forward to avoid confusion.\nRemoval of v3 prefix commands from the v6 CLI to reduce overlapping surface area.\n\n## Consequences\n\n_What becomes easier or more difficult to do and any risks introduced by the change that will need to be mitigated._\n\nThe v7 CLI will automatically gain all new features, bug fixes, etc., from the v6 CLI.\nWhen VAT makes fixes to the CLI as a whole (e.g. solving a race condition in a test),\nthe CLI team automatically gains that benefit.\nThere is less risk of dropping commits that should be shared.\nIt will be easier for each team to restructure the code base (or even rename files) and continue to share code.\n\nThere is an increased risk of blocking each others' pipelines.\nThere is an increased risk of inadvertently shipping breaking changes in the v6 CLI.\nThere is going to be confusion as to which team owns which section of the code.\nThe integration test structure could become difficult to work with, especially as the two products drift apart.\n\nThe teams can still decide to branch/fork in the future if this proposal becomes untenable,\nhowever, branching/forking now will make it nigh-impossible to merge in the future.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0010-v7-and-v8.md",
+   "identity": "doc/adr/0010-v7-and-v8.md",
+   "adr_id": "10",
+   "title": "Synchronizing V7 and V8 (Main) code",
+   "first_commit": "2020-06-05T11:44:18-07:00",
+   "first_sha": "cd2f778c33f29a0b3255dbd87eb2cae8e554d34d",
+   "last_commit": "2022-10-23T20:02:31-04:00",
+   "author": "Brian Cunnie",
+   "email": "bcunnie@vmware.com",
+   "status": "unknown",
+   "status_raw": "Submitted",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# 10. Synchronizing V7 and V8 (Main) code\n\nDate: 2020-06-04\n\n## Status\n\nSubmitted\n\n## Context\n\n_The issue motivating this decision, and any context that influences or constrains the decision._\n\n**Current**: Changes committed to the [V7\nbranch](https://github.com/cloudfoundry/cli/tree/v7) need to be cherry-picked\nonto the [main (V8) branch](https://github.com/cloudfoundry/cli), a manual\nprocess.\n\nThis depends on the pair to remember to cherry-pick. If forgotten, the commit\nwill not be merged, and we run the risk of bugfixes (and features) not\nmanifested in both branches.\n\n## Decision\n\n_The change that we're proposing or have agreed to implement._\n\nCommit changes on the v7 branch then merge to main/v8, e.g.:\n\n```bash\ngit co v7\ngit pull -r\n # make changes\nmake\ngit add -p\ngit ci\nbin/push.sh\n```\n\n[`push.sh`](https://github.com/cloudfoundry/cli/blob/main/bin/push.sh) is a\nscripts which pushes the v7 commit, rebases against main, checks out main,\npulls, merges v7, pushes, and then checks out v7. It automates some of the more\ntedious aspects of the commit cycle.\n\nThis is the process that Ops Manager follows to maintain several branches.\n\nIt is not without drawbacks, though. Here are the notes from the Ops Mgr anchor:\n\n> We're still using merge forward as the primary method of sharing features / bug fixes across all of our releases. It generally still works well for us, but there are drawbacks.\n> * If you care about a \"clean\", fairly linear git history for each branch. The merge commits can definitely make things difficult to follow sometimes. This isn't much of an issue for us, but I can imagine it being more important for ya'll since it's an open source project\n> * It assumes that everything in the earlier branch belongs in the later branch. This makes a lot of sense for common bug fixes, but perhaps there are feature differences that could make it trickier in your case.\n> * It somewhat discourages large refactors or cleanups. In 2.7 we did a major refactor of our React code, so anytime we need to do a UI bug fix in 2.6 or below, it becomes a pain to merge forward and we basically have to re-do the work. (Though this probably would apply to a cherry-pick strategy as well!)\n> I think for Ops Manager, since we're maintaining so many branches at once, and the fact that most of what we would do on earlier branches is bug fixes for ALL branches, it's slightly less overhead for us to do merge forward. If the CF CLI is diverging in any significant manner between versions, and you're only going to be dealing with 2 versions, cherry-picking from one branch to the other might be cleaner. Merge forward should still work, but maybe you'd be getting less benefit out of it.\n\n## Consequences\n\n_What becomes easier or more difficult to do and any risks introduced by the change that will need to be mitigated._\n\nIf a pair forgets to merge their commit to main, the subsequent merge to\nmain will pick up that change (this is a good thing).\n\nSometimes a merge conflict will occur. This happens with cherry-picks, too.\n\nThe first merge will entail duplicate commits (the ones that have been\ncherry-picked).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "bin/push.sh",
+    "github.com/cloudfoundry/cli/blob/main/bin/push.sh"
+   ],
+   "implementation": {
+    "sha": "9cd6b74aa804dbe04e773cab92d7b7a2a0f9f59b",
+    "date": "2020-06-08T13:57:02-07:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "bin/push.sh"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/0011-command-actor-api-architecture.md",
+   "identity": "doc/adr/0011-command-actor-api-architecture.md",
+   "adr_id": "11",
+   "title": "Rules for organizing `command`, `actor`, and `api` code",
+   "first_commit": "2020-07-28T15:35:21-07:00",
+   "first_sha": "bdaed261c9e3ebd0fc00bd74228d815349f6ec23",
+   "last_commit": "2020-07-28T15:35:21-07:00",
+   "author": "Reid Mitchell",
+   "email": "rmitchell@pivotal.io",
+   "status": "unknown",
+   "status_raw": "Submitted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 11. Rules for organizing `command`, `actor`, and `api` code\n\nDate: 2020-07-28\n\n## Status\n\nSubmitted\n\n## Context\n\nSeveral years ago, the CLI team began refactoring the legacy codebase in place, converting commands one at a time. When the V3 Acceleration Team (VAT) was created to focus on finishing V7 of the CLI, which would use primarily CAPI V3 endpoints, we picked up the patterns introduced as part of these refactors and began applying them to the new V7 commands that we ported from V6.\n\nThe architecture that we inherited looked roughly like this:\n\n- The \"command layer\" lives under the `command` directory. The `command/v7` package contains one file/struct per V7 command (e.g. `v7.SpaceQuotaCommand`).\n- The \"actor layer\" lives under the `action` directory. The `action/v7action` package contains roughly one file per API resource with methods related to that resource (e.g. `droplets.go`).\n- The \"API layer\" lives under the `api` directory. The `api/cloudcontroller/ccv3` package contains one file per API resource with methods related to hitting CAPI V3 endpoints.\n\nAfter porting a large number of commands to this architecture, VAT had accumulated a number of small frustrations. There were ambiguities with this architecture that left us asking each other the same questions over and over:\n\n- When should logic live in the command layer vs. the actor layer?\n- Why do we have a `ccv3.Space` struct and a `v7action.Space` struct, when they are very similar (often literally aliases of one another)?\n- If we have actor methods that call other actor methods, how should we unit test these? We can't mock the actor methods at this level, so we have to mock the underlying API methods, which makes tests harder to reason about.\n\n## Decision\n\nWe decided that we needed to come up with a **stricter set of rules** that we could overlay onto the current architecture to help us resolve these questions so we don't need to keep revisiting them.\n\nThese are the rules that we decided on. Note that most of the patterns described here were already used in various parts of the codebase, but they were not used consistently. You might think of this as picking-and-choosing the \"greatest hits\" from all of the pieces of CLI commands that we've written.\n\n### API-layer rules & responsibilities\n\nThe API layer (also called the \"client layer\") is the simplest. This layer contains packages designed to hit specific APIs. The most commonly used one is `api/cloudcontroller/ccv3`, which contains methods that hit the CAPI V3 API.\n\nEach method in this layer should do **one thing**. Usually, this means **make a single request** to an API endpoint. Inputs to these methods should correspond with inputs that the endpoint takes, and return values should correspond with the return values of the endpoint.\n\nMost of the time, think of this layer as a 1:1 mapping from API endpoints to client methods.\n\nHowever, it is permissible to add \"helper\" methods at this layer, as long as they are making a single request. A good example is `GetApplicationByNameAndSpaceGUID`.  This sort of helper is needed in lots of actor methods, but it doesn't map directly to a single endpoint; instead, it maps to `GET /v3/applications?names=<name>&space_guids=<guid>`. It is good to define this method at the API layer because it means we can easily mock it out in unit tests of the actor-layer methods that use it.\n\n### Resource-layer rules & responsibilities\n\nThe resource layer is the second-simplest layer. It is a **new layer**, extracted from the API layer. It lives in the `resources` directory.\n\nPreviously, we had structs modeling each API resource defined in the API layer (e.g. `ccv3.SpaceQuota`). API methods would return them to the actor layer. The actor layer would then convert them into actor-layer struct types. Often, this was just done using type aliases:\n\n```go\npackage v7action\n\n// ...\n\ntype SpaceQuota ccv3.SpaceQuota\n\n// ...\n\nccv3SpaceQuota := actor.CloudControllerClient.GetSpaceQuota(guid)\n\nreturn SpaceQuota(ccv3SpaceQuota) // have to cast it\n```\n\nWe felt this was an unnecessary amount of indirection and abstraction (_why do we need the struct defined in two places?_). Nobody could think of a strong reason for it. Plus, it made API layer unit tests fairly large and hard to read, since they were often testing both logic and JSON marshalling/unmarshalling in the same tests.\n\nBy extracting the structs to the resource layer, we have a **single shared struct definition for each API resource**. This is shared by all the other layers (API, command, actor).\n\nStructs defined at this layer should **map directly to API resources**. No data should be present on these resources that did not come back from the primary API endpoint that returned them. (See [the summary pattern](#the-summary-pattern), in the actor-layer, for an example of how to do this correctly.)\n\nThis layer should also contain **all JSON marshalling/unmarshalling logic**.  This lets us unit-test this behavior individually, in resource-layer unit tests, without needing to clutter the API-layer tests.\n\nTo simplify field access, resource structs should be **as flat as possible**.  For example, on `resources.Application`, we have a `SpaceGUID` field. In the V3 API JSON response, this data lives at `app.relationships.space.data.guid`. We should handle all the nesting/unnesting of fields like this in the marshal/unmarshal logic, so that other layers don't need to know or care about the specific JSON representation that the API gives us. As a rule of thumb, the word \"relationships\" should never appear outside of the resource layer, since this is an API implementation detail.\n\nFor handling complex marshalling/unmarshalling logic, the [`jsonry` library](https://github.com/cloudfoundry/jsonry) will come in quite handy. We expect the resource layer to make heavy use of this package.\n\nFinally, this layer **should not contain methods that make API requests**. Those should live at the API layer.\n\n### Command-layer rules & responsibilities\n\nThe command layer is responsible for **taking user input** and **presenting output to the user**. The former involves things like defining and validating flags/positional arguments/environment variables. The latter involves formatting and printing messages to stdout and stderr. In between those, commands call out to the actor layer to do the \"real\" work.\n\nMost commands should only make a **single call to an actor-layer method**. A command will usually give some indication of what it's doing (e.g. `Creating app my-app in space my-space / org my-org as some-user...`), and then give an indication that the action succeeded or failed (e.g. `OK`, a table of data, or an error message).\n\nAn exception to that rule is commands that perform multiple \"steps.\" For example, `create-org` will first create an org, and then will assign the current user as an org manager in that org. These two discrete steps are both presented to the user, and they both display an `OK` on successful completion, so they should be two separate actor-layer calls.\n\nSee the [style guide](https://github.com/cloudfoundry/cli/wiki/CF-CLI-Style-Guide) for guidelines on how to format command output.\n\n### Actor-layer rules & responsibilities\n\nThe actor layer has historically been the hardest layer to explain. It is easiest to start by describing all the things it _shouldn't_ be responsible for; see the preceding sections for that.\n\nSo what is left? This layer is primarily responsible for **taking input from the command layer**, **orchestrating multiple API-layer calls**, and (when necessary) **packaging multiple responses into resource-summary structs** to be returned to the command layer.\n\nActor-layer methods generally **should not wrap only a single API-layer call**.  If there is an actor method that is only making a single call, it is a sign that we are probably doing too much work at the command layer (where it is being called).  Consider putting some of this work in this actor method.\n\nA good example is something like `ApplyOrgQuota(orgName string, quotaName string)`. This method takes **names** of resources, not guids, because that's typically what the user has provided to the command layer. This method will probably need to make a series of calls to achieve its single goal: fetch the org by name to retrieve the org guid, fetch the quota by name to retrieve the quota guid, then apply the quota in a request using these two guids. From the command layer's point-of-view, this method is doing only one thing (applying an org quota). But it needed to orchestrate three API calls to do it.\n\n#### The summary pattern\n\nAnother common category of actor methods follow the **summary pattern**. These methods are used by \"read\" commands (e.g. `space`) and might be called something like `GetSpaceSummary`. Typically, these commands fetch a single primary resource (like a space), plus a handful of related resources (e.g. routes in that space, the space's parent org). The actor layer is then responsible for defining a struct type to contain all of this information. These actor methods will return a summary struct back to the command layer, which will handle displaying that information appropriately.\n\nHere's what a summary struct might look like:\n\n```go\npackage v7action\n\ntype SpaceSummary struct {\n    Space    resources.Space\n    Routes   []resources.Route\n    Org      resources.Organization\n}\n```\n\nNote that it is composed of several resources (defined in the `resources` package, at the resources layer). But since each of these resources are fetched from different API endpoints, no single `resources` struct can contain all of it; it is the job of the actor layer to assemble them into a summary struct.\n\n## Consequences\n\nLooked at one way, these rules classify existing code as _doing it wrong_ or _doing it right_. This is **not** the intended takeaway. We do not believe it is valuable to go back and refactor every place that is not adhering to these rules, because most often these things amount to minor cosmetic differences. Plus, like all rules, these are not perfect and will not apply 100% of the time. If there is a strong reason to deviate from them, developers should not feel guilty about it. These rules only aim to resolve confusion if it exists. We do not want to add additional confusion. If you never need to refer to these rules, that's fine! But they're here if you need them.\n\nThe primary goal here is that **going forward**, when questions arise, we have a framework for answering them. When a new teammate joins, we can point them to these rules as a starting point. When external contributors want to understand the codebase, they can refer to these rules.\n\n### Pain points addressed\n\nAll that said, let's look at how these rules address some of the specific pain points we were feeling:\n\n- The responsibilities of the actor layer are now much clearer. Several patterns that were sometimes seen at the actor layer have now been \"moved\" either to the command or to the API layer.\n- By explicitly allowing \"helper\" methods to exist at the API layer, we can more often avoid having actor methods call other actor methods. This prevents the problem of being unable to mock these calls in unit tests. As much as possible, actors now only call API methods.\n- By introducing the resource layer, we eliminate the need for separate resource structs that live at the actor and API layers. Now it's much simpler: every layer can refer to the shared resources. The new \"summary struct\" pattern handles cases where an actor needs to combine data from multiple resources.\n\n## Links & resources\n\nHere's a visual representation (a screenshot of the Miro board linked below). This may grow slightly out-of-date as time goes on, so this document and the linked Miro board should be considered more reliable sources of truth.\n\n![diagram of proposed architecture](/doc/cli-architecture-proposal-adr-0011.jpg)\n\nSome related links:\n\n- The [Miro board](https://miro.com/app/",
+   "truncated_text": true,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "command/v7",
+    "action/v7action",
+    "droplets.go",
+    "api/cloudcontroller/ccv3",
+    "doc/cli-architecture-proposal-adr-0011.jpg"
+   ],
+   "implementation": {
+    "sha": "bdaed261c9e3ebd0fc00bd74228d815349f6ec23",
+    "date": "2020-07-28T15:35:21-07:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "doc/cli-architecture-proposal-adr-0011.jpg"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/0008-swap-traffic-controller-for-log-cache.md",
+   "identity": "doc/adr/0008-swap-traffic-controller-for-log-cache.md",
+   "adr_id": "8",
+   "title": "Swap Traffic Controller for Log Cache",
+   "first_commit": "2020-04-09T19:29:30-07:00",
+   "first_sha": "127690e70e14654b438f8ac0504c53c3c80330c4",
+   "last_commit": "2020-04-17T15:51:23-07:00",
+   "author": "Andrew Crump",
+   "email": "acrump@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 8. Swap Traffic Controller for Log Cache\n\nDate: 2020-04-09\n\n## Status\n\nAccepted\n\n## Context\n\n_The issue motivating this decision, and any context that influences or constrains the decision._\n\nThe Loggregator team decided to move to a [\"Shared\nNothing\" architecture](https://docs.google.com/document/d/1_Ve4wAkeCC0fIJ1TiAWSfxzNp5zB_Ndoq5UmfUNJtgs/edit?usp=sharing)\nthat would improve scalability of log egress from the platform. This architecture deprecated the V1 Firehose Traffic Controller,\nthe component from which the cf CLI retrieved application logs. As a result, the Loggregator team proposed modifying the cf CLI to retrieve\nlogs from Log Cache instead.\n\n## Decision\n\n_The change that we're proposing or have agreed to implement._\n\nAfter December 2019, the CLI's minimum supported version of cf-deployment contains Log Cache. Therefore, in 2020:\n\n* cf CLI v7 will be modified to retrieve application logs from Log Cache\n* cf CLI v6 will be modified to retrieve application logs from Log Cache _with the exception of experimental v3-prefixed commands_\n* cf CLI v6/v7 legacy command implementations accessible through the Plugin API\n  will be modified to retrieve application logs from Log Cache\n\nThere will be no user-facing or breaking changes.\n\n## Consequences\n\n_What becomes easier or more difficult to do and any risks introduced by the change that will need to be mitigated._\n\n* Cloud Foundry log egress is expected to become more scalable and resource\n  efficient\n* We will be limited in our ability to modify the Log Cache API by our minimum\n  supported version [policy](https://github.com/cloudfoundry/cli/wiki/Versioning-Policy).\n* The Traffic Controller V1 implementation was based on a long-lived Websocket\n  connection. Log Cache requires the client to make GET requests to an HTTP API\n  to retrieve application logs.\n* The log envelopes for an application are grouped together into\n  source-id \"buckets\". This poses the risk that logs may be shown for a different\n  operation than that being performed by the user.\n* Authorization for log retrieval would previously need to be done once when\n  establishing a long-lived connection for streaming logs. It must now be\n  performed for each request made when \"walking\" Log Cache.\n* Log Cache may perform caching of authorized source-ids. Users that push a\n  number of applications in quick succession may be unable to retrieve logs.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0009-log-cache-clock-issues.md",
+   "identity": "doc/adr/0008-log-cache-clock-issues.md",
+   "adr_id": "9",
+   "title": "Log Cache and Clock Issues",
+   "first_commit": "2020-04-08T18:42:49-07:00",
+   "first_sha": "27ffb0fe3f03f1c2fcff7fea966e3c7ad749890f",
+   "last_commit": "2020-04-17T15:51:23-07:00",
+   "author": "Andrew Crump",
+   "email": "acrump@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# 9. Log Cache and Clock Issues\n\nDate: 2020-04-08\n\n## Status\n\nAccepted\n\n## Context\n\n_The issue motivating this decision, and any context that influences or constrains the decision._\n\nThe CF CLI previously used the Traffic Controller to retrieve application logs.\nThis was implemented as a long-lived WebSocket connection where logs were\nstreamed to the client.\n\nWith the migration to Log Cache we needed to preserve the experience of\nstreaming logs, but built [on an\nAPI](https://github.com/cloudfoundry/log-cache-release/blob/f08a3081c029d133300b1d6cb5ea8ebbd2108874/src/README.md)\nwhere timestamped log envelopes are retrieved via HTTP requests.\n\nThere were two main questions we needed to answer:\n\n1. What is the oldest log that should be shown?\n   An application may have logs from a previous push already present in Log Cache\n   that do not relate to the current staging operation. We would want to only\n   show the logs for the current staging operation.\n2. What is the newest log that can be shown?\n   Log Cache is eventually consistent, so very recent logs may be out of order\n   or incomplete. We would only want to show logs once they have \"settled\" (i.e.\n   logs that have been in Log Cache long enough to converge).\n\nWe also needed to answer a question regarding `cf logs --recent`:\n\n3. Do we want to define a range of \"settled\" logs to show, or do we want to show everything currently in the Log Cache?\n\n## Decision\n\n_The change that we're proposing or have agreed to implement._\n\n1. To determine the oldest log that will be shown: we will 'peek' at the latest log within\n   Log Cache for the application and read from that point.\n2. To determine the newest log that will be shown: we will not show log envelopes where the\n   timestamp is less than two seconds old.\n3. `cf logs --recent` will always show all logs currently in the Log Cache, regardless of whether they have \"settled\".\n\n### 1. Peeking at the latest log\n\nThe initial CLI implementation of Log Cache started reading from Log Cache at an\noffset based on the current client clock time. This was flawed because an\nincorrectly configured client clock would result in some unexpected behaviour:\n\n* If the client clock was ahead of the server then either the logs would not be\n  shown at all, or there would be a lengthy delay before some of the logs would\n  be shown\n* If the client clock was behind the server then logs relating to a previous\n  operation might be shown\n\nIn an attempt to decouple ourselves from the client clock time we instead 'peek'\nat the timestamp of the latest log envelope for the application and use that\ntimestamp as our starting point.\n\nIf there are no envelopes present for the application we will continue to retry\nuntil envelopes become available.\n\n### 2. Delaying the output of new logs\n\nBy default, the Log Cache client will only return log envelopes that have timestamps\nmore than a second old (see the [code](https://github.com/cloudfoundry/log-cache-release/blob/f08a3081c029d133300b1d6cb5ea8ebbd2108874/src/pkg/client/walk.go#L174-L183)).\nThis filtering mechanism is known as `WalkDelay` and is configurable.\n\nIn our testing we found that the default of one second was not sufficient to allow Log Cache to\n\"settle\" and resulted in log loss on foundations with multiple Log Cache nodes.\nThis is because multiple Log Cache nodes may be ingesting events for the same\napplication, but a single Log Cache node hosts the cache for a given\napplication. It's possible for us to see a newer log envelope timestamp and move\nour timestamp cursor forwards before we have received an earlier log envelope:\nhttps://www.pivotaltracker.com/story/show/171759407/comments/212391238.\n\nWe decided to increase the `WalkDelay` to 2 seconds to give Log cache more time\nto \"settle\" in a multiple Log Cache node foundation.\n\nNote: an issue has been filed against the Log Cache client to increase the default\nwalk delay: https://github.com/cloudfoundry/go-log-cache/issues/29\n\n### 3. `cf logs --recent` behavior\n\nWe decided to implement `cf logs --recent` using a single request to Log Cache instead of a multiple pass\n`Walk` implementation. This has better performance but means that there is no `WalkDelay` (i.e. the latest\nlogs returned by the request may not be \"settled\"). There were three options we considered to address this:\n\n1. Do nothing. Simply return all of the logs that are currently in Log Cache.\n2. Only render logs that are more than two seconds old.\n3. Wait two seconds before showing all logs up to the point that the command was started.\n\nWe decided to go with option 1. Option 2 would most likely break CATs and other automated tooling run against\nthe `cf logs --recent` command due to the lag in logs appearing. Option 3 was a poor UX as it made the command\ntwo seconds slower and would also be missing logs that were emitted after the command started.\n\nSee this [comment](https://www.pivotaltracker.com/story/show/172152836/comments/213375953) for more information.\n\n## Consequences\n\n_What becomes easier or more difficult to do and any risks introduced by the change that will need to be mitigated._\n\n### Peeking at the latest log\n\n* Peeking at the latest envelope for an application removes a dependency on the\n  client clock, making us more tolerant to a situation where the client clock is\n  not closely synchronised to the server\n* As each component that generates logs is responsible for assigning the\n  timestamp, there is still potential for clock drift within the foundation to\n  cause unexpected behavior.\n* The code is slightly more involved, but it seems like a good trade-off\n\n### Delaying the output of new logs\n\n* We are momentarily delaying the output of new log envelopes to the user, with\n  the advantage that by delaying we are able to output a more consistent view of\n  the logs\n* The `WalkDelay` is implemented within the Log Cache client as a comparison of\n  the log envelope timestamps against the client clock. It is therefore\n  vulnerable to any misconfiguration of the client clock. We've considered\n  strategies for removing this dependency on the client clock but have decided\n  for now to wait for feedback from our users before attempting to make ourselves\n  reliable in this situation. An issue has been filed against the Log Cache\n  client: https://github.com/cloudfoundry/go-log-cache/issues/28\n\n### `cf logs --recent` behavior\n\n* The most recent logs returned by this command may not be \"settled\". There may be some\n  discrepancies between the output of two consecutive runs of this command.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "cloudfoundry/go-log-cache#29",
+     "kind": "issue",
+     "url": "https://github.com/cloudfoundry/go-log-cache/issues/29",
+     "number": "29"
+    },
+    {
+     "key": "cloudfoundry/go-log-cache#28",
+     "kind": "issue",
+     "url": "https://github.com/cloudfoundry/go-log-cache/issues/28",
+     "number": "28"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/cloudfoundry/log-cache-release/blob/f08a3081c029d133300b1d6cb5ea8ebbd2108874/src/README.md",
+    "github.com/cloudfoundry/log-cache-release/blob/f08a3081c029d133300b1d6cb5ea8ebbd2108874/src/pkg/client/walk.go"
+   ],
+   "implementation": {
+    "sha": "9c01abe3d8a0630a798ec1ea8ecd602d15ae2d48",
+    "date": "2026-01-08T08:31:25-08:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "README.md"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/0006-implement-v7-start-client-side-with-only-existing-v3-endpoints.md",
+   "identity": "doc/adr/0006-implement-v7-start-client-side-with-only-existing-v3-endpoints.md",
+   "adr_id": "6",
+   "title": "ADR 6: Implementing start Command Client-side",
+   "first_commit": "2019-11-11T17:39:20-08:00",
+   "first_sha": "f12943fc12679d05eceb8a4db46633762f53fd45",
+   "last_commit": "2020-03-27T14:33:33-07:00",
+   "author": "Mona Mohebbi",
+   "email": "mmohebbi@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# ADR 6: Implementing start Command Client-side\n\n## Status\n\nAccepted\n\n## Abstract\n\nThe V7 CLI's start command must function similarly to V6's `cf start` command in that it _both_ stages and starts an app after a `cf push --no-start` (see [story](https://www.pivotaltracker.com/story/show/162463497)) using only V3 capi endpoints (see [design board](https://miro.com/app/board/o9J_kykcZyc=/)). The decision whether to implement this feature in CAPI or CLI posed challenges, but ultimately the decision was to implement this in the CLI.\n\n## Decision\n\nWe will implement staging unstaged packages during a `cf start` command on the CLI side using the following steps.\n\n1. Check if the app is already started and exit 0 if so\n1. Detect if there is a package ready to be staged. We assume the user has a package that is meant to be staged if it is the most recently uploaded package and it hasn't been successfully turned into a droplet already.\n    * `cf curl -X GET v3/apps/$(cf app app-name --guid)/packages?order_by=-created_at&per_page=1`\n    * Convert JSON response into a package and take the guid\n    * `cf curl -X GET v3/packages/:package-guid/droplets?states=STAGED&per_page=1`\n1. If the final curl to get droplets in the staged state that run the latest package came up with an empty list of resources, build the latest package\n    - `cf curl -X POST v3/build -d \"package\": '{ \"guid\": \"[package-guid]\" }'`\n1. Poll staging logs and wait for them to complete\n1. Assign the resulting droplet to your app\n    - `cf curl -X PATCH v3/apps/relationships/current_droplet -d '{ \"data\" : { \"guid\" : \":droplet-guid\" } }'`\n1. Start the App\n    -  `cf curl -X POST v3/app/$(cf app app-name --guid)/actions/start`\n1. Poll the get processes endpoint until all web processes are in the started state\n\nWe will share these steps and receive feedback from other clients that we are in close contact with, and provide it as an open source resource for other clients who are dependent on V2 start behavior.\n\nOur implementation is not overly complex. It prefers not breaking the existing V6 user workflows, but leaves potential room for error around cases where users get into unpredictable states as it depends on imperative over declarative workflows. <!-- FIXME: example? -->\n\n### Consequences Stemming from the Decision to Implement in the CLI\n\n **Positive Consequences**\n\n * CLI users not experience breaking changes\n * Maintains REST API purity\n * Granular endpoints give advanced API consumers lots of freedom to implement their own creative solutions.\n * Allows for future Cloud Foundry API clients who have no historic knowledge of V6 workflows to depend less on the V2 ways.\n * Allows for current clients to evolve and around V3 ways.\n\n **Negative Consequences**\n\n * Multiple clients will have to re-implement the same logic\n * Less coherent definition of `start` across clients\n * Causes more complex client-side logic\n * Will be difficult to predict how this specific implementation will interact with other new V3 workflows, such as rollbacks.\n\n\n### Why We Chose Not to Implement on CAPI\n\nImplementing this on CAPI would break fundamental [V3 principles](https://github.com/cloudfoundry/cloud_controller_ng/wiki/Notes-on-V3-Architecture) designed to avoid unpredictable orchestrator type API endpoints. While the `v3/apps/:guid/actions/start` endpoint still relies on a [model_hook](https://github.com/cloudfoundry/cloud_controller_ng/blob/77a125b56545e6ed003cbab83e540ce6f4006e20/app/models/runtime/process_model.rb#L530), the `v3/build` endpoint currently follows the [API style guide's](https://github.com/cloudfoundry/cc-api-v3-style-guide#asynchronicity) preference for having endpoints that need to asynchronously communicate with other components return pollable jobs. Combining these two into a single endpoint would definitely lead to some unwanted complexity, distribution of business logic across multiple components and resources, and general unpredictability. This was one reason why these two actions were originally separated in the migration from V2 to V3.\n\nFurthermore, a server-side implementation would be an imperfect interpretation of RESTful design, which CAPI is meant to follow. One of the principles of RESTful architecture is a separation of client and server-side concerns. Doing this allows for user interfaces to evolve independently around a consistent API, and allows scalability on the server-side by simplifying components ([source](https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm)). Given that these concerns were brought to us by a specific client and CAPI is not meant to service a single client, implementing this on the server-side would cause unnecessary complexity.\n\nFinally, a client-side implementation relies on using the API in an imperative way, where declarative workflows might be preferred. Implementing `cf start` thorough a series of imperative endpoints would mean the clients would be responsible for predicting what state the user would want to get into externally. This leaves more room for error if a user gets themselves into an unpredictable state - particularly around rollback cases.\n\n### Feedback from CAPI Consumers\n\nAlthough this concern (`cf start` will stage and start unstarted applications) was brought to us by CLI users, it is worth noting that other clients depend on this workflow as well. As the concept of `start` has changed greatly on the API side, it is not a stretch to imagine many other clients are dependent the old behavior and would have to re-implement any potential client-side interpretation. We opened a [dialogue](https://pivotal.slack.com/archives/C055JEH48/p1570657730016400) and held a meeting with the Apps Manager team, who have their own client-side implementation, to hear their concerns. They told us they were open to either solution, but would want to be notified of any API changes that might break their current start implementation that depended on V3 endpoints.\n\n## History\n\nAfter collecting [user feedback](https://docs.google.com/document/d/1OPJSUYXMQMtzZmVdnvwI4NiXE0xp4tuLxO3fhhXtGwI/edit), the V3 acceleration team PMs brought to attention that in order to maintain an essential V6 workflow, Given that VAT has access to both CLI and CAPI code bases it fell to the engineers to decide whether the changed behavior would be implemented in the CLI or in CAPI. The engineers chose to implement the behavior in the CLI.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "v3/apps/:guid/actions/start",
+    "github.com/cloudfoundry/cloud_controller_ng/blob/77a125b56545e6ed003cbab83e540ce6f4006e20/app/models/runtime/process_model.rb",
+    "v3/build",
+    "fielding/pubs/dissertation/rest_arch_style.htm"
+   ],
+   "implementation": {
+    "sha": "03d0b694e4d500b9f33b5d3d9ebb7a7430fa009b",
+    "date": "2020-10-09T17:46:20+00:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "api/cloudcontroller/ccv3/build.go",
+     "api/cloudcontroller/ccv3/build_test.go"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/0003-resource-matching-implementation.md",
+   "identity": "doc/adr/0003-resource-matching-implementation.md",
+   "adr_id": "3",
+   "title": "Resource Matching Implementation",
+   "first_commit": "2019-03-22T12:31:46-07:00",
+   "first_sha": "80837b650f7e613fd020e7c40747bffbadd4c83b",
+   "last_commit": "2019-03-22T12:31:46-07:00",
+   "author": "Eli Wrenn",
+   "email": "ewrenn@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 3. Resource Matching Implementation\n\nDate: 2019-03-22\n\n## Status\n\nAccepted\n\n## Context\n\n_The issue motivating this decision, and any context that influences or constrains the decision._\n\nWhen uploading applications to a particular foundation,\nthere may be duplicate files that are shared between apps.\nIn order to reduce the load from uploading duplicate files,\nthe Cloud Controller exposes an endpoint to match existing files prior to uploading application bits.\nThe client then uses this endpoint to determine which files require upload.\n\nDuring the first stage of push,\nPushPlans are created to determine what actions need to take place during the remaining push operation.\nThis introduced a unique decision,\nperform resource match when creating push plans\nor perform resource matching immediately prior to uploading application bits.\n\n## Decision\n\n_The change that we're proposing or have agreed to implement._\n\nThe decision was made to perform resource matching immediately prior to uploading application bits.\n\nPerforming resource matching as late as possible would result in the most optimized matching.\nSince multiple applications can be pushed at a time,\nif the client were to perform a resource match upfront,\nnone of the shared files between the apps would be matched because none of them have been uploaded yet.\nBy deferring the resource match to just before an app-specific upload,\nfiles shared with any of the subsequent applications will then be matched before upload.\n\n## Consequences\n\n_What becomes easier or more difficult to do and any risks introduced by the change that will need to be mitigated._\n\nThe intention of the `CreatePushPlans` function was to have a single place which determines the actions needed during the push.\nThe decision to place resource matching later in the process diverges from this intention and may lead to confusion in the future.\nThe increase in performance when placing resource matching later in the process out-weighs the additional complexity due to the positioning.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0001-record-architecture-decisions.md",
+   "identity": "doc/adr/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2018-10-19T11:51:23-07:00",
+   "first_sha": "571e9b23b552de687334f6cdd8a405a8ed549f38",
+   "last_commit": "2018-10-19T11:51:23-07:00",
+   "author": "Greg Cobb",
+   "email": "gcobb@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record architecture decisions\n\nDate: 2018-09-25\n\n## Status\n\nAccepted\n\n## Context\n\nAs we are building out v7 of the CLI, we need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as [described by Michael Nygard](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions).\n\n## Consequences\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's [adr-tools](https://github.com/npryce/adr-tools).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "doc/adr/0005-v7-push-transforms-manifest-before-applying.md",
+   "identity": "doc/adr/0005-v7-push-transforms-manifest-before-applying.md",
+   "commit": "1eb1978662852f51b95c59e783b51a091c1fbc50",
+   "date": "2019-10-02T11:20:42-07:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "Update 0005-v7-push-transforms-manifest-before-applying.md",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Reid Mitchell",
+   "email": "rmitchell@pivotal.io"
+  },
+  {
+   "path": "doc/adr/0004-v7-push-refactor.md",
+   "identity": "doc/adr/0004-v7-push-refactor.md",
+   "commit": "15564551a9b66cad74a07fd6036fe1d41cc679c0",
+   "date": "2019-07-15T17:13:38-07:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "Update 0004-v7-push-refactor.md",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Reid Mitchell",
+   "email": "rmitchell@pivotal.io"
+  },
+  {
+   "path": "doc/adr/0012-de-version-v8-code-base.md",
+   "identity": "doc/adr/0012-de-version-v8-code-base.md",
+   "commit": "1f57d1b2f07e5465faa66a141f849d012d2630bf",
+   "date": "2021-08-18T14:55:13-07:00",
+   "old_state": "unknown",
+   "new_state": "accepted",
+   "old_raw": "PR Submitted",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "Update 0012-de-version-v8-code-base.md",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Jenna Goldstrich",
+   "email": "jgoldstrich@pivotal.io"
+  },
+  {
+   "path": "doc/adr/0002-develop-v6-and-v7-on-master-simultaneously.md",
+   "identity": "doc/adr/0002-develop-v6-and-v7-on-master-simultaneously.md",
+   "commit": "db6f2bc8665c1f63979663bfbe7654d88c497b59",
+   "date": "2020-04-09T11:43:47-07:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "Move ADR 0002 to accepted state",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "accepted-during-cleanup",
+   "author": "Nick Webb",
+   "email": "nwebb@pivotal.io"
+  },
+  {
+   "path": "doc/adr/0009-log-cache-clock-issues.md",
+   "identity": "doc/adr/0008-log-cache-clock-issues.md",
+   "commit": "127690e70e14654b438f8ac0504c53c3c80330c4",
+   "date": "2020-04-09T19:29:30-07:00",
+   "old_state": "accepted",
+   "new_state": "accepted",
+   "old_raw": "Accepted",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "ADR: Swap Traffic Controller for Log Cache",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Andrew Crump",
+   "email": "acrump@pivotal.io"
+  }
+ ],
+ "ai_signals": [
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Cursor <cursoragent@cursor.com>",
+   "date": "2026-02-24T19:23:55-05:00",
+   "commit": "bcee664cb644af2791fde118b539c5e0620ce7c1",
+   "evidence": "[main] RFC-0045: Stack management reason (#3719)",
+   "official": true,
+   "author": "Simon Jones",
+   "email": "simonjones@vmware.com"
+  }
+ ],
+ "signal_date": "2026-02-25T00:23:55+00:00",
+ "signal_kind": "coauthor",
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-eligible",
+ "adr_count_before_signal": 12,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-before-signal",
+ "sources": "sourcegraph:doc_adr;buchgeher-2022",
+ "stars": "1937",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "12"
+}

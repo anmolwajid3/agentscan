@@ -1,3 +1,11 @@
+# Repository
+
+Two pieces of work live here.
+
+The ADR feasibility pilot is in [`adr-feasibility/`](adr-feasibility/). It runs the six checks for the study of architecture decision records and AI coding tools, and it stores the sampling frame, the measured repositories, the scorecard, and the labeling packets.
+
+The rest of this repository is the FORMA study screening described below.
+
 # FORMA study screening
 
 Eleven studies for the related work of the FORMA paper. Each one can change a paragraph. The question is whether a designated verifier can check a cross-agent requirement from the evidence it is allowed to see.

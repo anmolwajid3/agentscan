@@ -1,0 +1,470 @@
+{
+ "repo": "status-im/status-react",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2016-02-23T01:04:42+03:00",
+ "last_commit": "2026-07-22T18:13:37+05:30",
+ "n_commits": 10570,
+ "n_authors": 341,
+ "n_files": 5365,
+ "n_code_files": 94,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 14,
+ "adrs": [
+  {
+   "path": "doc/decisions/0010-remove-jail-and-status-api.md",
+   "identity": "doc/decisions/0010-remove-jail-and-status-api.md",
+   "adr_id": "10",
+   "title": "Remove jail and Status API",
+   "first_commit": "2018-08-16T11:29:20+02:00",
+   "first_sha": "854acebb70fde038a3e02dd0c236c2748e8f7fee",
+   "last_commit": "2023-10-30T12:51:52+05:45",
+   "author": "jhe",
+   "email": "jan.herich@gmail.com",
+   "status": "accepted",
+   "status_raw": "accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 0010. Remove jail and Status API\n\n| Date | Tags |\n|---|---|\n| Thu Aug 16  | jail, 3rd-party-code, extensions |\n\n## Status\n\naccepted\n\n## Context\n\nOriginally, we supported 3rd party status extensions in form of javascript jailed execution environment (eq Jail) + small js library exposing chat commands API to js code.\n\nWhile neat in theory, it has some serious downsides:\n\n- Design of the API was quite poor, preferring mutable semantics over stateless API leveraging strength of the host application (cljs/re-frame).\n  As a result of that, more dynamic/state requiring things (like the live tx detail in `/send` command messages) were very hard to do,\n  so instead of \"eating our own dogfood\", we decided to side-step the API and implement such things as hard-coded logic in the app, while partly\n  retaining the js code for \"easier\" things (like parameter declaration).\n  Needles to say, such efforts produced code of very poor quality, riddling our app with hard-coded \"magic\" everywhere in the codebase, completely\n  defeating the point of \"dogfooding\" while still requiring more effort and being much more error prone (no way to unit test jail logic) because \n  of the need to asynchronously communicate with jail for leftover logic in command messages (the parts not hardcoded in app).\n  \n- We were in a state where there was not even one command defined completely in jail, with all of them requiring custom hardcoded logic in app to\n  actually work.\n  Due to numerous changes and rush to get things working, half of the API was obsolete and was not working/working differently then described in\n  the API documentation.\n  \n- We are quite tight stretched regarding performance and the Jail didn't particularly help with that - whenever some command message was defined in\n  Jail, it required constant RN Bridge \"ping-pong\" whenever sending the message or receiving the message, eating more resources + breaking otherwise\n  quite simple logic into harder to reason asynchronous call chains (execute method defined in Jail, wait for the result, execute next method in Jail...).\n  \n- Till now, there was no real interest in 3rd party bots anyway - the only \"real\" DAPPs submitted to status were \"normal\" DAPPs utilising just the `web3.js`\n  API and built on top of regular web technologies, so they could be ran in any Ethereum client like Metamask or Mist, besides Status.\n  \n- There is a very promising new concept of extensions (project pluto), which will enable to extend status with much nicer and declarative extension\n  definitions.\n  Such extensions will not be able to only hook-in into the command messages logic, but also other application (host) hooks, like wallet assets/collectibles,\n  chat contacts, etc.\n  \n## Decision\n\nIn the light of points above, we decided to remove Jail and `Status.js` API from the application and re-work command messages in set of nicely\nencapsulated app level protocols, so command related logic will be defined in one place, commands will be able to leverage strength of our platform\nand development of any new functionality related to them will be much faster and more pleasant. \nWe will address the 3rd party code issue separately by extensions.\n\n## Consequences\n\n`Status.js` is deprecated and there is no way to define custom commands using javascript only.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/send",
+    "web3.js",
+    "Status.js"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0011-tweak-pr-process.md",
+   "identity": "doc/decisions/0011-tweak-pr-process.md",
+   "adr_id": "11",
+   "title": "Tweak PR process",
+   "first_commit": "2019-02-28T23:38:53+08:00",
+   "first_sha": "e02b89660f26a79a7665a6a8117bc409e83d3f59",
+   "last_commit": "2023-10-30T12:51:52+05:45",
+   "author": "Oskar Thor\u00e9n",
+   "email": "me@oskarth.com",
+   "status": "accepted",
+   "status_raw": "accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 0011. Tweak PR process\n\n| Date | Tags |\n|---|---|\n| 2019-02-26 | process, pull-requests |\n\n\n## Status\n\naccepted\n\n## Context\n\nThere was a generally dissatisfaction with our PR flow process from multiple stakeholders, including devs, QA and design. These largely centered around size, speed of integration and quality of PRs.\n\nFor more details, please see pain points in the meeting notes held end of February here: https://notes.status.im/C5pj8g7gQOu9Wo8PtDZsMw?edit# as well as the preceding Discuss thread: https://discuss.status.im/t/better-pull-requests-process/1044\n\nAlso see conversations in Core Dev Call #12 and #13: https://github.com/status-im/pm/\n\n## Decision\n\nThese specific policy changes were agreed upon (a la 'rough consensus' model). These are heuristics, and should be more of a guide than strict rules. Exception to these should be minimal though.\n\n**1. Reject PRs that don't have tests**\nAs a rule of thumb, coverage should increase.\n\n**2. Don't use or promote nightly as something for end users.**\n\n**3. Reject PRs that don't write what tests the author have done and what platforms you used to test, including screenshots, videos or logs**\nThis means QA and dev have to spend less time catching obvious problems.\n\n**4. Run tests when a PR is at \"Review\" stage on https://github.com/status-im/status-mobile/projects/7 (or add new 'e2e stage' between review and `TO TEST`)**\n\n**5. Dev asks for 2-3 reviewers, including a designer if the change affects UI, and these reviewers review within a day.**\nThis ensures we don't have *diffusion of responsibility* and that PRs are reviewed quickly.\n\n## Consequences\n\nThis means we need to some form of release schedule up for Desktop. It also means we need to standardize tests, at least on Clojure side.\n\nAdditionally, the following two medium term projects can't be fixed immediately but will be started:\n\n- Look into integration tests, headless tests. Andrea is looking into.\n- Look into iOS automated test and more platform. Anton will look into.\n\nFollow up on this will happen at a later Core Dev call.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#12",
+     "kind": "hash",
+     "url": "",
+     "number": "12"
+    },
+    {
+     "key": "#13",
+     "kind": "hash",
+     "url": "",
+     "number": "13"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0013-tribute-to-talk.md",
+   "identity": "doc/decisions/0013-tribute-to-talk.md",
+   "adr_id": "13",
+   "title": "Tribute-to-Talk",
+   "first_commit": "2019-02-22T14:26:40+02:00",
+   "first_sha": "04ccd0e7d8ad9bf07afcd53e846a64da65b490c9",
+   "last_commit": "2023-10-30T12:51:52+05:45",
+   "author": "Vitaliy Vlasov",
+   "email": "siphiuel@gmail.com",
+   "status": "proposed",
+   "status_raw": "proposed",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 0013. Tribute-to-Talk\n\n| Date | Tags |\n|---|---|\n| 2019-04-02 | spam filtering, blocking, chat |\n\n\n## Status\n\nproposed\n\n## Context\n\nThe whitepaper describes Tribute to Talk (TtT) as an economics-based anti-spam filter for receiving messages and \"cold\" contact requests from user. Stakeholders would stake a minimum amount of SNT that another Status stakeholder must deposit in order to contact him directly.\nThe whitepaper also proposes that the deposit is only forfeited to the recipient if he replies.\n\n## Decision\n\nConsidering:\n- the absence of efficient ways to perform anonymous transactions (zk-snarks could be used in the future for that)\n- the impossibility to prove that a recipient has made an actual reply and not some kind of automated reply (captcha solution was proposed, but wouldn't be practical until we can use a solution such as swarm feeds that allow users to make free updates to their captcha without on-chain transactions)\n- the limited time to develop the feature\n\nWe opted for a solution that:\n- doesn't establish a direct correlation between the tribute payment and an on-chain transaction, so it\n- uses regular transactions for tributes payment, giving users plausible deniability about the nature of the payment\n- doesn't store tribute information on-chain\n\n## Manifests\n\nSince TtT related information aren't stored on chain, they need to be stored somewhere else.\nFor the first iteration of TtT we opted for IPFS, which is already used across the app for other forms of content, through Infura IPFS gateway.\n\nOn IPFS we store what we call a ttt manifest, which is a json file with the following format:\n\n```json\n{\n \"tribute-to-talk\": \n    \"snt-amount\": \"snt amount in wei that a user has to pay as tribute\",\n    \"message\": \"a personalized message to display to users trying to contact stakeholder\"\n}\n```\n\nWhen a user sets TtT in his profile, the manifest contenthash is added to the registry contract (which requires a transaction).\nThe TtT contract points ethereum addresses to contenthash manifests. In the current implementation, the manifest is not encrypted, but we think it would be a privacy improvement to have symmetric key encryption for the manifest using the user public-key. That way, parsing the contract event log is useless to collect TtT manifests because there is no way to find the public key from the address, but legit users will know the public-key already.\n\n### Future implementation\n\nWe were considering Swarm feeds to upload manifests but we were worried about the current instabilities, particularly a bug that was returning stale reads very often and made it unsuitable for our usage.\n\nSwarm feeds are the ideal solution as they allows users to set a manifest without any transaction which makes the registry contract completely obsolete.\nThe format of the manifest will stay the same, but could be extended with other top-level keys to serve as a public profile as well.\n\n## Implementation\n\n### Checking manifest\n\nIn status app, we check a user manifest when:\n- the app starts (user checks his own manifest)\n- a user's profile is opened\n- a chat with a user is opened\nIf there is no match in the registry for the user address or if the manifest is not available, the client will consider that there is no tribute to talk set for the user.\n\nRelevant code is located in `status-im.tribute-to-talk.core` ns\n\n### Whitelisting rules\n\nA is whitelisted by B:\n- A received a contact request from B\n- A has paid the tribute to B\n- B has paid the tribute to A\n\nA whitelists B if:\n- A sent a contact request to B\n- A has paid the tribute to B\n- B has paid the tribute to A\n\n### Paying tribute\n\nThe tribute payment is a regular SNT transaction greater or equal to the value of the snt-amount key in the manifest.\n\nThe id of the transaction is sent along messages in the payload top level `:tribute-transaction` key as long as the sender isn't sure that he is whitelisted by the recipient (see `whitelisting rules` above).\n\nThe UI in status app waits for 1 confirmation on chain before allowing the user to send a message to ensure the recipient will see the payment and not ignore the message.\n\n## Upgradability\n\nThe registry contract has a `stopped` attribute that needs to be checked on start-up by clients. If the contract is stopped, this means that a new version of tribute to talk that is incompatible with the current one has been released.\n\nOld clients MUST check if the tribute to talk contract is stopped and MUST disable tribute to talk if it is.\nOld clients MUST warn the user when they open a chat with a user that may have not whitelisted them that their messages will be ignored if the recipient has tribute to talk enabled.\n\nNew client will be using a different contract\n\n## Consequences\n\n### Data collection of manifests' data\n\n- if we don't encrypt the manifests with the users public key, the registry contract logs can be used to collect manifest contenthashes which can then be downloaded and the data aggregated\n- SNT transactions could then be correlated to have an estimate of which SNT transactions are like to be tributes payments (it would give the \"attacker\" an additional filter on transaction amount, transaction recipient being already known through the registry contract without the manifest)\n- this would not be possible with swarm feeds as there wouldn't be a registry contract to look at.\n\n### Impact of token transactions\n- currently there is a wallet limitation that limits the token transactions list to the past 2 weeks, this means that if a user pays and doesn't send any message after the payment for 2 weeks, he will silently be ignored.\n- this will be solved by fixing the transaction list in the wallet\n\n### Edge cases (implementation specific)\n\n- if A and B have a conversation, and B suddenly sets TtT on, if B didn't add A as a contact, A messages will be filtered and A will not now it until he leaves and returns to the chat\n\n### Switching networks\n\nWhen switching between networks, the app uses the settings on the current network. This means that if one has TtT enabled on Mainnet and goes on Testnet, and one has no TtT settings on Testnet, TtT will be considered disabled and no messages will be filtered.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0014-wallet-team.md",
+   "identity": "doc/decisions/0014-wallet-team.md",
+   "adr_id": "14",
+   "title": "Team-structure",
+   "first_commit": "2023-06-16T13:44:59+01:00",
+   "first_sha": "850ac3f9f86a4bc8b6345218e8df7c5f9ae438cc",
+   "last_commit": "2023-08-24T13:11:22+02:00",
+   "author": "Andrea Maria Piana",
+   "email": "andrea.maria.piana@gmail.com",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# 0014. Team-structure\n\n| Date | Tags |\n|---|---|\n| 2023-06-16 | wallet team |\n\n## Status\n\nProposed\n\n## Context:\n\nIn order to try out vertical team, which is a structure that is wanted by the company, we will be creating a wallet team within the mobile team.\nSome member of the mobile team will join the current wallet team, which is composed by developers from desktop and lead by @alaibe, on a voluntary basis.\nThe responsibilities of the team are to implement the new wallet UI, with the support of the current wallet team, which will be assisting with the status-go work.\n\n## Decision\n\nThe team members for the initial wallet team are:\n\n- @rasom\n- @OmarBasem\n- @vkjr\n- @J-Son89\n- @briansztamfater\n- @smohamedjavid\n- @ulisesmac\n- @erikseppanen\n- @mmilad75\n- @tumanov-alex\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0015-team-structure.md",
+   "identity": "doc/decisions/0015-team-structure.md",
+   "adr_id": "15",
+   "title": "Team-structure",
+   "first_commit": "2023-06-16T13:44:59+01:00",
+   "first_sha": "850ac3f9f86a4bc8b6345218e8df7c5f9ae438cc",
+   "last_commit": "2023-07-10T11:32:23+01:00",
+   "author": "Andrea Maria Piana",
+   "email": "andrea.maria.piana@gmail.com",
+   "status": "proposed",
+   "status_raw": "Proposed/partially implemented",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 0015. Team-structure\n\n| Date | Tags |\n|---|---|\n| 2023-06-16 | changes in team structure |\n\n## Status\n\nProposed/partially implemented\n\n## Context:\n\nCurrently, there is only a single team lead in the mobile development team, and after a meeting with the design team, it has been identified that the mobile app lacks polishness. One of the main issues identified is a lack of oversight in certain areas. To address this problem, it has been decided to create an additional role within the team. For each section of the mobile app (communities, syncing & onboarding, activity center & shell, wallet, messaging), a person will be selected to fulfill the responsibilities outlined below.\n\n## Decision\n\nThe decision is to create an additional role within the mobile development team for each section. The individuals selected for these roles will have the following responsibilities:\n\n- Ensure GitHub issues are created for new features/designs of the section.\n- Ensure issues are adequately described and linked as best as possible.\n- Ensure issues have a grooming session where other developers can provide their feedback before working on the set of issues.\n- Ensure all relevant parties are invited, such as designers, QA, Product Owner, leads, etc., as needed (including the designer who created the feature).\n- Ensure there is consensus among the developers working on the section about the decided strategy approach. Ideally, this consensus should be documented.\n- Ensure UI quality by organizing designer reviews and guaranteeing pixel perfection.\n- Ensure overall implementation is satisfactory based on the predefined requirements.\n- Ensure alignment between desktop, web, and mobile versions for the respective section in collaboration with the mobile developers and design team.\n- Act as a point of contact for the design team with respect to the section.\n- Ensure that someone goes through the designs once they are created with the respective designer.\n- Assist the design team with technical feasibility analysis and address any product concerns.\n- Facilitate the growth of the next team member into the role.\n\nThe people identified for each sections are as follow:\n\n- Messaging @flexsurfer, followed by @alwx\n- Syncing & Onboarding @siddarthkay\n- Communities @ilmotta, followed by @ajayesivan\n- Activity Center & Shell @J-Son89, followed by @Parveshdhull\n- Wallet (once the vertical team is created) @J-Son89, followed by @briansztamfater\n\nThis will be a rotating post, every 4 months it will go to the next in line.\n\nThe wallet team might have longer times for rotation, as stability might be more important. That's still to be decided.\n\n# Follow-up Actions\n\n- Find suitable next in line for Messaging, Onboarding, Communities\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0007-masking-sensitive-data.md",
+   "identity": "doc/decisions/0007-masking-sensitive-data.md",
+   "adr_id": "7",
+   "title": "Masking Sensitive Data",
+   "first_commit": "2018-05-22T10:07:27+02:00",
+   "first_sha": "789ee6121224abd5877709d7aa9e872136cd75be",
+   "last_commit": "2022-12-20T17:56:21+05:30",
+   "author": "Igor Mandrigin",
+   "email": "i@mandrigin.ru",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 0007. Masking Sensitive Data\n\n| Date | Tags |\n|---|---|\n| 2018-05-22 | e.g: architecture, security |\n\n\n## Status\n\nProposed\n\n## Context\n\nWe have some data that we don't want to appear in the logs (user passwords are\na good example). Currently, they are passed around as strings, that could be\nprinted out by mistake in a log entry (see https://github.com/status-im/status-mobile/issues/4053)\n\n## Decision\n\nTo minimize the risk of leaking passwords through logs, we should not pass\npasswords as strings in our codebase. We introduced a new type `MaskedData` in\n`status-im.utils.security`.\nupdate (16-Dec-2022) `status-im.utils.security` is now moved over to `utils.security.core` \n\nWe use `(security/mask-data <data to hide>` to wrap sensitive data into this\ntype and then use `(security/unmask <masked-data>)` to get the plaintext back.\n\nIt is important to keep that sensitive data masked as much as possible, until\nyou need the plaintext to pass to the extenral APIs.\n\nExample:\n```clojure\n(println (security/mask-data \"my-plaintext-password\")) ;; Outputs \"******\"\n(println (security/unmask (security/mask-data \"my-plaintext-password\"))) ;; Outputs \"my-plaintext-password\"\n```\n\n## Consequences\n\nTradeoffs:\n- developers need to be aware of this type and have a clear separation where do\nwe use plaintext and where do we use masked datak\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "status-im/status-mobile#4053",
+     "kind": "issue",
+     "url": "https://github.com/status-im/status-mobile/issues/4053",
+     "number": "4053"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0003-geth-node.md",
+   "identity": "doc/decisions/0003-geth-node.md",
+   "adr_id": "3",
+   "title": "Geth node for Beta",
+   "first_commit": "2018-05-16T10:57:20+08:00",
+   "first_sha": "aa108cda127709924c763b164e6d233c752bf323",
+   "last_commit": "2022-07-17T14:37:46+02:00",
+   "author": "Oskar Thor\u00e9n",
+   "email": "me@oskarth.com",
+   "status": "proposed",
+   "status_raw": "proposed",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 0003. Geth node for Beta\n\n| Date | Tags |\n|---|---|\n| 2018-05-14 | architecture, p2p, scope   |\n\n\n## Status\n\nproposed\n\n## Context\n\nOn the path to releasing a usable beta we've faced a variety of performance\nissues:\n\n- https://github.com/status-im/ideas/issues/55\n- https://ideas.status.im/ideas/071-low-traffic\n- https://ideas.status.im/ideas/076-smooth-ui\n- https://ideas.status.im/ideas/083-energy-efficient\n\nSome of these performance issues are related to the use of LES, especially on\nMainnet. Examples of problems include: slow/hot sync, disk filling up, bandwidth\nusage, etc. This can partly be remedied by the use of CHT to speed up sync\n(https://github.com/status-im/status-go/wiki/Updating-CHT-BloomTrie).\n\nIn order to simplify the problem, we decided earlier this year to not spend too\nmuch time looking into performance improvements related to LES, instead focusing\nour efforts on improving the performance on Whisper and in client-side code.\n\nThis also means we don't have a full picture of to what extent LES is a\nperformance bottleneck for the Status app. It is possible proper use of CHT,\nslowing sync down, vary load depending on if you are on WiFi or not, etc, can\nsolve these problems. However, the consensus right now is that ULC is the more\npromising route to take.\n\nHowever, since ULC isn't ready yet, this means we are relying on Infura. This\nis a bad idea from a decentralization and security point of view. This can be\npartly remedied by allowing the user to run an upstream node. It is still a bad\ntrust model, relying on third-party Ethereum nodes, and we want to get away\nfrom this as soon as possible.\n\nWith ULC it is possible to connect to more than one node, which increases\ndecentralization and security.\n\n## Decision\n\n1. Rely on upstream nodes for beta. For the closed beta scheduled to be releases\nQ2 we will provide two ways of accessing the Ethereum network:\n\n- Upstream RPC with Infura (default)\n- Custom upstream node (https://github.com/status-im/status-mobile/issues/3994)\n\nFrom a decentralization point of view we need the latter before we can release\nthe beta.\n\n2. ULC MVP. Additionally, as soon as beta is released, assess and start to\n   introduce ULC as an experimental non-default mode in the app.\n   \nBy doing this we also support the network, since it is still a very new\nprotocol. ULC requires trusted peers to operate, and right now trust is\nestablished by config (list of trusted peers).\n\nInitially we could hardcode these nodes, with option to add your own. Later on\nwe can have some form of distributed directory with a rating system. This also\nlikely requires merging ULC upstream, so we aren't the only ones running trusted\nnodes.\n\n3. LES track (optional). If we still have resources and there's interest,\noptionally run a parallel track to clean up LES usage (update CHT, cluster) and\nunderstand exact performance impact and viablity of running LES on\nresource-constrained devices.\n\nThese three decisions balances the following trade-offs:\n\n- get a usable beta released as soon as possible\n- provide users with options to get minimal amount of decentralization\n- pave the way for trustless usage by default (ULC/LES node)\n\n## Consequences\n\nMost of this is captured above.\n\n- 1. Make sure custom upstream RPC is in beta and works\n- 2. Disable LES from beta release as it currently doesn't work reliably\n- 3. Continue work on https://github.com/status-im/ideas/pull/254/files, consider\n  adding more resources to get it into MVP state as soon as possible\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "status-im/ideas#55",
+     "kind": "issue",
+     "url": "https://github.com/status-im/ideas/issues/55",
+     "number": "55"
+    },
+    {
+     "key": "status-im/status-mobile#3994",
+     "kind": "issue",
+     "url": "https://github.com/status-im/status-mobile/issues/3994",
+     "number": "3994"
+    },
+    {
+     "key": "status-im/ideas#254",
+     "kind": "pull",
+     "url": "https://github.com/status-im/ideas/pull/254",
+     "number": "254"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0004-disable-group-chats.md",
+   "identity": "doc/decisions/0004-disable-group-chats.md",
+   "adr_id": "4",
+   "title": "Disable group chat",
+   "first_commit": "2018-05-14T12:40:46+08:00",
+   "first_sha": "df794c724d7dc0a18ff0d8b3abde41ebdedea356",
+   "last_commit": "2022-07-17T14:37:46+02:00",
+   "author": "Oskar Thoren",
+   "email": "ot@oskarthoren.com",
+   "status": "proposed",
+   "status_raw": "proposed",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 0004. Disable group chat\n\n| Date | Tags |\n|---|---|\n| 2018-05-14 | scope, chat |\n\n\n## Status\n\nproposed\n\n## Context\n\nWe want to launch our beta in Q2. This requires us to keep a tight scope and stay on the critical path.\n\nGroup chat is not as vital as 1-1 chat for the chat experience. It is also\nlikely not as useful for an MVP as public chat is, since this gives people a\nchance to talk to strangers and it is open by default.\n\nWhether group chats are in scope or not has been a recurring discussing and a\nlot of effort has been wasted related to this.\n\nThere are currently a lot of outstanding regressions related to group chat: https://github.com/status-im/status-mobile/labels/group-chat Additionally, since group chats are private the encryption and security of those are generally harder than 1-1 and public chat.\n\n## Decision\n\nDisable group chat for beta and don't work on bugs related to it until after. See https://github.com/status-im/status-mobile/issues/3995\n\nThis ensures we can release beta without blockers, and then we can take some\ntime to fix group chats properly.\n\n## Consequences\n\nGroup chats disabled in beta. People won't be able to chat in private groups.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "status-im/status-mobile#3995",
+     "kind": "issue",
+     "url": "https://github.com/status-im/status-mobile/issues/3995",
+     "number": "3995"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0009-release-process-mobile.md",
+   "identity": "doc/decisions/0009-release-process-mobile.md",
+   "adr_id": "9",
+   "title": "Mobile App Release Process",
+   "first_commit": "2018-07-24T16:33:40+03:00",
+   "first_sha": "10a0ab1df2c1472e72eb4abaa6a24289ef1fc69b",
+   "last_commit": "2022-07-17T14:37:46+02:00",
+   "author": "Igor Mandrigin",
+   "email": "i@mandrigin.ru",
+   "status": "accepted",
+   "status_raw": "accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 0009. Mobile App Release Process\n\n| Date | Tags |\n|---|---|\n| Tue Jul 24  | process, release |\n\n\n## Status\n\naccepted\n\n\n## Context\n\nClassical release approach: we cut off the release branch, stabilize it, fix every critical issue and release. Some changes are cherry-picked to the release branch.\n\nIt has a couple of downsides:\n\n- Resources are scattered across two branches;\n\n- Unique fixes and unique combination of commits in the release branch;\n\n- Unpredictable release schedule (any day can be a release day!).\n\n## The Process\n\nWe do \"failable releases\" approach instead, when the release either happens on\na specific day, or doesn't happen.\nWe aim for a weekly cadence.\nBut even more, we aim to be frank about the release state, give ourselves\na permission to fail a release.\n\n\n### The Release Checklist\n_\u261d\ufe0f  a release blocker is a GHI with \u201crelease\u201d tag on it_\n\n1. Do a release testing on a nightly.\n1. If it is good enough (no release blockers), cut a release branch, like `releases/0.9.23`. If there is an existing branch from the previous unsuccessful release, rebase it to the current state of `develop`.\n1. \ud83d\udd04 Test the release branch, fix release blockers.\n1. Cherry-pick only release blockers to the release branch.\n1. Check-up with other teams (@go, #core-infra).\n1. Mobile releases should not happen at the same time as cluster upgrades.\n1. *After* the release branch is cut \n    - update status-go on `develop` (NOT the release branch);\n    - bump the app version on `develop` (NOT the release branch).\n1. Update release notes, and app descriptions in GP and App Store (see [this section](#release-notes)).\n1. If [\u201cgo/no go\u201d assessment](#go-no-go) is negative (\u201cno go\u201d), just abandon the release branch.\n\n\n### Failable Releases\nFailable release philosophy:\n- We track potential release blockers as early as possible (based on testing of nightlies);\n- We cut off the release branch when there are no big blockers (wednesday morning the latest);\n- We fix remaining release blockers on `develop` and cherry-pick fixes to the release branch;\n- If we aren\u2019t able to fix all release blockers in time\u2122, leaving enough time for QA to thoroughly test the release, we mark this release as failed and focus on releasing next week;\n- Next week we just rebase the release branch on `develop`.\n\n### What is this failed release anyway?\n1. Nothing is published to our users;\n1. We don\u2019t keep the release branch around, next week we force-rebase it to the latest state of `develop`.\n\n### Is it bad to fail a release?\nNope. One of the nice side-effects of the failable release approach that it shows the real state of the develop branch. \nTrying too hard to release anyway might paint a picture that is better than the reality.\nIf there are too many failed releases, it is an indication that something is wrong with our `develop` or PR intakes, not with the release process. Don\u2019t shoot the messenger :)\n\n### <a name=\"go-no-go\"></a> \u201cGo/No-Go\u201d decision\nThe \u201cno-go\u201d decision can be make:\n1. If there is a huge blocker on develop that we are not sure we will be able to fix in time;\n1. If there is no time left for QA to make thorough testing;\n1. If we don\u2019t feel confident in some critical feature of the app, even if there is no critical issues found there;\n1. If one of the teams (status-go, cluster, etc) isn\u2019t ready for this release (check with the `#core-infra` or `@go`).\n\n### Schedule\n- We aim to submit an iTC build every Friday to have time for Apple to review it.\n- We aim to publish a release every Monday.\n\nNote, that to aim is a key word there. If we fail to release in time, we just skip this week\u2019s slot and try to release next week.\n\nSo, schedule might look like that:\n```\nMay, 11: Release 1\nMay, 18: failed release, nothing is published\nMay, 25: failed release, nothing is published\nJune, 1: Release 2\n...\n```\n\nSo, as you can see releases happen only on Mondays.\nThey might or might not happen, but the schedule stays consistent.\n\n### <a name=\"release-notes\"></a>Release Notes\nWe keep the file [`CHANGELOG.md`](../../CHANGELOG.md) in the repository.\nWe also have an ongoing document with them.\n\n#### iOS Test Flight Release\n**Upload to AppStore Connect**\nUse [this Jenkins job](https://jenkins.status.im/job/status-mobile/job/upload_release_ios/)\n\n**\u201cWhat to test\u201d field**\nWhen AppStore Connect asks you to fill in the field called \u201cwhat to test\u201d, just copy the release notes there.\n\n**Submitting to the review**\nWe submit it on Friday, fix the compliance and add the group called \u201cExternal Testers\u201d. Don\u2019t make the group name scare you, the real testers are in the group called \u201ctestflight-boarding\u201d. \n\nDon\u2019t forget to update screenshots if necessary!\n\nThen we submit it to Apple review.\n\n**Releasing to our beta-testers**\nIf reviewed successfully, we can share it to our users by adding \u201ctestflight-boarding\u201d group to our build. As soon as it is added, invitations to upgrade are sent to our beta-testers!\n\n### GP Release\nThe uploaded release is **immediately available**! \nDo it only if the iOS build is approved by Apple!\n\nUse [this Jenkins job](https://jenkins.status.im/job/status-mobile/job/upload_release_android/)\n\nDon\u2019t forget to update the screenshots if necessary!\n\n**App Description**\nApp description needs to be updated. It is much shorter than the release notes, so it is important to trim them down for GP.\n\n### Flexing & Planning\nWith this approach we don\u2019t plan features for release. We plan features for priorities.\nWhat is the difference?\nWhen we plan features for release, a feature A absolutely has to be included in release 0.2. That means, that if feature is not ready yet, the release 0.2 is not happening.\n\nIn features for priorities approach we plan which feature comes before or after which. Say, if we have features A, B and C and we know that A is more important than B and C then we will try to release it earlier. \n\nIn that case releases history might look like these:\n```\nWeek 1: 0.1 - failed\nWeek 2: 0.1 - feature A released\nWeek 3: 0.2 - polishing of feature A and bugfixes\nWeek 4: 0.3 - feature B\nWeek 5: 0.4 - feature C\n...\n```\n\nSo we keep releasing cadence even if there are no features to release.\n\n### Retrospective\nEach release ends with a short retrospective/planning session for the next week.\n\n\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "releases/0.9.23",
+    "/../CHANGELOG.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0008-feature-toggles-development.md",
+   "identity": "doc/decisions/0008-feature-toggles-development.md",
+   "adr_id": "8",
+   "title": "Feature toggles development",
+   "first_commit": "2018-05-25T10:14:08+02:00",
+   "first_sha": "5b5a5f72ec9127aded794a591e07bbbe24f8487f",
+   "last_commit": "2018-05-25T10:14:08+02:00",
+   "author": "Andrea Maria Piana",
+   "email": "andrea.maria.piana@gmail.com",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 0007. Feature toggles development\n\n| Date | Tags |\n|---|---|\n| 2018-05-25 | development |\n\n\n## Status\n\nProposed\n\n## Context\n\nThis change describes a methodology of development which we believe will help\nus increase the confidence and speed in the development process.\n\n### What problem are we trying to solve\n\nCurrently the time between a PR is sent and the code gets merged is between 1 day\nto in some case 4 to 5 days.\n\nThis has some disadvantages:\n\n1) This workflow incentivises developers to make large PRs, as building \nincrementally but having to wait 2 to 3 days for the code to be merged at each\nstep is not desirable and results in loss of context.\n\n2) If a bug is introduced it is harder to fix, as the longer it takes to integrate code \nthe more likely the developer has lost familiarity with the code.\n\n3) Constant rebases introduce an overhead for the developer and can introduce\nsubtle bugs, as rebased code is not thoroughly reviewed.\n\n4) Code review is only performed once, but during the manual QA step significant\nchanges might be added, which are not reviewed anymore.\n\n### How are we going to address it\n\nWe believe feature toggles development https://martinfowler.com/articles/feature-toggles.html\nis a step in the right direction.\n\nThe way it would work is:\n\nA developer starts working on a new feature.\nAny new code will be scoped behind a feature flag and:\n\n1) no significant changes are made to the existing codebase\n2) no changes are visible to the user when the feature flag is off\n\nIn this case the manual QA step can be skipped, and the code can be integrated\nas soon as the review step is done.\n\nClojure reviewers can object if they think the changes are so significant that\nmanual QA is required.\n\nThis process should ease some workload on the QA team and move some of the\nresponsibilities on clojure developers.\n\n### What needs to change\n\nTo improve no bugs are introduced, there needs to be a concerted effort in\nimproving the current test suites, both e2e and clojure, and ensure new code is \nsufficiently covered.\nThe shape/type of tests needed is open to discussion, but generally light \nintegration tests + light e2e tests are a good approach for this kind of workflow.\n\nAlso manual smoke testing of the images generated is necessary, until we are \nmore confident on our test suites.\n\nOnce the feature is to be toggled, a PR will be sent changing the config,\nat which point manual QA will be required before merging.\n\nIf fixes are to be applied, they can be made in a separate PR, which can skip manual QA, \nbut will not skip code review, ensuring that subsequent changes are reviewed. Once those are \nmerged into develop, the PR that changes the feature toggle will resume testing.\n\n\n### How far we want to go\n\nAt the most extreme, this workflow allows push-to-master, with multiple commits\na day being integrated, but this would hardly fit with the code-review process.\n\nThe idea is to add some rigour to the process so that the review step is meaningful,\nessentially at any point it could be toggled on and it should provide **value** to the \nend user.\n\nThis means that PRs that will skip manual QA need to be deliverables and \npresentable to an end-user (no incomplete implementations), i.e. features \nneed to be split into meaningful chunks.\n\nNot all code contributions will want to use this workflow, it is up to the developer\nto decide.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "martinfowler.com/articles/feature-toggles.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0006-wallet-compatibility.md",
+   "identity": "doc/decisions/0006-wallet-compatibility.md",
+   "adr_id": "6",
+   "title": "Wallet Compatibility",
+   "first_commit": "2018-05-15T00:23:58+02:00",
+   "first_sha": "f49de27e0429aa00bb60d0b1d03ef58cda2c1ca8",
+   "last_commit": "2018-05-15T00:23:58+02:00",
+   "author": "Andrea Franz",
+   "email": "andrea@gravityblast.com",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 0006. Wallet Compatibility\n\n| Date | Tags |\n|---|---|\n| 2018-05-15 | ethereum, wallet |\n\n\n## Status\n\nProposed\n\n## Context\n\nIdea [142-Wallet-Compatibility](https://ideas.status.im/ideas/142-wallet-compatibility/README) changes the way we generate keys starting from the 12 mnemonic words.\n\nThis change allows users to create a wallet in other apps and import the same address in Status using the 12 mnemonic words.\n\n### Breaking Changes\n\nThe 12 mnemonic words will generate different addresses and whisper identities (public key). We should communicate this properly and recommend users to create new accounts.\n\n### Features\n\nIf users used a dapp in an external app/wallet, they would be able to continue to use the same dapp with the same account in Status.\n\n## Decision\n\n* update the BIP39 seed generation to use the salt `\"mnemonic\"` instead of `\"status-im\"` following [BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#from-mnemonic-to-seed).\n\n* update the master key generation using the constant `\"Bitcoin seed\"` instead of `\"status-im\"`, following [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#master-key-generation).\n\n* remove the use of the password in the salt during the BIP39 seed generation (password is not removed from the app in general, and it's still required to encrypt the keys on the device).\n\n### Relevant reading\n\n* [BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki)\n* [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)\n* [BIP44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)\n\n## Consequences\n\nGiven that we changed the algorithm used to generate keys and addresses, it will be impossible to re-import accounts created with the old algorithm in Status.\n\nIf you have any token in your old account, you can upgrade to the new version and move them to a new one created with the new algorithm.\n\n\n### Upgrade example\n\n1. I create account A using an old version of Status.\n2. I upgrade Status.\n3. I can still log in to account A using my password.\n4. I create a new account B.\n5. I copy the address of account B to the clipboard.\n6. I log out.\n7. I log in to account A.\n8. I send my tokens to account B.\n\n### Warnings\n\nAfter step 2, you won't be able to re-import account A.\nIf you uninstall Status, or you install Status to a different device, and import existing account using the 12 mnemonic words of account A, the address generated will be different from the original one.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/bitcoin/bips/blob/master/bip-0039.mediawik",
+    "github.com/bitcoin/bips/blob/master/bip-0032.mediawik",
+    "github.com/bitcoin/bips/blob/master/bip-0044.mediawik"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0005-discovery-protocol.md",
+   "identity": "doc/decisions/0005-discovery-protocol.md",
+   "adr_id": "5",
+   "title": "Use Discovery v5 protocol",
+   "first_commit": "2018-05-14T13:08:41+08:00",
+   "first_sha": "750b32d10bb609f2eda3fd3ee64a40ca7723ecb0",
+   "last_commit": "2018-05-14T13:08:41+08:00",
+   "author": "Oskar Thoren",
+   "email": "ot@oskarthoren.com",
+   "status": "proposed",
+   "status_raw": "proposed",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 0005. Use Discovery v5 protocol\n\n| Date | Tags |\n|---|---|\n| 2018-05-14 | architecture, p2p, ethereum |\n\n\n## Status\n\nproposed\n\n## Context\n\nCurrently peers for messaging are hardcoded in the app. This means we can't\neasily scale, as some of these nodes might fill up when we have more than N\nactive users.\n\nDiscovery v5 protocol (https://ideas.status.im/ideas/092-disc-v5-research,\nhttps://github.com/fjl/p2p-drafts/blob/master/discv5-eip.md) allow us to\ndiscover new peers from the app and scale server peers in our cluster\nindependently. This is vital for high availability/reliability and security.\n\n## Decision\n\n- Use and enable Discovery v5 for all networks\n- Do this before beta is released\n\nThis means we have capacity to achieve 5000+ DAU / 500 concurrent connection. It\nseems unlikely we can do so with reliable messaging in the current setup.\n\nTrade-off for this is:\n- Uncertainty in introducing a new protocol leading to possible delays\n- Possible increase in CPU/Network (we can disable protocol once peers are found though)\n\n## Consequences\n\n- This is a top priority for P2P team, lead by @dshulyak and assisted by @adambabik and @jacob\n- We need this battle tested to get it into app as soon as possible\n- Chat, mobile team and QA team should be aware of this protocol change\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/fjl/p2p-drafts/blob/master/discv5-eip.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0001-record-decisions.md",
+   "identity": "doc/decisions/0001-record-decisions.md",
+   "adr_id": "1",
+   "title": "Record Decisions",
+   "first_commit": "2018-04-26T15:15:05+02:00",
+   "first_sha": "e1f629283324fed2c700e94ff6cf7b2a9cbe7afc",
+   "last_commit": "2018-04-26T15:15:05+02:00",
+   "author": "Julien Eluard",
+   "email": "julien.eluard@gmail.com",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record Decisions\n\n| Date       | Tags    |\n|------------|---------|\n| 2018-02-16 | process |\n\n## Status\n\nProposed\n\n## Context\n\nWe make a lot of decisions during the life of a project and\ndocumenting those decisions would help new team members and outside\ncontributors follow our thinking. It also opens up an opportunity for\nconstructive criticism around those decisions which will result\nin better decision making.\n\nWe want to develop a product in the open. Opening up our decision making process for outside contributors is an important part in providing the opportunity to take ownership and impact the project in non-trivial ways.\n\nRecording decisions will also be a useful form of documentation in general as it does not get out of date. All that's documented is that a decision has been made at a certain point in time.\n\n## Decision\n\nWe will adopt a format similar to [Architecture Decision\nRecords](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions) (ADR)\nto propose and document notable decisions. In contrast to ADRs we will try to embrace this tool for more than just architectural concerns. Decisions regarding development practices and product direction are just as important.\n\nWhat decisions are notable and which are not is left to common-sense and informal consensus among the team.\n\nDecisions may be proposed and discussed informally, should however eventually end up \u2014 with all relevant discussion summarized \u2014 in the `doc/decisions/` directory of this repository.\n\nDecisions are numbered to have a clear identifier.\n\n## Consequences\n\n- We need to document that we record decisions this way and where people can find those documents.\n- We should probably provide some pointers around tooling to better work with decision records. [`adr-tools`](https://github.com/npryce/adr-tools) comes to mind.\n- Since we deviate from ADRs a bit (we document more than architecture-related decisions) we might need to provide different templates than what comes with tools like `adr-tools` by default.\n  A template like this may also be useful to guide decision authors to provide appropriate context.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "doc/decisions/"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0002-extension-uri.md",
+   "identity": "doc/decisions/0002-extension-uri.md",
+   "adr_id": "2",
+   "title": "Extension URI",
+   "first_commit": "2018-04-26T15:15:05+02:00",
+   "first_sha": "e1f629283324fed2c700e94ff6cf7b2a9cbe7afc",
+   "last_commit": "2018-04-26T15:15:05+02:00",
+   "author": "Julien Eluard",
+   "email": "julien.eluard@gmail.com",
+   "status": "proposed",
+   "status_raw": "proposed",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 0002. Extension URI\n\n| Date | Tags |\n|---|---|\n| 2018-04-26 | extension, uri, ethereum |\n\n\n## Status\n\nproposed\n\n## Context\n\nExtensions are defined by an EDN file accessed from decentralized storage. An URI schema allows to identify those files.\n\n## Decision\n\nURI follows ethereum URI schema as specified in [EIP 831](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-831.md)\n\n\n```\nuri                     = \"ethereum:\" path\npath                    = \"status:extension\" \":\" storage \"@\" id\nstorage                 = STRING (e.g. IPFS)\nid                      = STRING (e.g. IPFS hash)\n```\n\nAn example of an extension available on IPFS is: `ethereum:status:extension:ipfs@QmTeW79w7QQ6Npa3b1d5tANreCDxF2iDaAPsDvW6KtLmfB`\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/ethereum/EIPs/blob/master/EIPS/eip-831.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [
+   {
+    "sha": "41282a9f5d35fb4761bdc3726f0211617ca0e704",
+    "date": "2023-09-20T16:24:03+03:00",
+    "subject": "[#17309] fix: wrong cursor position in a pre-filled composer (#17329)"
+   }
+  ],
+  "strict_count": 1,
+  "literal_only_count": 12,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 14,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "13"
+}

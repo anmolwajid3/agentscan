@@ -1,0 +1,1941 @@
+{
+ "repo": "eclipse/ditto",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2017-04-10T15:29:57-04:00",
+ "last_commit": "2026-11-06T14:53:48+01:00",
+ "n_commits": 13007,
+ "n_authors": 101,
+ "n_files": 7654,
+ "n_code_files": 5819,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 0,
+ "adrs": [],
+ "status_changes": [],
+ "ai_signals": [
+  {
+   "kind": "file:primary",
+   "name": "AGENTS.md",
+   "date": "2026-10-29T08:34:29+01:00",
+   "commit": "efee838801bb9f6506b9c3e0ba2b5022fd970e79",
+   "evidence": "Add AGENTS.md and .claude context for AI coding agents",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>",
+   "date": "2026-01-13T13:24:41+01:00",
+   "commit": "603fa68da4d02ebe6f0332300ac8c1d7f39d6a2c",
+   "evidence": "Add configurable custom search indexes for MongoDB",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>",
+   "date": "2026-01-14T16:39:50+01:00",
+   "commit": "e77860ccf4b11ebe060dd51a67d44b96a213ae62",
+   "evidence": "add validation that WoT context prefixes are defined in @context",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>",
+   "date": "2026-01-16T11:23:25+01:00",
+   "commit": "78ba31f5deaa9f545b931251b9b9198988c07891",
+   "evidence": "Simplify custom search index configuration by auto-activating",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>",
+   "date": "2026-01-20T13:49:06+01:00",
+   "commit": "d7c60a02c312a7df403b41f94f2ac4decc0fa35c",
+   "evidence": "#2053: add configurable slow query logging to search service",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>",
+   "date": "2026-01-20T17:01:43+01:00",
+   "commit": "82e13674b9408109f6982e00d67cf74c97ff3116",
+   "evidence": "#2280: Add per-namespace activity check configuration",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>",
+   "date": "2026-01-22T08:39:10+01:00",
+   "commit": "24ccaa802337e4b5312ebe627401beeed901114d",
+   "evidence": "Add live entities metrics per namespace",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>",
+   "date": "2026-01-22T15:56:39+01:00",
+   "commit": "dcfbcc0dd2b200c382944f94e29cb5cf91c2892f",
+   "evidence": "Move live-entities-metrics config from devops to metrics",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>",
+   "date": "2026-01-23T08:55:03+01:00",
+   "commit": "4b78c7d1078a000bad0d896d8de33a92d2712433",
+   "evidence": "fix background sync always detecting policy inconsistency for things with policy imports",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>",
+   "date": "2026-01-29T20:21:42+01:00",
+   "commit": "d5ebfc21361545ef624565326d71ce85215f6287",
+   "evidence": "Add comprehensive JavaDoc to WoT model public interfaces",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>",
+   "date": "2026-02-03T18:01:29+01:00",
+   "commit": "db44b61b98fb4e44f93dcf2ed2fb2a2ffccac5a9",
+   "evidence": "#2320 add ditto:deprecationNotice to WoT Extension Ontology",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>",
+   "date": "2026-02-04T11:44:09+01:00",
+   "commit": "e9ea4771fc5b7865ce244499e92890b6dcb47dcb",
+   "evidence": "#1648 support local/relative tm:ref references in ThingModel resolution",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-06T22:22:46+01:00",
+   "commit": "17c6f145062771ad30340231f0bdb2dbd3e8ffae",
+   "evidence": "#2142: improve WoT Discovery Thing Directory endpoint for spec compliance",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-09T10:22:05+01:00",
+   "commit": "0024549250a41a085792467e8ccf21a1e831a37f",
+   "evidence": "#2142: remove format uriVariable and simplify OpenAPI docs for WoT Discovery endpoint",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-09T17:50:38+01:00",
+   "commit": "64b65b300e25894e7113f8d0a0fd033c362e4122",
+   "evidence": "#2329 add optional per-metric index-hint config for custom metrics",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-10T14:16:45+01:00",
+   "commit": "1a277bad455f311bcef037c696a87cd565e745b8",
+   "evidence": "Fix aggregate metrics using wrong scrapeInterval and showing 0ms duration",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-10T20:41:57+01:00",
+   "commit": "3bc063d6305fb8816144a53e11bbbd06c83425fd",
+   "evidence": "Expose PEKKO_HTTP_HOSTPOOL_MAX_CONNECTION_LIFETIME via Helm values",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-11T08:20:08+01:00",
+   "commit": "0112138bbfdca2618718ffe296e975ab479da50d",
+   "evidence": "provide Ditto 3.8.12 release notes",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-17T08:48:44+01:00",
+   "commit": "681a524c630a05ef3397a0fa8a922842769c4120",
+   "evidence": "Fix flaky unit tests in MqttClientActorTest, AmqpClientActorTest, and DittoPublicKeyProviderTest",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-17T11:13:59+01:00",
+   "commit": "a0d69966f4acd8ab3b90efb376e36ff90906f96c",
+   "evidence": "Fix flaky MqttClientActorTest#testConnectionIsSuccessful",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-17T11:32:01+01:00",
+   "commit": "e96f17f98a5bb85910e07302b18d98d474872b6d",
+   "evidence": "Fix flaky PubSubFactoryTest#failAckDeclarationDueToRemoteConflict",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-17T13:50:37+01:00",
+   "commit": "7a9b43bd5308bac07cef9ad4f7b84f7f41e27716",
+   "evidence": "Fix CustomSSLContextTest hang on low-core CI agents",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-17T15:10:44+01:00",
+   "commit": "6f6b3f71fb03a5292894f7d7ca60b4f78203cf83",
+   "evidence": "Fix flaky ImmutableTimePlaceholderTest at hour boundaries",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-17T16:45:23+01:00",
+   "commit": "fe245d803ba455d6737fb43be411e4fad9936961",
+   "evidence": "Fix MqttClientActorTest failures by replacing static mocking with constructor injection",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-17T20:06:56+01:00",
+   "commit": "6d10716fd23fb6a796b4273bcff9df8a8cd86b74",
+   "evidence": "Replace TestActorRef with regular actors in MqttClientActorTest",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-17T21:02:49+01:00",
+   "commit": "89ccb59f4dca7f3ce214bea1f19c03aa3f77f1c1",
+   "evidence": "Increase MqttClientActorTest FSM timeouts via config overwrites",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-18T07:04:34+01:00",
+   "commit": "f2434d45be12f16215d79dfa3e0ddb538f2ecc10",
+   "evidence": "Fix config override path for MqttClientActorTest timeouts",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-18T08:05:12+01:00",
+   "commit": "a2aa133951e5a6235a2f05aa8805618b5069703b",
+   "evidence": "Fix MqttClientActorTest deadlock on CI with 1-2 cores",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-18T09:48:40+01:00",
+   "commit": "db7630cb72ddeea5b86a1318e053326c29391643",
+   "evidence": "Fix ThingsSseRouteBuilderTest deadlock on CI with 1-2 cores",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-18T16:22:42+01:00",
+   "commit": "d0e8e798894b7d9b0c13c3135b4bf74e90100f28",
+   "evidence": "Add llms.txt and markdown page generator for LLM consumption",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-18T20:28:11+01:00",
+   "commit": "787c185c490ed3f988612598bdbab145b510e631",
+   "evidence": "Add entriesAdditions and allowedImportAdditions for policy imports (#2221)",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-20T09:24:54+01:00",
+   "commit": "520b874a84994861fc565f23be0e40988a4c0b58",
+   "evidence": "Fix allowedImportAdditions being dropped during PolicyEntry reconstruction",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-20T15:05:30+01:00",
+   "commit": "1feb92c34f7e6fe04b1796a7d58dc2dca8bfe399",
+   "evidence": "Add dedicated HTTP routes for policy import sub-resources and entry importable",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-23T16:52:15+01:00",
+   "commit": "d75b2aedd134fbb589eeacf8b2a34e4dd9639361",
+   "evidence": "Fix ThingPersistenceActorTest flaky timeout on CI with 1-2 cores",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-24T17:19:41+01:00",
+   "commit": "b6b48b98a8d5d6c5c7c622d426e92e6352b82cdc",
+   "evidence": "#2221: Return 400 for invalid importable/allowedImportAdditions values",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-26T13:00:47+01:00",
+   "commit": "8cff1b5c97df1b91edc712f5adc0f1699083882a",
+   "evidence": "#2221: Add route tests and replace IllegalArgumentException with DittoJsonException",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-26T13:22:30+01:00",
+   "commit": "6a47f201b974129598b862dfdcfc8b42633e7bcf",
+   "evidence": "Optimize MongoReadJournal pipelines and bump dependency versions",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-27T08:34:23+01:00",
+   "commit": "f3d29f92b1ae593d50c239f7513d3f29f2657c88",
+   "evidence": "#2221: Add protocol adapter tests for policy import sub-resource commands",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-02-17T16:15:38+01:00",
+   "commit": "3428a1aa5a49d507532416850f6afaed8da24d45",
+   "evidence": "Optimize ThingEventEnricher -> TreeBasedPolicyEnforcer hot path",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-03-06T09:56:12+01:00",
+   "commit": "02ef8e5d93f40c053804386b90908751a3629fea",
+   "evidence": "Redact sensitive header values in DittoHeaders.toString()",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-03-06T10:04:57+01:00",
+   "commit": "b1658083abd0502501dcc02f3d4e0f82a533b5e4",
+   "evidence": "Update typesafe-config to 1.4.6, use new list env var syntax",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-03-06T13:33:56+01:00",
+   "commit": "2ccf9f33f14f7af31c8e0adda0f627f1b27654ec",
+   "evidence": "Add fn:format() pipeline function for correlated field extraction",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-03-06T13:41:22+01:00",
+   "commit": "1a4194b1ea6177a7c0bc71fc0657c03ab8817f1f",
+   "evidence": "Adjust comments in Cartesian product test to reflect expected behavior",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-03-09T09:11:56+01:00",
+   "commit": "e2c818072ea2465b3db54d696d256eee4383780d",
+   "evidence": "Add fn:format tests to ImmutableFunctionExpressionTest",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-03-27T16:57:16+01:00",
+   "commit": "b75d5f2264a44ceebf3c28da7df9f6a09e133a1d",
+   "evidence": "#2325 return Optional from getNamespaces/getAllowedImportAdditions",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-03-31T20:28:14+02:00",
+   "commit": "1fdd595320da65cd52b79ffac65152b4a0661e5d",
+   "evidence": "Fix MongoDB aggregation pipeline performance regression",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-01T17:25:57+02:00",
+   "commit": "f3142af45304ad539104a50d64058877a2dc2416",
+   "evidence": "Fix MQTT 5 enforcement validation rejecting header placeholders in input",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-01T19:40:37+02:00",
+   "commit": "7031c0400fda7751d124d5a8ad8f48acdae777d9",
+   "evidence": "Fix spurious \"Unknown message\" warnings in ConnectionPersistenceActor",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-02T14:27:02+02:00",
+   "commit": "995c1c496522897c51d27858959ab5a9bbd2c103",
+   "evidence": "Include model URL in WoT context prefix validation errors",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-07T08:56:37+02:00",
+   "commit": "736489f1a8255bf9ac8c2352df32acd968097693",
+   "evidence": "Surface enforcement/validation errors for fire-and-forget commands",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-07T14:16:59+02:00",
+   "commit": "94a66b1f06c21552afd54b499d839c4e82397648",
+   "evidence": "Fix compilation and test failures from dependency bumps",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-08T14:12:39+02:00",
+   "commit": "8d99d2456206970c1b83e8dd9084b36cf96b7559",
+   "evidence": "fix Kafka consumer crash loop on messages with blank header values",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-09T09:36:15+02:00",
+   "commit": "a1cf5539bbde8b67fc404c7d467c53467b9da332",
+   "evidence": "Add subjectAliases to policies for transparent subject fan-out across imported entries",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-09T09:49:32+02:00",
+   "commit": "ea39f0e93f1fbd0954ccc0c3ef0bd2b1eecb0724",
+   "evidence": "Rename subjectAliases to importsAliases for broader applicability",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-09T13:21:48+02:00",
+   "commit": "10458e346a089d186a671141937b8c61fe4e1cfe",
+   "evidence": "fix partial access filtering for subscribers with multiple auth subjects",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-10T14:15:13+02:00",
+   "commit": "477aa34f41b5fa42b663919fa3d409bbe02e6428",
+   "evidence": "Add Time Travel mode and Historical Thing Updates to Explorer UI",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-10T14:43:34+02:00",
+   "commit": "3612c6d7f6fe2cee57804a3cb44332fbec6d8ad7",
+   "evidence": "Add side-by-side Diff tab for comparing Thing revisions",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-10T14:54:44+02:00",
+   "commit": "3c7633946ae88f67cef157f89199055933842864",
+   "evidence": "Add Attributes Diff and Features Diff tabs with tab synchronization",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-13T11:03:35+02:00",
+   "commit": "9d75b19938aa2dd7f47dd33a2daa5b9f32074918",
+   "evidence": "Fix illegal $ref paths in bundled OpenAPI spec",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-13T11:48:32+02:00",
+   "commit": "f27749169e2e46fcdcfc2b628ceef436e5e43489",
+   "evidence": "Add missing protocol adapter round-trip tests and fix mapping strategy grouping",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-13T12:53:55+02:00",
+   "commit": "4ba067e5ce5e8718f52775e77b1834bdbbc9f5c4",
+   "evidence": "Fix copyright year to 2026 in new OpenAPI wrapper files",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-13T15:53:05+02:00",
+   "commit": "49f626334370e9f1c8fcb885b867eeb818356b42",
+   "evidence": "Dynamically scope WoT Thing Description by user permissions",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-14T08:05:01+02:00",
+   "commit": "cb3870519afa709f129da7e25959043e4a51fa75",
+   "evidence": "Fix fire-and-forget commands returning 503 instead of 202",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-14T11:04:56+02:00",
+   "commit": "c64d208e328208469d370cb3b11d0a4c588ada5c",
+   "evidence": "Address review findings for importsAliases feature",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-14T11:22:18+02:00",
+   "commit": "5ae8862f7983c4c2d61ceac78d0fcc2726d7ef65",
+   "evidence": "Fix fire-and-forget commands delayed by full request timeout",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-15T16:17:26+02:00",
+   "commit": "193d59c88d6b35252fb158d1f65d1b73fae82d4a",
+   "evidence": "Address PR review findings for history exploration feature",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-16T09:02:15+02:00",
+   "commit": "022e4ab3f6d70b2e29551cbcd0719a51de5c602c",
+   "evidence": "Fix Diff and sub-diff views not clearing on thing deselection",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-16T09:24:46+02:00",
+   "commit": "e4a3408b4414a57e972a079280cae5601e3d1d0d",
+   "evidence": "Add optional \"Include context headers\" checkbox to Thing Updates",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-16T09:35:31+02:00",
+   "commit": "8961a9fdceb80b9be0c76ab3c0b9ec71e1d23db0",
+   "evidence": "Add quick-fetch convenience buttons to Historical Thing Updates",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-20T15:21:32+02:00",
+   "commit": "83ec8dca84f05be1d68e8384d89d0d2019ac5c6f",
+   "evidence": "Validate allowedImportAdditions for alias-based subject modifications",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-20T20:31:36+02:00",
+   "commit": "7d342bec29a9f0327ae0a15e468607cd120a0770",
+   "evidence": "Add transitiveImports for selective multi-level policy import resolution",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-21T11:40:28+02:00",
+   "commit": "250886d4537a14e1ad6c8751385fe473dfab01d4",
+   "evidence": "Address PR review: validate allowedImportAdditions for direct entry addition commands",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-21T14:43:28+02:00",
+   "commit": "db77eb4080cac77b28bdcea24a3c6b34200b58f1",
+   "evidence": "Address PR review findings for transitiveImports feature",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-29T15:14:59+02:00",
+   "commit": "7dd7eb22fae59c962be257433bdbdb6f69c61d87",
+   "evidence": "Simplify policy import model: replace entriesAdditions and importsAliases with entry-level references",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-30T13:47:20+02:00",
+   "commit": "3ab05665e8ed37021cc7dcdc6b9cf922e21c81b8",
+   "evidence": "Address PR review: validation, ETag, journal recovery, and DELETE wiring for entry references",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-30T15:05:47+02:00",
+   "commit": "ec66f44b47d9b381e3f9fb1203906f12f777f262",
+   "evidence": "Address PR review follow-ups: ETag round-trip, idempotent DELETE, status alignment",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-07T09:22:30+02:00",
+   "commit": "b5d0a2f5cd450f034689189c3a6aee3f5eeb89d2",
+   "evidence": "#2431 prefix namespace-policy entries with `nsimported-<sourcePolicyId>-<originalLabel>`",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-11T16:26:02+02:00",
+   "commit": "66ef7c6eb0fdf1855775b6222fff5499af61e6fc",
+   "evidence": "Reduce things-service CPU consumption identified by JFR profiling",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-11T17:14:52+02:00",
+   "commit": "3578855ef68ae673a5f758a2c3de9f61d3113ffe",
+   "evidence": "Reduce things-search CPU consumption identified by JFR profiling",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-11T17:19:51+02:00",
+   "commit": "5b9c4b738188dddb5e0f60af97f206132a22e536",
+   "evidence": "Invert AbstractDittoHeadersBuilder.validateValueTypes to O(H) lookups",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-11T17:54:31+02:00",
+   "commit": "6c8b24233c3fc51abf0fbd6c4ce3b53fcb954182",
+   "evidence": "Fix thread-pool-executor block on signal-enrichment-cache-dispatcher",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-11T20:29:45+02:00",
+   "commit": "6b5c0106bb96ff11749061945edb74dab64261f9",
+   "evidence": "Add allow-core-timeout=off to authentication-dispatcher",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-05-11T21:47:45+03:00",
+   "commit": "a66ef60696d4af10057a3e396b86c509c5c3b327",
+   "evidence": "Convert enforcement AskTimeoutException to 503 instead of 500",
+   "official": true,
+   "author": "Aleksandar Stanchev",
+   "email": "aleksandar.stanchev@bosch.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-12T07:33:38+02:00",
+   "commit": "7a979265b43801c51b9bee871d57b7823f31c800",
+   "evidence": "Make 4xx DittoRuntimeException subclasses stackless by default",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-12T15:47:46+02:00",
+   "commit": "8905a3ae7316376f9aa09c0e5b0818ec0929ad64",
+   "evidence": "Make SSE publisher backpressure buffer size configurable",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-12T18:12:10+02:00",
+   "commit": "932c51a94864212a222125e891cdf9adf81b0e29",
+   "evidence": "add missing 3.9.0 milestone items, adjust release date to 13.05.2026",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-13T07:54:03+02:00",
+   "commit": "544b54e8dcdbbc48872926f22c3724391c5dfeb4",
+   "evidence": "fix MongoDB X509 review feedback (#2445)",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-13T08:22:44+02:00",
+   "commit": "98880ad3d79eeca4a715fad4820d25ee80b3881d",
+   "evidence": "update X509 entry to #2449 and drop #2442 from 3.9.0 release notes",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-18T11:41:44+02:00",
+   "commit": "bc9ea22d0c0c0aa66b338b70ba27a78b70267e8a",
+   "evidence": "optimize partial-access-paths event enrichment to reduce things-service CPU",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-18T16:52:06+02:00",
+   "commit": "bf76f1dfac8098e351be72bc280750bff260c7c6",
+   "evidence": "fix activity-check reschedule interval for active persistent actors",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-19T17:24:35+02:00",
+   "commit": "fdac780d75862ca6063a6b3cdfda5dd8116d20ae",
+   "evidence": "add policy-lockout-prevention feature toggle for PoliciesValidator",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-20T22:03:58+02:00",
+   "commit": "4aa4be69277450ce562f041ccf94fb9a27fc6cee",
+   "evidence": "fix resolved policy view dropping imported entries when caller's READ on source comes only via namespace-root policy",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-20T22:10:16+02:00",
+   "commit": "5128f7ec688e2a2a6517e93756e1bdde3c688a9b",
+   "evidence": "add 3.9.1 release notes entry for PR #2458",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-26T21:22:26+02:00",
+   "commit": "2f2395a2bce8c58aa9ac89c43929767f00204b12",
+   "evidence": "defer CBOR/string pre-encoding in SoftReferencedFieldMap",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-06-11T12:04:10+02:00",
+   "commit": "d85b24eb94ee042cb725d8a26ff90c99f3bb6e6c",
+   "evidence": "fix partial-access filter stripping thingId and audit fields from SSE/WebSocket events",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-06-11T12:07:26+02:00",
+   "commit": "cce1be004633e81b92b95f2f43299e2cf87136f8",
+   "evidence": "remove regex from ImmutableJsonPointer escape/parse hot path",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-06-24T12:02:54+02:00",
+   "commit": "47a8b7c50dc8247fc41aeb18d6636375e8456951",
+   "evidence": "Add security hardening guide for operating Ditto",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-01T11:49:51+03:00",
+   "commit": "819ffe32d8513a9777f7d3446c8854c0a06b07a7",
+   "evidence": "fix http gaetway route segments strict matching (#2479)",
+   "official": true,
+   "author": "Aleksandar Stanchev",
+   "email": "aleksandar.stanchev@bosch.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-02T11:46:56+02:00",
+   "commit": "5141d859ad5284803b008b03c1a716a4e04e18bc",
+   "evidence": "Cache namespace-filtered policy enforcers to fix CPU hotspot",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-02T16:54:12+02:00",
+   "commit": "56e89ef06fe6d0cf2938f1526c47c0b82d600642",
+   "evidence": "Cache partial-access-paths enrichment per thing",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-03T08:03:38+02:00",
+   "commit": "a961f843b14518ad439a6411e52e5071e862bf5d",
+   "evidence": "Key partial-access cache on enforcer identity, not policy revision",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-03T09:35:35+02:00",
+   "commit": "f537e14be33e65fd05f7093e9de7214c2b40d778",
+   "evidence": "Skip structure hashing when no subject has restricted access",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-03T10:06:59+02:00",
+   "commit": "9f05e12590dd735c6bf297d1f5be55a705866995",
+   "evidence": "Address review: remove unused NonNull import, add final on parameter",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-06T08:26:45+02:00",
+   "commit": "8ebfbf73e3f084794c6a181eb1c612b7e2fd6d4a",
+   "evidence": "Add Ditto 3.9.3 release notes and Helm chart 4.3.0",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-07T13:35:34+02:00",
+   "commit": "ced7ddc1a2ecaa740ac18f0cafb20807e28395e1",
+   "evidence": "Cache classifySubjects(resource, READ) per resource on PolicyEnforcer",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-08T08:51:09+02:00",
+   "commit": "2e1129d3e4178c0b609581c125b8db6dfeb49284",
+   "evidence": "Pre-serialize pub/sub events once across fan-out (flag-gated, default off)",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-08T09:09:21+02:00",
+   "commit": "d99b6781bc2be51c8d59e8c12afd024b1c81b0ee",
+   "evidence": "helm: expose pre-serialize-fanout pub/sub flag + bump chart to 4.3.1",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-09T11:11:24+02:00",
+   "commit": "ea1553fc1532dc71f6b8e983b159b92d74b11b66",
+   "evidence": "Harden pre-serialize pub/sub fan-out + add 3.9.4 activation guide",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-09T17:34:12+02:00",
+   "commit": "6d7e2251308ddc9422a29745bb2c2438ae3192e1",
+   "evidence": "Categorize cluster (de)serialization metric by category + resource type",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-09T17:39:17+02:00",
+   "commit": "cc56ff8087b9a8fd38ecebaf3a98ff06834d0824",
+   "evidence": "Memoize resolved Kamon instrument in metric wrappers to cut hot-path cost",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-10T08:41:17+02:00",
+   "commit": "01982786fe02cc6e2b93dfaadbe0ac5fc361be2b",
+   "evidence": "Fix Artery buffer-order corruption in pre-serialize fan-out serializer",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-10T10:05:09+02:00",
+   "commit": "3ea12532468a6dfdf7c39fbcedab02476dee5e90",
+   "evidence": "Remove misleading hand-rolled pre-serialize benchmark",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-10T10:34:33+02:00",
+   "commit": "b146c28d7c4baefaa3aaa478c60ba83efe5b82b9",
+   "evidence": "helm: make pre-serialize-fanout a single cluster-wide flag",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-10T10:39:56+02:00",
+   "commit": "c274ef686eeb723ca5fa65342faea7dfc66dac78",
+   "evidence": "helm: reference the global pre-serialize-fanout env var among the other globals",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-16T09:40:54+02:00",
+   "commit": "50f0c6f52904fea3ff0dc65e6bd0f3dc08cff348",
+   "evidence": "Finalize 3.9.4 release notes and Helm chart 4.4.0",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-21T10:34:20+02:00",
+   "commit": "633ea04cf33023892c7d0049ff104c4aeda01eb0",
+   "evidence": "Memoize JSON header-value parsing, skip re-validation of trusted headers",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-21T11:03:15+02:00",
+   "commit": "2f8dca476daf254e5a1dbfed17fec65967a33ee5",
+   "evidence": "Require all doc pages in llms.txt, exclude only protocol-examples",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-21T16:21:17+02:00",
+   "commit": "4b55cdb3a30988acc1ec35b49f81f65afc8c2d7f",
+   "evidence": "Fix ClusterSingletonManagerIsStuck causing status-route bind restarts",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-23T17:46:02+02:00",
+   "commit": "a86b063c57644a20bca7752d462ca6e62719893b",
+   "evidence": "Fix blank resource_type metric tag crashing cluster serialization",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-24T09:59:29+02:00",
+   "commit": "24e17885b32b9acd4ad1c887348abfa5bf127b9c",
+   "evidence": "Make gateway devops/status passwords optional under oauth2 auth",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-24T11:05:50+02:00",
+   "commit": "73e1546cdd498e94617f8d371664f8ae25c1401b",
+   "evidence": "Add Ditto 3.9.5 release notes and finalize Helm chart 4.5.0",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-28T10:05:41+02:00",
+   "commit": "c6b1ec313a6036a056125182337dbf1be53e0658",
+   "evidence": "Build allinone jars in GitHub Actions instead of publishing them",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-07-28T15:23:25+02:00",
+   "commit": "211f20645b88968c2877f01db4f1888f8db9bba9",
+   "evidence": "Add trusted StartedSpan.propagateContext(DittoHeaders) overload to avoid header re-validation",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-07-28T15:23:25+02:00",
+   "commit": "373635d798dc4a5c494e8ab2738d06dc0840caeb",
+   "evidence": "Skip re-validation of trusted persisted headers on event-journal recovery",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-28T18:52:26+02:00",
+   "commit": "b59abe2a6d8bb924526654424467c486e554cedd",
+   "evidence": "Avoid unconditional rebuild in propagateContext(DittoHeaders) when unchanged",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-28T19:55:35+02:00",
+   "commit": "e705aa815a1289bebc26b004c63dc19d04bc877a",
+   "evidence": "Add release notes for 3.9.6 and bump Helm chart to 4.6.0",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-29T17:08:33+02:00",
+   "commit": "6f467d6140fbbfa54b696085171232306189208b",
+   "evidence": "Make operator metrics MongoDB read preference and concern configurable",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-30T08:42:04+02:00",
+   "commit": "7bb23aa3efb576b3e9b490f8373e0927d2821bb7",
+   "evidence": "Fix SearchActorTest stub for the extended sudoCount overload",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-31T16:32:13+02:00",
+   "commit": "546e93ed5e15e549005be5775701b92a3896a23d",
+   "evidence": "Optimize trace-context propagation to avoid per-hop full header-map copy",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-31T22:56:59+02:00",
+   "commit": "3e4b870b6a31351f6008317e2ffdbf6629432892",
+   "evidence": "Compute IndexLengthRestrictionEnforcer pointer byte-length without allocating",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-08-26T15:20:07+02:00",
+   "commit": "4f3bacd8193b7c9ad0b462d12ba8863bf89a07c4",
+   "evidence": "Inherit omitted operator-metrics read settings from query.persistence",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-31T16:32:35+02:00",
+   "commit": "90b6bf516d075b7d8e2f69892deb75c76ee4e9bc",
+   "evidence": "Memoize authorization verdicts in TreeBasedPolicyEnforcer",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-31T21:06:01+02:00",
+   "commit": "eae2a4e8350bc13b83a0a00239e3454d3fe382f0",
+   "evidence": "Make TreeBasedPolicyEnforcer authorization memo configurable; 0 disables it",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-08-27T08:55:25+02:00",
+   "commit": "36bfddf9a711867e83ab1fdfeac8bf6379fc2f2f",
+   "evidence": "Address review: make memo hits cheap and honour the configured memo bound",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-08-27T09:14:30+02:00",
+   "commit": "a9fb264a2bf212672ef4c95336dfe2f37e4f99ce",
+   "evidence": "Add JMH benchmark for the authorization-verdict memo",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-08-27T09:38:07+02:00",
+   "commit": "b6b30dfd6cf798f4173c36dfa8b91f9d37e12c5f",
+   "evidence": "Bump Helm chart version to 4.6.2",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-08-27T17:22:28+02:00",
+   "commit": "809f44d3d834528c19176f41cb4e71238c87fe64",
+   "evidence": "Escape the NUL separators in PolicyEnforcer's log dedup key",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-08-28T14:58:10+02:00",
+   "commit": "ce8ef72bc139ed8adbb1972bde98869fb34e23df",
+   "evidence": "Fix devops-managed WoT validation configs never reaching the validator",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-08-28T15:04:12+02:00",
+   "commit": "5c30373d9730b8bb78c56be21871e15cb322f8a3",
+   "evidence": "Fix stale _created / _modified of the WoT validation config",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-08-31T10:07:04+02:00",
+   "commit": "1450c0ad3d63e61b8b1740e6cd4843bde784cc61",
+   "evidence": "Harden ImplicitThingCreationMessageMapper against JSON template injection",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-08-31T12:26:39+02:00",
+   "commit": "7ecf508be7234a82fd5b070fe38c82e308636591",
+   "evidence": "Address review: fix commandHeaders leak and keep root template keys literal",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-08-31T14:36:35+02:00",
+   "commit": "cac8f83b3a81f5a797c76f405240074b354738d6",
+   "evidence": "Correct the chart CHANGELOG entry claiming #2478 shipped in 4.3.0",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-01T09:11:18+02:00",
+   "commit": "bbed7eff7deb2aac97118ee34ecec630152deaba",
+   "evidence": "Fix nightly Docker build: build allinone jars in the workflow",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-01T12:08:46+02:00",
+   "commit": "75a5938f87aa8b588ffd43486f21a85dcc2ee7a3",
+   "evidence": "Harden host validation of connection targets",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-08-19T11:27:03+02:00",
+   "commit": "1ea9fc49c725559061cfbd191e2c9b1d23b9a99c",
+   "evidence": "Validate hosts when fetching WoT ThingModels and bound redirect following",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-08-31T09:41:38+02:00",
+   "commit": "8d2b81ca5cf9cce3241819c2e5f2ae5aac0425e3",
+   "evidence": "Harden WoT host validation: case-insensitive matching, subnet + relative-redirect fixes",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-01T11:40:53+02:00",
+   "commit": "a8fe8fd7da692f2861cae3a2a90ade2c34d4b3a9",
+   "evidence": "Block IPv6 unique-local and CGNAT hosts, cover the redirect path with tests",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-01T12:21:12+02:00",
+   "commit": "58e8f08d381b9fcb07926ddad4b1c3c2919c2b39",
+   "evidence": "Document outbound HTTP host restriction in the security hardening guide",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-01T14:21:07+02:00",
+   "commit": "2b5faed66dc637c1b5ca7e29faa252f082421f04",
+   "evidence": "Make the blocked-host regex tests deterministic",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-01T14:29:26+02:00",
+   "commit": "e5eef4e913425670db26017748487ef37d6c826b",
+   "evidence": "Add Ditto 3.9.7 release notes and Helm chart 4.7.0",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-01T16:03:00+02:00",
+   "commit": "3b1551efba76194858096c22abf754ea21c41b7b",
+   "evidence": "Correct the memo config key name in the 3.9.7 release notes",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-01T16:33:01+02:00",
+   "commit": "459a2b105f7c117d90c599f6674025d4ca4a665a",
+   "evidence": "provide Ditto 3.8.13 release notes",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-01T20:09:47+02:00",
+   "commit": "519e233bca8103edf2386dbea5c723e11ae3dee7",
+   "evidence": "Don't build and push service images for helm-chart-* tags",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-01T20:47:58+02:00",
+   "commit": "0842d60205a7a166d64ad6bf8634ab672e58ad46",
+   "evidence": "Only move the `latest` and major image tags for the newest release",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-03T14:53:21+02:00",
+   "commit": "5516fe8a61fe7de37c7cfbd6e8e9e07c6db0a08c",
+   "evidence": "Render Helm customIndexes at the config path Ditto actually reads",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-08T14:14:02+02:00",
+   "commit": "06f896d689b1baf26715146f91670e7a7db5f84d",
+   "evidence": "Harden the release supply chain: image scanning, attestations, reproducible builds",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-08T15:05:17+02:00",
+   "commit": "4ccc126e8452b996fbc7af466cb4954deb338f9a",
+   "evidence": "Add grouped monthly Dependabot version updates for Maven and npm",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>",
+   "date": "2026-09-09T16:58:04+02:00",
+   "commit": "9ded612e7fb466549d4514e223273c252a27aa58",
+   "evidence": "fix(ui): package the OIDC silent-callback page so it actually works",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>",
+   "date": "2026-09-09T17:17:19+02:00",
+   "commit": "4b97d55c228590a3f764248aebfc8eabcf338949",
+   "evidence": "build(ui): add a .dockerignore so the build context is not the whole tree",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-10T16:19:53+02:00",
+   "commit": "0a83afdfd83d8ba1be274dc7bb608daf67569c6c",
+   "evidence": "Stop Dependabot rewriting Ditto's own CI-friendly versions",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+   "date": "2026-09-14T10:59:04+02:00",
+   "commit": "70a7311991f804b6b7895e20f63195aa464a0b45",
+   "evidence": "fix: adapt code to breaking changes of the grouped dependency bumps",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+   "date": "2026-09-21T14:19:24+02:00",
+   "commit": "b9b995ec55065685e8bbe543c27a7af0090be482",
+   "evidence": "fix: pin kafka producer linger.ms=0 broken by kafka-clients 4.0 default change",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+   "date": "2026-09-21T16:38:51+02:00",
+   "commit": "9267dc913822700de8baa4f0a1660bfb1873c6c5",
+   "evidence": "fix(ui): keep TypeScript at 6.x and adapt the build to it",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-09-22T19:04:36+02:00",
+   "commit": "9e5a6f30e83db8580807a1d73319e48d3226f4a0",
+   "evidence": "Return HTTP 401 instead of 503 for JWTs missing mandatory iss/kid claims",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-30T16:41:10+02:00",
+   "commit": "1a9269346859c631348d4ef198699ac70e5d05b6",
+   "evidence": "fix(ui): type-check silent-callback.ts and address review notes",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-07T12:03:13+02:00",
+   "commit": "d4e51ba20e53c73e3b24e64d4aca57f6079d9ca1",
+   "evidence": "Restrict Ditto UI and Swagger UI environmentsURL to the own origin",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-07T16:49:28+02:00",
+   "commit": "a53407c98feee053bd446980ec1865bea3e3ea89",
+   "evidence": "Add Ditto 3.9.8 release notes and Helm chart 4.8.0",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-08T13:56:21+02:00",
+   "commit": "182f7d9f7be41ec830e51fa7d84a683ee68fddeb",
+   "evidence": "Add Ditto 3.8.14 release notes",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-08T19:15:17+02:00",
+   "commit": "952e3c270e7845666ee40e1ae945872fba520430",
+   "evidence": "Skip integration tests in Docker image build workflows",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-16T09:45:20+02:00",
+   "commit": "5c24a4cad1e710801395764704231ea9a9574a0e",
+   "evidence": "Hide the existence of things and policies from requesters without permission",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T12:30:51+01:00",
+   "commit": "56a9cfe0b99a375e59b39017022a6b11dd614b0b",
+   "evidence": "Enforce the Java 8 API in modules compiled for Java 8",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-10-28T09:30:54+00:00",
+   "commit": "b04d24533df9ca95370cd65031571b2cb12306e9",
+   "evidence": "Fix pre-filter JSON pointer for feature (desired) property filters with extraFields",
+   "official": true,
+   "author": "nggf18",
+   "email": "Nuno.Fernandes@keenfinity-group.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-28T12:03:38+01:00",
+   "commit": "0965e29e244c0ace5a1adf79e002c857f7677028",
+   "evidence": "Bound namespaced search queries by the namespaces' thing ID ranges",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-10-28T14:25:04+00:00",
+   "commit": "d9e6e294e99980460358838df26eb3c9440499c7",
+   "evidence": "Compare extraFields pointers level by level in pre-filter",
+   "official": true,
+   "author": "nggf18",
+   "email": "Nuno.Fernandes@keenfinity-group.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-28T16:13:01+01:00",
+   "commit": "881c1bcba3563556eb874fb02d9c7a9a244966ee",
+   "evidence": "Treat all extraFields-covered filter fields as unknown in the pre-filter",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-29T08:34:29+01:00",
+   "commit": "efee838801bb9f6506b9c3e0ba2b5022fd970e79",
+   "evidence": "Add AGENTS.md and .claude context for AI coding agents",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-29T18:56:44+01:00",
+   "commit": "49d080b6f0071a2c30f10abccb883d492f21e31f",
+   "evidence": "Add JMH benchmarks for CBOR serialization, parsing and header round trips",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-29T19:03:37+01:00",
+   "commit": "17303b6e16be031ade5fb24794aae550503fcba1",
+   "evidence": "Parse JSON header values only once",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-29T19:09:25+01:00",
+   "commit": "88209e960ab5f6c1ccd87aafe6a4700a3a168c62",
+   "evidence": "Write nested JSON values directly into the CBOR output",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-29T19:13:39+01:00",
+   "commit": "3535e25b90637f07ae8b7bf7428facd8fcdeb03e",
+   "evidence": "Take over parsed fields instead of copying them",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-02T18:07:07+01:00",
+   "commit": "172a333c6b9f7a16bd8c848ff3a87812afb0032f",
+   "evidence": "Pin case-insensitive validation of headers created from JSON",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-03T12:01:48+01:00",
+   "commit": "d77ea012b3f242c5c02c5f53d58303fdc634d916",
+   "evidence": "Close streaming sessions whose mailbox lags behind",
+   "official": true,
+   "author": "Hussein Ahmed",
+   "email": "hussein.ahmed@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-03T12:10:10+01:00",
+   "commit": "7923d6722ba88db2c43141d0f38ab365087a23c1",
+   "evidence": "Bump Helm chart version to 4.10.0 for the new maxSessionLag value",
+   "official": true,
+   "author": "Hussein Ahmed",
+   "email": "hussein.ahmed@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-03T16:43:21+01:00",
+   "commit": "4f32c35adedc68d1a61da7941c04be9412db82a4",
+   "evidence": "Address review: minimum max-session-lag, explicit timer tests, docs caveat",
+   "official": true,
+   "author": "Hussein Ahmed",
+   "email": "hussein.ahmed@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-03T17:12:29+01:00",
+   "commit": "901af3f1202523cd0ffe73604a7f4393497f654a",
+   "evidence": "Memoize namespace-access rule conditions per validator",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-04T08:46:27+01:00",
+   "commit": "ae7a059ca0c669728e952b6e9ed348bfe5e14f46",
+   "evidence": "Compare all values of multi-valued placeholders in RQL filters",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-04T09:08:51+01:00",
+   "commit": "f7a63da34d275da39dfd93192d1c7ff6b4e244d4",
+   "evidence": "Resolve thing: and feature: placeholders in WebSocket/SSE filters",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-04T10:29:09+01:00",
+   "commit": "4263f89ce6b8743ad36559feeeb72b4cae2499c7",
+   "evidence": "fix(ui): address review of the Things search namespaces picker",
+   "official": true,
+   "author": "Hussein Ahmed",
+   "email": "hussein.ahmed@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-04T11:50:33+01:00",
+   "commit": "364ca39fb961cf80f9258cbd8572c04ff043cb91",
+   "evidence": "Apply topic namespaces in the per-topic re-check after enrichment",
+   "official": true,
+   "author": "Thomas J\u00e4ckle",
+   "email": "thomas.jaeckle@beyonnex.io"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-05T17:57:07+01:00",
+   "commit": "378862fa104851bc5f45c168ae5c533673ab3ed7",
+   "evidence": "fix(ui): keep the Environments tab in sync with the namespaces picker",
+   "official": true,
+   "author": "Hussein Ahmed",
+   "email": "hussein.ahmed@beyonnex.io"
+  }
+ ],
+ "signal_date": "2026-01-13T12:24:41+00:00",
+ "signal_kind": "coauthor",
+ "mentions": {
+  "strict": [
+   {
+    "sha": "efee838801bb9f6506b9c3e0ba2b5022fd970e79",
+    "date": "2026-10-29T08:34:29+01:00",
+    "subject": "Add AGENTS.md and .claude context for AI coding agents"
+   }
+  ],
+  "strict_count": 1,
+  "literal_only_count": 17,
+  "capped": false
+ },
+ "group": "ai-native",
+ "adr_count_before_signal": 0,
+ "superseded_in_window": 0,
+ "eligibility_reason": "ai-native",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "6"
+}

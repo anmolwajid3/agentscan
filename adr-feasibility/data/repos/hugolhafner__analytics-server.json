@@ -1,0 +1,253 @@
+{
+ "repo": "hugolhafner/analytics-server",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2020-03-12T13:21:22+00:00",
+ "last_commit": "2020-03-12T13:22:39+00:00",
+ "n_commits": 2,
+ "n_authors": 2,
+ "n_files": 73,
+ "n_code_files": 37,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 8,
+ "adrs": [
+  {
+   "path": "docs/adr/.000-template.md",
+   "identity": "docs/adr/.000-template.md",
+   "adr_id": "0",
+   "title": "[Title of Problem and Solution, Present Tense, Imperative Phrase, < 50 Characters, Like a Git Commit Message]",
+   "first_commit": "2020-03-12T13:22:39+00:00",
+   "first_sha": "c992f5ae9ce6761ff0f5e12716b8b9e5974e0bdd",
+   "last_commit": "2020-03-12T13:22:39+00:00",
+   "author": "Hugo Hafner",
+   "email": "hello@hugohafner.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# [Title of Problem and Solution, Present Tense, Imperative Phrase, < 50 Characters, Like a Git Commit Message]\n\n- Status: [Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-005](005-example.md)]\n- People involved: [list everyone involved in the decision] <!-- optional -->\n\n## Issue\n\n[Describe the context and problem statement in free form using two to three sentences. You may want to articulate the problem in form of a question.]\n\n## Assumptions <!-- optional -->\n\n[...]\n\n## Constraints <!-- optional -->\n\n[Cost, schedule, licensing, training, support, maintenance, bandwidth, resource availability, business priorities, technology standards, existing architecture, etc]\n\n## Candidates\n\n- [Candidate X]\n  - [Description, example, etc] <!-- optional -->\n- \u2026\n\n### [Candidate X] <!-- optional verbose exploration -->\n\n[Description, example, etc] <!-- optional -->\n\n- [Pros, cons, cost analysis, SWOT analysis, opinions, feedback, etc]\n- \u2026\n\n## Decision\n\n[Candidate X]\n\n[Justification]\n\n### Consequences <!-- optional -->\n\n- [Start doing X, stop doing Y, create new requirements, modify existing requirements, pose additional constraints to the environment, require renegotiating scope or schedule with customers, require additional staff training, compromises, follow-up decisions, etc]\n- \u2026\n\n## Additional Links <!-- optional -->\n\n- [Technical discussion](https://example.com/)\n- [Example usage](https://example.com/)\n- [Further reading](https://example.com/)\n- \u2026\n\n<!--\nChecklist:\n- [ ] Does the filename match the title of this document?\n- [ ] Is this ADR answering a common question? Consider placing a link within the FAQ.\n- [ ] Remove this checklist block\n-->\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/001-record-architectural-decisions.md",
+   "identity": "docs/adr/001-record-architectural-decisions.md",
+   "adr_id": "1",
+   "title": "ADR-001: Record Architectural Decisions",
+   "first_commit": "2020-03-12T13:22:39+00:00",
+   "first_sha": "c992f5ae9ce6761ff0f5e12716b8b9e5974e0bdd",
+   "last_commit": "2020-03-12T13:22:39+00:00",
+   "author": "Hugo Hafner",
+   "email": "hello@hugohafner.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR-001: Record Architectural Decisions\n\n- Status: Accepted\n- People involved: @sublimesneaks\n\n## Issue\n\nWe want to record architectural decisions made in this project. Which format and structure should these records follow?\n\n## Constraints\n\nIdeally stored with the code. This is the most universal and simple place.\n\nMust be a simple solution, otherwise people won't bother with ADRs.\n\n## Decision\n\nUse [MADR](https://adr.github.io/madr/).\n\nDo not complicate simple process with [adr-tools](https://github.com/npryce/adr-tools). Instead, just provide a template file.\n\nMADR template modified to reduce verbosity, and expanded with information found in [other templates](https://github.com/joelparkerhenderson/architecture_decision_record).\n\n## Additional Links\n\n- [Documenting Architecture Decisions](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions)\n- [Lightweight Architecture Decision Records by ThoughtWorks Technology Radar](https://www.thoughtworks.com/radar/techniques/lightweight-architecture-decision-records)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/002-prefer-configurable-dev-tools.md",
+   "identity": "docs/adr/002-prefer-configurable-dev-tools.md",
+   "adr_id": "2",
+   "title": "ADR-002: Prefer Configurable Dev Tools",
+   "first_commit": "2020-03-12T13:22:39+00:00",
+   "first_sha": "c992f5ae9ce6761ff0f5e12716b8b9e5974e0bdd",
+   "last_commit": "2020-03-12T13:22:39+00:00",
+   "author": "Hugo Hafner",
+   "email": "hello@hugohafner.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR-002: Prefer Configurable Dev Tools\n\n- Status: Acceepted\n- People involved: @sublimesneaks\n\n## Issue\n\n> Dev tools = building, linting, formatting, etc.\n\nShould dev tools be configurable?\n\n## Candidates\n\nThere are two sides of the spectrum, and both are explored below.\n\n### Candidate: Fixed dev tools scripts with minimal (or no) config\n\nAn example is running `react-scripts build`, which does not support configuration.\n\nPros:\n\n- Simplicity\n- Prevent developer arguments about config and script behaviour\n- Easier to sync consistent dev tooling across many repos\n\nCons:\n\n- Unable (or difficult) to tweak and configure\n\n### Candidate: Exposed dev tools scripts with full configuration\n\nAn example is a `build.js` command (or similar), exposing all steps and allowing configuration.\n\nPros:\n\n- Easy to tweak and configure\n\nCons:\n\n- More complex\n- Developers may argue about best configuration\n  - However, following this rule helps: \"stick to default behaviour unless you have a clear and objective reason to change it\"\n- More difficult to sync consistent dev tooling across many repos\n  - However, it is still possible using git. Copy and paste from another repo (or regenerate scaffolding) over your existing app. Then manually choose to keep or discard each change. This is manual and time consuming, but allows for greater control.\n\n## Decision\n\nExposed dev tools scripts with full configuration.\n\nThe decision carries more 'cons', but the ability to easily tweak and configure an app is most important. Each app is unique with different requirements. It's frustrating to be locked into unconfigurable fixed scripts, despite all the 'pros'.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "build.js"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/003-prefer-multiple-config-files.md",
+   "identity": "docs/adr/003-prefer-multiple-config-files.md",
+   "adr_id": "3",
+   "title": "ADR-003: Prefer Multiple Config Files",
+   "first_commit": "2020-03-12T13:22:39+00:00",
+   "first_sha": "c992f5ae9ce6761ff0f5e12716b8b9e5974e0bdd",
+   "last_commit": "2020-03-12T13:22:39+00:00",
+   "author": "Hugo Hafner",
+   "email": "hello@hugohafner.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR-003: Prefer Multiple Config Files\n\n- Status: Accepted\n- People involved: @sublimesneaks\n\n## Issue\n\nConfiguration can be stored within `package.json`, or as multiple files. Which is the best choice?\n\n## Decision\n\nPrefer multiple config files.\n\n- Storing configuration files with `.js` extension allows for additional features, e.g. comments, merging, computing based on environment\n- Reduce git conflicts within `package.json`\n- Easier to sync with other projects (by simply copying the configuration file)\n- Storing with extensions (e.g. `.js`, `.yml`, `.json`) provides syntax highlighting\n- Easier to find the configuration\n- Easier for IDE and other tools to discover\n- Improved seperation of concerns\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "package.json"
+   ],
+   "implementation": {
+    "sha": "c992f5ae9ce6761ff0f5e12716b8b9e5974e0bdd",
+    "date": "2020-03-12T13:22:39+00:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "package.json"
+    ]
+   }
+  },
+  {
+   "path": "docs/adr/004-minimally-transform-source-code-during-build.md",
+   "identity": "docs/adr/004-minimally-transform-source-code-during-build.md",
+   "adr_id": "4",
+   "title": "ADR-004: Minimally Transform Source Code During Build",
+   "first_commit": "2020-03-12T13:22:39+00:00",
+   "first_sha": "c992f5ae9ce6761ff0f5e12716b8b9e5974e0bdd",
+   "last_commit": "2020-03-12T13:22:39+00:00",
+   "author": "Hugo Hafner",
+   "email": "hello@hugohafner.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR-004: Minimally Transform Source Code During Build\n\n- Status: Accepted\n- People involved: @sublimesneaks\n\n## Issue\n\nThere are many ways to transform the source code during build, including:\n\n- Bundle into a single file\n- Minify\n\nWhat transformations should the build use?\n\n## Assumptions\n\nThe code is not consumed on client-side.\n\n## Constraints\n\nAs the code is written in TypeScript, there must be _some_ transformation (e.g. ESM to CJS).\n\n## Decision\n\nMinimally transform the source code during build.\n\nHas the following advantages:\n\n- Easier to debug and trace problems to a specific file (even with source maps)\n- Allows the consumer to `require` only the file(s) they need within the directory tree\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/005-format-files.md",
+   "identity": "docs/adr/005-format-files.md",
+   "adr_id": "5",
+   "title": "ADR-005: Format Files",
+   "first_commit": "2020-03-12T13:22:39+00:00",
+   "first_sha": "c992f5ae9ce6761ff0f5e12716b8b9e5974e0bdd",
+   "last_commit": "2020-03-12T13:22:39+00:00",
+   "author": "Hugo Hafner",
+   "email": "hello@hugohafner.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR-005: Format Files\n\n- Status: Accepted\n- People involved: @sublimesneaks\n\n## Issue\n\nShould files be formatted, or not?\n\n## Decision\n\nYes. Formatted files ensure consistency, improve readability, and reduce merge conflicts.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/006-format-files-programmatically.md",
+   "identity": "docs/adr/006-format-files-programmatically.md",
+   "adr_id": "6",
+   "title": "ADR-006: Format Files Programmatically",
+   "first_commit": "2020-03-12T13:22:39+00:00",
+   "first_sha": "c992f5ae9ce6761ff0f5e12716b8b9e5974e0bdd",
+   "last_commit": "2020-03-12T13:22:39+00:00",
+   "author": "Hugo Hafner",
+   "email": "hello@hugohafner.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR-006: Format Files Programmatically\n\n- Status: Accepted\n- People involved: @sublimesneaks\n\n## Issue\n\nHow should files be formatted?\n\n## Candidates\n\n### Candidate: Format files with IDE plugins\n\n- Cons\n  - Developers use different IDEs\n  - Developers may forget to install plugins\n  - Developers may configure plugins differently\n  - Not all new and changed files are saved within an IDE\n\n### Candidate: Format files programmatically\n\nFor example, a script named `format.js` which invokes formatting tools.\n\n- Pros\n  - Consistent for each developer\n  - Nothing for the developer to install or manage\n  - Allows a developer or build pipeline to run a single command to ensure files are formatted as expected\n  - Can be automatically run on changed files using [lint-staged](https://github.com/okonet/lint-staged)\n\n## Decision\n\nFormat files programmatically.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "format.js"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/007-order-imports-with-import-sort.md",
+   "identity": "docs/adr/007-order-imports-with-import-sort.md",
+   "adr_id": "7",
+   "title": "ADR-007: Order Imports With import-sort",
+   "first_commit": "2020-03-12T13:22:39+00:00",
+   "first_sha": "c992f5ae9ce6761ff0f5e12716b8b9e5974e0bdd",
+   "last_commit": "2020-03-12T13:22:39+00:00",
+   "author": "Hugo Hafner",
+   "email": "hello@hugohafner.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR-007: Order Imports With import-sort\n\n- Status: Accepted\n- People involved: @sublimesneaks\n\n## Issue\n\nHow should we order imports in JS and TS files?\n\n## Candidates\n\n- ESLint [sort-imports](https://eslint.org/docs/rules/sort-imports) rule\n  - Unable to order by filename / location\n- [eslint-plugin-import](https://github.com/benmosher/eslint-plugin-import/blob/master/docs/rules/order.md)\n  - Used by [eslint-airbnb-config](https://www.npmjs.com/package/eslint-config-airbnb)\n  - Does not work on TypeScript files\n  - Does not allow sorting _within_ groups\n- [import-sort](https://github.com/renke/import-sort)\n  - Very powerful and feature rich\n\n## Decision\n\nUse [import-sort](https://github.com/renke/import-sort).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/benmosher/eslint-plugin-import/blob/master/docs/rules/order.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 8,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "7"
+}

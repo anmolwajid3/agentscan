@@ -1,0 +1,430 @@
+{
+ "repo": "patshone-manifesto/hee-web-blueprint",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2018-07-24T09:16:26+02:00",
+ "last_commit": "2020-06-29T15:02:17+01:00",
+ "n_commits": 246,
+ "n_authors": 11,
+ "n_files": 255,
+ "n_code_files": 11,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 13,
+ "adrs": [
+  {
+   "path": "pages/blueprint/adrs/0012-use-external-search-service.md",
+   "identity": "pages/blueprint/adrs/0012-use-external-search-service.md",
+   "adr_id": "12",
+   "title": "Use external search service",
+   "first_commit": "2020-06-08T13:21:04+01:00",
+   "first_sha": "8104d78f4a6da579f21b84e637f2fd6a9560251b",
+   "last_commit": "2020-06-29T14:59:04+01:00",
+   "author": "Matt Brooks",
+   "email": "matt.brooks@manifesto.co.uk",
+   "status": "proposed",
+   "status_raw": "Pending",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "---\nlayout: layouts/page.njk\ntitle: ADR-0012 Use external search service\npageTitle: ADR-0012 Use external search service\npageDescription: \npath: /blueprint\npermalink: /blueprint/adrs/ADR-0012-use-external-search-service.html\neleventyNavigation:\n  parent: Architecture decisions\n  key: ADR-0012 Use external search service\n  order: 12\n---\n\n# 12. Use external search service\n\nDate: 2020-06-08\n\n## Status\n\nPending\n\n## Context\n\nWe sought to determine whether the native out of the box solution provided by the platform nativly would be fit for purpose, or if an external service would be required. \n\nFor the purpose of the decision, the following were considered as requirements:\n\n* Flexible facet management\n* Synonym configuration \n* Query suggestions\n* Configurable misspelling tolerance\n* Natual language query support\n* Ability to integrate with external sources\n\n### Options\n\n#### Native Bloomreach Lucene Search\n\nThe OOTB search provided by the platform nativly is provided by Apache Lucene. This native search option provides standard search options, including free text search and faceted filters. Common query types are supported, such as wildcard searches. \n\nWhilst the native search functionality is fine for simple content websites, it lacks some of the enhanced functionality and configurability that the final solution will be asked to provide, including synonym configuration. \n\n#### Bloomreach Search & Merchandising (brSM) \n\nBloomreach offer an enhanced managed search service, called 'Search & Merchandising'\n\nhttps://www.bloomreach.com/en/products/search-merchandising\n\nThis tool provides several additional pieces of functionality including semantic understanding and personalisation. The product however is geared in the first instance to product and merchansing and many of the features are directed towards that usecase.  \n\nNHS digital are undertaking some work to prove out the use of brSM for this scenario. This is one of the first POCs using this search tool outside of a comemerce functionality. \n\n#### Algolia\n\nAlgolia is a decided search-as-a-service product that provides much of the functionality needed out of the box, including synonym support and filters and facets. It is also highly customisable through the UI, allowing for non-developers to configure, adjust and maintain the search offering. \n\nAlgolia also offers prebuilt configurable front end components, which make implementing the search experience quick and easily.\n\n#### Azure Cognative Search\n\nMicrosoft offer a cloud search service called Azure Cognative Search. This is a scalable search-as-a-service product, with a focus on machine learning powered capabilities such as optical character regognition \n\n#### Amazon Kendra/ Elasticsearch \n\nAmazon has long provided a well regarded open source search solution called Elasticsearch, which can be run on premises or on an EC2 or managed search instance. Amazon also offered Kendra, which is a machine learning based search service. \n\n## Decision\n\nWe believe that an external search service will be required to provide all of the capabailities that will ultimatly be needed to meet the complex user experience needs. Further to that, using an external search service will better suit the service based architectural model, where the search service will likely need to ultimatly take data from a variety of services such as the LKS document and colberation platform, and in future potentially other services such as Oriel and TIS. \n\nUsing a managed service such as Algolia provides a good balance between powerful and user friendly functionality and implementation complexity - Algolia was chosen as the basis for the POC in part owing to its comprehensive service offering combined with its prebuilt react component library offering fast and efficient implementation. \n\nBloomreach Search and Merchandising is an interesting option that provides advantages being tightly integrated into the core CMS project, however using it outside of commerce is somewhat unproven in the market. \n\nSearch as a service options such as Elastic or Azure Cognative search would also be viable candidates (assuming the organisational goal of aligning more functionality to MS's offerings, Azure would likely be recommended ahead of Elasticsearch), and the cost models of these offer likely cost savings, the trade off is more complexity to implement and maintain.  \n\n## Consequences\n\nAn integration with an external search provider brings additional complexity to the architectural stack, and requires additional considerations during development, as well as an additional ongoing cost for procuring the service (if a managed service is selected). \n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "layouts/page.njk",
+    "blueprint/adrs/ADR-0012-use-external-search-service.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "pages/blueprint/adrs/0013-use-bloomreach-channel-manager.md",
+   "identity": "pages/blueprint/adrs/0013-use-bloomreach-channel-manager.md",
+   "adr_id": "13",
+   "title": "Status",
+   "first_commit": "2020-06-08T14:05:09+01:00",
+   "first_sha": "84fb56034bd3360fcc7c46b487b5857c9e03e405",
+   "last_commit": "2020-06-08T14:05:09+01:00",
+   "author": "Matt Brooks",
+   "email": "matt.brooks@manifesto.co.uk",
+   "status": "proposed",
+   "status_raw": "Pending",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "---\nlayout: layouts/page.njk\ntitle: ADR-0013 Use Bloomreach channel manager\npageTitle: ADR-0013 Bloomreach channel manager\npageDescription: \npath: /blueprint\npermalink: /blueprint/adrs/ADR-0013-use-bloomreach-channel-manager.html\neleventyNavigation:\n  parent: Architecture decisions\n  key: ADR-0013 Use Bloomreach channel manager\n  order: 13\n---\n\nDate: 2020-06-08\n\n## Status\n\nPending\n\n## Context\n\nWe sought to determine whether to deliver our document management capabilities using the content management platform natively or through the integration of an external document management platform.\n\nWe sought to determine whether Bloomreach's 'Channel' concept would be suitable for managing the various sites required to be brought onto the platform both at MVP and in the future, such as Deenary and Speciality sights. \n\nAs part of this, considerations were made around: \n* Ease of use for creating new sites\n* Ability to share components \n* Ability to segregate content for specific channels (sites)\n* Ability to share content up and down the stack where needed and appropriate\n* Permissions model required to support this model\n\n## Decision\n\nBloomreach's concept of channels is well suited to meet the needs of running the sites required under the NWP platform umbrella. Channels offer the ability to build new sites that share components and modules, which enables for greater consistency. By utilising roles and permissions from within BR, content can be segregated to be available only where it is most relevant, whilst allowing for content to be made available up or down the organisational stack (e.g. national content being aggregated at a regional level). \n\nBR's 'blueprinting' functionality allows for sites to be created using a series of parameters, further standardising the creation of sites where needed in an easy fashion. \n\n## Consequences\n\nThe channel and blueprinting functionality are core offerings of the product and are well documented\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "layouts/page.njk",
+    "blueprint/adrs/ADR-0013-use-bloomreach-channel-manager.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "pages/blueprint/adrs/0009-use-react-to-manage-and-develop-the-components-for-the-hee-frontend-framework.md",
+   "identity": "pages/blueprint/adrs/0009-use-react-to-manage-and-develop-the-components-for-the-hee-frontend-framework.md",
+   "adr_id": "9",
+   "title": "Use react to manage and develop the components for the HEE frontend framework",
+   "first_commit": "2020-06-01T07:06:13+01:00",
+   "first_sha": "28e0a8fdfc13c15b6016aa376512020c487d8724",
+   "last_commit": "2020-06-01T10:34:57+01:00",
+   "author": "Pat Shone",
+   "email": "pat.shone@manifesto.co.uk",
+   "status": "proposed",
+   "status_raw": "Pending",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "---\nlayout: layouts/page.njk\ntitle: ADR-0009 Use react to manage and develop the components for the HEE frontend framework\npageTitle: ADR-0009 Use react to manage and develop the components for the HEE frontend framework\npageDescription: \npath: /blueprint\npermalink: /blueprint/adrs/ADR-0009-use-react-to-manage-and-develop-the-components-for-the-hee-frontend-framework.html\neleventyNavigation:\n  parent: Architecture decisions\n  key: ADR-0009 Use react to manage and develop the components for the HEE frontend framework\n  order: 9\n---\n\n# 9. Use react to manage and develop the components for the HEE frontend framework\n\nDate: 2020-04-04\n\n## Status\n\nPending\n\n## Context\n\nWe sought to identify a single templating language that would provide a source of truth across our frontend & content management platforms. This aim seeks to reduce the effort in developing on the content management platform by mitigating the burden of markup integration. We also aimed to find a templating language that allowed us to utilise the components already created as part of the NHSUK frontend framework.\n\n### Options\n\nWe identified three main candidates to use as our templating language:\n\n#### Freemarker: \n\nFreemarker - https://freemarker.apache.org/ is the native templating language used by BloomReach and although there are projects that provide the ability to parse Freemarker templates with Javascript - this would be a prerequisite to using a tool like StoryBook to manage the frontend components - choosing Freemarker and utlising the prexisting work of the NHSUK Frontend project would require implementing and maintaining Freemarker versions of those components.\n\n\n#### Nunjucks:\n\nNunjucks - https://mozilla.github.io/nunjucks/ is the native templating language used by the NHSUK Frontend project. It's syntax is similar to the Jinja templating language which is widely used in Python application development. Choosing Nunjucks would require implementing a custom integration with BloomReach using that platforms SPA/headless functionality. Integrating with StoryBook would require the creation of a custom StoryBook renderer.  \n\n\n#### React:\n\nReact - https://reactjs.org/ is a fuller javascript framework for building UIs. BloomReach provides an out of the box, if perhaps somewhat nascent integration with React through its SPA/headless functionality. StoryBook provides full support for React and NHS Digital have developed and maintain an implementation of the NHSUK Frontend in React\n\n- https://github.com/NHSDigital/nhsuk-react-components\n\n\n## Decision\n\nWe will use React to develop the HEE Frontend platform.\n\n## Consequences\n\nWe should look to describe a fallback rendering path for user agents that are unable to render an in browser React application. BloomReach provides support for server side rendering using Next.js - https://nextjs.org/ which mitigates this risk. \n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "layouts/page.njk",
+    "blueprint/adrs/ADR-0009-use-react-to-manage-and-develop-the-components-for-the-hee-frontend-framework.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "pages/blueprint/adrs/0010-use-external-document-management-system.md",
+   "identity": "pages/blueprint/adrs/0010-use-external-document-management-system.md",
+   "adr_id": "10",
+   "title": "Status",
+   "first_commit": "2020-06-01T07:06:13+01:00",
+   "first_sha": "28e0a8fdfc13c15b6016aa376512020c487d8724",
+   "last_commit": "2020-06-01T10:34:57+01:00",
+   "author": "Pat Shone",
+   "email": "pat.shone@manifesto.co.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "---\nlayout: layouts/page.njk\ntitle: ADR-0010 Use external document management system\npageTitle: ADR-0010 Use external document management system\npageDescription: \npath: /blueprint\npermalink: /blueprint/adrs/ADR-0010-use-external-document-management-system.html\neleventyNavigation:\n  parent: Architecture decisions\n  key: ADR-0010 Use external document management system\n  order: 10\n---\n\nDate: 2020-04-11\n\n## Status\n\nAccepted\n\n## Context\n\nWe sought to determine whether to deliver our document management capabilities using the content management platform natively or through the integration of an external document management platform.\n\n### Options\n\n####\u00a0NHS Digital BloomReach\n\nWe looked at the implementation of document management functionality in BloomReach delivered as part of the work for NHS Digital - https://github.com/NHS-digital-website/hippo. This project provides a good view of what native BloomReach document management and publishing looks like, it delivers a flexible content model for publishing to HTML documents. \n\n#### Office 365\n\nIn addition we should look at the current usage of Office 365 to determine whether the platform would be suitable for integration with BloomReach.\n\n#### FutureNHS\nFinally looked at the FutureNHS collaboration platform to see whether it would be suitable for integration with BloomReach. Whilst the platform in its current state would be a good candidate for integration, we discovered that at the time of writing, this platform is due to be rewritten. \n\n## Decision\n\nWe believe that Microsoft Office 365 and Sharepoint provide a good basis for the platforms document management capabilities and we have proved that it can be successfully integrated.\n\nHaving looked at the requirements for LKS staff, particularly around the ability to support a range of document types such as spreadsheets and presentations, our belief is that we would be better placed to integrate an external document management system. The NHS Digital publishing platform provides an excellent HTML publishing model and workflow, however extending it to support a broader range of document types would be complex.\n\nFutureNHS may provide a good candidate for integration in the future, however at the time of writing it is difficult to recommend as the product is in the process of being rewritten.\n\n\n## Consequences\n\nAn integration with an external system brings additional complexity as it requires the wiring in of an external system, however it moves the responsibility for providing a broad range of document management capabilities to a dedicated platform\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "layouts/page.njk",
+    "blueprint/adrs/ADR-0010-use-external-document-management-system.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "pages/blueprint/adrs/0011-use-federated-authentication-provider.md",
+   "identity": "pages/blueprint/adrs/0011-use-federated-authentication-provider.md",
+   "adr_id": "11",
+   "title": "Use federated authentication provider",
+   "first_commit": "2020-06-01T07:06:13+01:00",
+   "first_sha": "28e0a8fdfc13c15b6016aa376512020c487d8724",
+   "last_commit": "2020-06-01T10:34:57+01:00",
+   "author": "Pat Shone",
+   "email": "pat.shone@manifesto.co.uk",
+   "status": "proposed",
+   "status_raw": "Pending",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "---\nlayout: layouts/page.njk\ntitle: ADR-0011 Use federated authentication provider\npageTitle: ADR-0011 Use federated authentication provider\npageDescription: \npath: /blueprint\npermalink: /blueprint/adrs/ADR-0011-use-federated-authentication-provider.html\neleventyNavigation:\n  parent: Architecture decisions\n  key: ADR-0011 Use federated authentication provider\n  order: 11\n---\n\n# 11. Use federated authentication provider\n\nDate: 2020-04-11\n\n## Status\n\nPending\n\n## Context\n\nWe need to describe an approach to authentication that supports the use of multiple authentication providers. Azure AD provides the ability to configure direct federation with a range of authentication providers and includes the ability to provide managed authorisation for users without the ability to authenticate with Azure AD \n\n- https://docs.microsoft.com/en-us/azure/active-directory/b2b/delegate-invitations\n\n## Decision\n\nWe will choose an authentication provider/platform that supports the federation of authentication.\n\n## Consequences\n\nThis means that users, particularly those with OpenAthens user accounts will be able to authenticate with our platform using either their Office 365 credentials, their OpenAthens credentials or other Azure AD native credentials\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "layouts/page.njk",
+    "blueprint/adrs/ADR-0011-use-federated-authentication-provider.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "pages/blueprint/adrs/0001-record-architecture-decisions.md",
+   "identity": "pages/blueprint/adrs/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2020-06-01T07:06:13+01:00",
+   "first_sha": "28e0a8fdfc13c15b6016aa376512020c487d8724",
+   "last_commit": "2020-06-01T07:06:13+01:00",
+   "author": "Pat Shone",
+   "email": "pat.shone@manifesto.co.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "---\nlayout: layouts/page.njk\ntitle: ADR-0001 Record architecture decisions\npageTitle: ADR-0001 Record architecture decisions\npageDescription: We need to record the architectural decisions made on this project.\npath: /blueprint\npermalink: /blueprint/adrs/ADR-0001-record-architecture-decisions.html\neleventyNavigation:\n  parent: Architecture decisions\n  key: ADR-0001 Record architecture decisions\n  order: 1\n---\n# 1. Record architecture decisions\nDate: 2020-05-29\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as [described by Michael Nygard](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions).\n\n## Consequences\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's [adr-tools](https://github.com/npryce/adr-tools).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "layouts/page.njk",
+    "blueprint/adrs/ADR-0001-record-architecture-decisions.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "pages/blueprint/adrs/0002-use-github-for-source-control.md",
+   "identity": "pages/blueprint/adrs/0002-use-github-for-source-control.md",
+   "adr_id": "2",
+   "title": "Use github for source control",
+   "first_commit": "2020-06-01T07:06:13+01:00",
+   "first_sha": "28e0a8fdfc13c15b6016aa376512020c487d8724",
+   "last_commit": "2020-06-01T07:06:13+01:00",
+   "author": "Pat Shone",
+   "email": "pat.shone@manifesto.co.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "---\nlayout: layouts/page.njk\ntitle: ADR-0002 Use github for source control\npageTitle: ADR-0002 Use github for source control\npageDescription: We needed to determine where to store and manage the source code for the HEE National Website Platform. \npath: /blueprint\npermalink: /blueprint/adrs/ADR-0002-use-github-for-source-control.html\neleventyNavigation:\n  parent: Architecture decisions\n  key: ADR-0002 Use github for source control\n  order: 2\n---\n\n# 2. Use github for source control\n\nDate: 2020-03-09\n\n## Status\n\nAccepted\n\n## Context\n\nWe needed to determine where to store and manage the source code for the HEE National Website Platform. HEE currently have a number of projects managed on GitHub so already have a presence on the platform.\n\n## Decision\n\nWe will store the platform source code on Github\n\n## Consequences\n\nThe source code for the HEE National Website platform can be managed alongside the projects that support TIS.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "layouts/page.njk",
+    "blueprint/adrs/ADR-0002-use-github-for-source-control.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "pages/blueprint/adrs/0003-use-github-actions-for-automation.md",
+   "identity": "pages/blueprint/adrs/0003-use-github-actions-for-automation.md",
+   "adr_id": "3",
+   "title": "Use github actions for automation",
+   "first_commit": "2020-06-01T07:06:13+01:00",
+   "first_sha": "28e0a8fdfc13c15b6016aa376512020c487d8724",
+   "last_commit": "2020-06-01T07:06:13+01:00",
+   "author": "Pat Shone",
+   "email": "pat.shone@manifesto.co.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "---\nlayout: layouts/page.njk\ntitle: ADR-0003 Use github actions for automation\npageTitle: ADR-0003 Use github actions for automation\npageDescription: We should determine the platform we use to automate the build, test and deployment of the HEE National Website Platform.\npath: /blueprint\npermalink: /blueprint/adrs/ADR-0003-use-github-actions-for-automation.html\neleventyNavigation:\n  parent: Architecture decisions\n  key: ADR-0003 Use github actions for automation\n  order: 3\n---\n\n# 3. Use github actions for automation\n\nDate: 2020-03-09\n\n## Status\n\nAccepted\n\n## Context\n\nWe should determine the platform we use to automate the build, test and deployment of the HEE National Website Platform.\n\n## Decision\n\nHaving determined to use Github to manage the source code of the platform, the simplest answer to this question was to look at Github actions. We determined after some investigative work to prove out our ability to deploy to the BloomReach cloud that we should use Github Actions to manage platform automation.\n\n## Consequences\n\nChoosing Github actions reduces the number of organisations and platforms to orchestrate, however we did need to build and will need to maintain a brCloud deployment action.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "layouts/page.njk",
+    "blueprint/adrs/ADR-0003-use-github-actions-for-automation.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "pages/blueprint/adrs/0004-use-gherkin-for-describing-acceptance-tests.md",
+   "identity": "pages/blueprint/adrs/0004-use-gherkin-for-describing-acceptance-tests.md",
+   "adr_id": "4",
+   "title": "Use gherkin for describing acceptance tests",
+   "first_commit": "2020-06-01T07:06:13+01:00",
+   "first_sha": "28e0a8fdfc13c15b6016aa376512020c487d8724",
+   "last_commit": "2020-06-01T07:06:13+01:00",
+   "author": "Pat Shone",
+   "email": "pat.shone@manifesto.co.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "---\nlayout: layouts/page.njk\ntitle: ADR-0004 Use gherkin for describing acceptance tests\npageTitle: ADR-0004 Use gherkin for describing acceptance tests\npageDescription: We should determine how to develop and document our accptance tests.\npath: /blueprint\npermalink: /blueprint/adrs/ADR-0004-use-gherkin-for-describing-acceptance-tests.html\neleventyNavigation:\n  parent: Architecture decisions\n  key: ADR-0004 Use gherkin for describing acceptance tests\n  order: 4\n---\n\n# 4. Use gherkin for describing acceptance tests\n\nDate: 2020-03-30\n\n## Status\n\nAccepted\n\n## Context\n\nWe should determine how to develop and document our accptance tests. This decision describes the choice around the langauge (DSL) that we use to describe them.\n\n## Decision\n\nWe have determined to describe our acceptance tests using Gherkin.\n\n## Consequences\n\nGherkin is a broadly used DSL for describing acceptance tests that has implementations across a range of programming languages.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "layouts/page.njk",
+    "blueprint/adrs/ADR-0004-use-gherkin-for-describing-acceptance-tests.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "pages/blueprint/adrs/0005-use-selenide-for-creating-and-managing-acceptance-tests.md",
+   "identity": "pages/blueprint/adrs/0005-use-selenide-for-creating-and-managing-acceptance-tests.md",
+   "adr_id": "5",
+   "title": "Use selenide for creating and managing acceptance tests",
+   "first_commit": "2020-06-01T07:06:13+01:00",
+   "first_sha": "28e0a8fdfc13c15b6016aa376512020c487d8724",
+   "last_commit": "2020-06-01T07:06:13+01:00",
+   "author": "Pat Shone",
+   "email": "pat.shone@manifesto.co.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "---\nlayout: layouts/page.njk\ntitle: ADR-0005 Use selenide for creating and managing acceptance tests\npageTitle: ADR-0005 Use selenide for creating and managing acceptance tests\npageDescription: We need to choose a framework to write our acceptance tests in\npath: /blueprint\npermalink: /blueprint/adrs/ADR-0005-use-selenide-for-creating-and-managing-acceptance-tests.html\neleventyNavigation:\n  parent: Architecture decisions\n  key: ADR-0005 Use selenide for creating and managing acceptance tests\n  order: 5\n---\n\n# 5. Use selenide for creating and managing acceptance tests\n\nDate: 2020-03-30\n\n## Status\n\nAccepted\n\n## Context\n\nHaving determined to use Gherkin as the way that we describe our acceptance tests, we need to choose a Java based (because BloomReach is Java based) framework to write our acceptance tests in.\n\n## Decision\n\nWe have determined to use Selenide as the framework to implement our automated tests.\n\n## Consequences\n\nSelenide provides a layer over Selenium which mitigates and manages some of the risks/problems with using Selenium. It provides a fluent API for describing tests and is simple to configure.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "layouts/page.njk",
+    "blueprint/adrs/ADR-0005-use-selenide-for-creating-and-managing-acceptance-tests.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "pages/blueprint/adrs/0006-use-testcontainers-for-providing-ephemeral-test-environments.md",
+   "identity": "pages/blueprint/adrs/0006-use-testcontainers-for-providing-ephemeral-test-environments.md",
+   "adr_id": "6",
+   "title": "Use testcontainers for providing ephemeral test environments",
+   "first_commit": "2020-06-01T07:06:13+01:00",
+   "first_sha": "28e0a8fdfc13c15b6016aa376512020c487d8724",
+   "last_commit": "2020-06-01T07:06:13+01:00",
+   "author": "Pat Shone",
+   "email": "pat.shone@manifesto.co.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "---\nlayout: layouts/page.njk\ntitle: ADR-0006 Use testcontainers for providing ephemeral test environments\npageTitle: ADR-0006 Use testcontainers for providing ephemeral test environments\npageDescription: We need to determine the platform on which infrastructure our acceptance tests will run.\npath: /blueprint\npermalink: /blueprint/adrs/ADR-0006-use-testcontainers-for-providing-ephemeral-test-environments.html\neleventyNavigation:\n  parent: Architecture decisions\n  key: ADR-0006 Use testcontainers for providing ephemeral test environments\n  order: 6\n---\n\n# 6. Use testcontainers for providing ephemeral test environments\n\nDate: 2020-03-30\n\n## Status\n\nAccepted\n\n## Context\n\nHaving determined to use Gherkin and Selenide to manage the generation of our automated tests, we need to determine the platform on which these tests will run. The platform should be open source, if at all possible and portable between hosting platforms.\n\n## Decision\n\nWe have determined to use the testcontainers.org project to manage the infrastructure for our automated tests. This platform provides a way of generically describing the containers that we use to run our tests and can be executed on platforms including Github Actions.\n\n## Consequences\n\nChoosing testcontainers.org provides a portable hosting platform agnostic way of describing the infrastructure required to execute our automated tests.",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "layouts/page.njk",
+    "blueprint/adrs/ADR-0006-use-testcontainers-for-providing-ephemeral-test-environments.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "pages/blueprint/adrs/0007-use-storybook-js-to-develop-and-document-screens-and-components.md",
+   "identity": "pages/blueprint/adrs/0007-use-storybook-js-to-develop-and-document-screens-and-components.md",
+   "adr_id": "7",
+   "title": "Use storybook.js to develop and document screens and components",
+   "first_commit": "2020-06-01T07:06:13+01:00",
+   "first_sha": "28e0a8fdfc13c15b6016aa376512020c487d8724",
+   "last_commit": "2020-06-01T07:06:13+01:00",
+   "author": "Pat Shone",
+   "email": "pat.shone@manifesto.co.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "---\nlayout: layouts/page.njk\ntitle: ADR-0007 Use storybook.js to develop and document screens and components\npageTitle: ADR-0007 Use storybook.js to develop and document screens and components\npageDescription: \npath: /blueprint\npermalink: /blueprint/adrs/ADR-0007-use-storybook-js-to-develop-and-document-screens-and-components.html\neleventyNavigation:\n  parent: Architecture decisions\n  key: ADR-0007 Use storybook.js to develop and document screens and components\n  order: 7\n---\n\n# 7. Use storybook.js to develop and document screens and components\n\nDate: 2020-04-04\n\n## Status\n\nAccepted\n\n## Context\n\nAs part of efforts to create a separation between the development of our content management and content delivery tiers and in order to support the development of a frontend framework that could be used across multiple delivery platforms, we sought to identify a tool to support a component based development workflow. We reviewed the following options:\n\n### Options\n\n#### Styleguidist - https://github.com/styleguidist/react-styleguidist\n\n- **Pros:**\n    - Provides great styleguide documentation\n- **Cons:** \n    - Is restricted to React or Vue (for which there is an alternative project)\n\n#### StoryBook.js - https://storybook.js.org/\n\n- **Pros:**\n    - Has support for a wide range of templating languages including HTML and Web Components as well as React and Vue\n- **Cons:** \n    - Isn't really setup for serving associated documentation (ie less of a Design System tool)\n\n\n#### PatternLab - https://patternlab.io/\n\n- **Pros:**\n    - Provides out of the box support for PHP templating such as Twig and Javascript templates such as Handlebars\n- **Cons:**\n    - Has taken a very long time to move from version 2 to version 3 and still doesn't appear to be stable\n\n## Decision\n\nWe have chosen StoryBook.js as the component development tool to use for the HEE National Website platform. This choice was guided by the following:\n\n- StoryBook's current usage across other NHS Digital projects\n- StoryBook's support for a wide range of templating languages\n- StoryBook's ability to provide automated testing for concerns such as accessibility\n\n## Consequences\n\nStoryBook provides support for a broad range of templating languages including vanilla HTML. It is already used by NHS Digital to manage the development of the React version of the NHSUK Frontend components. StoryBook provides a good way of encapsulating, testing and publishing the components that form the HEE Frontend.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "layouts/page.njk",
+    "blueprint/adrs/ADR-0007-use-storybook-js-to-develop-and-document-screens-and-components.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "pages/blueprint/adrs/0008-use-npm-to-host-hee-frontend-framework.md",
+   "identity": "pages/blueprint/adrs/0008-use-npm-to-host-hee-frontend-framework.md",
+   "adr_id": "8",
+   "title": "Use npm to host HEE frontend framework",
+   "first_commit": "2020-06-01T07:06:13+01:00",
+   "first_sha": "28e0a8fdfc13c15b6016aa376512020c487d8724",
+   "last_commit": "2020-06-01T07:06:13+01:00",
+   "author": "Pat Shone",
+   "email": "pat.shone@manifesto.co.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "---\nlayout: layouts/page.njk\ntitle: ADR-0008 Use npm to host HEE frontend framework\npageTitle: ADR-0008. Use npm to host HEE frontend framework\npageDescription: \npath: /blueprint\npermalink: /blueprint/adrs/ADR-0008-use-npm-to-host-hee-frontend-framework.html\neleventyNavigation:\n  parent: Architecture decisions\n  key: ADR-0008 Use npm to host HEE frontend framework\n  order: 8\n---\n\n# 8. Use npm to host HEE frontend framework\n\nDate: 2020-04-04\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to identify how and where we will store packages that describe our front end framework. There are a number of NHS UK and NHS Digital projects that already use NPM as their package repository for front end code.\n\n## Decision\n\nWe have chosen to store our packages on NPM. \n\n## Consequences\n\nNPM requires the least effort to setup, is free for open source projects and is already in use for other NHS projects so provides an infrastructure choice that should be well understood.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "layouts/page.njk",
+    "blueprint/adrs/ADR-0008-use-npm-to-host-hee-frontend-framework.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "pages/blueprint/adrs/0010-use-external-document-management-system.md",
+   "identity": "pages/blueprint/adrs/0010-use-external-document-management-system.md",
+   "commit": "ee340212e2308701f22a8c6233721611583689e5",
+   "date": "2020-06-01T10:34:57+01:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Pending",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "updates to auth and document management",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Pat Shone",
+   "email": "pat.shone@manifesto.co.uk"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 13,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "13"
+}

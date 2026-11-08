@@ -1,0 +1,837 @@
+{
+ "repo": "home-assistant/architecture",
+ "clone_ok": true,
+ "error": null,
+ "description": "Repo to discuss Home Assistant architecture",
+ "first_commit": "2018-02-04T12:11:45-08:00",
+ "last_commit": "2026-10-16T17:28:12+02:00",
+ "n_commits": 69,
+ "n_authors": 25,
+ "n_files": 27,
+ "n_code_files": 0,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 22,
+ "adrs": [
+  {
+   "path": "adr/0018-supported-databases.md",
+   "identity": "adr/0018-supported-databases.md",
+   "adr_id": "18",
+   "title": "Supported databases",
+   "first_commit": "2021-10-26T13:16:59+02:00",
+   "first_sha": "713f61010b11edf52e543d28be2fc7c47b5dc072",
+   "last_commit": "2026-09-11T22:01:50+02:00",
+   "author": "Erik Montnemery",
+   "email": "erik@montnemery.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# 0018. Supported databases\n\nDate: 2021-10-20\n\n## Status\n\nAccepted\n\n## Context\n\nWe currently have no restrictions on supported databases for the recorder, and the documentation states:\n\n > Home Assistant uses SQLAlchemy, which is an Object Relational Mapper (ORM). This means that you can use any \n > SQL backend for the recorder that is supported by SQLAlchemy, like MySQL, MariaDB, PostgreSQL, or MS SQL Server.\n\nThis claim is not correct, SQLAlchemy will behave differently on different databases, and features relied\non by the recorder may work differently, or not at all, in different databases. \n\nAs a matter of fact, we have a lot of special handling for the different databases out there, which makes\nmaintenance and implementing changes really hard. For contributors, it is impossible to test changes against\nall database services SQLAlchemy could work with. This often causes bugs being reported for the less common\ndatabases after a new release.\n\nTL;DR: We advertise a lot of different databases being supported, without version limitation mentioned. This\ncauses the end-user to think their database and version of choice will work with Home Assistant. Unfortunately,\nthat is not always the case; The user experience for those using a less popular database or an outdated version\nis very poor, with frequent issues preventing the recorder from working after an upgrade of Home Assistant.\n\n## Decision\n\nSupport a limited set of databases, and also limit the supported versions for the supported databases\nin a similar way as we have limited installation types for Home Assistant. This greatly reduces the\nmaintenance effort, making it easier to implement and test new features and giving the end-user a better\nexperience with reliable upgrades.\n\nLimit DB support to the following:\n\n- MariaDB: LTS versions which have not reached EoL according to [MariaDB's release cycle](https://endoflife.date/mariadb); no support for non-LTS versions.\n- MySQL: LTS versions which have not reached EoL according to [MySQL's release cycle](https://endoflife.date/mysql); no support for non-LTS versions.\n- PostgreSQL: Versions which have not reached EoL according to [PostgreSQL's release cycle](https://endoflife.date/postgresql).\n- SQLite: The version used by container builds.\n\nNotes:\n- For MariaDB and MySQL LTS versions we consider a version EoL when it is EoL for non-paying tiers.\n- The above listed minimal version scheme may change over time.\n- When a minimal version bump is required, this will be announced as a breaking change as well as a repair, with a deprecation period of 6 release cycles (6 months).\n\n## Consequences\n\nExisting users of databases that are not in the supported list above, will have to move to a different\ndatabase solution. The recommendation is to use the built-in SQLite database when possible.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0016-home-assistant-core.md",
+   "identity": "adr/0016-home-assistant-core.md",
+   "adr_id": "16",
+   "title": "Installation method: Home Assistant Core",
+   "first_commit": "2020-07-07T09:11:05-07:00",
+   "first_sha": "4049161a540c3af87921f92e6bb30c369f74eebf",
+   "last_commit": "2026-04-02T15:13:56+02:00",
+   "author": "Paulus Schoutsen",
+   "email": "balloob@gmail.com",
+   "status": "unknown",
+   "status_raw": "Reverted by [discussion #1197](https://github.com/home-assistant/architecture/discussions/1197). Home Assistant Core is no longer an officially supported installation method. Users are encouraged to migrate to Home Assistant OS or Home Assistant Container.",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 0016. Installation method: Home Assistant Core\n\nDate: 2020-07-01\n\n## Status\n\nReverted by [discussion #1197](https://github.com/home-assistant/architecture/discussions/1197).\n\nHome Assistant Core is no longer an officially supported installation method.\nUsers are encouraged to migrate to Home Assistant OS or Home Assistant Container.\n\n## Context\n\nDefine a supported installation method as per [ADR-0012](https://github.com/home-assistant/architecture/blob/master/adr/0012-define-supported-installation-method.md).\n\n## Decision\n\nThis is for running just the Home Assistant Core application directly on Python. It does not provide the full Supervisor experience and thus does not provide the Supervisor panel and add-ons.\n\n### Supported Operating Systems and versions\n\n- All major Linux distributions, latest stable and major versions.\n- Windows; only using WSL.\n- macOS; Python via Homebrew.\n\n### Supported Python versions\n\nRunning Home Assistant Core is only supported when running the application using the official Python virtual environment. Running Home Assistant Core without a virtual environment, system/globally installed Python packages, is not supported.\n\nDetails on the supported Python versions are defined in [ADR-0020](./0020-minimum-supported-python-version.md).\n\n### Documentation\n\nSome operating systems will require extra libraries or packages to be installed prior to installing the Python requirements. In this case our documentation shall link to the installation instructions of the Python requirement that requires them.\n\nIn case that is not available or possible, we will name the libraries or packages that need to be installed. We do not aim not include installation instructions for every OS.\n\n### Required Expertise\n\n- **Installation**\n  Requires installing Python 3 with venv support (the default except on Debian based systems). Then create a virtual environment and install Home Assistant Core via pip.\n\n  For packages that require compilation, the user will need to install compilers and other development packages. If those development packages are not the same as provided by the operating system, you can break your system.\n\n* **Start when the system is started:** This is the responsibility of the user. It is based on their operating system.\n* **Run with full network access:** Works, is the only option.\n* **Access USB devices:** This works out of the box.\n\n* **Maintaining the Home Assistant installation**\n  Maintenance requires more time, effort, skills, and experience than the other methods.\n\n  - **Python upgrades:** Home Assistant upgrades Python every year. It can happen that your current operating system doesn\u2019t support the new minimum required version out of the box. In that case, you need to find unofficial Python packages for your system or compile Python from source.\n  - **Installing Python dependencies:** Some Python packages need compilation. Users are responsible for having the right compilers and development packages installed.\n  - **Updating Home Assistant:** Updating happens via the pip command-line tool.\n\n- **Maintaining the Operating System**\n  Home Assistant Core runs in a Python virtual environment. Anything outside of that is the responsibility of the user.\n\n* **Security updates for OS:** Responsibility of the user.\n\n* **Maintaining the components required for the Supervisor:** No supervisor, so N/A\n\n**Conclusion:**\nThis is an expert installation method. Based on the integrations that you\u2019re running, you will need a lot of extra packages installed.\n\n## Consequences\n\nUpdate documentation on how to install this method, the required experience and the expected maintenance.\n\nMove existing documentation that does not match supported installation methods to the community guides wiki.\n\nNotify user during onboarding of expected maintenance for their installation method.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#1197",
+     "kind": "hash",
+     "url": "",
+     "number": "1197"
+    }
+   ],
+   "mentioned_paths": [
+    "/0020-minimum-supported-python-version.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0019-GPIO.md",
+   "identity": "adr/0019-GPIO.md",
+   "adr_id": "19",
+   "title": "GPIO",
+   "first_commit": "2021-12-20T11:47:28+01:00",
+   "first_sha": "8a9d35db060391e7b539d45a8e0b21bc5eeec35d",
+   "last_commit": "2026-04-02T15:13:43+02:00",
+   "author": "Franck Nijhof",
+   "email": "git@frenck.dev",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 0019. GPIO\n\nDate: 2021-12-20\n\nChangelog:\n - 2026-04-02 Removed Supervised from the list of installation methods\n\n## Status\n\nAccepted\n\n## Context\n\nWe currently have a lot of integrations that use or are based on GPIO (including SPI and I2C busses).\n\n- All of these integrations have a low usage count (source Home Assistant Analytics),\n  but add the same amount of maintenance and review time to the core.\n- Most of these integrations are unmaintained.\n- The use of GPIO via containers (including our Home Assistant OS &\n  Container installation methods) is often unstable or complicated.\n- Support for GPIO on specific platforms/SBCs: mileage varies (e.g., Raspberry Pi on 64 bits platforms).\n- The use of these sensors, in general, is better supported and done via dedicated projects like ESPHome.\n\n## Decision\n\n- We no longer accept integrations that integrate with devices over GPIO.\n- We identify, deprecate and remove integrations that use GPIO.\n- It will still be possible to have custom integrations that use GPIO.\n\nGPIO, in this case, means interfacing directly with the individual GPIO pins\n(or I/O lines) on the board running Home Assistant. This includes bus\ncommunications like I2C and SPI.\n\nDevices connected on GPIO that are exposed on the system as regular serial\ndevices are exempted from this ADR.\n\n## Consequences\n\nWe will no longer accept integrations that integrate with devices over GPIO as\na core integration; those will have to be maintained as custom integrations,\nor use projects like ESPHome instead.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0020-minimum-supported-python-version.md",
+   "identity": "adr/0020-minimum-supported-python-version.md",
+   "adr_id": "20",
+   "title": "Minimum supported Python version",
+   "first_commit": "2023-05-30T02:36:02+02:00",
+   "first_sha": "9e7e0bdfaded05c90661ac63a983f99b697be97e",
+   "last_commit": "2026-04-02T15:13:43+02:00",
+   "author": "Franck Nijhof",
+   "email": "git@frenck.dev",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 0020. Minimum supported Python version\n\nDate: 2023-05-29\n\nArchitecture discussion: [#903](https://github.com/home-assistant/architecture/discussions/903)\n\nReplaces: [ADR-0002](./0002-minimum-supported-python-version.md)\n\nChangelog:\n - 2026-04-02 Removed Supervised and Core from the list of installation methods. Removed Core-specific deprecation period policy.\n\n## Status\n\nAccepted\n\n## Context\n\nHome Assistant currently sets the minimum Python requirement to the penultimate minor Python version released upstream.\n\n## Decision\n\nHome Assistant supports a single minor version of Python at a time, with the goal of supporting the latest minor upstream Python version.\n\nWhen a new minor Python version is released, the Home Assistant project will provide compatibility and support for that new version as soon as possible.\n\nThe minimal supported micro/patch Python version is decided on a minor version basis and codified in the version check code in Home Assistant proper.\n\n## Consequences\n\nWe have two installation methods that are based on Docker containers (Home Assistant OS and Container), which are maintained and kept up to date by the Home Assistant project. A significant majority of our user base uses these installation methods.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#903",
+     "kind": "hash",
+     "url": "",
+     "number": "903"
+    }
+   ],
+   "mentioned_paths": [
+    "/0002-minimum-supported-python-version.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0013-home-assistant-container.md",
+   "identity": "adr/0013-home-assistant-container.md",
+   "adr_id": "13",
+   "title": "Installation method: Home Assistant Container",
+   "first_commit": "2020-06-17T17:26:40-07:00",
+   "first_sha": "c8b11ac40ea8d1974fc3334666acc014e971dd32",
+   "last_commit": "2026-04-02T15:13:30+02:00",
+   "author": "Paulus Schoutsen",
+   "email": "balloob@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# 0013. Installation method: Home Assistant Container\n\nDate: 2020-06-03\n\nChangelog:\n - 2026-04-02 Removed armhf, i386, and armv7 from the list of supported architectures\n\n## Status\n\nAccepted\n\n## Context\n\nDefine a supported installation method as per [ADR-0012](https://github.com/home-assistant/architecture/blob/master/adr/0012-define-supported-installation-method.md).\n\n## Decision\n\nThis is for running just the Home Assistant Core application on native OCI compatible containerization system. It does not provide the Supervisor experience, and thus does not provide the Supervisor panel and add-ons.\n\nThis is a general installation method that is recommended as an alternative to the Home Assistant OS installation method. Due to the shared image with the Home Assistant OS installation method, almost all documentation applies to the Home Assistant Container as well.\n\nThe only supported way to run the container is on the host network as root with full privileges.\n\n### Supported Containerization system and version\n\n- Any Open Container Initiative (OCI) compatible containerization system.\n\n### Supported boards/hardware/machines\n\n- Machines of the following architectures: amd64, aarch64\n\n### Supported Operating Systems and versions\n\n- Running Home Assistant Container is only supported on Linux.\n- Windows and BSD installations (e.g., macOS and FreeBSD) are not supported.\n\n### Additional notes\n\nThere is a wide variety of containerization software available. From that perspective, Home Assistant will only actively document the use of Docker.\n\n### Required Expertise\n\n- **Installation**\n  This requires the user to have an existing system that can run Docker containers. Installation is either done by running a command from the Docker-cli or via a user interface (Synology, Portainer)\n\n* **Start when the system is started:** The user is responsible for configuring the system to start the container when the system is started.\n* **Run with full network access:** Default installation instructions prescribe net=host to be configured.\n* **Access USB devices:** It is up to the user to ensure that all devices are correctly passed through to the container.\n\n* **Maintaining the Home Assistant installation**\n  If using the Docker-cli the user needs to manually update the run command. If using a UI the user might be notified of an upgrade or automatically update \u2013 automatically applying updates may result in the system not coming back online. There is no rollback in case the instance does not come online after an update.\n\n  - **Python upgrades:** Included in the Home Assistant container\n  - **Installing Python dependencies:** Included in the Home Assistant container\n  - **Updating Home Assistant:** Included in the Home Assistant container\n\n- **Maintaining the Operating System**\n  Since this is just the core container, all OS responsibilities are with the user.\n\n  - **Security updates for OS:** Responsibility of the user.\n\n  - **Maintaining the components required for the Supervisor:** No supervisor, so N/A\n\n**Conclusion:** medium expertise required. Some Docker UIs make it easy to run and update containers. Mapping devices and manually updating Home Assistant will be challenging as they depend per platform.\n\n## Consequences\n\nUpdate documentation on how to install this method, the required experience and the expected maintenance.\n\nMove existing related documentation that does not match the requirements to the community guides wiki.\n\nNotify user during onboarding of expected maintenance for their installation method.\n\nAdd checks to Home Assistant to warn (but not forbid) when not all requirements are met for this installation method.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0015-home-assistant-os.md",
+   "identity": "adr/0015-home-assistant-one.md",
+   "adr_id": "15",
+   "title": "Installation method: Home Assistant OS",
+   "first_commit": "2020-06-21T22:10:37-07:00",
+   "first_sha": "c09430fa43702f69df3ba222a0164b7b8deef4a6",
+   "last_commit": "2026-04-02T15:13:30+02:00",
+   "author": "Paulus Schoutsen",
+   "email": "balloob@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 9,
+   "text": "# 0015. Installation method: Home Assistant OS\n\nDate: 2020-06-08\n\nChangelog:\n - 2025-01-23 Updated the list of hardware whose support was added in the meantime\n - 2025-09-29 Added Khadas VIM3 which was unintentionally left out in the previous update\n - 2026-04-02 Removed armv7-only boards (Raspberry Pi 32-bit, ASUS Tinker Board, ODROID-XU4)\n\n## Status\n\nAccepted\n\n## Context\n\nDefine a supported installation method as per [ADR-0012](https://github.com/home-assistant/architecture/blob/master/adr/0012-define-supported-installation-method.md).\n\n## Decision\n\nHome Assistant OS is the full installation of our all-inclusive home automation system. Best in class home automation is complemented with a UI for configuring your system, making backups and safe updates with automatic rollback.\n\nThis is the generally recommended installation method and the one that our website and documentation should be focused on.\n\n### Supported boards/hardware/machines\n\n- Home Assistant Yellow (with CM4 and CM5 modules)\n- Home Assistant Green\n- Raspberry Pi 3 Model B and B+ 64-bit\n- Raspberry Pi 4 Model B 64-bit\n- Raspberry Pi 5 Model B 64-bit\n- Khadas VIM3\n- ODROID-C2\n- ODROID-C4\n- ODROID-N2/N2+\n- ODROID-M1\n- ODROID-M1S\n- Bare-metal on x86-64 PCs (e.g. Intel NUC, via `generic-x86-64` image) on best effort basis (i.e. not all x86-64 machines are guaranteed to be supported fully)\n- Virtual Machine (x86-64/AMD64-based by `ova` image, AArch64/ARM64-based by `generic-aarch64` image)\n\n### Supported Operating Systems and versions\n\nThis installation method is only available and supported using the Home Assistant Operating System. Only the latest major version is supported.\n\nWhen a new major version is released, the previous major version will be dropped with a deprecation period of 2 months. The last 3 minor releases are supported.\n\n### Supported Hypervisors\n\nThe Home Assistant Operating System can be run on a Hypervisor and thus be run as a virtual machine. The following Hypervisors are supported:\n\n- KVM/QEMU\n- VirtualBox\n- VMWare\n- Xen\n\nWe will provide documentation for the following systems build on top of these technologies:\n\n- Proxmox (KVM/QEMU based)\n- Unraid (KVM/QEMU based)\n- VirtualBox\n- VMWare\n\n### Required Expertise\n\n- **Installation**\n  Installation requires the user to install the disk image for their device, install an image flasher (Etcher) and flash the image to the disk. Then insert image and boot their device.\n\n* **Start when the system is started:** Managed by installer\n* **Run with full network access:** Managed by installer\n* **Access USB devices:** Managed by supervisor\n\n* **Maintaining the Home Assistant installation**\n  Ongoing maintenance can be done via the user interface. User will be notified if an update is available for the operating system or for Home Assistant. Updates will be automatically rolled back if they fail.\n\n  - **Python upgrades:** Managed via HA updates\n  - **Installing Python dependencies:** Managed via HA updates\n  - **Updating Home Assistant:** Via a UI\n\n- **Maintaining the Operating System**\n  Ongoing maintenance can be done via the user interface. User will be notified if an update is available for the operating system. Updates will be automatically rolled back if they fail.\n\n* **Security updates for OS:** Managed via HA OS updates\n\n* **Maintaining the components required for the Supervisor:** Managed via HA OS updates\n\n**Conclusion:** low expertise required. Besides the installation methods, everything is done via the UI.\n\n## Consequences\n\nUpdate documentation on how to install this method, the required experience and the expected maintenance.\n\nMove existing related documentation that does not match the requirements to the community guides wiki.\n\nAdd checks to Home Assistant to warn (but not forbid) when not all requirements are met for this installation method.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0014-home-assistant-supervised.md",
+   "identity": "adr/0014-home-assistant-supervised.md",
+   "adr_id": "14",
+   "title": "Installation method: Home Assistant Supervised",
+   "first_commit": "2020-06-17T17:20:39-07:00",
+   "first_sha": "928da7db6f9cc5676362bc6e27ee92848860d007",
+   "last_commit": "2026-04-02T14:08:35+02:00",
+   "author": "Paulus Schoutsen",
+   "email": "balloob@gmail.com",
+   "status": "unknown",
+   "status_raw": "Reverted by [discussion #1198](https://github.com/home-assistant/architecture/discussions/1198). Home Assistant Supervised is no longer an officially supported installation method. Users are encouraged to migrate to Home Assistant OS or Home Assistant Container.",
+   "replacement": null,
+   "n_commits": 11,
+   "text": "# 0014. Installation method: Home Assistant Supervised\n\nDate: 2020-06-03\n\n## Status\n\nReverted by [discussion #1198](https://github.com/home-assistant/architecture/discussions/1198).\n\nHome Assistant Supervised is no longer an officially supported installation method.\nUsers are encouraged to migrate to Home Assistant OS or Home Assistant Container.\n\n## Context\n\nDefine a supported installation method as per [ADR-0012](https://github.com/home-assistant/architecture/blob/master/adr/0012-define-supported-installation-method.md).\n\n## Decision\n\nThis installation method provides the full Home Assistant experience on a regular operating system. This means, all components from the Home Assistant method are used, except for the Home Assistant Operating System. This system will run the Home Assistant Supervisor. The Supervisor is not just an application, it is a full appliance that manages the whole system. It will clean up, repair or reset settings to default if they no longer match expected values.\n\nBy not using the Home Assistant Operating System, the user is responsible for making sure that all required components are installed and maintained. Required components and their versions will change over time. Home Assistant Supervised is provided as-is as a foundation for community supported do-it-yourself solutions. We only accept bug reports for issues that have been reproduced on a freshly installed, fully updated Debian with no additional packages.\n\nThis method is considered advanced and should only be used if one is an expert in managing a Linux operating system, Docker and networking.\n\n### Supported Operating System, System dependencies and versions\n\nDocker CE (Community Edition) is the only supported containerization method for Home Assistant Supervised. We only support FHS 3.0 on the host file system.\n\n- Docker CE >= 20.10.17\n- Systemd >= 239\n- NetworkManager >= 1.14.6\n- udisks2 >= 2.8\n- AppArmor == 2.13.x (built into the kernel)\n- Debian Linux Debian 12 aka Bookworm (no derivatives)\n- [Home Assistant OS-Agent](https://github.com/home-assistant/os-agent) (Only the [latest release](https://github.com/home-assistant/os-agent/releases/latest) is supported)\n\nOnly the above-listed version of Debian Linux is supported for running this installation method. When a new major version of Debian is released, the previous major version is dropped, with a deprecation time of 4 months. An exception to this rule occurs if the new version does not meet the requirements of the Supervisor.\n\n### Additional supported conditions\n\nThis installation method can easily be broken if one manages the operating system incorrectly. Therefore, the following additional conditions apply:\n\n- The operating system is dedicated to running Home Assistant Supervised.\n- All system dependencies are installed according to the manual.\n- No additional software, outside of the Home Assistant ecosystem, is installed.\n- Docker needs to be correctly configured to use overlayfs2 storage, journald as the logging driver with Container name as Tag, and cgroup v1.\n- NetworkManager is installed and enabled in systemd.\n- Systemd journal gateway is enabled and mapped into supervisor as `/run/systemd-journal-gatewayd.sock`\n\nIn case any abnormality is detected that prevents Home Assistant from functioning, the Home Assistant Supervisor will report this to the user and block updates to prevent installations from breaking.\n\n### Required Expertise\n\n- **Installation**\n  The user first needs to install Debian and make sure all the required components are installed and are the correct version. They then need to run the installer script.\n\n- **Start when the system is started:** done by the installer\n- **Run with full network access:** done by the installer\n- **Access USB devices:** done by the installer\n\n- **Maintaining the Home Assistant installation**\n  Home Assistant can be maintained from the Supervisor. This includes a rollback when the update fails.\n\n  - **Python upgrades:** Included in Home Assistant updates\n  - **Installing Python dependencies:** Included in Home Assistant updates\n  - **Updating Home Assistant:** Via the UI\n\n- **Maintaining the Operating System**\n  The user is responsible for maintaining the operating system. Since it is a supervised installation, the user is also responsible for updating the components that are required by the Supervisor. The user is also responsible for not installing or changing anything on their system that will interfere with the Supervised installation. Examples are software that will update Docker containers managed by the Supervisor.\n\n  - **Security updates for OS:** Responsibility of the user.\n  - **Maintaining the components required for the Supervisor:** Responsibility of the user. Over time as Supervisor requirements change, you might have to upgrade your OS to be able to use the required version.\n\n**Conclusion:** Expert. Maintaining a Debian installation to a very specific set of requirements is hard.\n\n## Consequences\n\nUpdate documentation on how to install this method, the required experience and the expected maintenance.\n\nMove existing related documentation that does not match the requirements to the community guides wiki.\n\nNotify user during onboarding of expected maintenance for their installation method.\n\nAdd checks to Home Assistant to warn (but not forbid) when not all requirements are met for this installation method.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#1198",
+     "kind": "hash",
+     "url": "",
+     "number": "1198"
+    }
+   ],
+   "mentioned_paths": [
+    "/run/systemd-journal-gatewayd.sock"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0022-integration-quality-scale.md",
+   "identity": "adr/0022-integration-quality-scale.md",
+   "adr_id": "22",
+   "title": "Integration quality scale",
+   "first_commit": "2024-11-20T18:55:52+01:00",
+   "first_sha": "84da8862a30e6e5ce94f39022ac5f198f74f3438",
+   "last_commit": "2024-11-20T18:55:52+01:00",
+   "author": "Joost Lekkerkerker",
+   "email": "joostlek@outlook.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 22. Integration quality scale\n\nDate: 2024-11-20\n\n## Status\n\nAccepted\n\n## Context\n\nHome Assistant is a powerful open-source home automation system that enables you and all other users to automate and control various smart devices and services in their homes. We have established the integration quality scale to ensure a high-quality and consistent user and contributor experience for our open-source project.\n\nThis scale provides a framework for everybody contributing to enhancing the integrations while offering transparency regarding the reliability and capabilities of integrations offered to our users.\n\nHere is an overview of the different tiers in the quality integration scale:\n\n\ud83e\udd49 Bronze: This is the baseline standard and requirement for all new integrations added to Home Assistant. The integration can be configured via the UI, and there is documentation on how to set it up.\n\n\ud83e\udd48 Silver: Enhanced reliability and robustness of the integration, ensuring a solid runtime experience. The integration handles errors correctly, including authentication errors and offline devices. The documentation provides more information on what the integration provides. The integration has one or more code owners who help to maintain the integration and ensure this runtime experience lasts.\n\n\ud83e\udd47 Gold: The gold standard in delivering the best possible user experience with advanced features and comprehensive support. The integration is fully featured, user-friendly, and accessible to a wider audience. It is fully translated, capable of discovering its devices, providing device updates through Home Assistant, and has extensive documentation with examples, use cases, and troubleshooting. The integration provides means for debugging issues and can be fully adjusted through the UI.\n\n\ud83c\udfc6 Platinum: The epitome of quality within Home Assistant. Not only does this integration provide an outstanding user experience, but it also adheres to the highest technical standards with optimized performance, efficiency, and code quality.\n\nBesides the four scaled tiers above, we also have four additional special tiers:\n\n\u2753 No score: An integration that is available via the UI but has not been evaluated against the integration quality scale or does not meet the minimum requirements for scoring.\n\n\ud83c\udfe0 Internal: This is an integration used internally by Home Assistant to provide basic components and building blocks for the core program of Home Assistant or for other integrations to build on. The Home Assistant project maintains integrations of this level.\n\n\ud83d\udcbe Legacy: An older integration that has not yet transitioned to the Home Assistant user interface and lacks modern (nowadays considered normal) features.\n\n\ud83d\udce6 Custom: The Home Assistant project does not create, maintain, audit, review, or support custom integrations; therefore, they cannot be graded and placed on the integration quality scale.\n\n## Decision\n\n### Scaled tiers\n\nHome Assistant integration quality scale has four differentiated tiers to which an integration can be graded: \ud83e\udd49 Bronze, \ud83e\udd48 Silver, \ud83e\udd47 Gold, and \ud83c\udfc6 Platinum.\n\nEach tier builds on the previous tier; for example, \u201cSilver\u201d has everything required by \u201cBronze\u201d, and \u201cGold\u201d has everything both \u201cSilver\u201d and \u201cBronze\u201d require.\n\nWhile some integrations may not be graded in the top tier, they might still implement parts of other (higher grade) tiers.\n\n#### \ud83e\udd49 Bronze\n\nThe bronze tier has the following characteristics:\n- Can be easily set up through the UI.\n- The source code adheres to basic coding standards and development guidelines.\n- Automated tests that guard this integration can be configured correctly.\n- Offers basic end-user documentation that is enough to get users started step-by-step easily.\n\n#### \ud83e\udd48 Silver\n\nThe silver tier has the following characteristics:\n- Provides everything \u201cBronze\u201d has.\n- Provides a stable user experience under various conditions.\n- Has one or more active code owners who help maintain the integration.\n- Correctly and automatically recover from connection errors or offline devices, without filling log files and without unnecessary messages.\n- Automatically triggers re-authentication if authentication with the device or service fails.\n- Offers detailed documentation of what the integration provides and instructions for troubleshooting issues.\n\n#### \ud83e\udd47 Gold\n\nThe gold tier has the following characteristics:\n- Provides everything \u201cSilver\u201d has.\n- Has the best end-user experience an integration can offer; streamlined and intuitive.\n- Can be automatically discovered, simplifying the integration setup.\n- Integration can be reconfigured and adjusted.\n- Supports translations.\n- Extensive documentation, aimed at non-technical users.\n- It supports updating the software/firmware of devices through Home Assistant when possible.\n- The integration has automated tests covering the entire integration.\n- Required level for integrations providing devices in the Works with Home Assistant program.\n\n#### \ud83c\udfc6 Platinum\n\nThe platinum tier has the following characteristics:\n- Provides everything \u201cGold\u201d has.\n- All source code follows all coding and Home Assistant integration standards and best practices and is fully typed with type annotations and clear code comments for better code clarity and maintenance.\n- A fully asynchronous integration code base ensures efficient operation.\n- Implements efficient data handling, reducing network and CPU usage.\n\n### Special tiers\n\nBesides the four scaled tiers mentioned above, Home Assistant also provides four special tiers to denote a special case, causing them not to fit into the regular scale set out above.\n\nNote that while an integration might have been given one of these special tiers, they still might pursue the integration quality equivalent to any of the other scaled tiers.\n\n#### \u2753 No score\n\nThese integrations can be set up through the Home Assistant user interface. The \u201cNo score\u201d designation doesn\u2019t imply that they are bad or buggy, instead, it indicates that they haven\u2019t been assessed according to the quality scale or that they need some maintenance to reach the now-considered minimum \u201cBronze\u201d standard.\n\nThe \u201cNo score\u201d tier cannot be assigned to new integrations, as they are required to have at least a \u201cBronze\u201d level when introduced. The Home Assistant project encourages the community to help update these integrations without a score to meet at least the \u201cBronze\u201d level requirements.\n\nCharacteristics:\n- Not yet scored or lacks sufficient information for scoring.\n- Can be set up via the UI, but may need enhancements for a better experience.\n- May function correctly, but hasn\u2019t been verified against current standards.\n- Documentation most often provides only basic setup steps.\n\n#### \ud83c\udfe0 Internal\n\nThis tier is assigned to integrations used internally by Home Assistant. These integrations provide basic components and building blocks for Home Assistant's core program or for other integrations to build on top of it.\n\nInternal integrations are maintained by the Home Assistant project and subjected to strict architectural design procedures.\n\nCharacteristics:\n- Internal, built-in building blocks of the Home Assistant core program.\n- Provides building blocks for other integrations to use and build on top of.\n- Maintained by the Home Assistant project.\n\n#### \ud83d\udcbe Legacy\n\nLegacy integrations are older integrations that have been part of Home Assistant for many years, possibly since its inception. They can only be configured through YAML files and often lack active maintainers (code owners). These integrations might be complex to set up and do not adhere to current/modern end-user expectations in their use and features.\n\nThe Home Assistant project encourages the community to help migrate these integrations to the UI and update them to meet modern standards, making these integrations accessible to everyone.\n\nCharacteristics:\n- Complex setup process; only configurable via YAML, without UI-based setup.\n- May lack active code ownership and maintenance.\n- Could be missing recent updates or bug fixes.\n- Documentation may still be aimed at developers.\n\n#### \ud83d\udce6 Custom\n\nCustom integrations are developed and distributed by the community, and offer additional functionalities and support for devices and services to Home Assistant. These integrations are not included in the official Home Assistant releases and can be installed manually or via third-party tools like HACS (Home Assistant Community Store).\n\nThe Home Assistant project does not review, security audit, maintain, or support third-party custom integrations. Users are encouraged to exercise caution and review the custom integration\u2019s source and community feedback before installation.\n\nDevelopers are encouraged and invited to contribute their custom integration to the Home Assistant project by aligning them with the integration quality scale and submitting them for inclusion.\n\nCharacteristics:\n- Not included in the official Home Assistant releases.\n- Manually installable or installable via community tools, like HACS.\n- Maintained by individual developers or community members.\n- User experience may vary widely.\n- Functionality, security, and stability can vary widely.\n- Documentation may be limited.\n\n### Adjusting the tier of an integration\n\nHome Assistant encourages our contributors to get their integrations to the highest possible tier, to provide an excellent coding experience for our contributors and the best experience for our users.\n\nWhen an integration reaches the minimum requirements for a certain tier, a contributor can open a pull request to adjust the scale for the integration. This request needs to be accompanied by the full checklist for each rule of scale (including all rules of lower tiers), demonstrating that it has met those requirements.\n\nOnce the Home Assistant core team reviews and approves it, the integration will display the new tier as of the next major release of Home Assistant.\n\nBesides upgrading an integration to a higher tier on the scale, it is also possible for an integration to be downgraded to a lower tier. This can, for example, happen when there is no longer an active integration code owner. In this specific example, the integration will be downgraded to \u201cBronze\u201d, even if it otherwise fully complies with the \u201cPlatinum\u201d tier.\n\n### Adjustments to rules contained in each tier\n\nThe world of IoT and all technologies used by Home Assistant are changing at a fast pace; not just in terms of what Home Assistant can support or do, but also in terms of the software on which Home Assistant is built. Home Assistant is pioneering the technology in the industry at a fast pace.\n\nThis also means that new insights and newly developed and adopted best practices will occur over time, resulting in new additions and improvements to the individual integration quality scale rules.\n\nIf a tier is adjusted, all integrations in that tier need to be re-evaluated and adjusted accordingly. One exception to this is integrations that have devices that are part of the Works with Home Assistant program. Those integrations will be flagged as grandfathered into their existing tier.\n\n### Works with Home Assistant\n\nThe Works with Home Assistant program is a device review and certification program in which a device can be certified to work with Home Assistant and provide an excellent user experience.\n\nIn order for these devices to be able to get certified, the integration used to integrate the device or service must have reached at least the \u201cGold\u201d tier. The \u201cGold\u201d tier is specifically designed to provide the best possible user experience possible.\n\nIf rules to our quality integration scales have been adjusted, it is possible that an integration with the Works with Home Assistant program doesn\u2019t comply with the newly adjusted standards yet. At that moment, the existing \u201cGold\u201d tier is grandfathered. Once a new or extra device is certified for the same integration, the integration must be updated to also comply with the new or adjusted standards.\n\nWhen all dev",
+   "truncated_text": true,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0021-YAML-integration-configuration-deprecation-policy.md",
+   "identity": "adr/0021-YAML-integration-configuration-deprecation-policy.md",
+   "adr_id": "21",
+   "title": "YAML integration configuration deprecation policy",
+   "first_commit": "2023-06-15T19:09:11+02:00",
+   "first_sha": "2a18e20a1882a6b3f3d1936a6bd7d0b34298df14",
+   "last_commit": "2023-06-15T19:09:11+02:00",
+   "author": "Franck Nijhof",
+   "email": "git@frenck.dev",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 0021. YAML integration configuration deprecation policy\n\nDate: 2023-06-15\n\nArchitecture discussion: [#920](https://github.com/home-assistant/architecture/discussions/920)\n\n## Status\n\nAccepted\n\n## Context\n\nWhen a YAML integration configuration option (or options) are to be removed, we\ngenerally account for the deprecation period in which we still support or handle\nthe migration of such YAML configuration option(s).\n\nThe risk of a too short deprecation period is that if a user does not upgrade\ntheir Home Assistant instance in time, they will miss out on the possible\nmigrations offered during the deprecation period and thus run into\nbreaking changes.\n\n## Decision\n\nGive users more time to upgrade and thus reduce the risk of running into\nbreaking changes; the deprecation period for YAML configuration options is\nset to at least 6 months (being 6 release cycles at the time of writing).\n\nAdditionally, the following requirements for deprecation are set:\n\n- If a migration (for example, using a config flow import) is possible, it\n  becomes required to add a migration. If migration has failed, this must be\n  reflected by raising a repair issue on what happened and what a user has\n  to do to resolve the issue.\n\n- Using deprecated YAML integration configuration options must raise an\n  issue in the users' repairs dashboard. This issue should explain why\n  this happens and what a user has to do to resolve the issue. In case a\n  migration is available, this message should only be shown after a\n  successful migration.\n\n## Consequences\n\n- We need to keep imports and deprecated YAML configuration options\n  around longer.\n- The risk of a user running into a breaking change by skipping a couple of\n  releases will be reduced.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#920",
+     "kind": "hash",
+     "url": "",
+     "number": "920"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0002-minimum-supported-python-version.md",
+   "identity": "adr/0002-minimum-supported-python-version.md",
+   "adr_id": "2",
+   "title": "Minimum supported Python version",
+   "first_commit": "2019-05-15T14:04:44+02:00",
+   "first_sha": "fba9f25d0e3cecf2c0eb511fbf451499b07108f3",
+   "last_commit": "2023-05-30T02:36:02+02:00",
+   "author": "Paulus Schoutsen",
+   "email": "paulus@home-assistant.io",
+   "status": "superseded",
+   "status_raw": "Superseded by [ADR-0020](./0020-minimum-supported-python-version.md)",
+   "replacement": "ADR-0020 (./0020-minimum-supported-python-version.md)",
+   "n_commits": 4,
+   "text": "# 2. Minimum supported Python version\n\nDate: 2019-05-13, updated 2023-02-05 (Python version clarification)\n\nArchitecture issue: [#167](https://github.com/home-assistant/architecture/issues/167), [#278](https://github.com/home-assistant/architecture/issues/278)\n\n## Status\n\nSuperseded by [ADR-0020](./0020-minimum-supported-python-version.md)\n\n## Context\n\nHome Assistant currently sets the minimum Python requirement to the penultimate minor Python version released upstream.\n\n## Decision\n\nHome Assistant will try to support the latest two released minor upstream Python versions. For example, if the current latest version is 3.11, we will support Python 3.10 and would like to support Python 3.11; however, Python 3.9 is no longer supported at this point.\n\nOnce a new minor Python version is released, the to be dropped minor version will be deprecated for a period of 2 months, after which it will be removed. While deprecated, Home Assistant will print a warning message to inform the user.\n\nSupported micro versions are decided on minor version basis, and codified in the version check code in Home Assistant proper.\n\n## Consequences\n\n- June 1, 2019: Deprecate Python 3.5\n- August 1, 2019: Adopt that Home Assistant will support the latest 2 minor releases of Python. This means that we drop support for Python 3.5.\n\nWe have three installation methods that are based on Docker containers (Home Assistant OS, Container, and Supervised), which are maintained and kept up to date by the Home Assistant project.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#167",
+     "kind": "hash",
+     "url": "",
+     "number": "167"
+    },
+    {
+     "key": "home-assistant/architecture#167",
+     "kind": "issue",
+     "url": "https://github.com/home-assistant/architecture/issues/167",
+     "number": "167"
+    },
+    {
+     "key": "#278",
+     "kind": "hash",
+     "url": "",
+     "number": "278"
+    },
+    {
+     "key": "home-assistant/architecture#278",
+     "kind": "issue",
+     "url": "https://github.com/home-assistant/architecture/issues/278",
+     "number": "278"
+    }
+   ],
+   "mentioned_paths": [
+    "/0020-minimum-supported-python-version.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0010-integration-configuration.md",
+   "identity": "adr/0010-integration-configuration.md",
+   "adr_id": "10",
+   "title": "Integration configuration",
+   "first_commit": "2020-04-14T20:43:44+02:00",
+   "first_sha": "4caf38c4246c832a873fd89ad22d46b77aab7832",
+   "last_commit": "2022-03-06T08:34:44-08:00",
+   "author": "Franck Nijhof",
+   "email": "git@frenck.dev",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 0010. Integration configuration\n\nDate: 2020-04-14\n\n## Status\n\nAccepted\n\n## Context\n\nHome Assistant has been relying on YAML for its configuration format for a long\ntime. However, in certain cases, this caused issues or did not work at all.\nThese cases are best explained by listing the different categories of\nintegrations that we have in Home Assistant:\n\n- Integrations that integrate devices. Examples include Hue, TP-Link.\n- Integrations that integrate services. Examples include AdGuard, Snapcast.\n- Integrations that integrate transports. These integrations allow users to\n  define their own protocol. Examples include MQTT, serial, GPIO.\n- Integrations that process Home Assistant data and make this available to\n  other integrations. Examples are template, stats, derivative, utility meter.\n- Integrations that provide automations. Examples include automation,\n  device_sun_light_trigger, alert.\n- Integrations that help controlling devices and services.\n  Examples include script, scene.\n- Integrations that expose Home Assistant data to other services.\n  Examples include Google Assistant, HomeKit.\n\nIn all but the first two cases, YAML does just fine. The configuration is static,\nis not discovered and relies on the user setting it up. These cases have been\nsolved by providing a hybrid approach. We offer YAML with a reload service and\nwe offer Storage Collections, which allows the user to create/manage these\nintegrations via the UI.\n\nHowever, in the first two cases, it doesn\u2019t work. Integrations are discovered.\nIntegrations require users logging in on the vendor\u2019s website and authorize\nlinking (OAuth2) or users are required to press buttons on the hub to authorize\nlinking (i.e. Hue).\n\nIn the cases that people can authorize an integration by just putting their\nusername and password in the YAML file, they don\u2019t want to, because it prevents\nthem from sharing their configuration. This is solved currently by using YAML\nsecrets that are substituted during load. This results in one file that provides\nthe structure of your configuration and one file that provides the values.\nSee below for an anonymized example as can be found on GitHub:\n\n```yaml\ncamera:\n platform: onvif\n name: bedroom\n host: !secret camera_onvif_bedroom_host\n port: !secret camera_onvif_bedroom_port\n username: !secret camera_onvif_bedroom_username\n password: !secret camera_onvif_bedroom_password\n```\n\nSo to solve these first two cases, we\u2019ve introduced config entries (a\ncentralized config object) and config flows. Config flows handle creating config\nentries with data from different sources. It can handle a new entry created via\nthe user interface, automatic discovery, but also is able to handle importing\nconfiguration from YAML. Config entries allow for migrations during upgrades,\nlimiting the breaking changes we have to induce on our users.\n\nConfig flows empower users of all knowledge levels, to use and enjoy\nHome Assistant. Since the introduction of config flows we\u2019ve kept it open to\ncontributors of individual integrations to decide if they want to implement\nYAML and/or a user-facing config flow.\n\nSome contributors have decided to drop the YAML import to reduce their\nmaintenance and support burden. A burden that they volunteer to do in their\nspare time. This has sadly resulted in a few pretty de-motivating comments,\ntowards the contributors and the project in general. These comments often\nviolate the code of conduct we have in place to protect the Home Assistant\ncommunity.\n\nThis induces the risk of losing contributors and maintainers, halts our project\ngoals and slows down innovation. As an open source project, maintaining our\ncontributors is our highest priority as they are the creators of the project\nin the first place. They should be highly admired and valued for their\ncontributions.\n\nFrom a project perspective, we have not provided the necessary guidelines on\nthis matter for our contributors to work with and have therefore not managed\nthe expectations of our users to a full extent.\n\n## Decision\n\nTo protect project goals and to provide clarity to our users and contributors,\nwe\u2019re introducing the following rules on how integrations need to be configured:\n\n- Integrations that communicate with devices and/or services are only configured via\n  the UI. In rare cases, we can make an exception.\n- All other integrations are configured via YAML or via the UI.\n\nThese rules apply to all new integrations. Existing integrations that should\nnot have a YAML configuration, are allowed and encouraged to implement a\nconfiguration flow and remove YAML support. Changes to existing YAML\nconfiguration for these same existing integrations, will no longer be accepted.\n\n## Consequences\n\n- Power to our contributors! \u2764\n- Removes confusion and questions around the future of the YAML configuration\n  for all users and contributors.\n- Builds upon the goals that have been set out, as presented at the\n  State of the Union 2019.\n- This might impact the number of integrations contributed. This requires\n  configuration flows, which require tests. However, we do provide scaffolding\n  scripts for this (`python3 -m script.scaffold`).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0007-integration-config-yaml-structure.md",
+   "identity": "adr/0007-integration-config-yaml-structure.md",
+   "adr_id": "7",
+   "title": "Config YAML structure for integrations",
+   "first_commit": "2020-04-06T18:54:01+02:00",
+   "first_sha": "e60d3b40cb1e15fabf1a05ab9bf939e3fb90dbc6",
+   "last_commit": "2022-02-01T05:38:01+01:00",
+   "author": "Martin Hjelmare",
+   "email": "marhje52@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted ---",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 7. Config YAML structure for integrations\n\nDate: 2020-04-05\n\n## Status\n\nAccepted\n\n---\n\n## Context\n\nThere are currently many different ways of structuring an integration and its config in Home Assistant. We allow config YAML, either under the integration key or under platform keys with the integration name. We allow a config flow with configuration entered via the GUI, stored in config entries. We allow importing config YAML to a config entry via config flow.\n\nThis ADR focuses on the configuration YAML structure and its use in integrations.\n\nThe many options for configuration impact how the integration is structured and what Home Assistant backend APIs are used.\n\n1. Integrations that only have a single platform, place the configuration under a platform key and use `async_setup_platform` to set up the platform.\n2. Integrations that have multiple platforms, sometimes centralize the configuration to the integration domain name key and load platforms via `discovery.async_load_platform`, which in turn calls `async_setup_platform`.\n3. If the integration has multiple platforms but doesn't have a centralized config, the user needs to add configuration under the integration domain to set up the integration and each platform key to set up each platform. This loads each platform via `async_setup_platform`.\n\nAll backend APIs in point 1-3 above also have sync versions, to further increase the options.\n\nThis multitude of options for config and integration structure makes it:\n\nA. Harder for users to know how to configure the integrations.\nB. Harder for contributors to know what way to implement and support.\nC. Harder for Home Assistant to support confused users and contributors and harder to support and extend a disparate code base.\n\n---\n\n## Decision\n\nWe limit the configuration YAML structure to one way for new integrations. We require all YAML configuration, if present, for an integration to be located under the integration domain key in configuration YAML, for all new integrations (point 2 above).\n\nFor existing integrations we don't allow changes to YAML configuration in platform sections until the integration has been refactored and the configuration moved under the integration domain key.\n\n```yaml\n# Allowed\nawesome_integration:\n  username: user\n\n# Not allowed\nsensor:\n  - platform: awesome_integration\n    username: user\n```\n\n### Exceptions\n\n- For integrations that do not fall under [ADR-0010](https://github.com/home-assistant/architecture/blob/master/adr/0010-integration-configuration.md), implementing an optional `unique_id` configuration key to set the unique ID of the entity created by the platform is allowed.\n\n## Consequences\n\n- New integrations have to put the integration configuration section under the integration domain key if configuration YAML is used.\n- Configuration YAML in platform sections in existing integrations is frozen until the integration is refactored.\n- Integration platforms have to be loaded via `discovery.async_load_platform` or `discovery.load_platform` if not using configuration entries. This is a small increase in complexity for new integration contributions.\n- Decreases the number of breaking changes when an integration wants to add more platforms and move the configuration from a per platform configuration to a centralized integration domain configuration section.\n- Increases the consolidation of Home Assistant Core configuration YAML integration structure; instead of increasing disparity.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0009-translations-2.0.md",
+   "identity": "adr/0009-translations-2.0.md",
+   "adr_id": "9",
+   "title": "Translations 2.0",
+   "first_commit": "2020-04-10T02:09:04-07:00",
+   "first_sha": "3d073fe34591e7388aba21db7151b257f6e37634",
+   "last_commit": "2021-12-04T09:15:35+01:00",
+   "author": "Paulus Schoutsen",
+   "email": "balloob@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 0009. Translations 2.0\n\nDate: 2020-04-08\n\n## Status\n\nAccepted\n\n## Context\n\nThe backend has only one API endpoint to fetch translations: `frontend/get_translations`. It takes no parameters. This needs to load all relevant translations. Because of config flows, relevant translations are all translations of all our currently loaded integrations PLUS any integration that has a config flow.\n\nWith so many integrations with config flows, this API call is getting huge. On current dev, the response is 142KB!\n\nOur main translation files (`strings.json`) is keyed by \"area\" where they are used. There is:\n- `config` for config flow\n- `options` for option flow\n- `device_automation` for device automations\n- `state` for translations of states under your domain (example is entity `zwave.bla` with state `alive`). This is not used by any `strings.json`.\n\nIntegrations can also have platform specific translation files (`strings.sensor.json`). These files are merged into the integration that they are offering a platform to. So the values of `strings.sensor.json` will be merged into `sensor/strings.json`. This is only used to provide `state`. This is only useful for sensors with text values and is only used by [moon](https://github.com/home-assistant/core/blob/dev/homeassistant/components/moon/strings.sensor.json) and [season](https://github.com/home-assistant/core/blob/dev/homeassistant/components/season/strings.sensor.json). \n\nThe title of integrations sometimes requires being translated too (mainly internal integrations) and so is part of our translation file. However we made the mistake of putting the `title` under `config`. So even if we would open up our API to allow fetching just one area, we would still need to fetch all config flow info of all integrations in case we need to render the name of a single domain \ud83e\udd37\u200d\u2642.\n\nWe should drop the `title` from `strings.json` if the integration is for a product who'se name does not require translation and so it should remain equal to the title in `manifest.json`. Examples are `zwave` or `hue`. \n\n## Decision\n\n#### Backend\n\n- Move integration title out of `config` key so we can load it independently ([current PR](https://github.com/home-assistant/core/pull/33850))\n- Drop all titles from `strings.json` that are the same as `manifest.json` and should not be translated.\n- Remove support for integrations providing platform translations\n- When fetching titles for integrations, use the manifest name if title is not provided in translation file.\n- Change `frontend/get_translations` to allow specifying area that you are interested in\n- We need to start using references and write specific translations down once. Right now each integration defines `already_configured` etc. We use this syntax in the frontend: `[%key:state::binary_sensor::battery::off%]`.\n- Update scaffold scripts to use references.\n- Start using `state` in `strings.json`. It is going to be a dictionary that has a `default` entry and one entry per device class. Just like we have now in the frontend.\n    ```json\n    {\n      \"state\": {\n        \"binary_sensor\": {\n          \"default\": {\n            \"off\": \"[%key:state::default::off%]\",\n            \"on\": \"[%key:state::default::on%]\"\n          },\n          \"battery\": {\n            \"off\": \"Normal\",\n            \"on\": \"Low\"\n          },\n        }\n      }\n    }\n    ```\n- Import all existing state keys + translations from frontend\n- Add a new `state_attributes` to `strings.json` to allow offering translations for state attributes.\n  ```json\n  {\n    \"state_attributes\": {\n      \"climate\": {\n        \"hvac_action\": {\n          \"off\": \"Off\",\n          \"heating\": \"Heating\",\n          \"cooling\": \"Cooling\",\n          \"drying\": \"Drying\",\n          \"idle\": \"Idle\",\n          \"fan\": \"Fan\"\n        }\n      }\n    }\n  }\n  ```\n- Import all existing state attribute keys + translations from frontend\n- Replace as many existing translations as possible with references\n- Convert moon and season sensor to have their own entities and use `strings.json` for translation\n\n#### Frontend\nLoad part of backend translations when necessary.\n\n- On page load, load `state` only.\n- Fetch integration titles when opening config or dev tools panels\n- Fetch config flow translations when config flow started (not handler picked)\n- Fetch options flow translations when option flow started\n- Fetch device automation strings when opening script/automation editor\n- Remove built-in translations of domains (`domain.*`) and use backend provided strings instead.\n- Remove built-in translations for states (`state`) and use backend provided strings instead.\n- Remove built-in translations for state attributes (`state_attributes`) and use backend provided strings instead.\n- Adopt cleaning keys script from backend ([see this PR](https://github.com/home-assistant/core/pull/33802))\n- Remove all state and state attributes keys from translations once imported into backend\n\n## Consequences\n\n- Frontend will load faster and use less memory\n- Couple translations of integrations to the integration instead of the frontend release\n- Breaking change for `season` and `moon` entities config\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "home-assistant/core#33850",
+     "kind": "pull",
+     "url": "https://github.com/home-assistant/core/pull/33850",
+     "number": "33850"
+    },
+    {
+     "key": "home-assistant/core#33802",
+     "kind": "pull",
+     "url": "https://github.com/home-assistant/core/pull/33802",
+     "number": "33802"
+    }
+   ],
+   "mentioned_paths": [
+    "frontend/get_translations",
+    "strings.json",
+    "strings.sensor.json",
+    "sensor/strings.json",
+    "github.com/home-assistant/core/blob/dev/homeassistant/components/moon/strings.sensor.json",
+    "github.com/home-assistant/core/blob/dev/homeassistant/components/season/strings.sensor.json",
+    "manifest.json"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0017-hardware-screening-os.md",
+   "identity": "adr/0017-hardware-screening-os.md",
+   "adr_id": "17",
+   "title": "Hardware screening for OS",
+   "first_commit": "2021-08-04T16:13:00+02:00",
+   "first_sha": "dca73b25652e903a0ac2fe1099d43a7b138ed05b",
+   "last_commit": "2021-08-04T16:13:00+02:00",
+   "author": "Pascal Vizeli",
+   "email": "pvizeli@syshack.ch",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 0017. Hardware screening for OS\n\nDate: 2021-08-03\n\n## Status\n\nAccepted\n\n## Context\n\nWe need take a decision for the minimal requirements of a IoT-Board to become a Home Assistant OS image.\nAlso how we deal with old or replaced generation/boards.\n\n## Decision\n\nFollow are the requirements of a Board:\n\n- The board needs to be available for private customers in most major economic regions\n- The manufacturer produces and sells the boards for at least 3 years\n- The manufacturer is know for his continuity\n- The board needs to be supported by the upstream Linux kernel\n- The board needs to be supported by the upstream U-Boot or Barebox boot loader\n\nIt's allowed to use some patches as long they only minimal touch the Kernel and marked for upstream.\n\nWe support the board as long as possible with updates. We might remove support if we see major downsides or we don't have hardware\nfor the sporadic tests.  When a next generation is available, we provide updates for the old but don't recommend it anymore.\n\nIf a board is no longer supported, no updates for the operating system or Home Assistant Core will be provided according ADR0015.\nIt's recommended to update the hardware to next generation or a new board.\n\n## Consequences\n\nAll contributions for new images must follow these specifications to qualify, but will also need a signoff from the core team to be accepted.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0003-monitor-condition-and-data-selectors.md",
+   "identity": "adr/0003-monitor-condition-and-data-selectors.md",
+   "adr_id": "3",
+   "title": "Monitor condition and data selectors",
+   "first_commit": "2019-05-29T23:47:52+02:00",
+   "first_sha": "23e0344260e328ad2b631550f6879b3c388d2692",
+   "last_commit": "2021-02-11T14:50:14-05:00",
+   "author": "Pascal Vizeli",
+   "email": "pascal.vizeli@syshack.ch",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 3. Monitor condition and data selectors\n\nDate: 2019-05-23\n\nArchitecture issue: [#100](https://github.com/home-assistant/architecture/issues/100)\n\n## Status\n\nAccepted\n\n## Context\n\nA lot of Home Assistant integrations use config options like `CONF_MONITORED_CONDITIONS` to allow the user to select which data the integration should expose from the data. This means that the user needs to know what the different data points mean while setting up the integration. While configuring its Lovelace UI, the user has the option to include the entity or not. This means that we allow the user to pick twice.\n\n## Decision\n\nIntegrations should expose all available data to the backend if that data is fetched in a single API request.\n\nIntegrations should only include selector logic if it make sense in the context of interface, like if it would require extra requests. User should not have to read the available documentation and API descriptions to find out which data they want have.\n\n```\nLayer model:\n\n      Fetch            Manage           View\n  -------------      ---------      ------------\n  | Interface | ---> | Core  | ---> | Frontend |\n  -------------      ---------      ------------\n```\n\nIntegrations can set the `entity_registry_enabled_default` property on their entity objects to instruct Home Assistant to disable certain entities by default ([docs](https://developers.home-assistant.io/docs/entity_registry_disabled_by/#integrations-setting-default-value-of-disabled_by-for-new-entity-registry-entries)).\n\n## Consequences\n\nWe don't merge PRs with data selectors. We remove existing unneeded selectors until Home Assistant 1.0.\nWe focus on a good view/frontend to select and group available data.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#100",
+     "kind": "hash",
+     "url": "",
+     "number": "100"
+    },
+    {
+     "key": "home-assistant/architecture#100",
+     "kind": "issue",
+     "url": "https://github.com/home-assistant/architecture/issues/100",
+     "number": "100"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0004-webscraping.md",
+   "identity": "adr/0004-webscraping.md",
+   "adr_id": "4",
+   "title": "Webscraping",
+   "first_commit": "2019-06-28T07:29:21+02:00",
+   "first_sha": "68f3b33b517121030aa6e5e0c471e4b966ac7105",
+   "last_commit": "2021-02-10T10:42:37+01:00",
+   "author": "Pascal Vizeli",
+   "email": "pvizeli@syshack.ch",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 4. Webscraping\n\nDate: 2019-06-27\n\nArchitecture issue: [#252](https://github.com/home-assistant/architecture/issues/252)\n\nChangelog:\n - 2019-06-27 Initial version accepted\n - 2021-02-09 Amendment to add exception for authentication phase\n\n## Status\n\nAccepted\n\n## Context\n\nWebscraping is when we use code to mimic a user and log in to a website and get data in Home Assistant. This is usually needed because certain data sources/integrations do not offer an API.\n\nWebscraping comes with the following downsides:\n\n- Very fragile, break often. When the website is updated, the integration will need to be updated.\n- Some vendors (like USPS) have IP banned users of such integrations\n- Some rely on beautifulsoup (Python-based), others are relying on PhantomJS or other headless browsers, meaning we need to include a whole browser.\n\n## Proposal\n\n- We no longer accept any new integration that relies on webscraping\n- We identify, deprecate for 2 releases and remove integrations that rely on webscraping\n- It will still be possible to have custom integrations provide information via webscraping\n\n### Exceptions\n\nGeneric integrations to parse HTML are excluded from this decision.\n\nAn exception is made for the authentication phase. An integration is allowed to extract fields from forms. To make it more robust, data should not be gathered by scraping individual fields but instead scrape all fields at once.\n\n## Consequences\n\nIntegrations that rely on webscraping will have to be maintained as custom integrations.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#252",
+     "kind": "hash",
+     "url": "",
+     "number": "252"
+    },
+    {
+     "key": "home-assistant/architecture#252",
+     "kind": "issue",
+     "url": "https://github.com/home-assistant/architecture/issues/252",
+     "number": "252"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0012-define-supported-installation-method.md",
+   "identity": "adr/0012-define-supported-installation-method.md",
+   "adr_id": "12",
+   "title": "Define supported installation method",
+   "first_commit": "2020-06-17T17:26:17-07:00",
+   "first_sha": "98cd83b898012f970fc9c4cae6f451836ae2ed52",
+   "last_commit": "2020-06-17T17:26:17-07:00",
+   "author": "Paulus Schoutsen",
+   "email": "balloob@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 0012. Define supported installation method\n\nDate: 2020-06-03\n\n## Status\n\nAccepted\n\n## Context\n\nIf you look at our documentation, it\u2019s all over the place. Install it in Docker, in a VM, on a NAS or on one of the many Linux distributions.\n\nThe reason we have this many guides is that since the start of the Home Assistant website, we have always gladly accepted every contribution to get Home Assistant running on any platform. The more the merrier!\n\nHowever, in software, nothing ever stays the same. All software gets updates to fix bugs, fix security vulnerabilities, improve performance or to add new features. As a software application you need to grow along or else you get stuck with an insecure system.\n\nSo as Home Assistant grows and evolves, some of these installation guides became outdated and stopped working. We wouldn\u2019t even know it was broken until a user raised an issue. But when they do, we wouldn\u2019t know how to fix it unless we could get a hold of the original contributor.\n\nThis can be frustrating. Any guide on our official website should lead to a working system. A system that not only works today, but also tomorrow.\n\n## Decision\n\nA supported installation method in the Home Assistant context means:\n\n> A way of installing and running Home Assistant in a way that is supported by the Home Assistant developers. Supported means the installation method is tested and documented in the official documentation. Running Home Assistant using such a supported method, leads to the optimal user experience.\n\nThe Home Assistant team will not prevent you from running Home Assistant using an unofficial method. However, we cannot help with issues that you encounter. We are open for contributions that improve compatibility with a community-supported method as long as they do not impact officially supported methods, add a significant amount of code exceptions or future maintenance burden on the Home Assistant development team.\n\n## Consequences\n\nMove existing documentation that does not match supported installation methods to the community guides wiki. This includes OS-specific instructions in integration documentations that are not supported.\n\nIt is clear to the users what to expect when installing Home Assistant based on our documentation.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0011-discovery-requires-unique-id.md",
+   "identity": "adr/0011-discovery-requires-unique-id.md",
+   "adr_id": "11",
+   "title": "Discovery Requires Unique ID",
+   "first_commit": "2020-04-28T01:21:58-05:00",
+   "first_sha": "eeb2b93527ccf868745c11ff3e321e21b1bb90cd",
+   "last_commit": "2020-04-28T01:21:58-05:00",
+   "author": "Chris Talkington",
+   "email": "chris@talkingtontech.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 0011. Discovery Requires Unique ID\n\nDate: 2020-04-27\n\n## Status\n\nAccepted\n\n## Context\n\nThere is a mechanism to ignore discovered config flows using unique ids\nattached to config entries but not all integrations may set an unique id\ndue to lack of truly unique identifiers or just not having been updated for\nconcerns of backward compatibility.\n\nThis creates a UX issue that has started to become more pronounced with more config flows\nbeing added every release (which is awesome!). The real issue is that not all discovery processes \nare created equal and that becomes an issue for consistency.\n\n## Proposal\n\nAll new integrations with discoverable config flows should be required to set a\nunique id during discovery.\n\nAll existing integrations with discoverable config flows should be reviewed for\npossible ways to improve identification during discovery. A whitelist could be developed\nto allow existing integrations to remain functional under new requirements.\n\nIf a unique id can not be made available, such as on older devices that lack unique identifiers\nin zeroconf/SSDP/API/etc, then the config entry should not be shown to the user.\n\n## Decision\n\nIntegrations that are discoverable must provide a unique id (via `async_set_unique_id`) \nto allow the user to ignore the discovered config entry.\n\nThese rules apply to all new integrations. Existing integrations should be reviewed \nfor possible ways to improve identification during discovery.\n\n## Consequences\n\n- Removes confusion and questions around the ability to ignore unwanted discoveries.\n- This might impact the number of integrations that are able to be discovered.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0005-code-formatting.md",
+   "identity": "adr/0005-code-formatting.md",
+   "adr_id": "5",
+   "title": "Code Formatting",
+   "first_commit": "2019-07-30T04:25:30-06:00",
+   "first_sha": "563c9d407db1fb57cc4d46aded7cfb322700a1d5",
+   "last_commit": "2019-12-12T17:26:12+01:00",
+   "author": "Aaron Bach",
+   "email": "bachya1208@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 5. Code Formatting\n\nDate: 2019-07-07\n\nArchitecture issue: [#249](https://github.com/home-assistant/architecture/issues/249)\n\n## Status\n\nAccepted\n\n## Context\n\nProper code formatting is vital to the long-term viability and maintainability of a code\nbase. In place, a codebase with such formatting is:\n\n- easier to review\n- easier to diff against previous commits\n- more likely to be free of linting errors\n\n## Proposal\n\n- We use [Black](https://github.com/python/black) as code formatter for the back-end codebase.\n- We use Black's default options.\n- We CI to ensure PRs are appropriately formatted before being accepted.\n- We recommend and document the setup of `Black`, `pylint`, `flake8`, and `isort` in the development environment.\n\n## Consequences\n\n- We retain Flake8, but set `max-line-length = 88` and `ignore = E501, W503, E203` to `setup.cfg`.\n- We retain pylint, but disable all formatting checks and `wrong-import-order`. The import order is handled by `isort`.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#249",
+     "kind": "hash",
+     "url": "",
+     "number": "249"
+    },
+    {
+     "key": "home-assistant/architecture#249",
+     "kind": "issue",
+     "url": "https://github.com/home-assistant/architecture/issues/249",
+     "number": "249"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0008-code-owners.md",
+   "identity": "adr/0008-code-owners.md",
+   "adr_id": "8",
+   "title": "Code owners",
+   "first_commit": "2019-09-20T13:37:15+02:00",
+   "first_sha": "9cc72586ffdaad65ebfbc3d4aeca68a92f178d70",
+   "last_commit": "2019-09-20T13:37:15+02:00",
+   "author": "Franck Nijhof",
+   "email": "frenck@frenck.nl",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 8. Code owners\n\nDate: 2019-09-18\n\nArchitecture issue: [#287](https://github.com/home-assistant/architecture/issues/287)\n\n## Status\n\nAccepted\n\n## Context\n\nWe get contributed a lot of new integrations, new features to integrations and refactors of integrations. The Home Assistant project is honored to receive so many great contributions to our project!\n\nUnfortunately, as a contributor, adding oneself as (the, or one of the) code owners of the integration contributed or contributed to, doesn't always happen spontaneously.\n\nNot adding oneself as a code owner has drawbacks for the project:\n\n- The contributor doesn't \"own\" (in terms of taking responsibility) his code, and thus contribution, in a more formal fashion.\n- Without being listed as a code owner, our GitHub bot will not notify the contributor, when an issue for the integration is reported, quite possibly affecting his contribution.\n- Integrations have ended up or may end up with having a single code owner or no code owners at all.\n\nAs a result of this:\n\n- Bugs are less likely to be resolved in a timely fashion (turn-around time).\n- Integrations are more prone to break in the future.\n- Integration with a single code owner:\n  - Do not benefit from multiple code owners being familiar with the integration in terms of code review and general turn-around time.\n  - Become largely unmaintained when the single listed code owner can no longer contribute to the project.\n\nWe have quite a few integrations that haven't got multiple code owners or don't have a code owner.\n\nDuring the design discussion of this ADR, it also became clear, that the term \"code owner\" has different meanings to our members and contributors. Some interpret it as an honorable mention of contribution; others see it as \"taking responsibility\".\n\n## Decision\n\nCode ownership for an integration defined:\n\nThe willingness of a contributor to try, at best effort, to maintain the integration. Providing the intention for handling issues, providing bug fixes, or other contributions to the integration one is listed on as a code owner.\n\n### Rules\n\nIn order to support having (multiple) code owners for integration, to raise the quality and interaction on integration in our codebase, we have a set of rules (exceptions are in the next chapter).\n\nFor the following cases, adding oneself as a code owner is required:\n\n- When contributing a new integration.\n- When contributing a new platform to an integration.\n- When contributing a new feature to an integration.\n- When contributing a significant refactor or rewrite of an integration.\n\nContributions to our integrations, in the above-listed scopes, without having the contributor listed or added as the code owner, is no longer accepted.\n\n### Exceptions\n\nSome exceptions are in place, to prevent contributors to become demotivated to contribute; and are mainly based around smaller, low-impact contributions.\n\nIn the following cases, code ownership may be omitted:\n\n- Contributions that solely provides a bug fix(es).\n- Contributions that only provide additional unit test(s).\n- Contributions to integrations marked as \"internal\". These integrations are code owned by the Home Assistant core team.\n- Contributions refactoring across multiple integrations, caused by changes to our core codebase. E.g., due to changes to the used platforms.\n- Small or low impact contributions to an integration. A currently active code owner for the integration or a Home Assistant code reviewer can decide it may be omitted.\n- The contributor pro-actively rejects to be listed as a code owner; however, a currently active code owner is willing to accept and take code ownership for the contribution provided by the contributor.\n\nCode owner(s) and Home Assistant code reviewers are encouraged to ask a contributor to join an integration code ownership, even when the contribution matches one of the exceptions above.\n\n### Withdrawing as a code owner\n\nWithdrawing code ownership can happen, and it is sad to see an active code owner leaving the project.\n\nA code owner may open up a PR to remove oneself as a code owner. However, this should only be accepted after the last contribution to the integration, made by the contributor, is released in a stable Home Assistant release.\n\n## Consequences\n\nThis ADR may negatively result in the following:\n\n- Requiring code ownership may lead to fewer contributions.\n- Requiring code ownership may lead to new code owners, that don't take up on that ownership.\n- Integrations owned by multiple code owners may lead to a struggle between the code owners.\n\nThis ADR may positively result in the following:\n\n- Less \"unmaintained\" or \"abandoned\" integrations.\n- It will lead to multiple code owners for the same integrations. Adding: Fallback, code reviewers with context, and possible faster turn-around.\n\nThis ADR may also result in the following (both positive and negative):\n\n- Requiring code ownership may remove the feeling of honor from the contribution; however, it does add a more formal sense of responsibility.\n\n### Adjustments\n\nThe following label needs to be added to the code base: `code-owner-missing` allowing to indicate a code owner is missing.\n\nThe following changes could be made to our GitHub bot, supporting this ADR:\n\n- In case the label `new-integration` or `new-platform` is added, or an update to the PR with that label took place; the bot should check if the contributor is set as a code owner. In case it does fail this check, the `code-owner-missing` must be added, or ensure absent otherwise.\n- In case the label `code-owner-missing` is applied, the GitHub bot must add a failed build status, preventing the merging of the PR.\n- In case the label `code-owner-missing` is removed, the failed build status needs to be adjusted to successful.\n\nFurthermore, our developer documentation needs to be adjusted to document the contents of this ADR for our contributors.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#287",
+     "kind": "hash",
+     "url": "",
+     "number": "287"
+    },
+    {
+     "key": "home-assistant/architecture#287",
+     "kind": "issue",
+     "url": "https://github.com/home-assistant/architecture/issues/287",
+     "number": "287"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0006-docker-images.md",
+   "identity": "adr/0006-docker-images.md",
+   "adr_id": "6",
+   "title": "Docker images",
+   "first_commit": "2019-07-30T12:34:30+02:00",
+   "first_sha": "6eac2963d86a94642103e4524c8ff5e00645aa7b",
+   "last_commit": "2019-07-30T12:34:30+02:00",
+   "author": "Pascal Vizeli",
+   "email": "pvizeli@syshack.ch",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "\n# 6. Docker images\n\nDate: 2019-07-19\n\nArchitecture issue: [#243](https://github.com/home-assistant/architecture/issues/243)\n\n## Status\n\nAccepted\n\n## Context\n\nWe have now `homeassistant/home-assistant` as an amd64 image, based on Debian Linux, with a size of 761 (compressed).\n\nOn the other side, we have `homeassistant/...-homeassistant` with support for 5 different architectures based on Alpine Linux with a size of 376 (compressed). Hass.io uses these images.\n\nThe Hass.io images follow (most) best practices, and the Dockerfiles are checked with hadolint.\n\nThe Hass.io images support more integrations out of the box. Also, we pre-build all the Python Wheels for Alpine in the background. Additionally, support for pre-build Alpine packages is planned for the future.\n\nEven though, the Hass.io images support more integrations, some things are not supported on Alpine. For example, TensorFlow and Chrome (the last one is less of an issue now web scraping is banned in [ADR-0004](0004-webscraping.md)).\n\nIn the current situation, we basically release and maintain two types of Docker images. The current Debian based one and the ones based on Alpine Linux. This requires us to solve issues twice or, in case of issues related to a specific Linux version, becomes harder to resolve to find out the culprit.\n\n## Decision\n\nOur Docker team and resources are limited and we should focus all our resource to one docker image.\n\nOur regular Docker installation can be improved by tagging along with the Hass.io images, which features a more modular approach, follow better practices, are well maintained, supports five architectures, and have smaller images. Users will benefit from the pre-builds we provide and deliver, which results in a faster set up and installation of integrations.\n\nWe are going to transform our current `homeassistant/home-assistant` image into a Docker manifest image that provides multiple architectures. Each of the supported architectures in that manifest will point to one of the Alpine based Dockerfiles; we currently use for Hass.io: `homeassistant/...-homeassistant`.\n\nResulting in a single Docker base to maintain, while providing lots of benefits.\n\nTimeline:\n- **0.96**: Start with new Tagging system\n- **0.97**: Announce the end of Debian based homeassistant/home-assistant image with Release Blog Post\n- **0.98**: Start with manifest tagging\n\n## Consequences\n\n- We need to extend the Azure builds to support the tagging system `dev`, `beta` and `stable`.\n- We need also move forward with the Python Wheels repository and the Home Assistant core pip installation for Docker environment. \n- We need to migrate our regular Home Assistant Docker image into a Docker manifest.\n\nThe plan is to complete this before the Home Assistant 1.0 release. Debian based images are deprecated with accepting of this ADR.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#243",
+     "kind": "hash",
+     "url": "",
+     "number": "243"
+    },
+    {
+     "key": "home-assistant/architecture#243",
+     "kind": "issue",
+     "url": "https://github.com/home-assistant/architecture/issues/243",
+     "number": "243"
+    }
+   ],
+   "mentioned_paths": [
+    "homeassistant/home-assistant",
+    "homeassistant/...-homeassistant"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0001-record-architecture-decisions.md",
+   "identity": "adr/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2019-05-15T14:04:44+02:00",
+   "first_sha": "fba9f25d0e3cecf2c0eb511fbf451499b07108f3",
+   "last_commit": "2019-05-15T14:04:44+02:00",
+   "author": "Paulus Schoutsen",
+   "email": "paulus@home-assistant.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record architecture decisions\n\nDate: 2019-05-13\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as [described by Michael Nygard](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions).\n\n## Consequences\n\nIntroduces an additional burden on core project maintainers to diligently follow architecture discussions and record the results in this repo as an ADR.\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's [adr-tools](https://github.com/npryce/adr-tools).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "adr/0016-home-assistant-core.md",
+   "identity": "adr/0016-home-assistant-core.md",
+   "commit": "be288928486f8539345b5be804778a4f24e55ca7",
+   "date": "2026-04-02T15:13:56+02:00",
+   "old_state": "accepted",
+   "new_state": "unknown",
+   "old_raw": "Accepted",
+   "new_raw": "Reverted by [discussion #1197](https://github.com/home-assistant/architecture/discussions/1197). Home Assistant Core is no longer an officially supported installation method. Users are encouraged to migrate to Home Assistant OS or Home Assistant Container.",
+   "replacement": null,
+   "message": "Revert ADR-0016: drop Home Assistant Core as supported installation method (#1367)",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Stefan Agner",
+   "email": "stefan@agner.ch"
+  },
+  {
+   "path": "adr/0015-home-assistant-os.md",
+   "identity": "adr/0015-home-assistant-one.md",
+   "commit": "9f9b21156200caff90e6179fc95d4bcee90fbdee",
+   "date": "2020-06-22T13:35:15+02:00",
+   "old_state": "accepted",
+   "new_state": "accepted",
+   "old_raw": "Accepted",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "Correct filename for ADR-0015",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Franck Nijhof",
+   "email": "git@frenck.dev"
+  },
+  {
+   "path": "adr/0014-home-assistant-supervised.md",
+   "identity": "adr/0014-home-assistant-supervised.md",
+   "commit": "d691fd2bd0a716bc072ee0ce28f71c36aaec76b1",
+   "date": "2026-04-02T14:08:35+02:00",
+   "old_state": "accepted",
+   "new_state": "unknown",
+   "old_raw": "Accepted",
+   "new_raw": "Reverted by [discussion #1198](https://github.com/home-assistant/architecture/discussions/1198). Home Assistant Supervised is no longer an officially supported installation method. Users are encouraged to migrate to Home Assistant OS or Home Assistant Container.",
+   "replacement": null,
+   "message": "Revert ADR-0014: drop Home Assistant Supervised as supported installation method (#1366)",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Stefan Agner",
+   "email": "stefan@agner.ch"
+  },
+  {
+   "path": "adr/0002-minimum-supported-python-version.md",
+   "identity": "adr/0002-minimum-supported-python-version.md",
+   "commit": "9e7e0bdfaded05c90661ac63a983f99b697be97e",
+   "date": "2023-05-30T02:36:02+02:00",
+   "old_state": "accepted",
+   "new_state": "superseded",
+   "old_raw": "Accepted",
+   "new_raw": "Superseded by [ADR-0020](./0020-minimum-supported-python-version.md)",
+   "replacement": "ADR-0020 (./0020-minimum-supported-python-version.md)",
+   "message": "Add ADR-0020: Minimum supported Python version (#911)",
+   "renamed": false,
+   "script_label": "replaced",
+   "script_rule": "superseded-by-pointer",
+   "author": "Franck Nijhof",
+   "email": "git@frenck.dev"
+  }
+ ],
+ "ai_signals": [
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-09-11T22:01:50+02:00",
+   "commit": "f4e56645d468d442f49e4fa77c623a9f1c76adb5",
+   "evidence": "Update supported databases and EoL policies (#1462)",
+   "official": true,
+   "author": "Erik Montnemery",
+   "email": "erik@montnemery.com"
+  }
+ ],
+ "signal_date": "2026-09-11T20:01:50+00:00",
+ "signal_kind": "coauthor",
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-eligible",
+ "adr_count_before_signal": 22,
+ "superseded_in_window": 1,
+ "eligibility_reason": "at-least-5-adrs-before-signal",
+ "sources": "sourcegraph:adr_root;buchgeher-2022",
+ "stars": "372",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "19"
+}

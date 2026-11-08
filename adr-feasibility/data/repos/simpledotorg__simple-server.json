@@ -1,0 +1,55 @@
+{
+ "repo": "simpledotorg/simple-server",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2018-05-07T17:03:48-04:00",
+ "last_commit": "2026-11-04T14:46:13+05:30",
+ "n_commits": 4038,
+ "n_authors": 49,
+ "n_files": 2089,
+ "n_code_files": 1371,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 0,
+ "adrs": [],
+ "status_changes": [],
+ "ai_signals": [
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Cursor Agent <cursoragent@cursor.com>",
+   "date": "2026-02-27T20:25:08+00:00",
+   "commit": "042f49a92ab2d76a4edfb26bcaf14e060c3461a8",
+   "evidence": "Sentry top error solution (#5779)",
+   "official": true,
+   "author": "Igbanam",
+   "email": "390059+igbanam@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Cursor Agent <cursoragent@cursor.com>",
+   "date": "2026-03-25T08:14:23+00:00",
+   "commit": "68d7cd7db69f650a06b0efa9d26c4297dc08368b",
+   "evidence": "Reduce CSP inline style violations in drug stock webviews (#5786)",
+   "official": true,
+   "author": "Igbanam",
+   "email": "390059+igbanam@users.noreply.github.com"
+  }
+ ],
+ "signal_date": "2026-02-27T20:25:08+00:00",
+ "signal_kind": "coauthor",
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 1,
+  "capped": false
+ },
+ "group": "ai-native",
+ "adr_count_before_signal": 0,
+ "superseded_in_window": 0,
+ "eligibility_reason": "ai-native",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "21"
+}

@@ -1,0 +1,619 @@
+{
+ "repo": "alphagov/email-alert-api",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2014-09-19T16:38:48+01:00",
+ "last_commit": "2026-11-06T09:33:28+00:00",
+ "n_commits": 6527,
+ "n_authors": 185,
+ "n_files": 559,
+ "n_code_files": 476,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 10,
+ "adrs": [
+  {
+   "path": "docs/adr/adr-010-send-unpublish-emails-for-single-pages.md",
+   "identity": "docs/adr/adr-010-send-unpublish-emails-for-single-pages.md",
+   "adr_id": "10",
+   "title": "Decision record: reinstate unpublish emails for single page subscriptions",
+   "first_commit": "2022-01-13T13:56:12+00:00",
+   "first_sha": "2f8f73ea8955959c131a2262eb0130fb455ac4d0",
+   "last_commit": "2022-01-13T13:56:12+00:00",
+   "author": "Huw Diprose",
+   "email": "huw.diprose@digital.cabinet-office.gov.uk",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Decision record: reinstate unpublish emails for single page subscriptions\n\nDate: 2021-12-03\n\n## Context\n\nWe have just launched a new email notifications feature that allows users to subscribe to updates on a single page.\nCurrently this feature is only enabled on a few selected pages (eg. [Open standards for government][open-standards-for-government]),\nbut it is expected to roll out to the majority of pages and content types by early 2022.\n\nUnpublished content will become unavailable and receive no further updates. Users who have demonstrated a desire to stay up to date\nwith an item of content may find it unexpected if content they were subscribed to disappears without notification, or becomes unavailable through their account. This change is part of meeting a user need to stay up to date with changing content, including when that content is changed through unpublication.\n\nThe email alert API used to send emails when a page in a taxon subscription was unpublished.\nThis feature was [removed in Jan 2021][remove-previous-unpublish-emails] for good reasons.\n\n[open-standards-for-government]: https://www.gov.uk/government/publications/open-standards-for-government\n[remove-previous-unpublish-emails]: https://github.com/alphagov/email-alert-api/issues/1572\n\n## Decision\n\nWe will add an endpoint to email-alert-api to unsubscribe everyone from a given subscriber list, and optionally send them an email with a reason why (using the existing [message](https://github.com/alphagov/email-alert-api/blob/main/docs/adr/adr-004-message-concept.md) machinery).  We will change email-alert-service to call this new endpoint when a page gets unpublished, to notify any users subscribed to that specific page.\n\nWe will not delete the now-empty list, as it will be cleaned up by the [HistoricalDataDeletionWorker](https://github.com/alphagov/email-alert-api/blob/main/app/workers/historical_data_deletion_worker.rb), and introducing another mechanism that destroys lists could be a point of confusion.\n\n### Addressing the concerns from the previous version\n\nThe previous version of this feature was removed for several good reasons. We believe readding the unpublish emails only for single page subscriptions addresses these concerns:\n\n#### It only worked for topic taxons\n\nSingle page notification work generates a clearer user need to inform about subscriptions in the more frequent scenario that individual pages are unpublished.\n\nGiven the specificity of the need that drives this, we don't think limiting it to just those subscriptions is a problem.\n\n#### It only worked if the unpublished page was redirected\n\nThe new unpublished emails will handle pages that are redirected or published in error with or without an alternative URL. This covers the publisher-facing [unpublishing types][unpublishing-types].\n\n#### It wasn't monitored so we didn't know if it was working\n\nWe don't have a specific plan for monitoring this. Ideally monitoring for this would be taken on by a team that owns this portion of the system in the log run, and incorporated into their usual service monitoring.\n\n#### It rendered email using ERB, unlike the rest of the system\n\nThe new unpublished emails will use the same method to render emails as the messages endpoint.\n\n#### It removed any subscriber lists that included the page, even those for a different taxon\n\nWe are taking a very different approach from the previous unpubication of taxons. The previous route had to infer which lists should be removed as they represented a collection of materials.\n\nHere we are unpublishing a single page, and matching it to a subscription list by the same content ID. The email alert api doesn't need to do anything clever to match the two, we just tell it which subscription list should be cleared, and it does so.\n\n#### There was no evidence it met user needs\n\nWe have user research demonstrating a need for users to stay up to date with specific items of government guidance. Examples might be recent coronavirus guidance that changes over time and can have a large impact on lives and what is possible to do.\n\nUnpublication is a form of change to that content that is currently unmonitored. This could have an impact in scenarios such as when a specific item of guidance is consolodated into a more general page when rules are made the same. A user may also be confused if an item they have subscribed to disappears from their account without notification, and may also wish to know if an item they subscribed to was removed as published in error.\n\nWe have focused in on these as derived needs that emerge from the general user need to be kept up to date with individual pages.\n\n### Other related issues\n\nThe email alert API has subscriber lists that will never send an email. This is documented as [GOV.UK Tech Debt][email-alert-api-dead-lists].\nThis proposal does not directly address this Tech Debt, but by removing subscriptions from the subscriber list once the emails have been sent the [HistoricalDataDeletionWorker](https://github.com/alphagov/email-alert-api/blob/main/app/workers/historical_data_deletion_worker.rb) can periodically remove the empty lists.\n\n[unpublishing-types]: https://github.com/alphagov/publishing-api/blob/a33292a3002d722a5b5840aaea751ebe10304c28/app/commands/v2/unpublish.rb#L37\n[email-alert-api-dead-lists]: https://trello.com/c/PjRE1A0G/200-email-alert-api-has-dead-lists-that-will-never-send-any-email\n\n## Status\n\nProposed\n\n## Consequences\n\n- Increased complexity in email-alert-service with new MessageProcessors monitoring for unpublication events\n- A new email-api endpoint to mass unsubscribe users from a subscription list.\n\nSubscription lists may end up unpopulated and empty as a result of this, the proposed endpoint does not clear them up themselves (so is not a strict destroy endpoint), instead it relies on other existing workers which periodically clear up empty subscription lists.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "alphagov/email-alert-api#1572",
+     "kind": "issue",
+     "url": "https://github.com/alphagov/email-alert-api/issues/1572",
+     "number": "1572"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/alphagov/email-alert-api/blob/main/app/workers/historical_data_deletion_worker.rb",
+    "github.com/alphagov/publishing-api/blob/a33292a3002d722a5b5840aaea751ebe10304c28/app/commands/v2/unpublish.rb"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/adr-009-sidekiq-lost-job-recovery.md",
+   "identity": "docs/adr/adr-009-sidekiq-lost-job-recovery.md",
+   "adr_id": "9",
+   "title": "Sidekiq Lost Job Recovery",
+   "first_commit": "2020-12-02T17:13:30+00:00",
+   "first_sha": "fb9085a2b36cac35c18aaf19b564950220791612",
+   "last_commit": "2020-12-04T11:23:44+00:00",
+   "author": "Ben Thorner",
+   "email": "ben.thorner@digital.cabinet-office.gov.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 9. Sidekiq Lost Job Recovery\n\nDate: 2020-12-02\n\n## Context\n\nWe use [Sidekiq](https://github.com/mperham/sidekiq) to do background processing in Email Alert API. This includes critical tasks, such as generating and sending email. However, it's possible for these jobs to be lost:\n\n1. If the code to enqueue the job in Redis fails, either for transient reasons, or due to a bug.\n\n2. If a worker process quits ungracefully, while processing a job.\n\nThe second issue has occurred frequently due to workers being [forcibly restarted][icinga-memory] when they consume too much memory. A memorable example was the loss of a Travel Advice content change, which was detected by the [alert][travel-advice-alert] for travel advice emails, and lead to an incident. Conversely, we don't think the first issue occurs frequently.\n\nTo help support engineers cope with certain kinds of lost work, we had [manual steps][old-recovery-steps] to recover it. We had this for the jobs to process content changes and [messages][old-recovery-steps-messages]. The manual steps involved checking the state of the database, as an indication of whether jobs might have been lost. However, it's possible checking the database will turn up false positives e.g. if the system is running slowly. Both workers would [double check][content-change-psuedo-idempotent] to prevent accidentally duplicating work.\n\nIdeally these issues wouldn't exist in the first place. Previously we considered upgrading to Sidekiq Pro, which [persists][sidekiq-reliability] jobs in Redis while they are being processed. Using Sidekiq Pro would therefore prevent the second issue, but not the first, which is unrelated to Sidekiq. It's also worth noting that we previously had [concerns][sidekiq-pro-issue] about switching to Sidekiq Pro, thinking it would be hard to use in practice. Still, it's possible the benefits could outweigh the drawbacks.\n\n[content-change-psuedo-idempotent]: https://github.com/alphagov/email-alert-api/commit/e4a8fedcaf2ce504f238ef53ee9fdf2e3319e30a#diff-ccd4e2b91347f03e81b4ccfae7983d17c508c7cce216a51596ccaf7093848a2cR6\n[old-recovery-steps]: https://github.com/alphagov/govuk-developer-docs/blob/7feaedc9bd9f786662055bba45327ddc8b318525/source/manual/alerts/email-alert-api-unprocessed-content-changes.html.md\n[old-recovery-steps-messages]: https://github.com/alphagov/govuk-developer-docs/blob/7feaedc9bd9f786662055bba45327ddc8b318525/source/manual/alerts/email-alert-api-unprocessed-messages.html.md\n[sidekiq-reliability]: https://github.com/mperham/sidekiq/wiki/Reliability#using-super_fetch\n[icinga-memory]: https://github.com/alphagov/govuk-puppet/blob/1258fc65da264191d01b4280cd4422f90085c371/modules/monitoring/files/usr/local/bin/event_handlers/govuk_app_high_memory.sh#L22\n[travel-advice-alert]: https://github.com/alphagov/govuk-puppet/blob/be2e3733d9cad619d9cf57e19b190cd5d6116342/modules/govuk_jenkins/manifests/jobs/email_alert_check.pp\n[sidekiq-pro-issue]: https://github.com/mperham/sidekiq/issues/4612\n\n## Decision\n\nWe decided to implement a new [worker][recovery-worker] to automatically recover all work associated with generating and sending email. This resolves both of the above issues with lost work, and [codifies][old-recovery-steps] the previously manual recovery steps. Since there is little urgency around sending email, we decided to run the worker only infrequently (currently [every half hour][recovery-schedule]), for work that's [over an hour old][recovery-threshold] - we expect most work to have been processed within an hour.\n\nAn edge case for recovery is the initiation of the [daily][daily-init] and [weekly][weekly-init] digest runs. If one of these scheduled jobs is lost before it can [create][digest-run-create] a DigestRun record, our normal strategy of checking the database won't work. For this scenario, we decided to have a [separate][digest-init-recovery] recovery strategy that's coupled to the [schedule][digest-schedule] for the initiator jobs. The strategy involves looking back over the previous week to see if any DigestRun records are missing for that period.\n\nWe decided to pursue recovering lost work instead of acquiring Sidekiq Pro, which would help avoid the loss in the first place. We had the impression that the process to pay for, acquire and integrate Sidekiq Pro into Email Alert API would take longer to complete than implementing our own solution.\n\n[recovery-worker]: https://github.com/alphagov/email-alert-api/blob/101f813d97c3838199e40643e681f1aca6adf67b/app/workers/recover_lost_jobs_worker.rb\n[recovery-schedule]: https://github.com/alphagov/email-alert-api/blob/59c37a1571d1564d1c63fd913274c810b0742ee6/config/sidekiq.yml#L39\n[recovery-threshold]: https://github.com/alphagov/email-alert-api/blob/ea21e7cfd4f6131e2db55e45b923dee3895b081a/app/workers/recover_lost_jobs_worker/unprocessed_check.rb#L13\n[daily-init]: https://github.com/alphagov/email-alert-api/blob/bae78a3cb7e970d290d4a95613149c1d5d34e4f1/app/workers/daily_digest_initiator_worker.rb\n[weekly-init]: https://github.com/alphagov/email-alert-api/blob/bae78a3cb7e970d290d4a95613149c1d5d34e4f1/app/workers/weekly_digest_initiator_worker.rb\n[digest-init-recovery]: https://github.com/alphagov/email-alert-api/blob/bae78a3cb7e970d290d4a95613149c1d5d34e4f1/app/workers/recover_lost_jobs_worker/missing_digest_runs_check.rb\n[digest-schedule]: https://github.com/alphagov/email-alert-api/blob/fe6ce7a61fa8ab6692786086c91d4d6017c9b2fa/config/sidekiq.yml#L17-L22\n[digest-run-create]: https://github.com/alphagov/email-alert-api/blob/fe6ce7a61fa8ab6692786086c91d4d6017c9b2fa/app/services/digest_initiator_service.rb#L8\n\n## Status\n\nAccepted\n\n## Consequences\n\n### Potential for duplicate work\n\nAs mentioned in the context, it's possible we may recover work that still exists in the system. For example, a job that's over an hour old may simply be delayed due to an unusually high backlog in its Sidekiq queue. Although we could check the state of Sidekiq as part of finding lost work, it's still possible to have race conditions where we falsely requeue work that's not lost. To cope with this, we modified each worker so that it's [idempotent][wiki-idempotent].\n\nEach worker will [double check][email-double-check] if it has previously completed. However, this could still be a false positive if duplicate jobs end up running concurrently. We had two approaches to cope with this:\n\n- For slow jobs, like processing a content change, we used non-blocking [advisory locks][advisory-lock]. This means any in-progress work that's been incorrectly recovered will be processed quickly as a [no-op][advisory-timeout].\n\n- For fast, high volume jobs, like sending an email, we used a blocking, [row-level lock][email-lock] inside a transaction. Using a row-level lock is faster because the lock is part of the `SELECT` (... `FOR UPDATE`) statement we already execute to fetch the Email record. This is better for the common case, where there is no duplicate work. Even if duplicate work exists, it will only occupy a worker for a short time, until the original job completes and the lock is released.\n\n\nWhile making jobs idempotent means the system will behave correctly in the long term, in the short term it's still possible for the recovery to generate an alarming amount of \"no-op\" work on a queue e.g. if the system is running slowly. This is a particular concern for jobs to send email, where the queue latency can exceed one hour, with many thousands of fresh jobs in the queue. We used [SidekiqUniqueJobs][sidekiq-unique-jobs] to [prevent][email-unique-jobs] a snowball effect in this scenario.\n\n[wiki-idempotent]: https://en.wikipedia.org/wiki/Idempotence\n[email-double-check]: https://github.com/alphagov/email-alert-api/commit/09a1474f8e075fdd442ced4a3bb723542fb09fea#diff-7f6369872e4b9658537b003a9c0fc119ac5f05745be3f7dad991d488e1b37ff1R23\n[email-lock]: https://github.com/alphagov/email-alert-api/blob/ea21e7cfd4f6131e2db55e45b923dee3895b081a/app/workers/send_email_worker.rb#L26\n[advisory-lock]: https://github.com/alphagov/email-alert-api/blob/59c37a1571d1564d1c63fd913274c810b0742ee6/app/workers/process_content_change_worker.rb#L5\n[sidekiq-unique-jobs]: https://github.com/mhenrixon/sidekiq-unique-jobs\n[email-unique-jobs]: https://github.com/alphagov/email-alert-api/commit/ac08a4fdbcd691693dc9123e2902be451a4da69d\n[advisory-timeout]: https://github.com/alphagov/email-alert-api/blob/fe6ce7a61fa8ab6692786086c91d4d6017c9b2fa/app/workers/application_worker.rb#L7\n\n### Competing with Sidekiq retries\n\nIn creating the recovery worker we realised it would be in competition with the [retries][email-sidekiq-retry] we have setup for jobs (or by [default][default-sidekiq-retry]). Sidekiq retries are faster than recovery, so it makes sense to continue using them.\n\nHowever, the recovery worker could still generate a relatively large backlog of retrying work, if a job is perpetually failing due to a bug. We have tried to mitigate this by [limiting][limited-retries] the number of retries for each job, but we could also consider using the [unique jobs approach][email-unique-jobs] for emails if this isn't enough. In the long term, we also plan to [improve the alerts][alert-adr] for the system, so that we can intervene in good time if work appears to be perpetually failing.\n\n[email-sidekiq-retry]: https://github.com/alphagov/email-alert-api/blob/ea21e7cfd4f6131e2db55e45b923dee3895b081a/app/workers/send_email_worker.rb#L11\n[default-sidekiq-retry]: https://github.com/mperham/sidekiq/wiki/Job-Lifecycle\n[limited-retries]: https://github.com/alphagov/email-alert-api/pull/1495/commits/df501d3edb7185ce35ab5592489765ec3699dae5\n\n### Delay in processing lost work\n\nIn the worst case, it could take up to 1.5 hours to recover a piece of lost work. This is something we could tune if necessary e.g. for transactional emails, which should be sent within [15 minutes][transactional-delay]. We plan to consider this as part of our work on [improving the alerts][alert-adr] for the system. We also plan to reconsider using Sidekiq Pro as a more lightweight solution to speedy recovery, with the recovery worker as a fallback.\n\n[transactional-delay]: https://github.com/alphagov/email-alert-frontend/blob/de1caeea8098eccbb34d8768d7f2c95e455d901c/config/locales/subscriber_authentication.yml#L21\n[alert-adr]: https://github.com/alphagov/email-alert-api/blob/master/docs/adr/adr-008-monitoring-and-alerting.md\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "mperham/sidekiq#4612",
+     "kind": "issue",
+     "url": "https://github.com/mperham/sidekiq/issues/4612",
+     "number": "4612"
+    },
+    {
+     "key": "alphagov/email-alert-api#1495",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/email-alert-api/pull/1495",
+     "number": "1495"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/alphagov/govuk-developer-docs/blob/7feaedc9bd9f786662055bba45327ddc8b318525/source/manual/alerts/email-alert-api-unprocessed-content-changes.html.md",
+    "github.com/alphagov/govuk-developer-docs/blob/7feaedc9bd9f786662055bba45327ddc8b318525/source/manual/alerts/email-alert-api-unprocessed-messages.html.md",
+    "github.com/alphagov/govuk-puppet/blob/1258fc65da264191d01b4280cd4422f90085c371/modules/monitoring/files/usr/local/bin/event_handlers/govuk_app_high_memory.sh",
+    "github.com/alphagov/govuk-puppet/blob/be2e3733d9cad619d9cf57e19b190cd5d6116342/modules/govuk_jenkins/manifests/jobs/email_alert_check.pp",
+    "github.com/alphagov/email-alert-api/blob/101f813d97c3838199e40643e681f1aca6adf67b/app/workers/recover_lost_jobs_worker.rb",
+    "github.com/alphagov/email-alert-api/blob/59c37a1571d1564d1c63fd913274c810b0742ee6/config/sidekiq.yml",
+    "github.com/alphagov/email-alert-api/blob/ea21e7cfd4f6131e2db55e45b923dee3895b081a/app/workers/recover_lost_jobs_worker/unprocessed_check.rb",
+    "github.com/alphagov/email-alert-api/blob/bae78a3cb7e970d290d4a95613149c1d5d34e4f1/app/workers/daily_digest_initiator_worker.rb",
+    "github.com/alphagov/email-alert-api/blob/bae78a3cb7e970d290d4a95613149c1d5d34e4f1/app/workers/weekly_digest_initiator_worker.rb",
+    "github.com/alphagov/email-alert-api/blob/bae78a3cb7e970d290d4a95613149c1d5d34e4f1/app/workers/recover_lost_jobs_worker/missing_digest_runs_check.rb",
+    "github.com/alphagov/email-alert-api/blob/fe6ce7a61fa8ab6692786086c91d4d6017c9b2fa/config/sidekiq.yml",
+    "github.com/alphagov/email-alert-api/blob/fe6ce7a61fa8ab6692786086c91d4d6017c9b2fa/app/services/digest_initiator_service.rb",
+    "github.com/alphagov/email-alert-api/blob/ea21e7cfd4f6131e2db55e45b923dee3895b081a/app/workers/send_email_worker.rb",
+    "github.com/alphagov/email-alert-api/blob/59c37a1571d1564d1c63fd913274c810b0742ee6/app/workers/process_content_change_worker.rb",
+    "github.com/alphagov/email-alert-api/blob/fe6ce7a61fa8ab6692786086c91d4d6017c9b2fa/app/workers/application_worker.rb",
+    "github.com/alphagov/email-alert-frontend/blob/de1caeea8098eccbb34d8768d7f2c95e455d901c/config/locales/subscriber_authentication.yml"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/adr-008-monitoring-and-alerting.md",
+   "identity": "docs/adr/adr-007-monitoring-and-alerting.md",
+   "adr_id": "8",
+   "title": "Monitoring and alerting",
+   "first_commit": "2020-11-12T09:38:34+00:00",
+   "first_sha": "8debde83f241246f09cb0fc52c8ca9fc034275d5",
+   "last_commit": "2020-12-01T11:08:00+00:00",
+   "author": "Kevin Dew",
+   "email": "kevindew@me.com",
+   "status": "proposed",
+   "status_raw": "Proposed - the team working on this piece of work was paused in December 2020, it is unclear whether a future team will be formed to complete this work.",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# 8. Monitoring and alerting\n\nDate: 2020-11-13\nAmended: 2020-12-01 - Status updated to reflect team being paused\n\n## Context\n\nEmail Alert API has acquired the undesirable reputation of an application that\nproduces a high volume of unactionable alerts and is a frequent source of\nGOV.UK incidents. The monitoring and alerting approach no longer appears to\nbe sufficient for the application behaviour as the application's volume of\nwork has changed in the past 2 years. In previous years, the application\nwould reach a peak of sending 1 million emails a day whereas now it can be\nsending over 10 million emails a day. This elevated volume of work has\nincreased system latency which has impacted alerts and contributed to\nincidents.\n\nThe approach used to monitoring the application and the wider email alert\nsystem is two fold. One approach is to monitor Email Alert API's internal\nstate to see if it is [completing tasks within a particular\ntime frame][monitor-time-frame] or [whether there is a high quantity of work to\ndo][monitor-workload]. The other approach is to use an [end-to-end\ncheck][email-alert-monitoring] which verifies that a Gmail account\nhas received an email within a time frame. Both of these approaches are flawed.\n\nMonitoring for high quantities of work, and whether work was completed in a\ntime frame, has left Email Alert API vulnerable to producing alerts when the\napplication is busy, yet fully operational. These alerts are unactionable for\nsupport engineers as the alerts resolve themselves once the work is completed\nand there is little an engineer can do to speed this process up. For example,\nif the application has accumulated 1,000,000 emails to send it raises a\ncritical alert even if it is sending these at the [fastest rate Notify\nwould allow][rate-limit]. These alerts, therefore, waste the time of support\nengineers as most instances of them occurring represent a problem that\ndoesn't require intervention - this then increases a risk that an engineer\nwouldn't act if an alert did actually represent the application being broken.\n\nSince these alerts can't be relied upon to reliably suggest the\napplication is broken, they aren't used for any out-of-hours alerts. Therefore,\neven if they did reflect a genuine problem no engineers would be contacted.\nAn engineer instead learns of a problem out-of-hours due to the other type\nof monitoring approach: the end-to-end checks. These alert when content\npublished through [Travel Advice Publisher][] does not arrive in\na particular Gmail inbox within a specified time period.\n\nMonitoring an inbox for a limited set of emails has its own flaws.\nIf Email Alert API breaks outside of office hours then engineers would not be\nnotified unless travel advice content was published. This alert also monitors\nbeyond the boundaries of the email alert system - considering whether\nGOV.UK publishing, Notify and Gmail are all working - leading to alerts\nrepresenting problems that are irrelevant to the system, or outside the\ncontrol of GOV.UK engineers (such as Gmail identifying an email as spam).\nFinally, by nature of being time based, these alerts are also vulnerable to\nthe system being busy - where a sufficiently high volume of travel advice\npublishings guarantees that an alert will trigger.\n\nReviewing this monitoring approach helped us understand the reputation for\nunactionable alerts and reviewing the GOV.UK incidents for Email Alert API\nhelped us to identify patterns where incidents reflected ambiguity over whether\nthe system was broken or not. We felt there was room for improvement.\n\n[monitor-time-frame]: https://github.com/alphagov/email-alert-api/blob/c70fcd7e5d64393074a3eebd83b3467fd8cc03b3/app/workers/digest_run_worker.rb#L6-L9\n[monitor-workload]: https://github.com/alphagov/govuk-puppet/blob/fac4b5163f10736bb19aa51a8eb7bc276dd2cb40/modules/govuk/manifests/apps/email_alert_api/sidekiq_queue_check.pp#L33-L44\n[email-alert-monitoring]: https://github.com/alphagov/email-alert-monitoring\n[rate-limit]: https://github.com/alphagov/email-alert-api/blob/b92f9136230f9217e7877c6dbd6a049473ce7b35/app/workers/send_email_worker.rb#L4\n[Travel Advice Publisher]: https://github.com/alphagov/travel-advice-publisher\n\n## Decision\n\nWe decided that the system should raise a critical alert\n[if and only if](https://en.wikipedia.org/wiki/If_and_only_if) the email alert\nsystem is broken. The majority of these alerts should contact engineers\nout-of-hours.\n\nUnpacking this, we consider the email alert system to be comprised of 3\napplications: Email Alert API,\n[Email Alert Frontend](https://github.com/alphagov/email-alert-frontend) and\n[Email Alert Service](https://github.com/alphagov/email-alert-service); this\nexcludes the monitoring of whether GOV.UK publishing and Notify are working\nas they are independently monitored. The use of \"if and only if\"\nreflects a condition we've formed that the system will not raise critical\nalerts unless we're highly confident it is broken, whereas warnings are\nappropriate for other situations. We decided that for the email alert system\nto be \"broken\" it represents a failing that will lead to a user noticeable\nissue unless an engineer intervenes. Since these alerts should represent\na broken system requiring intervention, it should be suitable to contact\nengineers out-of-hours for them as otherwise users will be experiencing issues.\n\nWe decided that we will re-approach our alerting with this mindset and look to\nreplace alerts that are vulnerable to reflecting a busy status, or which\nextend beyond the boundaries of the system.\n\n## Status\n\nProposed - the team working on this piece of work was paused in December 2020,\nit is unclear whether a future team will be formed to complete this work.\n\n## Consequences\n\nWe will be changing the approaching to monitoring and alerting across the email\nalert system of applications in order to meet this new alerting criteria.\n\n### Monitoring Email Alert API\n\n#### Sidekiq workers\n\nWe will configure critical alerts, that contact engineers out-of-hours, if\nindividual Sidekiq jobs fail multiple times for the following workers:\n\n- [DailyDigestInitiatorWorker][]\n- [DigestEmailGenerationWorker][]\n- [ProcessContentChangeWorker][]\n- [ProcessMessageWorker][]\n- [SendEmailWorker][]\n- [WeeklyDigestInitiatorWorker][]\n\nThese workers will use the database to store the number of times we have\nattempted to perform an action. An alert will be raised if the quantity of\nfailed attempts reaches a threshold (the suggestion is 5 - based on this being\nevidence of consistent failure). We expect that we can use the same threshold\nfor all of these workers even though `SendEmailWorker` speaks to an external\nservice (Notify) that may be more likely to fail, this is because the\nfailure rate is low (< 0.1%), which makes consecutive failures unlikely. To\nensure that the jobs of all the mentioned workers actually run we will\nconfigure the [RecoverLostJobsWorker][] to identify any of these that need to\nrun and attempt them, this protects from lost work problems such as\n[Sidekiq crashing][sidekiq-reliability].\n\nWe expect [SendEmailWorker][] and [DigestEmailGenerationWorker][] jobs to run\nquickly (durations of up to a few seconds) and we know that there can be high\nvolumes of them to run (both can regularly reach volumes of > 100,000).\nWe are concerned about a scenario where these consistently fail\nand it takes a long time for an engineer to be informed, this could occur\nbecause it could take a long time for sufficient retries to occur\nbefore an alert is raised (as each retry is placed at the back of the queue).\nTo reflect this concern we will contact engineers if either of these workers\nhas not completed one successful run within a time period despite work\nexisting (suggested time period is 30 minutes). The [Sidekiq retry\ncadence][sidekiq-retry] and [recovery window][] for these jobs will need to be\nupdated to ensure the jobs are always attempted within the time period, this\nis to ensure we don't alert while work isn't being attempted.\n\nWe will contact engineers out-of-hours if we determine that a\n[DigestRun][DigestRun] record is not created within a reasonable time frame\n(suggestion is 2 hours). Creating these is a [trivial][digest-run-creation],\nbut essential, operation that relies on a schedule. The lack of this record\nsuggests that either the schedule is broken or that the code running at the\nscheduled time failed.\n\nWe will also monitor that runs of [RecoverLostJobsWorker][] and\n[MetricsCollectionWorker][] are succeeding at least once within a time frame\n(suggestion is 1 hour). These jobs should continue running even when the\nsystem is busy and the lack of them running indicates that we no longer have\nconfidence the system is monitored or able to recover. Thus, an alert will be\ncreated that contacts engineers out-of-hours should these not succeed in a\ntime frame.\n\nFor Sidekiq workers that don't affect the user noticeable aspects of Email\nAlert API, such as [EmailDeletionWorker][], we won't raise critical alerts if\nthese are failing. Instead we will raise a warning if any Sidekiq workers\nexhaust all their retries and are placed in the [dead set][sidekiq-dead]. This\napproach was chosen as it was a pragmatic technique to monitor multiple workers\nwithout adding alerts for individual workers. Workers will have their\n[retry cadence][sidekiq-retry] considered so that this will alert in a\nreasonable time frame of the retries being exhausted (the Sidekiq default of 21\ndays is very long).\n\nWe will modify the [latency checks for email queues][latency-checks]. We\nwill be treating [transactional emails][] different to other latency checks\nas these emails have have an [expectation of a prompt\ndelivery][transactional-delivery-expectation] and the lack of them blocks a\nuser from progressing with their task. These will raise a warning after 5 mins\nand go critical (with engineers contacted out-of-hours) should the latency\nreach 15 mins.\n\nThe other latency checks will be made significantly less sensitive to latency\nand we will change the time before a warning occurs to be in the measure of\nmultiple hours compared to minutes, with the intention that they serve to\nalert a support engineer only when the system is exceptionally busy and may be\nunhealthy. These alerts will only reach a critical status if they hit a 24 hour\npoint as this would indicate that we are consistently creating email faster\nthan the application can send it, which may mean the system is perpetually\nbacklogged.\n\n#### Web application\n\nWe decided that there should be a mechanism that alerts people out-of-hours if\nthe Email Alert API web application appears broken, noting that currently an\nengineer is unlikely to be contacted in the event of the whole Email Alert API\napplication becoming unavailable - unless travel advice were published. We\nnoted there wasn't a particularly consistent approach to this across GOV.UK\n([with some apps raising an out-of-hours alert when a single instance fails\nhealthchecks][publishing-api-alert]) and felt it would be good to take a simple\napproach to avoid surprising engineers.\n\nWe decided the most appropriate place to alert would be when [the application\nload balancer has no healthy instances of the application][aws-lb-check]. This\nrepresents that no instances of the web application are healthy and\n[no requests will succeed][aws-alb-health].\n\n#### Alerts to be removed\n\nWe will remove the following alerts that will become superseded:\n\n- [Content Changes unprocessed after 2 hours][unprocessed-content-changes]\n- [Messages unprocessed after 2 hours][unprocessed-messages]\n- [Incomplete DigestRuns after 2 hours][incomplete-digest-runs]\n\n### Monitoring Email Alert Service\n\nEmail Alert Service listens for [Publishing API][] events and communicates\nthese to Email Alert API. We currently [only have alerts][rabbitmq-alert] that\nare monitored in-hours if this system fails, so there is no visibility for any\nout-of-hours problems.\n\nWe intend to improve and consolidate the existing al",
+   "truncated_text": true,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/alphagov/email-alert-api/blob/c70fcd7e5d64393074a3eebd83b3467fd8cc03b3/app/workers/digest_run_worker.rb",
+    "github.com/alphagov/govuk-puppet/blob/fac4b5163f10736bb19aa51a8eb7bc276dd2cb40/modules/govuk/manifests/apps/email_alert_api/sidekiq_queue_check.pp",
+    "github.com/alphagov/email-alert-api/blob/b92f9136230f9217e7877c6dbd6a049473ce7b35/app/workers/send_email_worker.rb",
+    "github.com/alphagov/email-alert-api/blob/b92f9136230f9217e7877c6dbd6a049473ce7b35/app/workers/daily_digest_initiator_worker.rb",
+    "github.com/alphagov/email-alert-api/blob/b92f9136230f9217e7877c6dbd6a049473ce7b35/app/workers/digest_email_generation_worker.rb",
+    "github.com/alphagov/email-alert-api/blob/b92f9136230f9217e7877c6dbd6a049473ce7b35/app/workers/process_content_change_worker.rb",
+    "github.com/alphagov/email-alert-api/blob/b92f9136230f9217e7877c6dbd6a049473ce7b35/app/workers/process_message_worker.rb",
+    "github.com/alphagov/email-alert-api/blob/b92f9136230f9217e7877c6dbd6a049473ce7b35/app/workers/weekly_digest_initiator_worker.rb",
+    "github.com/alphagov/email-alert-api/blob/b92f9136230f9217e7877c6dbd6a049473ce7b35/app/workers/recover_lost_jobs_worker.rb",
+    "github.com/alphagov/email-alert-api/blame/b92f9136230f9217e7877c6dbd6a049473ce7b35/README.md",
+    "github.com/alphagov/email-alert-api/blob/1711885b4df9c80aed5d8d2333e4e007c778badd/app/workers/recover_lost_jobs_worker/unprocessed_check.rb",
+    "github.com/alphagov/email-alert-api/blob/b92f9136230f9217e7877c6dbd6a049473ce7b35/app/services/digest_initiator_service.rb",
+    "github.com/alphagov/email-alert-api/blob/b92f9136230f9217e7877c6dbd6a049473ce7b35/app/workers/metrics_collection_worker.rb",
+    "github.com/alphagov/email-alert-api/blob/b92f9136230f9217e7877c6dbd6a049473ce7b35/app/workers/email_deletion_worker.rb",
+    "github.com/alphagov/govuk-puppet/blob/3922b4104e61e16e115e609a1f96fa19bffcfb0c/modules/govuk/manifests/apps/email_alert_api/checks.pp",
+    "github.com/alphagov/email-alert-api/blob/fe28935ae77137182ec713059b029d514a93bc2d/config/sidekiq.yml",
+    "github.com/alphagov/email-alert-frontend/blob/de1caeea8098eccbb34d8768d7f2c95e455d901c/config/locales/subscriber_authentication.yml",
+    "github.com/alphagov/govuk-puppet/blob/3922b4104e61e16e115e609a1f96fa19bffcfb0c/modules/govuk/manifests/apps/publishing_api.pp",
+    "github.com/alphagov/govuk-puppet/blob/3922b4104e61e16e115e609a1f96fa19bffcfb0c/modules/monitoring/manifests/checks/lb.pp",
+    "docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-healthchecks.html",
+    "github.com/alphagov/govuk-puppet/blob/3922b4104e61e16e115e609a1f96fa19bffcfb0c/modules/govuk/manifests/apps/email_alert_service/rabbitmq.pp"
+   ],
+   "implementation": {
+    "sha": "fe6ce7a61fa8ab6692786086c91d4d6017c9b2fa",
+    "date": "2020-11-30T14:49:07+00:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "config/sidekiq.yml"
+    ]
+   }
+  },
+  {
+   "path": "docs/adr/adr-003-initial-data-retention-strategy.md",
+   "identity": "doc/arch/adr-003-data-retention.md",
+   "adr_id": "3",
+   "title": "Decision Record: Initial Data Retention Strategy",
+   "first_commit": "2018-02-13T16:21:33+00:00",
+   "first_sha": "60064d2b3c27d278255c0584aa2747c9ed1d9a36",
+   "last_commit": "2020-11-20T17:06:05+00:00",
+   "author": "Kevin Dew",
+   "email": "kevin.dew@digital.cabinet-office.gov.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 8,
+   "text": "# Decision Record: Initial Data Retention Strategy\n\n## Introduction\n\nIn February 2018, prior to switching from Govdelivery to Notify we wished to\nconsider our approach to data retention in such a way to enable data driven\ndecisions in the future.\n\nThe aim in this work is to make suggestions that enable a comparable amount of\ndata to what is currently used by Govdelivery and for that data to be\nflexible. This is balanced against the constraint that Email Alert API does\nproduce a lot of data and this should be culled regularly to not use too much\ndisk space without justification. It also intends to do this with respect to\nthe constraints of GDPR by not storing personally identifiable data for\nlonger than is needed.\n\nThe goal being that we can complete this prior to the change to Notify so that\nwe avoid a data black hole where we do not have the data to answer common\ndata queries.\n\n## Specifics\n\n### Common data use scenarios\n\nBased on a chat with Paul (our performance analyst) we were demonstrated to a\nnumber of scenarios of data look ups and usage. As this was only a short session\nthis list is likely incomplete.\n\n#### Data that is currently looked up\n\n- Number of people subscribed to list\n  - Given a date range: how many people subscribed in that range; how many\n    unscribed; total number of subscribers during that time period.\n- Activity Level of list\n  - Given a date range: how many emails were sent out to that list; how many\n    bulletins a list has associated with it; how many emails a list has\n    genertaed; whether lists have never produced an email.\n- Overall totals\n  - Counts of how many emails we have sent over a specific period of time or\n    total (mostly used internally)\n\n#### Support queries\n\n- People have been unsubscribed and don\u2019t know why (Govdelivery tracks a user\n  unsubscribed but not which lists)\n- Why a user was unsubscribed - this can happen automatically or a user\n  performs the action.\n- Occasional need to check email. Reason this can happen is that we get a query\n  because the link may not be working, so we would look at what was sent.\n\n#### Things that would be useful\n\n- Knowing difference between users who subscribed by themselves or were\n  imported (our initial data import will leave us with inconsistent stats)\n- Ability to recreate subscriptions when people have unsubscribed.\n\n### Suggested Changes\n\nThis is a summary of a collection of changes to the data architecture to enable\nmost statistical data to be retained at a relatively low level of pain of\nimplementation and should enable future decisions to be made about usage and\nstorage with a relatively full set of data.\n\n#### Email and DeliveryAttempt\n\nThe largest source of data is the Email table which has a relationship with\nDeliveryAttempt. This is the most pressing problem to resolve in terms of\ndata retention as this quickly builds up a substantial quantity of data.\n\nThe suggested approach to dealing with this is to have two separate\nprocesses which can both be adjusted as we learn more about the system.\n\nThe first of these processes is an archiving one which should happen within\n24 hours of an email reaching a final state (either sent or failed). When this\nhas occurred the row should be marked that as archived (suggestion is for a\n`archived_at` timestamp) so it not as archived again and is known to be safe\nto delete later.\n\nThe archiving would not involve any personally identifiable data and would\nonly include the subject field from the email. As an example:\n\n```\n{\n  \"id\": \"5c59b695-dbaa-4291-9e25-5024dcbfb45d\",\n  \"subject\": \"Test email\",\n  \"subscriber_id\": 43, // or null\n  \"content_change\": { // or null\n    subscription_ids: [45], // array of subscriptions this email is associated with\n    content_change_ids: [32], // array of content_changes this email is associated with\n    digest_id: 10 // or null\n  },\n  created_at: date,\n  completed_at: date,\n  final_status: \"sent\",\n  // maybe include delivery attempt information\n}\n```\n\nIdeally this data would be stored in S3, but as an interim the suggestion is to\nstore this in an `email_archives` database table which can then be exported to\nS3 when we have the time/resources available to configure that association.\n\nThe second process would be the deletion of the emails (which would also remove\nthe related delivery attempts). This would be removed after a period of 14 days\nafter the email process completed. This period is determined thus to allow\nsufficient time for a support ticket to come in and a small investigation to\noccur.\n\nSince the deletion process is decoupled from the archive one the time can\nbe adjusted based on data needs.\n\nAn additional change to these tables will be to replace their ids with uuid\ndatatypes. This will allow us to remove the reference field of\n`delivery_attempt` - which seems to be created as a psuedo uuid value\ncombining a database id and a timestamp. The reason for changing email to be a\nuuid is to have this as a value that is globally unique and can be used as a\nfurther reference without revealing system information.\n\n#### SubscriptionContent\n\nSubscriptionContent is currently the glue that holds together the association\nbetween a ContentChange, a Subscription, a resulting Email and a\nDigestRunSubscriber. Currently when an email is deleted there is a cascade\nto set the value to SubscriptionContent to null. This is incorrect as the value\nof null here indicates an email is scheduled to be generated. Instead this\nforeign key should be set to have an on delete cascade association with Email\nso that when an email is removed from the system the proceeding\nSubscriptionContent values are also deleted.\n\nThis will mean that over time the data in the SubscriptionContent will be\nculled routinely as part of the Email deletion process.\n\n#### DigestRun and DigestRunSubscriber\n\nCurrently we store each DigestRun and an association to each subscriber. If we\nwant to know how many subscribers were due to be emailed about a digest we can\ncount the number of DigestRunSubscibers associated.\n\nAs the number of subscribers related with a digest is something that is known\nat the point of digest creation we can store this as a count on\nDigestRun. This can alleviate the need for storing each DigestRunSubscriber\n(which can be removed at approximately the same interval as Emails).\n\nAs DigestRuns are low on data usage they can effectively be stored indefinitely\nor at least until we determine an approach to archiving them.\n\n#### ContentChange and SubscriptionList\n\nBoth ContentChange and SubscriptionList should not require changes to them in\norder to allow us to build up a full analytics picture. However they would\nrequire an intention not to delete either of them.\n\nDespite this a small change is suggested for ContentChange to switch the\nprimary key type from being an auto-incrementing number to a uuid. This is to\nallow this to be sent out as part of analytics tracking without revealing state\nor ordering information of the underlying system.\n\nAs a SubscriberList can be updated the only way we can determine the historical\nnumber of ContentChanges with accuracy is to have the ContentChanges\navailable (to perform the look up between them).\n\nIt is likely that over time ContentChanges may reach an infeasible number and\nit will then need to be looked at as to what value storing them maintains, but\nhopefully by that point (expected to be a couple of years away) we'll have a\nmuch firmer understanding of the analytics usage and needs.\n\nSubscriptionLists don't currently have the ability to be deleted by apps, and\nit's likely if they gained that ability that would need to be some form of\narchiving so it could still be communicated to users that the list they had a\nsubscription to is no longer available.\n\n\n#### Subscriber and Subscription\n\nPreviously when a subscription ended they would be deleted and when the last\nsubscription was removed the subscriber would have an address nullified. This\nwas later iterated to using a temporary soft delete on subscriptions to not\nremove them while we worked out whether they have a long term value.\n\nBy looking at the use cases and support queries we've been able to determine\nthat is useful to store both sets of data indefinitely and that it would be\nuseful for support queries to not remove the email address until after a\nreasonable support window for diagnostic purposes.\n\nA field would be added to subscriber of `deactivated_at` which would be used to\ndetermine whether a subscriber is activated. Once a Subscriber has been\ndeactivated for 28 days any personal information will be removed from the\naccount. Any additional activity on the account will cause the account to be\nreactivated.\n\n_Aside: The `deactivated_at` field may not be required it could be determined\nby the lack of any active subscriptions. It just might be useful to have this\nas queries regarding end of a subscriber would be complex without it._\n\nThis 28 day window is intended to provide us with sufficient time that we can\ndeal with any support queries that occur due to account issues (as this is a\nreasonably regular occurance).\n\nWith subscriptions the intention is to use this as an append only table and\nany change to a subscription (starting, ending, change of frequency) creates\na new entry into this table. There will however be an active flag which can be\nused as part of the unique index on this to ensure a user can only have one\nactive subscription at a time. This exception would not make it fully append\nanly.\n\nAn additional change will be to rename the `deleted_at` field to `ended_at`, as\nit is used to record the time that the subscription ended at. The purpose of\nthis field is to enable queries which determine the number of subscriptions at\nparticular time periods. Additionally the suggestion is to include fields of\nthe source of creating the subscription and to include the reason the\nsubscription was ended.\n\nFinally we have a uuid field stored on subscription, it would likely be better\nfor us to have a primary key that is the uuid and then not have a second\nnumerical id.\n\n### Summary of database changes\n\n#### Email\n\n- Change the id type from a serial to a uuid\n- Add an archived_at timestamp\n- Would be removed from database after 14 days\n\n#### EmailArchive\n\n- A table which is store abridged Email data with the intention of this moving\n  to S3 (or a different data analytics storage)\n    - On this store information such as id, subject, subscriber_id,\n      content_changes (see example above)\n    - Store no personally identifiable information\n\n#### DeliveryAttempt\n\n- Change id to a uuid\n- Drop reference field and use uuid instead\n- Would be removed (as part of a cascade with Email) after 14 days\n\n#### SubscribtionContent\n\n- Would be deleted automatically when the corresponding Email is deleted\n\n#### ContentChange\n\n- Primary key should change to a uuid\n- Should not be deleted, as part of analytics picture\n\n#### SubscriberList\n\n- Should not be deleted, as part of analytics picture\n\n#### Subscriber\n\n- Add a `deactivated_at` timestamp field\n- Should not be deleted, as part of analytics picture\n\n#### Subscription\n\n- Change primary key to be a uuid\n- Drop existing `uuid` field\n- Replace the `deleted_at` field with an `ended_at` field.\n- Create an enum field for source (ideas are imported, user_signup,\n  frequency_change)\n- Create an enum field for end (ideas are user_unsubscribe, non_existent_email,\n  frequency_change)\n- Create an active boolean field\n- Drop the current unique key and replace it with one that incorporates active\n- Relationship to Subscriber has an ON_DELETE of restrict to try ensure these\n  can't be lost in the system\n- Should not be deleted, as part of analytics picture\n\n### Plans for future\n\nThe intention is that this strategy provides us with sufficient data stored\nthat we have a lot of flexibility going forward as we determine the analytics\nneed of Email Alert API.\n\nThe most pressing concern following implementation of this would be moving\nthe Email",
+   "truncated_text": true,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/adr-007-retain-data-for-up-to-one-year.md",
+   "identity": "docs/adr/adr-007-data-retention.md",
+   "adr_id": "7",
+   "title": "Retain data for up to one year",
+   "first_commit": "2020-10-15T17:29:27+01:00",
+   "first_sha": "8902e4d68b4fcd8a91653c848f744a55f4cb8cd4",
+   "last_commit": "2020-11-20T17:06:05+00:00",
+   "author": "Peter Hartshorn",
+   "email": "peter.hartshorn@digital.cabinet-office.gov.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 7. Retain data for up to one year\n\nDate: 2020-11-19\n\n## Context\n\nThe original ADR concerning data retention resides [here][initial policy] and\noutlines our approach from February 2018. At that point in time it was decided\nwe should retain all data in Email Alert Api with the exception of\nemails which are [archived] to S3 & [deleted] after a week.\n\nSince then we've come to realise that a revision of our data retention policy\nis needed as we're generating more data that will never be used again - by us,\nor the system.\n\nThis was initially prompted by recent work to [migrate subscribers to daily\ndigest emails] which lead to an increase in the amount of unmanaged data we\nproduce and store locally in Email Alert Api. Consequently, this provoked worries\nthat perpetually keeping data could result in capacity issues due to the rapid\nincrease in data being stored. An example being we now generate ~430,000\n`DigestRunSubscriber` records each day which is about eight times the amount\ncompared to that of ten months ago.\n\nWe've also gained more insight into what data we're not using for analytics.\nThe original plan documented in the previous retention policy was to retain as\nmuch data as possible to enable us to do as much analysis as needed in the\nfuture. However, much of this data is never used for analysis and so doesn't\nserve a purpose in the email system.\n\nContrary to what was previously thought, storing lots of unused data\nindefinitely actually complicates and pollutes our auditing and analysis. An\nexample of this can be seen if we look at subscriber lists. We have over\n~73,000 lists with active subscribers but in the last week alone, we've\naccumulated 1139 lists which don't have any subscriptions at all (ended or\nactive). These unused lists prevent us from doing simple auditing tasks\neasily, like finding which lists to report on.\n\nKnowing the above, we thought about how we could clean-up this unused data to\nkeep Email Alert Api's database manageable going forward. There are a couple of\ndifferent approaches to consider, including storing unused data in cloud\nstorage away from the system's database (like we do when archiving emails) and\nsubsequently deleting the data locally. Or, setting up a means of removing the\ndata we don't use from the system entirely.\n\n[archived]: https://github.com/alphagov/email-alert-api/blob/master/app/workers/email_archive_worker.rb\n[deleted]: https://github.com/alphagov/email-alert-api/blob/master/app/workers/email_deletion_worker.rb\n[initial policy]: https://github.com/alphagov/email-alert-api/blob/master/docs/adr/adr-003-data-retention.md\n[migrate subscribers to daily digest emails]: https://github.com/alphagov/email-alert-api/pull/1352\n\n## Decision\n\nWe decided that historic, unused data should be removed periodically from the\nsystem entirely. It was concluded that the data the system no longer uses\nshould only exist for a maximum of 1 year before removal. We sometimes\nanalyse historic data from up to a year ago but we have no evidence of needing\nthis data for analytics beyond a year.\n\nThe following list documents our approach to the decision for different data\nin the system.\n\n* **ContentChange, Message & DigestRun**. Remove once their `created_at` value is\n  over a year old.\n\n* **MatchedContentChange, MatchedMessage & DigestRunSubscriber**. Removed\n  automatically when their parent ContentChange/Message/DigestRun is\n  deleted.\n\n* **Subscription**. Remove subscriptions when they've been ended for over a\n  year, based on their `ended_at` value. Once a subscription is ended it [can't\n  currently be made active again] and so can be deleted.\n\n* **Previously subscribed to SubscriberList**. Remove lists when they have no\n  active subscriptions and their latest, ended subscription is over a year old.\n  It is possible for a list we deem as historic to be subscribed to again,\n  however this seems unlikely due to the list not having any active\n  subscriptions for over a year.  If this was to happen, after the list has\n  been deleted then a new `SubscriberList` record will be generated.\n\n* **Unused SubscriberList**. Remove lists which have never had any\n  subscriptions and are over 7 days old. A scenario of when this can happen is\n  when a user quits their signup journey midway through. 7 days was the chosen\n  retention period to allow users to complete their signup journey as they have\n  a [7 day limit] to confirm their subscription. As mentioned in the context\n  section, unused subscriber lists pollute our analytics and so we should\n  remove them regularly.\n\n* **Subscriber**. Remove subscribers once their `created_at` is over a year old\n  and they don't have any subscriptions (active or ended). Subscribers should\n  only be without subscriptions when their historic subscriptions have been\n  deleted. This means we should be able to delete all subscribers (under a year\n  old too) that don't have any subscriptions. However, we don't delete these\n  subscribers to prevent us from removing new subscribers that lack\n  subscriptions, due to flaws in our code.  Some examples of where it was\n  unintentionally possible to end up with subscribers with no subscriptions can\n  be found [here][sub bug] and [here][sub bug two].\n\nEmails (and their associated SubscriptionContents) are the one place where we\nalready manage retention - these are held locally for 7 days, and also\narchived to Athena indefinitely. We still need this low retention for Emails in\norder to manage the size of the table. However, the archiving to Athena is\ninconsistent with the above decision to delete unused data entirely. While we\noriginally thought Athena might serve as a data source for analytics, this has\nnot happened in practice, so the archive data stored there is entirely unused.\nWe therefore decided to remove the archiving mechanism for Emails, since it has\nno value.\n\n[can't currently be made active again]: https://github.com/alphagov/email-alert-api/blob/master/docs/adr/adr-003-data-retention.md#subscriber-and-subscription\n[7 day limit]: https://github.com/alphagov/email-alert-api/blob/f0c61539f7244bdb52db54d277a46412b728d642/app/services/auth_token_generator_service.rb#L7\n\n## Status\n\nAccepted\n\n## Consequences\n\n### Historic deletion worker\n\nWe implemented a [worker] which runs periodically every day at [midday].\nRemoving this data was deemed as non urgent and so deleting once a day, in\nhours, seemed sufficient.\n\n### The first historic deletion run\n\nOn the first run of the worker which handles deleting historical data we\nremoved over 33 million records. A breakdown of the amount of deletions per\nmodel can be found below:\n\n* ContentChange - 148,617\n\n* MatchedContentChange - 1,825,983\n\n* Message - 15\n\n* MatchedMessage - 16,099\n\n* DigestRun - 677\n\n* DigestRunSubscriber - 30,858,770\n\n* Subscription - 1,046,576\n\n* SubscriberList - 11,470\n\n* Subscriber - 196,376\n\n### Restrict analytics to 1 year of unused data\n\nWe now restrict our unused data for analytics to a period of at most 1 year.\nThis means any queries looking for this data (e.g. ended subscriptions over a\nyear old) will be met with no results. We don't expect this to be an issue due\nto our current expectation of the data we'll need for future analytics.\n\n### Modify the nullify process and retire the deactivated concept\n\nWhen documenting our data retention policy as described in this ADR, we found\nit difficult to understand and document the tangential concept of [deactivating\nand nullifying] subscribers.\n\nTo give some context on these concepts:\n\n* Nullifying subscribers means to update the `address` of `Subscriber` records\n  to `nil` which have been unsubscribed from all subscriptions, for more than\n  28 days.\n\n* Deactivating subscribers is a concept that revolves around the\n  `deactivated_at` field on the subscriber model. This field is populated when\n  a subscriber unsubscribes from their last active subscription. It is used as\n  a means to determine when a subscriber can be nullified.\n\nWe can however obtain the information held within `deactivated_at` through the\n`ended_at` field of the most recent ended subscription of an unsubscribed\nuser, meaning the deactivated concept is superfluous.\n\nSubsequently we didn't want to spend energy documenting a process that didn't\nmake much sense to begin with so it was decided that it would be easier (and\nbeneficial as a whole) to just [remove] the deactivated concept completely.\n\nIn removing the deactivated concept we [modified the nullify process] to use\n`ended_at`, as described above, instead of `deactivated_at`. We also updated\nthe process to nullify subscribers which have no subscriptions (active or\nended) and are older than 28 days. This prevents the system from storing user's\npersonal data longer than needed, if for whatever reason, a subscriber is\ncreated without any subscriptions. See examples of where this happened\n[here][sub bug] and [here][sub bug two].\n\n### Deprecate archiving Email to Athena\n\nWe have planned work to remove it in the future. In the meantime, we consider\narchiving to Athena to be deprecated, and have updated [the documentation around\nit] to reflect this status.\n\n[modified the nullify process]: https://github.com/alphagov/email-alert-api/pull/1462/commits/cefdfa76b13915ea96b131490fd3186b6d52cf05\n[remove]: https://github.com/alphagov/email-alert-api/pull/1462\n[sub bug]: https://github.com/alphagov/email-alert-api/pull/1462/commits/053859c5962eef104256661f28727b08a43e3d31\n[sub bug two]: https://github.com/alphagov/email-alert-api/pull/1462/commits/a4b3e82801d79abd3989b1dd60ffd499e7ce82ba\n[midday]: https://github.com/alphagov/email-alert-api/blob/master/config/sidekiq.yml#L23-L25\n[worker]: https://github.com/alphagov/email-alert-api/blob/a62abc85453b723d683c2dc13f3bf0065fb86d5f/app/workers/historical_data_deletion_worker.rb\n[deactivating and nullifying]: https://github.com/alphagov/email-alert-api/blob/master/docs/adr/adr-003-data-retention.md#subscriber-and-subscription\n[the documentation around it]: https://github.com/alphagov/email-alert-api/blob/1a25d44126709bf8a98955d7609ced439095dd9c/docs/analytics.md\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "alphagov/email-alert-api#1352",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/email-alert-api/pull/1352",
+     "number": "1352"
+    },
+    {
+     "key": "alphagov/email-alert-api#1462",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/email-alert-api/pull/1462",
+     "number": "1462"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/alphagov/email-alert-api/blob/master/app/workers/email_archive_worker.rb",
+    "github.com/alphagov/email-alert-api/blob/master/app/workers/email_deletion_worker.rb",
+    "github.com/alphagov/email-alert-api/blob/f0c61539f7244bdb52db54d277a46412b728d642/app/services/auth_token_generator_service.rb",
+    "github.com/alphagov/email-alert-api/blob/master/config/sidekiq.yml",
+    "github.com/alphagov/email-alert-api/blob/a62abc85453b723d683c2dc13f3bf0065fb86d5f/app/workers/historical_data_deletion_worker.rb",
+    "github.com/alphagov/email-alert-api/blob/1a25d44126709bf8a98955d7609ced439095dd9c/docs/analytics.md"
+   ],
+   "implementation": {
+    "sha": "2c2f4da18635bdc3576fce25e1e2e517bafb9511",
+    "date": "2020-11-20T18:04:55+00:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "docs/analytics.md"
+    ]
+   }
+  },
+  {
+   "path": "docs/adr/adr-006-email-delivery-responsibilities.md",
+   "identity": "docs/adr/adr-006-email-delivery-responsibilities.md",
+   "adr_id": "6",
+   "title": "Email Delivery Responsibilities",
+   "first_commit": "2020-10-19T18:22:40+01:00",
+   "first_sha": "7381dbe0fb2fe3674c31126867bbb502c67fa5c5",
+   "last_commit": "2020-10-19T18:22:40+01:00",
+   "author": "Kevin Dew",
+   "email": "kevindew@me.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 6. Email Delivery Responsibilities\n\nDate: 2020-10-23\n\n## Context\n\nEmail, as an asynchronous communication medium, inherently has two boolean\nscenarios that need to be true for an email to be received. An email has to be\n_sent_ to a mail server and the mail server then needs to _deliver_ the email to the\nrecipient's mail server. Resolving whether an email is sent is a rather simple\nquestion that can be resolved synchronously - \"did the mail server accept the\nemail?\" - however, determining whether an email is received is more complex\nas delivery is not synchronous and may be subject to automated retrying should\nany problems occur. Typically, in the medium of email, clients only consider\nthe first scenario in reporting an email's status, this is the point an email\nbecomes sent. The latter scenario, delivery, isn't typically reflected in\nemail clients, it is normal to assume the email was received\nsuccessfully unless later you receive an email indicating a bounce has\noccurred.\n\nThe [initial Email Alert API Notify integration][adr-1] was designed to\nconsider both the sending and delivery of email. It had systems to monitor\nwhether Notify had managed to deliver an email to a recipient and an automatic\nretry mechanism for when Notify had problems delivering an email.\n\nIn September 2020 we decided to re-evaluate this concept conflation as we were\nconcerned that Notify functionality was duplicated in Email Alert API and\nthat this had an adverse effect on the complexity of the system.\n\n[adr-1]: adr-001-notify-integration.md\n\n## Decision\n\nWe decided that Email Alert API has a responsibility to send email, but does\nnot have a responsibility to deliver it. That is the responsibility of Notify.\n\nWe defined that, in the context of Email Alert API, the process of sending\nemail was the ability to successfully send a request to Notify to perform\nthis action - we consider this the equivalent of a mail client successfully\nsending an email to an [SMTP][] server. We then consider the\n[Notify callback][notify-callback] as the mechanism to learn if an email was\ndelivered or not.\n\nTo reflect this we have [switched][switched-to-sent-success] the\nmeaning of an [email's status][email-status]. A status of \"sent\" now means that\nthe email was accepted by Notify and not that the email was delivered. A\nstatus of \"failed\" now means we weren't able to send the email to Notify,\ninstead of the previous meaning where it meant that it may not have been sent\nto Notify or Notify failed to deliver the email.\n\n[SMTP]: https://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol\n[notify-callback]: https://docs.notifications.service.gov.uk/ruby.html#delivery-receipts\n[switched-to-sent-success]: https://github.com/alphagov/email-alert-api/commit/c457f62c3b6f1eaadf47e6596223cc0fdcffa853\n[email-status]: https://github.com/alphagov/email-alert-api/blob/0b87e62288ddb1653451f84e1f36e17ce4e8e9dc/app/models/email.rb#L7\n\n## Status\n\nAccepted\n\n## Consequences\n\n### We no longer retry delivering emails ourselves\n\nNotify, via Amazon SES, will automatically [retry][ses-bounce] the delivery of\nemails that fail for transitory reasons (such as the recipient's mail server\nbeing full or offline). If it doesn't succeed in a reasonable period\nof time Notify will inform us by telling us an email has experienced a\n[\"temporary-failure\"][temporary-failure-status].\n\nEmail Alert API [no longer][no-retries-commit] has its own retry\nmechanism to re-attempt emails that have failed to be delivered. This\nresolves an aspect of duplicated functionality between the two systems and\nan area of ambiguity as to how long Email Alert API should retry for. With\nthis removed there are no longer attempts to resend an email should the\nfirst delivery fail, this allowed us to [delete the\n`DeliveryAttempt` model][delete-delivery-attempt] as the purpose of this was\nto disambiguate between different Notify requests.\n\n[ses-bounce]: https://docs.aws.amazon.com/ses/latest/DeveloperGuide/send-email-concepts-deliverability.html#send-email-concepts-deliverability-bounce\n[temporary-failure-status]: https://docs.notifications.service.gov.uk/ruby.html#status-email\n[no-retries-commit]: https://github.com/alphagov/email-alert-api/commit/df9ad09fab5dabde5fac92ae76d155d00eea192b\n[delete-delivery-attempt]: https://github.com/alphagov/email-alert-api/pull/1438\n\n### We no longer record delivery data with an email\n\nA question we pondered with these changes was \"what should do with the data\nwe receive from Notify about the delivery of emails?\". This data no longer plays\na role in the state modelling of email sending, so we decided it should not\nbe represented in an email's status. (it conflated what a failure to send\nan email meant - was this failure to _send_ or failure to _deliver_?).\n\nWe decided that we did not need to store delivery success or failure in the\ndatabase with the email. This is because there is not currently\na known use of this data and, since the email table only has a 7-day retention\nperiod, it can be added later to meet any later needs that are identified. The\ndata remains available via the Notify UI for debugging whether emails\nwere delivered.\n\nWe [continue to act on \"permanent-failure\"][permanent-failure]\nnotifications and remove subscriptions for non-operational email addresses -\nthis can be done without storing additional data with the email. We also\ncontinue to store aggregate metrics about email sending which power dashboards.\n\n[permanent-failure]: https://github.com/alphagov/email-alert-api/blob/59fc71a58317ef2998f2c0ef102020da3ca9df96/app/services/status_update_service.rb#L17-L19\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "alphagov/email-alert-api#1438",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/email-alert-api/pull/1438",
+     "number": "1438"
+    }
+   ],
+   "mentioned_paths": [
+    "docs.notifications.service.gov.uk/ruby.html",
+    "github.com/alphagov/email-alert-api/blob/0b87e62288ddb1653451f84e1f36e17ce4e8e9dc/app/models/email.rb",
+    "docs.aws.amazon.com/ses/latest/DeveloperGuide/send-email-concepts-deliverability.html",
+    "github.com/alphagov/email-alert-api/blob/59fc71a58317ef2998f2c0ef102020da3ca9df96/app/services/status_update_service.rb"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/adr-005-record-architecture-decisions.md",
+   "identity": "docs/adr/adr-005-record-architecture-decisions.md",
+   "adr_id": "5",
+   "title": "Record architecture decisions",
+   "first_commit": "2020-10-21T12:35:18+01:00",
+   "first_sha": "637324fb539a20ba5328782b850bde3372997a85",
+   "last_commit": "2020-10-21T12:35:18+01:00",
+   "author": "Ben Thorner",
+   "email": "ben.thorner@digital.cabinet-office.gov.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 5. Record architecture decisions\n\nDate: 2020-10-21\n\n## Context\n\nWhile we have already recorded architectural decisions for this project, there is no guidance to follow for writing new ones. Recently we found that creating a new ADR was [hindered](https://github.com/alphagov/email-alert-api/pull/1441#discussion_r508729384) by wanting to be consistent with the structure of previous ADRs.\n\n## Decision\n\nWe will continue to use Architecture Decision Records, as described by Michael Nygard in this article: http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions.\n\nWe will adopt a structure for future ADRs that matches this document - the exemplar in [our Rails app conventions](https://docs.publishing.service.gov.uk/manual/conventions-for-rails-applications.html#documenting-your-decisions). We will not change how the files are named, to avoid breaking links that were never expected to change.\n\n## Status\n\nAccepted\n\n## Consequences\n\nADRs preceding this one will have an inconsistent format to the ones that follow this.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "alphagov/email-alert-api#1441",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/email-alert-api/pull/1441",
+     "number": "1441"
+    }
+   ],
+   "mentioned_paths": [
+    "docs.publishing.service.gov.uk/manual/conventions-for-rails-applications.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/adr-001-notify-integration.md",
+   "identity": "doc/arch/adr-001-notify-integration.md",
+   "adr_id": "1",
+   "title": "Decision Record: Initial architecture for Notify integration",
+   "first_commit": "2017-11-09T09:59:56+00:00",
+   "first_sha": "712e6af75a54941901cfe71c018f1cc10f9eb9d7",
+   "last_commit": "2020-10-07T18:33:57+01:00",
+   "author": "Kevin Dew",
+   "email": "kevin.dew@digital.cabinet-office.gov.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Decision Record: Initial architecture for Notify integration\n\n## Introduction\n\nIn October 2017 we, the GOV.UK Email team, began a project where we are\nintending to expand the responsibilities of email-alert-api application to\nhandle creating and sending of alerts that enter the system. The changed system\nintends to use [Notify][notify] as the transportation layer to send emails.\n\nAs part of considering this we have conducted a piece of work to outline the\narchitecture for the application which this document presents.\n\n### How we are treating digests\n\nAt the time of putting this together it was unclear exactly what the product\ndecisions and functionality would be regarding digests, however we did want\nthem to be considered in the architecture. For clarity this explains our best\nguess understanding of how digests will work prior to appropriate product\ndecisions.\n\n- Digests are expected to continue current behaviour of merging multiple\n  subscriptions into a single email.\n- It is not essential that digests return the same content for each user with\n  same subscriptions. E.g. a digest processed for Joe processed 2 mins after\n  Steve may get slightly different results if something was published in that\n  time.\n- If you are subscribed to things that produce the same content for two\n  subscriptions at different digest frequencies, you will only receive\n  notifications for a piece of content once (on the higher frequency).\n- Digests take effect from the point of subscription. E.g. if you joined a\n  weekly digest on a Wednesday that was sent on Fridays you\u2019d only get alerts\n  for content after you joined We can send remaining digest emails out when\n  someone changes subscription preferences.\n\n[notify]: https://www.notifications.service.gov.uk/\n\n## Specifics\n\nThe architecture can be visualised through two diagrams:\n\n1. [Domain model](../domain.png) which represents the data models and how they\n   relate\n2. [Sequence diagram](../sequence_diagram.png) which represents all of the\n   components and how they communicate to achieve specified functionality\n\nThis document then goes through each of the concepts in the diagram and\noutlines their roles and responsibilities.\n\n### ContentChange\n\n**Responsibility**: Representing a piece of content that is either new or has\nchanged and should produce an alert.\n\n#### Shall\n\n- Store information such as:\n  - Title of content\n  - Description of content\n  - Change note (if any) associated with the update\n  - Path to content\n\n#### Should\n\n- Store information about what subscription criteria it matches (links, tags,\n  supertypes)\n- Have fields required for auditing\n  - Where the request came from\n  - Be able to determine whether and when it has been processed by a worker\n    (processed_at presence)\n- Be persisted forever\n\n#### May\n\n- In future, have an association to an entity that models the subscription\n  criteria information (links, tags, super types)\n- Be considered as part of an Alert supertype which may represent other types\n  of alerts in the system\n\n### Subscriber List\n\n**Responsibility**: Being a type of list that a user can subscribe to and storing\ninformation specific to that list.\n\n#### Shall\n\n- Store information such as\n  - List name\n\n#### Should\n\n- Require that the list name is unique, as we don't know how to differentiate\n  identically named lists to users yet\n- Temporarily maintain a relationship with corresponding govdelivery list\n- Store information about what subscription criteria it matches\n  (links, tags, document_supertypes)\n- Have information to source where the Subscriber List originated from\n\n#### May\n\n- In future, have an association to an entity that models the subscription\n  criteria information (links, tags, super types)\n- Release the requirement of a list name being unique if we are able to\n  establish a way to differentiate between lists\n- Store statistics related to the list\n- Be stored even after it is removed - for logging purposes, dependent on if\n  this will impact unique constraints\n\n#### To determine\n\n- In what scenarios is a Subscriber List removed\n\n### Subscriber\n\n**Responsibility**: Represent an individual user that can subscribe to content,\nstores information related to all subscriptions the user may have\n\n#### Shall\n\n- Store information such as\n  - Email Address\n- Support an email address changing\n\n#### Should\n\n- Be deleteable, a user may wish to remove their account - this should not\n  break history of emails sent\n- Be used in the future for authentication purposes\n\n#### May\n\n- Store preferences that affect all of a users subscriptions\n- Have the ability to be disabled if there are problems with a users account\n- Store other personalisation information such as name\n- Be associated with statistics regarding the subscriber\n\n#### To determine\n- What should we allow in terms of removing a subscriber - do we use the\n  associated data as a log?\n\n### Subscription\n\n**Responsibility**: Store that a Subscriber has an association to a Subscriber\nList and any associated data (e.g. preferences)\n\n#### Shall\n\n- Store an association to a Subscriber\n- Store an association to a Subscriber List\n\n#### Should\n\n- Be used to store preferences associated with a particular subscription\n\n#### Should Not\n\n- Be removed from the system when a user unsubscribes from a Subscriber List as\n  this provides a log that a user has been subscribed with the associated\n  content and maintaining the record allows us to restore preferences if\n  subscription is resumed\n\n#### May\n\n- Be used to store statistics on a subscribers activity relating to that\n  subscription\n- In future be something that can be paused\n\n#### To determine\n\n- What should happen if either Subscriber List or Subscriber are removed/archived\n\n### SubscriptionContent\n\n**Responsibility**: Represent that a content change should or has been emailed to a\nsubscription\n\n#### Shall\n\n- Have an association with a ContentChange\n- Have an association with a Subscription\n- Have a nullable association with Email\n- Know whether it has been processed\n\n#### Should\n\n- Allow for multiple subscriptions associated with the same Subscriber to be\n  associated with the same ContentChange - It is the EmailGeneration\n  responsibility to consolidate these\n- Allow for multiple entries with same ContentChange and Subscription - to\n  allow a content change to be reprocessed in the event of an error\n- Support Email records being removed from the system for auditing process\n- Be deleteable for a scenario that a user changes a subscription before an\n  email is sent\n\n#### To determine\n\n- What is the archiving strategy on these? Will they be persisted forever or\n  match persistence strategy of Emails for instance?\n\n### Email\n\n**Responsibility**: A distinct email that the system will be sending or has sent\n\n#### Shall\n\n- Be created any time Email Alert API sends an email\n- Store information such as\n  - Recipient\n  - Subject\n  - Body (in Notify Markdown)\n- Delivery status\n\n#### Shall Not\n\n- Have more than one recipient\n- Know anything about the content that led to its generation\n\n#### Should\n\n- Only exist in the database for a non permanent time period\n- Be associated with a Subscriber for logging purposes\n\n#### May\n\n- Be archived into a log somewhere for later analysis\n\n### DeliveryAttempt\n\n**Responsibility**: Storing the information used to communicate with the\ntransportation service for email\n\n#### Shall\n\n- Store information such as\n  - Email associated with\n  - Provider (e.g. Notify)\n  - Provider Reference (An id to look up the email)\n  - Status (success/pending/failure)\n- Any provider specific errors/warnings\n\n#### Should\n\n- Be created whenever an email is attempted to be sent\n- Be updated when sufficient information is known about whether an email has\n  sent or not\n- Be deleted when an Email is deleted\n\n#### May\n\n- Be created in a success state if it was known the delivery attempt was\n  successful synchronously\n- Be used in future with different transport mechanisms if we expand beyond\n  Email\n\n### ContentChangeController\n\n**Responsibility**: Storing a ContentChange, enquing that for processing,\nreturning a success\n\n#### Shall\n\n- Create a ContentChange model\n- Enqueue a SubscriptionContentWorker job\n\n#### To determine\n\n- Who has responsibility for the Worker failing to run?\n\n### SubscriptionContentWorker\n\n**Responsibility**: Responsible for determining which subscriptions should receive\nan email prospectively and creating SubscriptionContent objects accordingly\n\n#### Shall\n\n- Be given sufficient input to lookup a ContentChange\n- Liaise with SubscriptionMatcher to determine all subscriptions that match a\n  ContentChange\n- Create SubscriptionContent entities for all subscriptions that match a\n  ContentChange\n- Trigger EmailGenerationWorker for emails that have to run immediately\n\n#### Should not\n\n- Be able to have multiple instances of this worker processing the same\n  ContentChange concurrently\n\n#### May\n\n- Accept frequency as an argument to match subscriptions for that frequency in\n  order to allow rebuilding of emails that went out in error\n\n### SubscriptionMatcher\n\n**Responsibility**: When given a certain criteria determine which Subscription\nobjects are associated with it\n\n#### Shall\n\n- Accept ContentChange object as input\n- From input determine which Subscription objects match\n- Will use existing logic in SubscriberListQuery\n\n#### To determine\n\n- Should we be considering how this might scale for a huge number of\n  subscriptions?\n\n### EmailGenerationWorker\n\n**Responsibility**: Responsible for finding Subscription objects that should be\nsent at a given frequency and producing Email objects that can be sent\n\n#### Shall\n\n- Find SubscriptionContent entities that match that frequency and have not been\n  processed\n- Take one or more SubscriptionContent entries for a user and create a\n  corresponding Email entity\n- Update SubscriptionContent entries to associate them with an email and\n  indicate they are processed\n- Liaise with EmailRenderer to convert one or more SubscriptionContent entities\n  into the subject and body for an Email\n\n#### Should\n\n- Take input of a frequency (immediate, weekly, daily)\n- Be able to consolidate SubscriptionContent entries that refer to the same\n  ContentChange\n\n#### Should not\n\n- Be able to process the same SubscriptionContent objects in multiple\n  concurrent processes\n\n#### May\n\n- Have its interface reconsidered to allow for increased ability to build\n  emails in parallel\n\n#### To determine\n- If a user has multiple subscriptions which are at different frequencies, is\n  this the class that will consolidate them?\n\n### DigestTimer\n\n**Responsibility**: Triggering EmailBuilderWorker to run at a given frequency\n\n#### Shall\n\n- Trigger EmailGenerationWorker to run at daily intervals\n- Trigger EmailGenerationWorker to run at weekly intervals\n\n#### To determine\n\n- When these intervals are\n- What mechanisms would be in place to handle this failing to occur\n\n### EmailRenderer\n\n**Responsibility**: Converting one or more Email Entries into a Notify Markdown\nformatted text\n\n#### Shall\n\n- Take input of one or more SubscriptionContent entities and a frequency\n- Generate a subject in plain text\n- Generate a body in Notify Markdown\n\n#### Should\n\n- Be able to generate differently formatted emails for weekly and daily emails\n\n#### May\n\n- Have sufficient information to include unsubscribe links in emails\n\n### EmailDeliveryWorker\n\n**Responsibility**: Finding Emails that should be sent and creating\nDeliveryAttempts for them and updating Email status accordingly\n\n#### Shall\n\n- Communicate with a transportation layer (Notify) to send an Email\n- Create a DeliveryAttempt object to associate with the Email\n- Update the Email and DeliveryAttempt objects based on the outcome of the\n  request\n\n#### Should\n\n- Be able to retry requests to Notify that fail and are retryable (e.g.\n  temporary network outage)\n- Be able to abort trying to send an email if it\u2019s a situation where retrying\n  won't result in a success (e.g. ",
+   "truncated_text": true,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/domain.png",
+    "/sequence_diagram.png"
+   ],
+   "implementation": {
+    "sha": "662870b9fccc87a29557027de9dc6a38567fadf9",
+    "date": "2020-05-13T15:29:37+01:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "doc/sequence_diagram.png"
+    ]
+   }
+  },
+  {
+   "path": "docs/adr/adr-002-digest-mvp.md",
+   "identity": "doc/arch/adr-002-digest-mvp.md",
+   "adr_id": "2",
+   "title": "Decision Record: MVP implementation of Digests",
+   "first_commit": "2018-01-22T20:05:22+00:00",
+   "first_sha": "133fe46731c7e595ba2b2f0e4fdacd7384f04ad4",
+   "last_commit": "2020-10-07T18:33:57+01:00",
+   "author": "Kevin Dew",
+   "email": "kevin.dew@digital.cabinet-office.gov.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# Decision Record: MVP implementation of Digests\n\n## Introduction\n\nIn January 2018 we started one of the latest major pieces of functionality that\nwould be required to meet our MVP (minimal viable product) and allow us to\nlaunch a Notify powered iteration of Email Alert API.\n\nThis document serves to outline the architecture we have planned for this and\nexplain the purposes of the individual components.\n\n## Specifics\n\n### Product decisions\n\nThe need for a change in architecture was determined by product decisions which\ndiffered from the previous understanding of digest function explored in\n[adr-001](adr-001-notify-integration.md).\n\nThe biggest decision that influenced the change was an intention to send each\nuser a single digest email that contained all of their topics as is consistent\nwith Govdelivery. We had previously intended to launch with the change that\neach subscription is a separate email.\n\nA change from Govdelivery is that we will store the delivery preference\n(immediate, daily, weekly) at a subscription level rather than a user level.\nThis will mean that a user can be signed up to receive emails to some lists\nimmediately and daily/weekly digests for others.\n\n### Diagram\n\n![Sequence Diagram](adr-002/digests.png)\n\n### Components\n\n#### `DigestInitiatorService`\n\nThere are two classes to represent the respective digest periods:\n`DailyDigestInitiatorService` and `WeeklyDigestInitiatorService`.\n\nTheir responsibility is to start the process to create digests and to ensure\nthat multiple digests are not started concurrently.\n\nInitially this class was named `DigestSchedulerService` however we felt that\nthis was ill fitting with the classes actual responsibilities.\n\n##### Shall\n\n- Be interfaced by a scheduling service to run at a set time appropriate\n  for their period\n- Create a [`DigestRun`](#digestrun) model\n- Ensure that multiple digests for the same period are not run concurrently\n- Interface with `DigestRunSubscriberQuery` to determine which subscribers are\n  due to receive emails for this digest\n\n##### Should\n\n- Be configurable as to what times a digest runs from and until\n\n#### `DigestRun`\n\nA model which represents a distinct run of a period of digest (daily or\nweekly).\n\nHas a responsibility to persist data that is related to a full digest run for\nall subscribers.\n\nWe initially named this `Digest` however it transpired that there was already\na module in Ruby standard library named `Digest`.\n\n##### Shall\n\n- Store information such as:\n  - Date digest is run on\n  - The period the digest is for\n  - The start time for the digest period\n  - The end time for the digest period\n\n##### Should\n\n- Store a timestamp for when all the emails were created for the digest, to act\n  as indicator that it is complete.\n\n##### May\n\n- Have a unique index for digest date and period, however this would limit\n  ability to re-run a digest in the case of a problem.\n\n#### `DigestRunSubscriberQuery`\n\nResponsible for taking a [`DigestRun`](#digestrun) instance and using that to\ndetermine which subscribers should receive an email for the digest period.\n\n##### Shall\n\n- Use a `DigestRun` to determine which subscribers should receive an email for\n  a digest period\n- Determine only the subscribers who will be due to be notified of at least one\n  content change\n\n##### Should\n\n- Return a list of ids referencing `Subscribers`\n\n##### May\n\n- Return an ActiveRecord scope to allow the caller to deal with this returning\n  an unlimited output\n\n#### `DigestRunSubscriber`\n\nA model which is used to associate a [`DigestRun`](#digestrun) with a\n`Subscriber` instance. Will mostly be used as a persisted piece of data that\nlogs which subscribers receive an email due to a digest. It is unlikely to be\nneeded long term.\n\n##### Shall\n\n- Store\n  - An association to `DigestRun`\n  - An association to `Subscriber`\n\n##### Should\n\n- Store a timestamp for when it has been completed, can be used therefore to\n  work out if a `DigestRun` is complete or not.\n\n#### `DigestGenerationWorker`\n\nA worker entity that accepts the argument of a\n[`DigestRunSubscriber`](#digestrunsubscriber) and has the responsibility to\ncreate an `Email` entity for the associated `Subscriber`.\n\n##### Shall\n\n- Pass the [`DigestRunSubscriber`](#digestrunsubscriber) to\n  [`SubscriptionContentChangeQuery`](#subscriptioncontentchangequery)\n  to retrieve a collection of `SubscriptionContentChangeQuery::Result`\n  instances. Each of these represents a `Subscription` and `ContentChanges`\n  associated with that subscription.\n- Interface with [`DigestEmailBuilder`](#digestemailbuilder) to build an\n  `Email` entity\n- Create `SubscriptionContent` instances for each `ContentChange` per\n  `Subscripption`\n\n##### Should\n\n- Mark a `DigestRunSubscriber` as completed\n- Mark `DigestRun` as completed if all `DigestRunSubscriber` are complete for\n  the `DigestRun`\n\n#### `SubscriptionContentChangeQuery`\n\nFor a given [`DigestRunSubscriber`](#digestrunsubscriber) this will determine\nall the `ContentChanges` associated with each `Subscription` for the digest\nperiod.\n\nThis class began as an analogue of `SubscriptionMatcher` - which finds\n`Subscriptions` associated with a `ContentChange` - we decided however that\nthis would require an additional class to interface with `DigestRunSubscriber`\nand so decided to have this no longer be an inverse. We also decided that the\nname should be suffixed with `Query` rather than `Matcher` and that we should\nrename `SubscriptionMatcher` to have this suffix too.\n\n##### Shall\n\n- Return an array containing `SubscriptionContentChangeQuery::Result` instances\n- The `SubscriptionContentChangeQuery::Result` instances will contain details\n  of the `Subscription` and the `ContentChange` instances for that\n  `Subscription`. This is to allow rendering the Email with `ContentChanges`\n  in context with their `Subscription`.\n\n##### May\n\n- Only return necessary fields to limit memory usage/execution time\n\n#### `DigestEmailBuilder`\n\nA `DigestEmailBuilder` will take arguments of\n[`DigestRunSubscriber`](#digestrunsubscriber) and a collection of\n`SubscriptionContentChangeQuery::Result` objects. It will take this data and\nuse this to create an `Email` instance.\n\nFormally this type of class was suffixed with Renderer eg `EmailRenderer`\nhowever we felt that the class responsibilities should include persisting\nan `Email` instance and therefore was a creation pattern.\n\n##### Shall\n\n- Create an `Email` instance\n- Create an unsubscribe link\n\n##### Should\n\n- Be distinct from the email builder used to create immediate emails\n- Be responsible for deciding what to do with duplicate `ContentChange` entries\n\n### Supplementary changes\n\nIn order to implement these changes a number of existing areas were identified:\n\n#### `Email` and `EmailRenderer` should be changed\n\nWe intend to rename the `EmailRenderer` class to reflect that it is for\nimmediate `ContentChanges`. This will be renamed `ImmediateEmailBuilder`.\n\nWe also intend to invert the responsibility of `Email` calling an instance of\n`EmailRenderer` and instead of the instance of `ImmediateEmailBuilder` create\nan instance of `Email`\n\n#### Iterating `SubscriptionContent`\n\n`SubscripionContent` is a model that was intended to associate `ContentChange`\nentities with `Subscription` and `Email`. An absence of an email model was an\nindication this required processing for an immediate email.\n\nThis however becomes problematic when we introduce `SubscriptionContent`\ninstances which are for digests and should not be processed as an immediate\nemail.\n\nWe decided the way to resolve this was to introduce an additional field to\n`SubscriptionContent` which is a foreign key to `DigestRunSubscriber`. A null\nentry for this column would indicate an email is intended for immediate\nprocessing.\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "adr-002/digests.png"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/adr-004-message-concept.md",
+   "identity": "doc/arch/adr-004-message-concept.md",
+   "adr_id": "4",
+   "title": "Decision Record: Message Concept",
+   "first_commit": "2019-09-11T22:02:55+01:00",
+   "first_sha": "e1cb0b56705b6f90b30be409b4c7b3de44fc3fc0",
+   "last_commit": "2020-10-07T18:33:57+01:00",
+   "author": "Kevin Dew",
+   "email": "kevindew@me.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Decision Record: Message Concept\n\n## Introduction\n\nIn September 2019 a new concept was added to Email Alert API: Message. It is\na new type of notification that can be triggered by Email Alert API and, like\ncontent changes, can be sent as an immediate email or part of daily/weekly\ndigests.\n\nIt is intended to provide a means for applications to alert subscribers to\nad hoc events that may not be represented by a content change.\n\n## Specifics\n\n### Context\n\nThe need for a new type of notification was identified to support the [GOV.UK\nGet ready for Brexit checker](https://www.gov.uk/get-ready-brexit-check). This\nservice returns people a list of tailored results based on answers users\ngive about their circumstances. Users can then sign up for email notifications\nwhen these results change or new ones are added.\n\nThe presence or change to a result is not captured in an event sent to the\nPublishing API. This is because these results are managed by code and a result\nmay or may not represent a page on GOV.UK, the logic to see a result is also\ncomplex. It was therefore established that there should be a means to send\nnotifications via a direct call to Email Alert API outside of the\nexisting approach that is triggered automatically based on Publishing API\nevents.\n\n### Existing approaches\n\nIn recent times there have been two previous scenarios where we have used\nEmail Alert API to send subscribers emails outside of the content change\nnotification mechanism.\n\nThe first of these was [Unsubscribe notifications][unsubscribe-pr] for when a\npolicy, policy area or taxon was unpublished. These used a custom endpoint\non Email Alert API specifically for this task. This resolved the problem of\ninforming users of this change but had the negative effect that the code\nintroduced couldn't be re-used for similar scenarios and raises questions\nabout whether this is a feature that is needed permanently.\n\nThe second was [Notify subscribers of Business Readiness tagging][br-pr] where\nContent Tagger sends Email Alert API a synthetic content change to generate\nnotifications for an event that normally would not produce a notification.\nThis had the disadvantage that it involved semantically incorrect data being\nused to populate a content change which means compromising data consistency.\n\n[unsubscribe-pr]: https://github.com/alphagov/email-alert-api/pull/655\n[br-pr]: https://github.com/alphagov/content-tagger/pull/900\n\n### Decision\n\nTo meet the needs of the Get ready for Brexit checker we decided a new concept\nwas needed in Email Alert API to support the ability to send notifications to\nsubscribers using an approach distinct from content changes. This introduces\na new entity to Email Alert API called message. A message is similar to a\ncontent change but instead has less structure in the data, which allows their\ninformation and appearance to be customised by the API client.\n\nIn adding messages to Email Alert API two principles were followed. The first\nis to avoid any Get ready for Brexit domain logic directly to Email Alert API,\nthis is to maximise the reusability of the functionality. The second principle\nis to not build more functionality than is needed for the current needs, this\nis to not over commit this functionality into resolving hypothetical needs\nat this point in time.\n\nThese principles intend to provide messages with a foundation that can be used\nto build on this functionality to meet future needs while retaining a low cost\nof modification/deletion were we to decide there are different or no future\nneeds.\n\nTo provide flexibility with a messages content we allow API clients to insert\nmarkdown that can be parsed by Notify. There is no validation of this syntax,\ntherefore it is the responsibility of a client app to provide markdown that is\nwithin the [limited subset][notify-markdown] that Notify supports.\n\nMessages are included in digests in the same manner to content changes. If a\nlist was to have messages and content changes these would be grouped together\nand ordered by the time they were added to Email Alert API.\n\n[notify-markdown]: https://github.com/alphagov/notifications-utils/blob/f73fbda03467e558f53224f2b5f901e12d19c858/notifications_utils/formatters.py#L356\n\n#### Matching to subscriber lists\n\nA peculiarity introduced by the Get ready for Brexit lists is that each\nnotification has potentially complicated logic as to which audiences should\nsee it. This is an inversion of the responsibilities of content change\nnotifications where typically a subscriber list has rules and content changes\ncontain data, in this scenario subscriber lists are treated as storing data\nand the message itself contains the rules.\n\nTo cater for the complicated logic another concept was introduced to Email\nAlert API, this is [criteria rules][cr-pr]. It provides a [JSONSchema][]\ninspired approach to specify a recursive structure\nof rules where `any_of` or `all_of` predicates are met. This allows\nassociating with particular links and/or tags. Example:\n\n```json\n[\n  {\n    \"any_of\": [\n      { \"type\": \"tag\", \"key\": \"brexit_checklist_criteria\", \"value\": \"nationality-eu\" },\n      { \"type\": \"tag\", \"key\": \"brexit_checklist_criteria\", \"value\": \"nationality-row\" }\n    ]\n  },\n  {\n    \"any_of\": [\n      { \"type\": \"tag\", \"key\": \"brexit_checklist_criteria\", \"value\": \"living-eu\" },\n      { \"type\": \"tag\", \"key\": \"brexit_checklist_criteria\", \"value\": \"living-row\" }\n    ]\n  },\n  { \"type\": \"tag\", \"key\": \"brexit_checklist_criteria\", \"value\": \"join-family-uk-yes\" }\n]\n```\n\nThis logic is then used at the point of determining which subscriber lists\nmatch a particular message.\n\n[cr-pr]: https://github.com/alphagov/email-alert-api/pull/959\n[JSONSchema]: https://json-schema.org/\n[any-json-schema]: https://json-schema.org/understanding-json-schema/reference/combining.html#anyof\n[all-json-schema]: https://json-schema.org/understanding-json-schema/reference/combining.html#allof\n\n### Future avenues\n\nThere message functionality has future options to expand to meet potential\nneeds. On the modest side this could be used as a semantically accurate way\nto notify subscribers when content is tagged to a list, or to notify people\nof changes to their lists. Whereas on the more adventurous side it could be\nused as a means to provide mailing lists for different types of content.\n\nThe introduction of criteria rules offers an alternative approach that can be\nused to define what rules a subscriber list applies to. This could be used to\nreplace the `links`, `tags`, `document_type`, `email_document_supertype` and\n`government_document_supertype` fields with a single one. This would allow for\na consolidation of logic and opportunities for more specific subscriptions.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "alphagov/email-alert-api#655",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/email-alert-api/pull/655",
+     "number": "655"
+    },
+    {
+     "key": "alphagov/content-tagger#900",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/content-tagger/pull/900",
+     "number": "900"
+    },
+    {
+     "key": "alphagov/email-alert-api#959",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/email-alert-api/pull/959",
+     "number": "959"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/alphagov/notifications-utils/blob/f73fbda03467e558f53224f2b5f901e12d19c858/notifications_utils/formatters.py",
+    "json-schema.org/understanding-json-schema/reference/combining.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/adr/adr-008-monitoring-and-alerting.md",
+   "identity": "docs/adr/adr-007-monitoring-and-alerting.md",
+   "commit": "986120dfdfc1a7d072eb4afe03175d8c1cb4b1c5",
+   "date": "2020-11-18T17:43:31+00:00",
+   "old_state": "proposed",
+   "new_state": "proposed",
+   "old_raw": "Pending",
+   "new_raw": "Pending",
+   "replacement": null,
+   "message": "Round 3 of ADR amends",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Kevin Dew",
+   "email": "kevindew@me.com"
+  },
+  {
+   "path": "docs/arch/adr-003-data-retention.md",
+   "identity": "doc/arch/adr-003-data-retention.md",
+   "commit": "d58c4dd40678e5ff37142ab869eae21da06c9cda",
+   "date": "2020-06-09T16:17:31+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename 'doc' to 'docs'",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "ChrisBAshton",
+   "email": "christopher.ashton@digital.cabinet-office.gov.uk"
+  },
+  {
+   "path": "docs/adr/adr-003-data-retention.md",
+   "identity": "doc/arch/adr-003-data-retention.md",
+   "commit": "f093ec099e5c7131e99fdc6750c9802eba643527",
+   "date": "2020-10-07T18:33:57+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move ADRs to adr directory",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Kevin Dew",
+   "email": "kevindew@me.com"
+  },
+  {
+   "path": "docs/adr/adr-003-initial-data-retention-strategy.md",
+   "identity": "doc/arch/adr-003-data-retention.md",
+   "commit": "db9997e567f41929e07171591413454e7e1d4c95",
+   "date": "2020-11-20T17:06:05+00:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename data retention ADR's",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Peter Hartshorn",
+   "email": "peter.hartshorn@digital.cabinet-office.gov.uk"
+  },
+  {
+   "path": "docs/adr/adr-007-retain-data-for-up-to-one-year.md",
+   "identity": "docs/adr/adr-007-data-retention.md",
+   "commit": "db9997e567f41929e07171591413454e7e1d4c95",
+   "date": "2020-11-20T17:06:05+00:00",
+   "old_state": "accepted",
+   "new_state": "accepted",
+   "old_raw": "Accepted",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "Rename data retention ADR's",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Peter Hartshorn",
+   "email": "peter.hartshorn@digital.cabinet-office.gov.uk"
+  },
+  {
+   "path": "docs/arch/adr-001-notify-integration.md",
+   "identity": "doc/arch/adr-001-notify-integration.md",
+   "commit": "d58c4dd40678e5ff37142ab869eae21da06c9cda",
+   "date": "2020-06-09T16:17:31+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename 'doc' to 'docs'",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "ChrisBAshton",
+   "email": "christopher.ashton@digital.cabinet-office.gov.uk"
+  },
+  {
+   "path": "docs/adr/adr-001-notify-integration.md",
+   "identity": "doc/arch/adr-001-notify-integration.md",
+   "commit": "f093ec099e5c7131e99fdc6750c9802eba643527",
+   "date": "2020-10-07T18:33:57+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move ADRs to adr directory",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Kevin Dew",
+   "email": "kevindew@me.com"
+  },
+  {
+   "path": "docs/arch/adr-002-digest-mvp.md",
+   "identity": "doc/arch/adr-002-digest-mvp.md",
+   "commit": "d58c4dd40678e5ff37142ab869eae21da06c9cda",
+   "date": "2020-06-09T16:17:31+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename 'doc' to 'docs'",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "ChrisBAshton",
+   "email": "christopher.ashton@digital.cabinet-office.gov.uk"
+  },
+  {
+   "path": "docs/adr/adr-002-digest-mvp.md",
+   "identity": "doc/arch/adr-002-digest-mvp.md",
+   "commit": "f093ec099e5c7131e99fdc6750c9802eba643527",
+   "date": "2020-10-07T18:33:57+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move ADRs to adr directory",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Kevin Dew",
+   "email": "kevindew@me.com"
+  },
+  {
+   "path": "docs/arch/adr-004-message-concept.md",
+   "identity": "doc/arch/adr-004-message-concept.md",
+   "commit": "d58c4dd40678e5ff37142ab869eae21da06c9cda",
+   "date": "2020-06-09T16:17:31+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename 'doc' to 'docs'",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "ChrisBAshton",
+   "email": "christopher.ashton@digital.cabinet-office.gov.uk"
+  },
+  {
+   "path": "docs/adr/adr-004-message-concept.md",
+   "identity": "doc/arch/adr-004-message-concept.md",
+   "commit": "f093ec099e5c7131e99fdc6750c9802eba643527",
+   "date": "2020-10-07T18:33:57+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move ADRs to adr directory",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Kevin Dew",
+   "email": "kevindew@me.com"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 10,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "10"
+}

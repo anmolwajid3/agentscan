@@ -1,0 +1,371 @@
+{
+ "repo": "bbc/digital-paper-edit-client",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2019-03-22T20:07:08+00:00",
+ "last_commit": "2020-03-17T20:32:56+00:00",
+ "n_commits": 150,
+ "n_authors": 8,
+ "n_files": 158,
+ "n_code_files": 54,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 9,
+ "adrs": [
+  {
+   "path": "docs/ADR/2019-09-28-exporting-placeholder-media.md",
+   "identity": "docs/ADR/2019-09-28-exporting-placeholder-media.md",
+   "adr_id": "2019",
+   "title": "Placeholder Media in Programme Script",
+   "first_commit": "2019-10-02T17:25:32+01:00",
+   "first_sha": "bc95b8a2d9b7ae02213a3acbe40434e30e13f0f0",
+   "last_commit": "2019-10-02T17:25:32+01:00",
+   "author": "Eimi Okuno",
+   "email": "emettely@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Placeholder Media in Programme Script\n\n* Status: accepted\n* Deciders: Eimi, Pietro\n* Date: 2019-10-01\n\nTechnical Story: [Investigate: Voiceover time buffer (EDL / FCPX)](https://github.com/bbc/digital-paper-edit-client/issues/65) and [UX investigations: how to better signpost Voice over/link](https://github.com/bbc/digital-paper-edit-client/issues/63)\n\n## Context and Problem Statement\n\nPeople have mentioned they want to be able to insert placeholders. The placeholders will then be also present in their editing tool of their choice, i.e. Sadie (ADL, EDL) or FCP. Since this is not a prioritised feature (it is a nice-to-have), it has been placed out-of-scope for now. Also \"Placeholders\" features are sometimes not used at all by content producers.\n\n## Decision Drivers <!-- optional -->\n\n* Ease of implementation\n* User Experience\n* Demand of feature\n\n## Considered Options\n\n1. Add Placeholder configuration to each type of export files\n2. Add dummy content where the content will be replaced\n3. Add dummy content with UI to specify filename, so when importing it will point to the right place\n\n## Decision Outcome\n\nThis implementation needs investigation from a technical and UX point of view.\nWe need to clear up assumptions about how things work technically by trying out the placeholder features of each editing tool.\nWe also need to clear up assumptions about how people use the placeholders, if it needs to be presented in a certain way in the Workspace view.\nIdeally I would say Option 1, but we will need to investigate further to conclude properly. This document needs updating once investigations have been done.\n\n### Positive Consequences <!-- optional -->\n\n* Placeholder works out of the box for specific editing tools\n\n### Negative consequences <!-- optional -->\n\n* Will require reverse engineering to understand specific editing tools\n\n## Pros and Cons of the Options <!-- optional -->\n\n### Add \"Placeholder\" data for specific tools\n\nThis means creating solutions for specific editing tools - most likely three (EDL, ADL, FCPX).\n\n* Good, because very specific, could potentially integrate existing flows\n* Bad, because it's specific and that requires resources, such as access to the tools and OS to test solutions\n\n### Add dummy data to be specified later\n\nAdd dummy data with default content, which will be added into the export file.\nThis will need to be replaced by the user manually and this could be a frustrating process.\n\n* Good, because dummy data works with all editing tools.\n* Bad, because you will have to replace the content later and that could mean you'd have to fiddle quite a bit in the editing tool (assumption)\n* Bad, because have to create and store dummy data. (Unknown)\n\n### Add dummy data and specify\n\nAdd dummy data with default content, which at export will be replaced with the name provided by the user.\nThis will require an interface where the user specifies at the point of creating the placeholder.\n\n* Good, because dummy data works with all all editing tools.\n* Good, because you can specify what the filename is.\n* Bad, because specifying the filename not work out of the box. (Unknown)\n* Bad, because you still might need the above dummy data.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "bbc/digital-paper-edit-client#65",
+     "kind": "issue",
+     "url": "https://github.com/bbc/digital-paper-edit-client/issues/65",
+     "number": "65"
+    },
+    {
+     "key": "bbc/digital-paper-edit-client#63",
+     "kind": "issue",
+     "url": "https://github.com/bbc/digital-paper-edit-client/issues/63",
+     "number": "63"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-09-28-time-estimation-for-links.md",
+   "identity": "docs/ADR/2019-09-28-time-estimation-for-links.md",
+   "adr_id": "2019",
+   "title": "Time Estimations based on Text in Voice Over",
+   "first_commit": "2019-10-02T17:25:32+01:00",
+   "first_sha": "bc95b8a2d9b7ae02213a3acbe40434e30e13f0f0",
+   "last_commit": "2019-10-02T17:25:32+01:00",
+   "author": "Eimi Okuno",
+   "email": "emettely@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Time Estimations based on Text in Voice Over\n\n* Status: accepted\n* Deciders: Eimi, Pietro, Rob\n* Date: 2019-10-01\n\nTechnical Story: [Investigate: Voiceover time buffer (EDL / FCPX)](https://github.com/bbc/digital-paper-edit-client/issues/65) and [UX investigations: how to better signpost Voice over/link](https://github.com/bbc/digital-paper-edit-client/issues/63)\n\n## Context and Problem Statement\n\nPeople want to include time taken for voice overs to estimate the time of the rough cut.\n\n## Decision Drivers <!-- optional -->\n\n* Ease of implementation\n* Accuracy of time estimated\n* Extensibility\n\n## Considered Options\n\n1. Words per minute calculator\n2. Reading time calculator\n3. Record words, get time from audio\n4. Use STT service, get time from audio\n\n## Decision Outcome\n\nChosen option: 1, because it's the simplest implementation and a standardised way of calculating voice over estimations within the company.\n\n### Positive Consequences <!-- optional -->\n\n* A fairly easy implementation.\n\n### Negative consequences <!-- optional -->\n\n* Less accurate than other options.\n* Would require us to change the icon and description of the Voice over, such that it's features are not misunderstood. (This was a point raised in [UX investigations: how to better signpost Voice over/link](https://github.com/bbc/digital-paper-edit-client/issues/63))\n\n## Pros and Cons of the Options <!-- optional -->\n\n### Words per minute calculator\n\nCalculate aggregate time based on 3 seconds per word.\n\n* Good, because it's simple to calculate, doesn't require any additional tooling to implement.\n* Good, because it's vouched for by someone with strong editorial experience.\n* Bad, because it's very basic, and won't give the most accurate time estimate.\n\n### Reading time calculator\n\nCalculate aggregate time based on read time per word.\n\n* Good, because it's similar to the above - it's simple to implement.\n* Bad, because it's even less accurate than the above. Reading time != speaking time\n\n### Record words, get time from audio\n\nRecording audio then retrieving time from audio\n\n* Good, because it produces an accurate time estimate\n* Bad, because the audio recorded will most likely be replaced - which will also probably change the time estimate also.\n* Bad, because recording audio is a completely new feature that will require additional development in feature that will need storage, transfer and transcoding, based on different platforms and devices.\n\n### Use STT service, get time from audio\n\nUsing STT to estimate time of the word, then retrieving time from audio\n\n* Bad, because of similar reasons to above.\n* Bad, because also then we would need STT service, which means adding more libraries and potential dependencies to external services, based on platforms and devices.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "bbc/digital-paper-edit-client#65",
+     "kind": "issue",
+     "url": "https://github.com/bbc/digital-paper-edit-client/issues/65",
+     "number": "65"
+    },
+    {
+     "key": "bbc/digital-paper-edit-client#63",
+     "kind": "issue",
+     "url": "https://github.com/bbc/digital-paper-edit-client/issues/63",
+     "number": "63"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-05-09-modular-architecture.md",
+   "identity": "docs/ADR/2019-05-09-modular-architecture.md",
+   "adr_id": "2019",
+   "title": "Modular Architecture (breaking down repositories and packages)",
+   "first_commit": "2019-05-10T16:11:11+01:00",
+   "first_sha": "331fae0382bf38ded2a29c943792aee6b225c3a7",
+   "last_commit": "2019-06-24T09:07:02+01:00",
+   "author": "Eimi Okuno",
+   "email": "emettely@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Modular Architecture (breaking down repositories and packages)\n\n* Status: accepted\n* Deciders: Pietro, Eimi, Dan (Data solutions), James, Alli\n* Date: 2019-06-13\n\nTechnical Story: Exploring a better way to organise the project than in a monorepo.\n\n## Context and Problem Statement\n\nAs this is an opensource project, we might want to separate out the projects so they are more digestible. \n\n## Decision Drivers\n\n* opensource means removing BBC specific code\n* separating infrastructure\n* electron and cep (future integration)\n\n## Considered Options\n\nThere are 3 logically separated packages:\n\n1. UI\n2. API (monorepo)\n3. (AWS/CEP/Electron) Infrastructure\n\n* Option 1 - bundle everything (UI, API, Infra) into an RPM.\n* Option 2 - separate the UI to a new github repository, bundle it as an NPM package. Keep infrastructure in the same repository as API. API will pull in UI as a dependency.\n* Option 3 - separate the UI, API and infrastructure. Bundle UI and API separately as NPM packages. Infrastructure will have UI and API packages as dependencies.\n* Option 4 - separate the UI, API and infrastructure. Bundle only UI as NPM package, and API will be bundled as RPM. Infrastructure repo will have UI as a dependency.\n\n## Decision Outcome\n\nWe opted for Option 4 after another iteration of the architectual flow.\nInitially we went for option 3 because we wanted to have a uniform approach for possible future users.\nHowever, after much consideration, we collectively agreed to remove NPM packaging for the API (and the microservices).\n\nSimilarly to option 3, we are still keeping the AWS stacks separate in the infrastructure repository.\nWe will be using Travis CI for the NPM build.\nWe will be using Jenkins (not publicly accessible) for the RPM build and releasing to Cosmos.\nWe will be using Speculate, which is an open-source BBC project to generate SPEC files, which adds little overhead in the projects.\nWe will not automate the release of NPM, but as a manual step which also does testing.\nWe will retain the public state of each repository and not be concerned with \"ready\" state of our repositories.\n\n### Why move out API from NPM? (Cons)\n* Unknown benefits to external person\n* Using NPM for versioning (this can be done through other means)\n* Possibly atypical use of NPM (although this is inconclusive)\n\nThey can fork the repository to try out the services.\n\n### Reasons for option 3 initially\nThere is a separation to all the packages, which means it will be simpler to version, test and contribute to individual packages. The API repository will contain different infrastructural flavours of the business logic. There will be a browser (Cloud) package, CEP package, and Electron package that does the same thing. Each is compatible with the UI. To package these similar packages, we can look at `lerna`. The browser flavoured package will have another Express server in the repository to simplify local testing. Infrastructure, which will have UI and API as dependencies will not have an Express server inside.\n\nA potential problem here is that during development, the packages will have features not implemented in the other packages. In order to have parallel set of features, we will add BDD tests to automatically test that all the packages have the same features which are functional.\n\nWe are also keeping the AWS Infrastructure public, as the generic cloudformation JSON has no confidential or security issues in it.\n\n#### Why release API in NPM? (Pros)\n* Abstraction\n* Clear separation of concerns (RPM)\n* Simpler to set up for external people (???)\n\n### RPM deployment flow\n\n```\n+-------------------------+\n| Infrastructure          |           +----------------+\n|                         |           |                |      +-------+\n| /api                    |           |                |      |       |\n| /client                 +---------->+    Jenkins     +----->+  RPM  |\n| - speculate (SPEC gen)  |           |                |      |       |\n| /... microservices      |           |                |      +-------+\n|                         |           +----+------+----+\n+-------------------------+                ^      |\n                                           |      |\n                                           |      |\n+-------------------------+                |      |\n| API                     |                |      |    Pulls client from NPM\n|                         |                |      |    when creating RPM for client\n| package.json            +----------------+      +--------------+\n| - speculate (SPEC gen)  |                                      |\n|                         |                                      |\n+-------------------------+                                      |\n                                                                 |\n                                                                 |\n+-------------------------+        +-----------------+           v\n| Client                  |        |                 |       +---+---+\n|                         |        |                 |       |       |\n|                         +------->+    Travis CI    +------>+  NPM  |\n|                         |        |                 |       |       |\n|                         |        |                 |       +-------+\n+-------------------------+        +-----------------+\n\nhttp://asciiflow.com/\n```\n\nJenkins will then be used to deploy the RPMs to each BBC Cosmos project.\nOnce deployed, this will be two separate EC2 instances.\n```\n+---------------------------+           +-----------------------------+\n|Client                     |           |API                          |\n|   +-------------------+   |           |   +---------------------+   |\n|   |Express            |   |           |   |Express              |   |\n|   | +---------------+ |   |           |   |                     |   |\n|   | |NPM package    | |   |           |   |                     |   |\n|   | |with static    | |   |           |   |                     |   |\n|   | |files of Client| |   +---------->+   |                     |   +--------->...\n|   | |               | |   |           |   |                     |   |\n|   | |               | |   |           |   |                     |   |\n|   | +---------------+ |   |           |   |                     |   |\n|   |                   |   |           |   |                     |   |\n|   +-------------------+   |           |   +---------------------+   |\n|                           |           |                             |\n+---------------------------+           +-----------------------------+\n```\n\n### Repo naming conventions\nPrefix will be `digital-paper-edit`:\n\n- client: `-client`\n- server: `-api`\n- electron: `-electron`\n- cep: `-cep`\n- infrastructure: `-infrastructure` or `-aws`\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-04-23-transcript-architecture.md",
+   "identity": "docs/ADR/2019-04-23-transcript-architecture.md",
+   "adr_id": "2019",
+   "title": "Architecture for Digital Paper Edit",
+   "first_commit": "2019-04-29T09:59:23+01:00",
+   "first_sha": "a7c87c0c909f8e8e32ff563135f1eb85bae392ec",
+   "last_commit": "2019-06-21T16:41:08+01:00",
+   "author": "Eimi Okuno",
+   "email": "Eimi.Okuno@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# Architecture for Digital Paper Edit\n\n* Status: Accepted <!-- optional -->\n* Deciders: Pietro, Dave, Eimi <!-- Laurien, Mark Langton, James Gruessing -->\n* Date: 2019-05-01\n\nTechnical Story: https://github.com/bbc/digital-paper-edit/issues/1 <!-- optional -->\n\n## Context and Problem Statement\n\nDigital Paper Edit has three milestones. Transcript, Paper-edit, and Annotation.\nWe want to make sure that during the Transcript phase, we have a solid\narchitecture to provide storage for uploaded content and transcription to be\nused in later phases. We want to consider technologies from a resilience,\nscalability, cost point of view, opensource compatibility and extensibility.\n\n## Decision Drivers\n\n* resilience\n* scalability\n* cost\n* number of users\n* opensource compatibility\n* extensibility\n\n## Considered Options\n\n* Framework and infrastructure: Docker vs Serverless vs Cosmos\n* Components: Lambda vs EC2 (AWS)\n* Storage: local vs S3\n* DB: PostgreSQL (RDS) vs DynamoDB vs MongoDB\n* Queues: STS vs RabbitMQ\n\n### Potential Problems in Options\n\n#### Framework and infrastructure: Serverless vs Docker vs Cosmos\n\nServerless framework makes it easy to deploy serverless and\nmany other components using a cli. It might be easy to begin\nwith and is quick to deploy serverless, but becomes more difficult to maintain\nwith transfer (local development vs production). It also isn't platform\nagnostic, which was what was initially suggested. It will give you the\nflexibility of using another platform, but you will still need to configure\nplatform specific variables in your code. Developing and using this means we\nalso lack transparency and resilience because the deployment occurs on someone's\nlocal development.\n\nDocker was considered to simplify the orchestration of microservices. Using docker means we could\nhave a separation of concerns - the OS and the application. However, using this means we would still\nneed to select a platform (AWS / GCP) and deploying it on the VM. This\nalso implies that there is an extra level of abstraction: a Docker image (VM)\ninside a cloud VM. Debugging it also requires extra set up. If we decided to use\nDocker, we will not be able to use Cosmos which would give you the bulk of the\nconfiguration including HTTPS access for free.\n\nUsing AWS and Cosmos means tying into the AWS architecture, makes it very\ndifficult to move away. There is also overhead on learning how to use Cosmos.\nThere is also less flexibility in the way we would do deployments - we would\nneed to set up in Jenkins and be restricted to RHEL7, using RPMs as the\npackaging method.\n\n#### Components: Lambda vs EC2 (AWS)\n\n##### Lambda Pros and Cons\n\nFrom [this article](https://dzone.com/articles/the-pros-and-cons-of-aws-lambda),\nthe pros and cons can be summarised as the following.\n\nPros:\n\n* Reduced cost of execution\n* Improved application resiliency\n* Decouple server architecture to code\n* [Idempotent](https://en.wikipedia.org/wiki/Idempotence)\n\nCons:\n\n* Loss of control over environment\n  * machine - not guaranteed to have the same AMI\n  * no OS capabilities\n  * hot/cold function - causes delays\n* Packaging lambda with dependencies could be problematic\n* More complex call patterns\n  * Runtime limitations + Time outs\n  * Time outs removed with step-functions? - unverified\n* Could be slower\n\n\n**Cold Lambda**\nArticles read:\n* https://read.acloud.guru/does-coding-language-memory-or-package-size-affect-cold-starts-of-aws-lambda-a15e26d12c76\n* https://kevinslin.com/aws/lambda_cold_start_idle/#results-us-east-1\n* https://read.acloud.guru/how-long-does-aws-lambda-keep-your-idle-functions-around-before-a-cold-start-bf715d3b810\n\ntl;dr the three articles above:\nLambda idleness causes\n\n1. lambda is terminated\n2. a call can timeout or return an error\n3. the next successful call will be \u201ccold\u201d, meaning slower\n\n* Cold starts can happen when idle time is around the 1h mark but this is not\nset in stone.\n* Cold starts can vary depending on the allocated memory, code size, and the\n  language the lambda is running.\n* Python works best in these scenarios (very little time taken to start once\n  cold) and Java / C# takes longest (static typing)\n* The worst case scenario is ~5s (C# with 128 memory size).\n\nIn order to avoid the cold restarts, we would need to create \"Step Functions\" to\nretain Lambdas \"warm\". The Step Functions will periodically call Lambdas (every\n30 minutes or so) to reduce idle time.\n\n#### Storage: local vs S3\n\nS3 will benefit us in terms of resilience and remote storage. However this could introduce issues\nfor infoSec if we are storing business critical items. S3 is easy to integrate with Platform STT.\n\n#### Database: Sqlite vs PostgreSQL vs DynamoDB vs MongoDB\n\nUsing PostgreSQL flexibility of using JSON in columns. MongoDB and DynamoDB can\nbe too verbose. We were quite clear on the shape of the\ndatabase model already.\n\nI was reading an article about [Guardian\u2019s migration from MongoDB to Postgres](https://www.infoq.com/news/2019/01/guardian-mongodb-postgresql).\nIt seems like many organisations are moving to Postgres and RDS (you can see\nfrom the article linked before). I think if we wanted this to be a long-lived\nproject, we want to ensure that it\u2019s reliable and resilient. If we wanted to\nuse JSON data, then yes we need it to be Postgres. \n\nSqlite is not good enough to be a fully production database. It doesn\u2019t scale\nvery well either. However Sqlite could be used inside Electron, for single user\naccess. Also using PostgreSQL already meant that the JSON would give us enough flexibility.\n\n##### EC2 local server vs RDS\n\nConsidered requirements such as:\n\n* Maintaining state of transcripts once it\u2019s uploaded\n* speed to access the database\n* cost\n\nThe database is critical to the operation and we also need modularity.\nIt separates out the database as a separate server, that is not maintained by\nus, which is quite useful. RDS will give us the benefit of backing up as well.\nIf the server was on EC2, the database could lose information when the instance\nfailsover. Additionally, based on the size of the database, we would need to\nincrease the size of the machine, adding on to the cost. Although, for what we\nhave it will be a smaller cost than having an RDS instance initially.\n\n### We ruled out\n\n* Hosting a website in S3 with CloudFront - no HTTPS cert-based authentication,\nonly IP address based authentication.\n\n## Decision Outcome\n\n![Option 1 (only EC2)](dpe-transcript-EC2.png)\n![Option 2 (EC2, Lambda and gateway)](dpe-transcript-EC2_.png)\n\nBoth options will have the advantages of:\n\n* being maintainable,\n* being transparent\n* being transferable\n* using existing pipelines\n  * It will have the benefits of using Cosmos, which means we will automatically\nhave cert-based security and ELBs. We will also have a solid CI process around\nthe project, including transparency around deployment issues.\n\nBoth options will have the disadvantages of:\n\n* Initial learning curve around Cosmos (need to understand RHE7).\n* Extra files for Cosmos will be in an opensource repository, which will require\n  additional documentation and security checking.\n* Cost of AWS - not entirely sure how much it will be right now, but it will be\n  a minimum of 4 instances running in ``t2.small` for Option 1, and 2\n  `t2.small` instances for Option 2, plus lambda executions as well as SQS and\n  S3.\n* Locking in with AWS.\n\n### Option 1\n\n#### Advantages\n\n* Common pattern and will be easier to set up locally.\n\nThis is good for the opensource developers - who will not need AWS accounts to\ntest integration locally with Lambdas and Gateways.\n\n#### Disadvantages\n\n* Cloudformation template will remain in the opensource repository. This may be\n  something that isn't a problem, it's just a bit puzzling for the users.\n\n### Option 2\n\n#### Advantages\n\n* Cheaper as there isn't a full instance running - Lambda.\n* Better for the environment (less operational CO2 cost)\n\n#### Disadvantages\n\n* There could be a timeout issue for Lambda\n* Difficulty in debugging due to Lambda\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "bbc/digital-paper-edit#1",
+     "kind": "issue",
+     "url": "https://github.com/bbc/digital-paper-edit/issues/1",
+     "number": "1"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-06-20-environment-injection.md",
+   "identity": "docs/ADR/2019-06-20-environment-injection.md",
+   "adr_id": "2019",
+   "title": "[short title of solved problem and solution]",
+   "first_commit": "2019-06-21T13:01:13+01:00",
+   "first_sha": "939db0c639625d33a123bc7ac39df1540ade2fae",
+   "last_commit": "2019-06-21T13:01:13+01:00",
+   "author": "James Dooley",
+   "email": "james.dooley@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# [short title of solved problem and solution]\n\n* Status: accepted\n* Deciders: James, Eimi\n* Date: 2019-06-20\n\nTechnical Story: [description | ticket/issue URL] <!-- optional -->\n\n## Context and Problem Statement\n\nThis addresses the fact that we could not configure different environments to point to different API URLs as necessary (across Int, Test, and Live envs in Cosmos).\n\nAt the point of deployment, `npm run build` is called in Jenkins to build the static  bundle and minify etc. Environment config (`REACT_APP_SERVER_URL` etc. variables declared in `.env`) get baked into the bundle and obfuscated at this point.\n\nWe would need different Jenkins jobs or parameters to bake in the environment config (eg. the correct server URL) multiple times, which goes against the idea of having an _unconfigured / environment agnostic_ RPM in Cosmos.\n\n## Decision Drivers <!-- optional -->\n\n* Avoiding too much extra code overhead\n* Trying to avoid security converns with proxy solutions (injection / DB manipulations)\n* Avoiding having to re-build in Cosmos or on the box\n\n## Considered Options\n\n### 1. Proxy\n* The react app is build / bundled and served statically as usual\n* It continues to make API requests to localhost:8080\n* An additional express server acts as a proxy and passes on these requests to the correct API_URL, according to NODE_ENV config which is passed to the proxy server at runtime\n\n### 2. Re-build at runtime\n* There is environment configuration\n* The RPM used for the EC2 contains a script that performs a rebuild when on the box\n\n\n### 3. Using the react-scripts development Server\n* Using the NODE_ENV config to configure the server and URL, without build / bundling\n\n### 4. Environment replacement with bake-script\n* Using `window.env` as a replacement for `process.env`\n* Playing config in public folder to avoid minifying\n* Bake-script replaces the file with env-specific config at launch\n\n## Decision Outcome\n\nThis is a common problem with create-react-app and the need to configure it. We came across [this solution](https://github.com/facebook/create-react-app/issues/578#issuecomment-277843310) which detailed a simple way of consuming config with the `window` global.\n\nIn source code this remains localhost:8080 as a local development fallback and it is passed in via Cosmos environment config.\n\n## Pros and Cons of the Options <!-- optional -->\n\n### Proxy\n\n* Good - it aligns initial idea that client could be pulled in _unconfigured_ via NPM.\n* Good - no additional rebuilds required\n* Bad - additional server config and boilerplate required\n* Bad - additional issues and concerns around CORS, security and injection required\n* Bad - Not hugely replicable\n\n\n### Re-build at runtime\n\n* Bad, because of the release not mapping accurately to the system on the EC2\n\n### react-scripts development Server\n\n* Good, because can use environment config easily\n* Bad, not a typical pattern\n* Bad, security concerns\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "facebook/create-react-app#578",
+     "kind": "issue",
+     "url": "https://github.com/facebook/create-react-app/issues/578",
+     "number": "578"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-05-22-exporting-video-preview.md",
+   "identity": "docs/ADR/2019-05-22-exporting-video-preview.md",
+   "adr_id": "2019",
+   "title": "Exporting a video preview - draft",
+   "first_commit": "2019-05-22T11:33:41+01:00",
+   "first_sha": "66da9c3510fec1c6c42c017723c48c0361a59d00",
+   "last_commit": "2019-05-22T11:33:41+01:00",
+   "author": "Pietro Passarelli - News Labs",
+   "email": "pietro.passarelli@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Exporting a video preview - draft\n\n* Status: in progress\n* Deciders: Pietro\n* Date: 2019-05-22 \n\nTechnical Story: exporting video preview of a program script.\n\n## Context and Problem Statement\n\nWe are using BBC `VideoContext` to display a preview of the paper-cuts in a program script.\n\nMain export is an EDL or XML to import into audio or video editing software to continue from rough cut to fine cut.\n\nHowever it be useful to be able to export the \"rough cut preview\" as a video to remove extra steps if users need to share it as is.\n\n\n## Decision Drivers <!-- optional -->\n\n* Easy to reason around\n* Light on the client, for low performance PC running IE (for web version)\n\n\n## Considered Options\n\n1. Server side `ffmpeg-remix`\n2. Export from `VideoContext`\n3. client side ffmpeg\n\n\n## Decision Outcome\n<!-- \nChosen option: \"[option 1]\", because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)]. -->\n\n_TBC, most likely 1 - `ffmpeg-remix`_\n\n<!-- ### Positive Consequences \n\n* [e.g., improvement of quality attribute satisfaction, follow-up decisions required, \u2026]\n* \u2026\n\n### Negative consequences\n\n* [e.g., compromising quality attribute, follow-up decisions required, \u2026]\n* \u2026  -->\n\n## Pros and Cons of the Options <!-- optional -->\n\n### 1. Server side `ffmpeg-remix`\n\n<!-- [example | description | pointer to more information | \u2026]  -->\n\n[`ffmpeg-remix`](https://www.npmjs.com/package/ffmpeg-remix)\n\nFast server side cutting of mp4s.\n\nVideos need to be mp4, as it's changing the header info and cut/copy blocks rather then transcoding.\n\nTakes in a json sequence and returns the edited video.\n\n\n* Good, because it's faster then transcoding\n* Bad, because it's server side, needs it's own microservice\n\n### 2. Export from `VideoContext`\n\n[Export high quality video? `#124`](https://github.com/bbc/VideoContext/issues/124#issuecomment-493722339)\n\n\n* Good, because we are already using VideoContext to display a preview\n* Bad, because it might not be possible\n* Bad, because it might be resource intense on the client\n\n### 3. client side ffmpeg\n\n- [`ffmpeg.js`](https://github.com/Kagami/ffmpeg.js)\n- [`videoconverter.js`](https://bgrins.github.io/videoconverter.js)\n\neg via webworker to offload effort\n\n\n* Good, because it could run client side\n* Bad, because it might not be production ready, ie too buggy\n* Bad, because it might be resource intense on the client\n\n\n<!-- ## Links \n\n* [Link type] [Link to ADR]  -->",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#124",
+     "kind": "hash",
+     "url": "",
+     "number": "124"
+    },
+    {
+     "key": "bbc/VideoContext#124",
+     "kind": "issue",
+     "url": "https://github.com/bbc/VideoContext/issues/124",
+     "number": "124"
+    }
+   ],
+   "mentioned_paths": [
+    "ffmpeg.js",
+    "github.com/Kagami/ffmpeg.js",
+    "videoconverter.js",
+    "bgrins.github.io/videoconverter.js"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-05-20-previewing-papercuts.md",
+   "identity": "docs/ADR/2019-05-20-previewing-papercuts.md",
+   "adr_id": "2019",
+   "title": "Previewing Paper Cuts - React component",
+   "first_commit": "2019-05-21T10:40:05+01:00",
+   "first_sha": "6900c5bd641e650268a27edaaee828a62216f895",
+   "last_commit": "2019-05-21T10:40:05+01:00",
+   "author": "Howard Melnyczuk",
+   "email": "howard.melnyczuk@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Previewing Paper Cuts - React component\n\n* Status: accepted\n* Deciders: Pietro\n* Date: 2019-05-20<!--YYYY-MM-DD -->\n\nTechnical Story: https://github.com/bbc/digital-paper-edit/issues/3\n\n## Context and Problem Statement\n\nAs part of the Paper-edit view\n\n![Screen Shot 2019-04-18 at 13 54 26](https://user-images.githubusercontent.com/4661975/56362368-8fd2bf00-61e1-11e9-9e87-edf71c0da030.png)\n\n\n> As a user, I want to be able to get (watch or listen to) a preview of the paper-edit/program script so that I can see how my program's paper-cuts (transcripts text selections) will \"render\" as audio and/or video.\n\nIn the sketch, this would be the \"canvas\" - _borrowing terminology from to the NLE video editors distinction between preview and canvas_\n\nA React component that takes a sequence of audio or video clips as an input, with start and end time, and displays a player that can \n- [ ] Seamlessly play this EDL (edit decision list) without buffer or load time in between clips\n- [ ] Has player controls, such as\n   - [ ] progress bar\n   - [ ] play/pause \n   - [ ] stop\n\nNote that the component should be able to generate the preview if the sequence is made of audio, video or a mix of audio and video files.\n\nIn first version it could just deal with sequences of media, but it be good if in subsequent versions it could handle things like text, titles (as a possible way to display place holders for voice over text?) - this second part needs to be flashed out more. But the general thing to keep in mind is the extensibility of the elements to display, if that makes sense.\n\n\n## Decision Drivers <!-- optional -->\n\n* easy to reason around\n* performant \n\n\n## Considered Options\n\n1.  Vanilla Js\n2. BBC Video compositor\n3. Popcorn JS\n4. Hyperaud.io\n5.  `bbc/VideoContext`\n\n### 1.Vanilla Js\n\nin [autoedit2](http://www.autoedit.io/), [paper-editing](https://autoedit.gitbook.io/user-manual/paperediting) because the files are stored locally, there's no network buffer issue when loading the different clips so used [a vanilla js implementation that you can see in this js fiddle](https://jsfiddle.net/pietrops/kus10b48/)\nThis also uses media fragments to only get the specific segment.\n\n### 2. BBC Video compositor\n\n[html5-video-compositor](https://github.com/bbc/html5-video-compositor) was a precoursor of `bbc/VideoContext`, now deprecated.\n\n- https://github.com/bbc/html5-video-compositor/wiki/Quick-Start-Guide \n- https://github.com/bbc/html5-video-compositor/wiki/Playlists \n\n### 3. Popcorn JS\nPopcorn js was a library by Mozilla, but is no longer mantained.\nThere was a [JSfiddle with an example](https://jsfiddle.net/pietrops/0adkfke9/) but \nit's not working, coz no popcorn js CDN url is not valid.\n\n[The Documentation shows what the `sequence` function used to do](https://github.com/mozilla/popcorn-docs/blob/gh-pages/modules/_posts/2012-12-12-sequence.md)\n\n### 4. Hyperaud.io\nHyperaud.io was one of the first project to experiment with the idea of [Hypertranscripts\n](https://hyperaud.io/blog/hypertranscripts/) and you can see in the [hyperaud.io pad](https://hyperaud.io/pad/) how you can mix from multiple selections and then get a preview. \n\nI think under the hood two HTML5 video elements are cued up one after the other as a workaround to reduce load time of the media.\n\n### 5. `bbc/VideoContext`\nMain option considered is to use [`bbc/VideoContext`](https://github.com/bbc/VideoContext) within a React component. \n\nSee this issue for more details on how it works with an EDL(Edit Decision List) sequence of clips https://github.com/bbc/VideoContext/issues/42\n\nThere are other examples and indications in the repo on how to enable, play, pause, and a progress bar. \n\nI think under the hood, Video Context, used the HTML5 canvas to concat the videos in the sequence and then provides a unified interface to treat it as a single media.\n\n\n## Decision Outcome\n\nChosen option: option 5 `bbc/VideoContext`, because it seems to be a performant way to display an EDL/playlist of clips with start and end times options. It is also currently being mantained by BBC R&D.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "bbc/digital-paper-edit#3",
+     "kind": "issue",
+     "url": "https://github.com/bbc/digital-paper-edit/issues/3",
+     "number": "3"
+    },
+    {
+     "key": "bbc/VideoContext#42",
+     "kind": "issue",
+     "url": "https://github.com/bbc/VideoContext/issues/42",
+     "number": "42"
+    }
+   ],
+   "mentioned_paths": [
+    "user-images.githubusercontent.com/4661975/56362368-8fd2bf00-61e1-11e9-9e87-edf71c0da030.png",
+    "bbc/VideoContext",
+    "github.com/mozilla/popcorn-docs/blob/gh-pages/modules/_posts/2012-12-12-sequence.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-05-01-security.md",
+   "identity": "docs/ADR/2019-05-01-security.md",
+   "adr_id": "2019",
+   "title": "Architecture Security",
+   "first_commit": "2019-05-09T10:41:05+01:00",
+   "first_sha": "a714853fcc7ec86b923a0f13f9e117329b6fc5f5",
+   "last_commit": "2019-05-09T17:23:21+01:00",
+   "author": "Eimi Okuno",
+   "email": "emettely@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Architecture Security\n\n* Status: pending\n* Deciders: Pietro, Eimi, Ben (InfoSec)\n* Date: 2019-05-09\n\nTechnical Story: https://github.com/bbc/digital-paper-edit/issues/1\n\n## Context and Problem Statement\n\nThese are notes based on the InfoSec meeting held on the 30th of May 2019.\n\n## Decision Drivers\n\n* Ease of use for journalists when system authenticates them\n* Security levels (public, protect, or restrict)\n* Data retention based on inactivity\n* Complexity\n\n## Considered Options\n\n### Authentication\n\nCert-based authentication is fine for now. We might want to move to BBC Login\n(SSO). This will make it easier for journalists to access the system. When\nthere's a mobile version of the application, it will simplify accessing the system, as people will have to follow an additional step to [enrol their devices into MDM](https://confluence.dev.bbc.co.uk/display/ops3/MDM+Airwatch+Cluster) if using a cert-based authenticator.\n\n### Data Retention Period\n\n90 days of inactivity as the data retention period and logic.\n### Levels of Security\n\nThere are currently 3 levels of security. We are aiming for the second tier -\nwhich is **protect**. The Electron App, which will be out of scope initially,\nwill be in **restrict** - as it will require locally cached pre-production\nfiles and offline STT.\n\nIn order to have a **protect** level system we must:\n\n* S3:\n  * encrypt (bucket-only, not contents of bucket) and private\n  * If hosting website inside S3, we must use Cloudfront to authenticate and\n    write our own proxy to redirect to S3.\n* RDS:\n  * toggle encrypt option\n* Communication between assets:\n  * use either IAM policies to go between VPC (SecurityGroups?) or use different\n    subnets to restrict communciations\n\nFor **restrict** level, we must:\n\n* encrypt the **contents*** of S3 and RDS.\n    \n### Option 1 (Suggested by Ben)**\n\n* Some examples by Ben:\n    - https://confluence.dev.bbc.co.uk/display/mdm/AWS+setup\n    - https://confluence.dev.bbc.co.uk/display/mdm/Apache+Configuration\n    - https://confluence.dev.bbc.co.uk/display/mdm/Generating+Signed+Cookies%3A+Not+implemented+-+does+not+work\nHe suggested adding a load balancer or Cloudfront in front of EC2 that serves\nReact, then adding VPCs. The VPC can be a singular or multiple. He also\nrecommended within these VPCs to use different subnets for the components to talk\nto each other.\n\n#### Concerns\n\n* We would need to keep the web endpoint open to the public and authenticate via\n  a proxy server in Apache. This seems to require writing our own Apache server.\n  In this case, I would prefer to use Nginx, as it is more resilient and can\n  replace Apache easily.\n* We would need to have an EC2 or Lambda instance to do the redirects.\n  In this case, it might be simpler to have a web endpoint in EC2.\n* This is not a traditional web UI and might need a more complex set up than a\n  static web hosted set up.\n\n### Option 2\n\n* Following the guidelines above to implement a **protected** level service, we\n  can host the UI in EC2 instance in Cosmos. Cosmos will automatically give us\n  the ELBs, and most imporantly the automatic authentication capabilities.\n* The UI and backend server (Express) can be both hosted on the same EC2 instance, which will\n  reduce the APIs exposure only to the UI. The fronting UI will have it's own Express server. This means that the UI Express will communicate with the API Express via `localhost`. The backend server will only be on\n  `localhost` and won't be exposed to the wider world.\n* Although the UI and Express server live in the same box, they are still both\n  in the Cosmos VPC, with cert authentication.\n* We can use SecurityGroups between ELBs to restrict communication between each\n  AWS service.\n\n## Decision Outcome\n\nWe are going with Option 2 as this provides us with security, while\nproviding a simpler way to set up access for journalists.\n\nBen Thornton has agreed to this.\n\nThe benefits of this approach means that we will be\nusing existing BBC services to implement security, rather than implementing our\nown servers. A single VPC is sufficient for **protected** levels of service, and\nwe can apply SecurityGroups in between to have added security.\n\nThe downside of this approach is that it is not using SSO but we can add that\nlater on. \n\nIn terms of data retention, we will go with the recommended 90 days.\n\n![Architecture Diagram with Security](./dpe-transcript-EC2_security.png)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "bbc/digital-paper-edit#1",
+     "kind": "issue",
+     "url": "https://github.com/bbc/digital-paper-edit/issues/1",
+     "number": "1"
+    }
+   ],
+   "mentioned_paths": [
+    "/dpe-transcript-EC2_security.png"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-04-29-SQL-database-schema.md",
+   "identity": "docs/ADR/2019-04-29-SQL-database-schema.md",
+   "adr_id": "2019",
+   "title": "SQL Database schema - draft",
+   "first_commit": "2019-05-03T12:12:18+01:00",
+   "first_sha": "70ae4fc3e23490487d7008e2f7925b390e966204",
+   "last_commit": "2019-05-03T12:12:18+01:00",
+   "author": "Pietro",
+   "email": "pietro.passarelli@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# SQL Database schema - draft\n\n* Status: In progress <!-- optional -->\n* Deciders: Pietro, Eimi <!-- optional -->\n* Date: 2019-04-29 <!-- [YYYY-MM-DD when the decision was last updated]  optional -->\n\n<!-- Technical Story: [description | ticket/issue URL] optional -->\n\n## Context and Problem Statement\n\n<!-- [Describe the context and problem statement, e.g., in free form using two to three sentences. You may want to articulate the problem in form of a question.] -->\n\nA schema for the SQL database in PostgreSQL for the web app, to be reused for SQLite electron desktop version.\n\nIt should consider [the project Milestones](https://github.com/bbc/digital-paper-edit/milestones) and be easy to version incrementally. \nEg have 3 version of the schema for the 3 main milestones:\n- [Feature: Transcript Editing](https://github.com/bbc/digital-paper-edit/milestone/3)\n- [Feature: Transcript Annotations](https://github.com/bbc/digital-paper-edit/milestone/4)\n- [Feature: Paper Editing](https://github.com/bbc/digital-paper-edit/milestone/5)\n\n[DB Designer](https://dbdesigner.page.link/cq9FMHVVxsYqTasf7) - let's you export SQL code to Create and drop tables.\n\n\n## Decision Drivers <!-- optional -->\n\n* easy to reason around\n* \u2026 <!-- numbers of drivers can vary -->\n\n## Considered Options\n\n_TBC_\n<!-- * [option 1]\n* [option 2]\n* [option 3] -->\n* \u2026 <!-- numbers of options can vary -->\n\n## Decision Outcome\n\n<!-- Chosen option: \"[option 1]\", because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)]. -->\n_TBC_\n\n### Positive Consequences <!-- optional -->\n\n<!-- * [e.g., improvement of quality attribute satisfaction, follow-up decisions required, \u2026] -->\n* \u2026\n\n_TBC_\n\n### Negative consequences <!-- optional -->\n\n<!-- * [e.g., compromising quality attribute, follow-up decisions required, \u2026] -->\n* \u2026\n_TBC_\n\n\n## Pros and Cons of the Options \n\n_TBC_\n\n<!-- \n### [option 1]\n\n[example | description | pointer to more information | \u2026] \n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n* \u2026 \n\n### [option 2]\n\n[example | description | pointer to more information | \u2026] \n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n* \u2026 \n\n### [option 3]\n\n[example | description | pointer to more information | \u2026] \n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n* \u2026\n\n## Links\n\n* [Link type] [Link to ADR]  -->",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/ADR/2019-04-23-transcript-architecture.md",
+   "identity": "docs/ADR/2019-04-23-transcript-architecture.md",
+   "commit": "eabf7bbfdb5acd73e8673b45b9ec1e6507233023",
+   "date": "2019-06-21T16:41:08+01:00",
+   "old_state": "unknown",
+   "new_state": "deleted",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Moving the architectural things to infrastructure repository",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "deleted-without-replacement-pointer",
+   "author": "Eimi Okuno",
+   "email": "Eimi.Okuno@bbc.co.uk"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 9,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "8"
+}

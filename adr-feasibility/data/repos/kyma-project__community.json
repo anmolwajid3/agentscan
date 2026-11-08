@@ -1,0 +1,648 @@
+{
+ "repo": "kyma-project/community",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2018-07-24T11:50:29+02:00",
+ "last_commit": "2026-09-14T10:31:23+02:00",
+ "n_commits": 694,
+ "n_authors": 128,
+ "n_files": 507,
+ "n_code_files": 10,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 21,
+ "adrs": [
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-004-Kyma_components_testing.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-004-Kyma_components_testing.md",
+   "adr_id": "4",
+   "title": "DR 004: Kyma components testing",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2026-05-11T20:01:16+02:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted on 2017-12-11.",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# DR 004: Kyma components testing\n\nCreated on 2017-12-11 by Piotr Kopczy\u0144ski (@PK85).\n\n## Context\n\nTesting is a vital part of any production-ready solution. Kyma components, both core elements and extensions, require a simple and intuitive mechanism to check if they work as expected. The flow for running tests must be the same both for APIs and UI. As per the Kyma Manifesto, native Kubernetes has priority.\n\n## Decision\n\nOne of the previous architecture decisions was to use Helm as the main installation tool for all Kyma components. Helm uses a packaging format called charts. Helm also provides a solution for testing charts, namely chart tests. For that reason, and also because the most intuitive solutions should be our natural choices, the decision is to use Helm to test Kyma components.\n\nAdditionally, one of the principles of the Kyma Manifesto is to build native Kubernetes functionalities, which confirms that it is the right decision to use Helm chart tests.\n\n## Status\n\nAccepted on 2017-12-11.\n\n## Consequences\n\nCharts providers must write tests for their components and publish the tests inside a Docker image. Then, they must add the chart tests, called Pod definitions, to the relevant `templates` directory of the Helm chart. The Pods run the test image. The flow is as follows:\n1. The Kyma cluster starts.\n2. Components are installed.\n3. After a successful installation, the test Pod and tests start running.\n4. The Pod informs about the tests success or failure.\n5. If any test fails, Pod logs printed in the terminal provide the details of the failure.\n\nTo learn more, see the official [Chart Tests](https://docs.helm.sh/developing_charts/#chart-tests) documentation.  \n\nYou can also use simple acceptance images with cURL.\n\nCurrently, tests run sequentially. As the number of tests increases, sequential processing can perpetually extend the duration of Kyma cluster provisioning. To reduce the amount of time, there may be a need to come up with a solution to run tests in parallel.\n\nWhen choosing a tool for UI testing, the size of the Docker image needs to be taken into account. For example, the base Docker image with Chrome and Selenium is over 800 MB, and with Cypress it is about 1.5 GB. Therefore, one of the following choices must be considered:\n- Find a way to cache images or have some Kyma base image with all dependencies in it.\n- Choose a more lightweight solution with one core element as a test runner. However, this approach requires downloading one big image that would provide a runner environment.\n- Accept running browser tests headless. An investigation is still necessary if the size of the images gets much smaller.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-008-Dex_as_an_OIDC_authenticator.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-008-Dex_as_an_OIDC_authenticator.md",
+   "adr_id": "8",
+   "title": "DR 008: (INVALID) DEX as an OIDC authenticator",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2025-01-15T14:32:59+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "Invalidated on 2021-08-04.",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# DR 008: (INVALID) DEX as an OIDC authenticator\n\nCreated on 2018-03-01 by Damian Pacierpnik (@damianpacierpnikatsap).\nInvalidated on 2021-08-04 by [DR 021: Remove components proxying requests to the Kubernetes API server](dr-021-Remove-k8s-api-server-proxies.md).\n\n## Context\n\nAlthough Kubernetes manages service accounts, the solution leaves the management of regular users to an independent, outside service.\nFor this reason, Kyma needs an authentication provider for end-users.\n\nKubernetes has the following requirements for authentication providers:\n\n- The authentication provider must support the [OpenID connect discovery](https://openid.net/specs/openid-connect-discovery-1_0.html).\n- The authentication provider must run in TLS with non-obsolete ciphers.\n- The authentication provider must support CA-signed certificates, even for commercial and self-signed CAs.\n\nThe solution must also fulfill the general platform requirements:\n\n- It must be a cloud-native solution.\n- It must be lightweight, preferably written in Go.\n- It must be open-source, with the ability to contribute to the project development.\n\nAdditionally, the solution must allow to delegate authentication to SAML2-compliant Identity Providers.\n\n## Decision\n\nThe decision is to use [Dex](https://github.com/coreos/dex) as an authentication provider for end-users in Kyma.\n\n## Status\n\nInvalidated on 2021-08-04.\n\n## Consequences\n\nDex is a lightweight application written in Go.\n\nUsing connectors, Dex supports both the OIDC- and SAML2-compliant Identity Providers. Dex does not have its own user database, and therefore requires at least one connector to work in the production\nenvironment. The solution supports static users but, as it is not a completely secure method of user management, it should be used for test purposes only.\nWhen you register multiple connectors in Dex, it is not possible to automatically select the desired connector. In such case, Dex prompts the user to choose the desired connector.\nAn improvement has been proposed to allow Dex choosing a default connector but the pull request to the Dex project was rejected.\n\nAlthough some of the Kyma team's pull requests were rejected, the team contributed to the Dex project.\nAfter some discussion, the team managed to introduce [this](https://github.com/dexidp/dex/issues/1087) change.\n\nFinally, Dex is designed to work with Kubernetes and is also one of the authentication solutions\nrecommended in the [Kubernetes documentation](https://kubernetes.io/docs).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "dexidp/dex#1087",
+     "kind": "issue",
+     "url": "https://github.com/dexidp/dex/issues/1087",
+     "number": "1087"
+    }
+   ],
+   "mentioned_paths": [
+    "openid.net/specs/openid-connect-discovery-1_0.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-011-Jaeger_as_a_tracing_back-end.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-011-Jaeger_as_a_tracing_back-end.md",
+   "adr_id": "11",
+   "title": "DR 011: Jaeger as a tracing back-end",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2024-12-09T16:03:40+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted on 2018-03-09.",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# DR 011: Jaeger as a tracing back-end\n\nCreated on 2018-03-09 by Gaurav Abbi (@abbi-gaurav).\n\n## Context\n\nBy default, Istio uses Zipkin for distributed tracing. Zipkin is not the best solution for Kyma as it is a heavy-weight Spring-based Java application.\nThe Kyma developers evaluated Jaeger which is a lightweight alternative to Zipkin.\n\n## Decision\n\nThe decision is to use Jaeger as a back-end tool for tracing. Istio, Envoy, and some Kyma components, such as the Event Bus or the Connector Gateway, will continue to use the Zipkin client. This approach is necessary as Istio supports only the Zipkin client. Jaeger as a back-end tool is compatible with both the Zipkin client and the wire protocol. For the customer developer this is transparent since Zipkin and the wire protocol propagate headers only when making HTTP calls, and they do not need any instrumentation.\n\nThe decision is to use Jaeger with the in-memory storage as, similarly to Zipkin, Jaeger can lose traces. However, there are efforts underway in the Jaeger project to make the in-memory solution production-ready. See this [Jaeger GitHub issue](https://github.com/jaegertracing/jaeger/issues/551) for more information.\n\n\n## Status\n\nAccepted on 2018-03-09.\n\n## Consequences\n\nThe traces can be lost, but it should be acceptable for the Beta release. The tracing feature is focused on improving the developer experience and it is not a replacement for any kind of auditing tools or mechanisms.\n\nThe possible future actions are as follows:\n* Contribute to the open-source community on the [Jaeger GitHub issue](https://github.com/jaegertracing/jaeger/issues/551).\n* Introduce the Jaeger sampling strategy in Kyma.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "jaegertracing/jaeger#551",
+     "kind": "issue",
+     "url": "https://github.com/jaegertracing/jaeger/issues/551",
+     "number": "551"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-015-Authorization_for_GraphQL.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-015-Authorization_for_GraphQL.md",
+   "adr_id": "15",
+   "title": "DR 015: (INVALID) Authorization for GraphQL",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2023-09-13T08:19:01+02:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "Invalidated on 2021-08-04.",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# DR 015: (INVALID) Authorization for GraphQL\n\nCreated on 2018-06-15 by Damian Pacierpnik (@damianpacierpnikatsap).\nInvalidated on 2021-08-04 by [DR 021: Remove components proxying requests to the Kubernetes API server](dr-021-Remove-k8s-api-server-proxies.md).\n\n## Context\n\nThe GraphQL facade caches resources and does not forward every request to the API Server. So, the user token is not validated against RBAC.\nThe consequence is that all authenticated users can perform all operations supported by the GraphQL facade.\nThis is a vulnerability.\n\nTo patch this vulnerability, Kyma developers need an additional authorization layer before the GraphQL facade.\n\n### Possible solution #1: Istio with RBAC support\n\nOne of the possible solutions is to use Istio with RBAC support (Istio version >= 0.5).\nIstio Ingress can then expose GraphQL and developers can define appropriate authorization rules.\n\nIn the current release (0.7.x), **Istio RBAC engine** is implemented as a Mixer adapter.\nThe **Request Context** sent to the **Istio RBAC engine** is provided as an instance of the **Authorization Template**.\nInformation defined in the **Authorization Template** is fetched from [Istio Attributes](https://istio.io/docs/concepts/policy-and-control/attributes.html).\nA given Istio deployment has a [fixed vocabulary of attributes that it understands](https://istio.io/v1.0/docs/concepts/policies-and-telemetry/#attribute-vocabulary).\n\nA set of **Service Roles** defines the authorization for a service in Istio.\nA **Service Role** specification includes a list of **Access Rules**.\nEach **Access Rule** can define authorization to the group of services by paths, methods, and/or constraints\non the other properties available in the **Request Context**.\n\nTo authorize the request to GraphQL, the query must be known in the **Istio RBAC Engine**, as an authorization decision depends on\ninformation which is fetched in the query. So the query should be available in the **Request Context** sent to this engine.\nUnfortunately, a GraphQL query is sent in the request body. The body is not available in the **Istio Attributes**.\nSo, currently the **Request Context** cannot send it. To enable this, the implementation of **Envoy Filter** is necessary.\nIt would provide additional **Istio Attributes**, required in the authorization process.\n\nIt is worth mentioning that there is no stable, easy solution to provide custom **Envoy filters** in Istio.\nAlthough Istio manages those filters dynamically and trying to adjust envoy can cause some issues and side effects,\nthere is some support for envoy Lua http filters in Istio:\n- Feature request: https://github.com/istio/istio/issues/1677\n- Example: https://github.com/mandarjog/istioluawebhook\n\n## Decision\n\nAuthorization for GraphQL will be implemented using RBAC roles in Istio. To make it possible, appropriate Envoy LUA filter\nwill be implemented.\n\n## Status\n\nInvalidated on 2021-08-04.\n\n## Consequences\n\nGraphQL must be exposed via Istio, and must have a sidecar injected.\n\nIstio has to be at least in version 0.5.x (0.5.x is totally broken. So, actually, at least 0.6.x).\n\nKyma developers have to implement and maintain their own envoy filter written in Lua.\nThey also have to implement and deploy the application that serves this Lua filter and will be registered as the webhook in Istio pilot.\nNext, Kyma developers have to register the webhook in the Istio pilot. To do that, customization of Istio Helm charts is required,\nbecause the developers have to modify the Istio pilot discovery container configuration.\n\nAuthorization of the access to GraphQL will be restricted to the attributes extracted by the envoy filter.\n\nEnvoy filter will be executed for all applications in Kyma with a injected sidecar. However, it will skip parsing the request\nbody if it is not a request to the GraphQL.\n\nIf Lua script is broken or the application with webhook is not accessible during the Istio pilot startup,\nattributes will not be extracted and no error occurs (the filter will not be applied).\nThis means that all calls will be blocked by the RBAC engine. This is default behavior.\n\nThe Lua script does not refresh automatically. Istio pilot Pods must be restarted to fetch the configuration of the envoy filters.\nModifying the script requires recreating the configmap with the script, restarting the webhook app Pods, and restarting the Istio pilot Pods.\n\nTo expose the new resource in GraphQL queries, it is required to create appropriate **Service Role**.\n\nThe resources must be listed in alphabetical order. The list must be enclosed in curly brackets.\nThis solution is error-prone and as a result can be difficult to maintain.\n\nThe **Service Role** below is an example of how to access the following query:\n\n```bash\ncurl http://$minikube_ip:32080/post -H \"Host: httpbin.local\" -i -d \"query somequery { groups { name } services { id } }\"        \n```\n\n**Service Role**:\n\n```yaml\napiVersion: \"config.istio.io/v1alpha2\"\nkind: ServiceRole\nmetadata:\n  name: httpbin-post-res-groups-services\n  namespace: default\nspec:\n  rules:\n  - services: [\"httpbin.default.svc.cluster.local\"]\n    paths: [\"/post\"]\n    methods: [\"*\"]\n    constraints:\n    - key: \"kymaGraphQlResources\"\n      values: [\"{groups,services}\"]\n```\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#1",
+     "kind": "hash",
+     "url": "",
+     "number": "1"
+    },
+    {
+     "key": "istio/istio#1677",
+     "kind": "issue",
+     "url": "https://github.com/istio/istio/issues/1677",
+     "number": "1677"
+    }
+   ],
+   "mentioned_paths": [
+    "istio.io/docs/concepts/policy-and-control/attributes.html",
+    "istio.io/v1.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-021-Remove-k8s-api-server-proxies.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-021-Remove-k8s-api-server-proxies.md",
+   "adr_id": "21",
+   "title": "DR 021: Remove components proxying requests to the Kubernetes API server",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2023-09-13T08:19:01+02:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# DR 021: Remove components proxying requests to the Kubernetes API server\n\nCreated on 2021-07-12 by Piotr Bochy\u0144ski (@pbochynski).\n\n## Decision log\n\n| Name | Description |\n|-----------------------|------------------------------------------------------------------------------------|\n| Title | Remove components proxying requests to the Kubernetes API server |\n| Due date | 2021-07-19 |\n| Status | Proposed on 2021-07-12, Accepted on 2021-08-04|\n| Decision type | Binary |\n| Affected decisions | [DR 007: GraphQL as API facade for UI](https://github.com/kyma-project/community/blob/main/sigs-and-wgs/archive/sig-core/decisions/dr-007-GraphQL_as_API_facade_for_UI.md), [DR 015: Authorization for GraphQL](https://github.com/kyma-project/community/blob/main/sigs-and-wgs/archive/sig-core/decisions/dr-015-Authorization_for_GraphQL.md), [DR 008: DEX as an OIDC authenticator](https://github.com/kyma-project/community/blob/main/sigs-and-wgs/archive/sig-core/decisions/dr-008-Dex_as_an_OIDC_authenticator.md) |\n\n## Context\n\nProxying the API server calls was initiated in the early days of Kyma in order to introduce a unified authentication and authorization model for Kubernetes clusters coming from different vendors (Google Kubernetes Engine, Azure Kubernetes Service, Amazon EKS, etc). Whereas unification has some value for teams that need multi-cloud support, the solution has several drawbacks that should be addressed. In the meantime, the Kyma project picked [Gardener](https://github.com/gardener) as a managed Kubernetes platform to provide multi-cloud capabilities, and since then the additional layer of proxies does not add any value. The main reason for the decision to remove components proxying requests to the Kubernetes API server is the simplification of the authorization concept in Kyma. The proxies together with the custom dex connector for UAA are hard to explain and introduce additional security vulnerabilities. This decision is fundamental for changes coming in the [Kyma 2.0 release](https://github.com/kyma-project/kyma/issues/11337).\n\n## Decision\n\nRemove the following components from Kyma:\n- apiserver-proxy\n- console-backend\n- iam-kubeconfig-service\n- permission-controller\n- uaa-activator\n- dex\n\nTo replace the removed components, use the Kubernetes API server and its features for authentication and authorization, such as:\n- [Authentication with OpenId Connect Tokens](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#openid-connect-tokens)\n- [Role-based access control (RBAC) Authorization](https://kubernetes.io/docs/reference/access-authn-authz/rbac/)\n\n\n## Consequences\n\nIn consequence, there is no pre-configured Auth model for Grafana, Kiali, or Jaeger exposure. We decided to have an [OAuth2 Proxy](https://github.com/oauth2-proxy/oauth2-proxy) in front of all these UIs with a default configuration that points to documentation.\n\nThe benefits:\n- faster installation and lower resource consumption (6 components removed),\n- reduced complexity of the authentication and authorization flow,\n- improved security (e.g. removed service accounts with powerful roles),\n- faster development and easier maintenance of the Console UI.\n\nAs a result of this decision, the following decisions are invalid:\n- [DR 007: GraphQL as API facade for UI](https://github.com/kyma-project/community/blob/main/sigs-and-wgs/archive/sig-core/decisions/dr-007-GraphQL_as_API_facade_for_UI.md)\n- [DR 015: Authorization for GraphQL](https://github.com/kyma-project/community/blob/main/sigs-and-wgs/archive/sig-core/decisions/dr-015-Authorization_for_GraphQL.md)\n- [DR 008: DEX as an OIDC authenticator](https://github.com/kyma-project/community/blob/main/sigs-and-wgs/archive/sig-core/decisions/dr-008-Dex_as_an_OIDC_authenticator.md)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "kyma-project/kyma#11337",
+     "kind": "issue",
+     "url": "https://github.com/kyma-project/kyma/issues/11337",
+     "number": "11337"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-001-Technologies.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-001-Technologies.md",
+   "adr_id": "1",
+   "title": "DR 001: Technology stack",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2021-11-09T10:06:48+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted on 2017-11-20.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# DR 001: Technology stack\n\nCreated on 2017-11-20 by \u0141ukasz G\u00f3rnicki (@derberg).\n\n## Context\n\nThe Kyma developers need to select specific technologies. Their purpose is to:\n\n* Enable the most lightweight solution and cost-effective solution for the cluster installation.\n* Facilitate the cross-teams collaboration development.\n* Enable easy context-switching between teams.\n\n## Decision\n\nThe decision is to use the **Go** language for all new implementations in Kyma. Go allows to create very efficient applications with low memory usage and a vast set of system libraries. Many projects which Kyma depends on are written in Go, including Kubernetes.\n\nUse the following frontend technologies within Kyma:\n\n* Open UI5\n* Angular (version 4 and later)\n* React\n\nThe recommended technologies fulfill the Kyma principles.\n\n## Status\n\nAccepted on 2017-11-20.\n\n## Consequences\n\nUse the technologies listed in this document as the first choice for all Kyma implementations. However, if you have a good reason to extend the list with a new technology which fulfills the Kyma principles, suggest it to the Kyma team and request their approval.\n\nThe list of backing services technologies is not yet definitive.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-002-Traefik_as_an_API_Gateway.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-002-Traefik_as_an_API_Gateway.md",
+   "adr_id": "2",
+   "title": "DR 002: Tr\u00e6fik as a candidate for an API Gateway",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2021-11-09T10:06:48+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted on 2017-11-23.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# DR 002: Tr\u00e6fik as a candidate for an API Gateway\n\nCreated on 2017-11-23 by Pawe\u0142 Soltysek (@pssap).\n\n## Context\n\nOne of the core components in Kyma is the API Gateway. This DR focuses on [Tr\u00e6fik](https://traefik.io), one of the candidates for an API Gateway.\n\nTr\u00e6fik is an HTTP reverse proxy shipped with load-balancing, rate-limiting, monitoring, and several other useful features. In comparison to the other reverse proxies, Traefik stands out with its dynamic configuration abilities.\nTr\u00e6fik supports the most common orchestration backends (for example: Docker, Kubernetes, Mesos, or Consul). It is written in Go. The evaluated version of Traefik is 1.4.0 [rc4].\n\n## Decision\n\nDuring our evaluation process, it turned out that Traefik does not support one of the key features required in Kyma - JWT based authentication. Throughout the implementation, the lack of extensibility capabilities was also noticed. There is absolutely no notion of custom middlewares so introduction of additional features (like JWT-based authentication middleware) requires direct changes in the source code.\n\nAdvantages:\n- few dependencies\n- dynamic configuration\n- Kubernetes-based orchestration\n- built in circuit breaker\n- rate limiter\n\nDisadvantages:\n- poor extensibility  \n\nAlthough Traefik has a lot of interesting features, due to the poor extensibility capabilities, the decision is to not use it as an API Gateway in Kyma.\n\n## Status\n\nAccepted on 2017-11-23.\n\n## Consequences\n\nFurther evaluation is required on the following solutions:\n- [Istio](https://github.com/istio/istio)\n- [Envoy](https://github.com/envoyproxy/envoy)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-003-InitContainers_for_dependency_management.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-003-InitContainers_for_dependency_management.md",
+   "adr_id": "3",
+   "title": "DR 003: Init Containers for dependency management",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2021-11-09T10:06:48+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted on 2017-11-28.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# DR 003: Init Containers for dependency management\n\nCreated on 2017-11-28 by Adam Szpakowski (@szpakas).\n\n## Context\n\nCertain dependencies between the Kyma components impact the order in which components should be created. The controller pattern in Kubernetes allows you to disregard many dependencies and rely on the Kubernetes reconciliation process. However, there are still a few cases in which strict dependency management is necessary. The most significant example is when Kubernetes **Kind** should be defined before it is used, as in the CustomResourceDefinitions.\n\nThe default dependency management solution in Kubernetes uses Init Containers coupled with readiness probes.\nInit Containers allow the delay of the Pod's creation until certain conditions are met. When the conditions are fulfilled, the container succeeds.\n\nCurrently, the concept of Kyma core and extensions is at an early stage of development. Our API is unstable at best, and undefined at worst. An investment in any complex dependency management solution is fraught with high risks.\n\n## Decision\n\nThe decision is to use Kubernetes Init Containers together with the readiness probes for dependency management. There are no plans to invest further in more complex solutions.\n\n## Status\n\nAccepted on 2017-11-28.\n\n## Consequences\n\nThe main advantages of Init Containers are as follows:\n- simplicity\n- their relation to the Kubernetes core\n- no external components required\n\nAs a result, using Init Containers keeps our investment low, and reduces the entry cost for new developers and users.\n\nThe main disadvantage of the proposed solution is the lack of support for proper dependency management. In the future, expressing dependencies as direct acyclic graphs, with any Kubernetes **Kind** as a graph node, should be supported. There are a couple of Kubernetes-related projects which support DAGs ([Atlassian Smith](https://github.com/atlassian/smith) and [Mirantis AppController](https://github.com/Mirantis/k8s-AppController)) but they are still at an early stage of development.\n\nInit Containers are quite flexible and allow for almost unrestricted expression of restraints and checks. On the one hand, the flexibility helps to define dependencies, but on the other, it brings the danger of inconsistency. The lack of uniformity may result in complications and solutions that are difficult to maintain. To avoid these kinds of problems, best practices for using Init Containers should be set and applied.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-005-Istio_as_the_API_Gateway.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-005-Istio_as_the_API_Gateway.md",
+   "adr_id": "5",
+   "title": "DR 005: Istio as the Gateway in Kyma",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2021-11-09T10:06:48+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted on 2017-12-11.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# DR 005: Istio as the Gateway in Kyma\n\nCreated on 2017-12-11 by Damian Pacierpnik (@damianpacierpnikatsap).\n\n## Context\n\nThe API Gateway is going to be one of the Kyma core components.\nThis component will be responsible for security, monitoring, and traffic management.\nAll APIs should be exposed in the platform in a consistent manner.     \n\nThis component must be a cloud-native solution, with good support for Kubernetes, as this is the platform chosen for Kyma.\n\nIt also should be open-source, giving the ability to contribute to the project development. The aim is to escape the limits imposed by the project roadmap and waiting for the implementations of fixes. It is crucial to ensure the desired SLAs.\n\n## Decision\n\nThe decision is to use [Istio](https://istio.io) as the API Gateway in Kyma.\n\nIstio is an open platform to connect, manage, and secure microservices.\nIt provides an easy way to create a network of deployed services with load balancing, service-to-service authentication,\nmonitoring, and more, without requiring any changes in the code of the service.\nTo add Istio support to services, deploy a special sidecar proxy throughout your environment. It intercepts\nall of the network communication between the configured and managed microservices using Istio control plane functionality.\n\n## Status\n\nAccepted on 2017-12-11.\n\n## Consequences\n\nIstio provides most of the required features. It was possible to integrate it with DEX, the authentication provider for Kyma.\n\nAll of the APIs in Kyma, including the Kubernetes API, will be shared in a consistent manner through Istio. The same security concept will be applied to all of the APIs, and all of the APIs will be accessible with ID tokens issued by Dex.\n\nThe extensibility model in Istio is not perfect. The source code of the existing components needs modification. Docker images, including Istio components, must be built. The build process requires many tools. For example, to rebuild a Go component, you need Bazel with Java.\nThe build process is also quite complicated because of the Bazel configuration. On MacOS, it forces the use of the dedicated Docker image, as the build process is Linux-dependent.\nMoreover, the build process in the Docker container currently takes a lot of time. There is room for improvement, as the Bazel cache can be more persistent. Unfortunately, the first attempt to implement such a solution failed because of the Docker permission policy for mounted directories.\n\nThere has been no attempt to contribute to Istio yet. To contribute to Istio, fill out the [Google CLA](https://cla.developers.google.com/)\nand discuss the change request or idea in the appropriate [working group](https://github.com/istio/community/blob/master/WORKING-GROUPS.md).\nWhen there is a general agreement that the feature is useful, create a GitHub issue to track the discussion.\nIn some cases, you must also create a design document that follows the format.\nOnce there is a general agreement on the technical direction, you can submit a pull request.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/istio/community/blob/master/WORKING-GROUPS.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-006-Kubeless_as_the_Faas_solution.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-006-Kubeless_as_the_Faas_solution.md",
+   "adr_id": "6",
+   "title": "DR 006: Kubeless as a FaaS solution",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2021-11-09T10:06:48+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted on 2017-12-20.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# DR 006: Kubeless as a FaaS solution\n\nCreated on 2017-12-20 by Ahmed Abdalla (@Abd4llA).\n\n## Context\n\nFunction as a Service (FaaS) is the main capability inside Kyma. This DR presents a market research and a detailed analysis of both Kubeless and fission.\n\n## Decision\n\nThe decision is to use Kubeless as the FaaS solution.\n\n## Status\n\nAccepted on 2017-12-20.\n\n## Consequences\n\nAs Kubeless is a leveraging Kubernetes core concept, the integration path with other tools, such as Istio, is much easier. The security-related requirements appear easier to fulfill as they are handled by Kubernetes.\n\nSimilarly to other available FaaS solutions, Kubeless is not a production-ready component. To adapt it for Kyma, Kubeless must be improved in these areas:\n\n- Namespace separation\n- NATS-based triggers\n- Istio integration\n\nAdditionally, involvement in the Kyma community is essential to drive architecture changes and enhancements forward.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-007-GraphQL_as_API_facade_for_UI.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-007-GraphQL_as_API_facade_for_UI.md",
+   "adr_id": "7",
+   "title": "DR 007: (INVALID) GraphQL as API facade for UI",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2021-11-09T10:06:48+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "Invalidated on 2021-08-04.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# DR 007: (INVALID) GraphQL as API facade for UI \n\nCreated on 2018-01-18 by \u0141ukasz G\u00f3rnicki (@derberg).\nInvalidated on 2021-08-04 by [DR 021: Remove components proxying requests to the Kubernetes API server](dr-021-Remove-k8s-api-server-proxies.md).\n\n## Context\n\nThe Console UI allows to access different functionalities from different APIs. As a consequence, displaying a single UI view might require performing several API calls to different endpoints on the client side. To simplify the solution, it is desirable to keep the calls on the server side. Such approach improves resiliency and performance as the browser makes a single call to the API, which is less prone to errors. The API facade receives these internal calls and calls other APIs internally with a much higher speed. Thanks to the Istio integration, with simple configuration, the mashup implementation is much easier than an implementation that involves the client side.\n\nAnother argument to use such an approach in the UI architecture is that many of the components Kyma uses are in their early versions, such as Alpha or Beta, and their APIs change frequently. The decoupled approach introduced with the UI facade makes the UI resistant to breaking changes. In rare cases when queries need to be modified, the developers must adjust the code for that query in the UI only. There is no need to re-adjust the code for a new API, which is a common problem in the traditional REST architecture.\n\nGraphQL is the optimal solution to use for the Kyma UI as, through extensive [querying](http://graphql.org/learn/queries/), it delivers the data that is required only for the particular view. It comes with a built-in resiliency mechanism: when you query multiple APIs and one of them fails to return information, the data received from other APIs successfully is returned, whereas the missing data is marked as `null`.\n\n## Decision\n\nThe decision is to use GraphQL as API facade for the Console UI.\n\n## Status\n\nInvalidated on 2021-08-04.\n\n## Consequences\n\nEvery functionality exposed in the UI must be routed through the UI facade.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-009-ServiceBinding_in_Kyma.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-009-ServiceBinding_in_Kyma.md",
+   "adr_id": "9",
+   "title": "DR 009: ServiceBinding in Kyma",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2021-11-09T10:06:48+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted on 2018-03-07.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# DR 009: ServiceBinding in Kyma\n\nCreated on 2018-03-07 by Adam Szec\u00f3wka (@aszecowka).\n\n## Context\n\nThe Service Catalog in Kubernetes implements the Open Service Broker API. The main goal of the Service Catalog is to provide a way for Kubernetes users to consume services managed by the brokers, and to easily configure their applications with no need for the detailed knowledge of how those services are created or managed. To learn more about the Service Catalog, see [this](https://github.com/kubernetes-incubator/service-catalog) documentation.\n\nThe workflow is as follows:\n- The administrator creates a ServiceInstance in a given Namespace.\n- The administrator creates a binding to the ServiceInstance, to allow the application access the provisioned service.\n\nThe binding operation results in creating Kubernetes Secret in a given Namespace.\n\n## Decision\n\nWhen the administrator wants to enable the same ServiceInstance (i.e. the same database instance) to two different applications, it is necessary to\ncreate two separate bindings, one for each application. The broker returns a new set of credentials every time, if supported by a given ServiceClass.\n\nFor example: the Azure Broker acts like this in case of PostgreSQL. For more information on the binding operation in the Azure Broker, see the [Azure Broker documentation](https://github.com/Azure/open-service-broker-azure/blob/master/docs/modules/postgresql.md).\nIn case of the Helm Broker, which provisions Redis, the same credential is returned every time, because of the Redis security model. Even then, the administrator should create separate bindings.\n\nIt is recommended to use the synchronous binding, as the specification for the asynchronous binding is still in Alpha stage.\n\n## Status\n\nAccepted on 2018-03-07.\n\n## Consequences\n\nThe service detects the interactions from different applications using separate credentials.\n\nAccording to the Kubernetes [documentation](https://github.com/mironov/kubernetes/blob/master/docs/design/namespaces.md#motivation),\nNamespace is a security boundary. If the Secret exists in the Namespace, the administrator can inject it to any deployment.\n\n>**NOTE:** The Service Broker cannot prevent other applications from consuming a created Secret.\nIf a stronger isolation level is required, use a dedicated Namespace.\nFor more details, see [the Kubernetes issue #4957](https://github.com/kubernetes/kubernetes/issues/4957).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#4957",
+     "kind": "hash",
+     "url": "",
+     "number": "4957"
+    },
+    {
+     "key": "kubernetes/kubernetes#4957",
+     "kind": "issue",
+     "url": "https://github.com/kubernetes/kubernetes/issues/4957",
+     "number": "4957"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/Azure/open-service-broker-azure/blob/master/docs/modules/postgresql.md",
+    "github.com/mironov/kubernetes/blob/master/docs/design/namespaces.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-010-JWT_authentication.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-010-JWT_authentication.md",
+   "adr_id": "10",
+   "title": "DR 010: JWT-based authentication in Kyma",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2021-11-09T10:06:48+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted on 2018-03-07.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# DR 010: JWT-based authentication in Kyma\n\nCreated on 2018-03-07 by Jakub Dziechciewicz (@kubadz).\n\n## Context\n\nAs described in [DR 005](dr-005-Istio_as_the_API_Gateway.md), all of the APIs in Kyma must be accessible using ID tokens issued by the Kyma Dex component. This means that Kyma must allow services secured with JWT-based authentication.\n\n### Custom Mixer Adapter\n\nPreviously, there was no readily available solution to provide JWT-based authentication in Kyma. An in-house solution to secure services in Kyma is the Mixer Adapter. Maintaining this adapter is a troublesome process as it requires building a new Istio image with each new Istio release.\nFor more information about Istio as the API Gateway, see [DR 005](dr-005-Istio_as_the_API_Gateway.md).\n\n### JWT-based authentication using EndUserAuthenticationPolicy\n\nRecent developments in the Istio project, concerning the **EndUserAuthenticationPolicy** and JWT Authentication Filter, have attracted a lot of attention. An investigation was conducted to judge whether these developments can replace the custom Mixer Adapter in Kyma.\n\nIstio allows to secure microservices with JWT-based authentication by enabling the JWT Authentication Filter. The **EndUserAuthenticationPolicySpec** adds the JWT Authentication Filter to the Mixer Adapter configuration of the application specified in the **EndUserAuthenticationPolicySpecBinding**. However, according to [this](https://groups.google.com/forum/#!topic/istio-security/guJV0J9A2VQ) conversation, the **EndUserAuthenticationPolicySpec** is only a low-level Envoy filter configuration which should not be exposed to the user.\n\nMoreover, contrary to the custom Mixer Adapter currently used in Kyma, this solution does not allow to secure only the chosen endpoints of a given service. Securing selected endpoints of a given service with JWT-based authentication cannot be abandoned as it is one of the functionalities that might be crucial for the future of the product.\n\n### New authentication mechanisms\n\nDevelopers of the Istio project are currently working on a new authentication policy which will support different authentication mechanisms, including the JWT-based authentication. Read [this](https://docs.google.com/document/d/1ezP4UuOn3JXEs_cXW4GyPGq-Ppq_XhS9-M-lN6ocOA4) document for more information. Istio developers plan to support more fine-grained settings, such as securing only the chosen HTTP methods or paths with JWT-based authentication.\n\n## Decision\n\nThe decision is to keep using the custom Mixer Adapter to allow the users to secure services with JWT-based authentication in Kyma.\n\n## Status\n\nAccepted on 2018-03-07.\n\n## Consequences\n\nKyma cannot use **EndUserAuthenticationPolicy** as this policy does not support securing. It only supports the chosen endpoints of the service. Additionally, the Istio developers do not recommend using it with user-facing APIs.\n\nThe new Istio Authentication Policy described in [this document](https://docs.google.com/document/d/1ezP4UuOn3JXEs_cXW4GyPGq-Ppq_XhS9-M-lN6ocOA4) will probably fit the requirements of Kyma. This is a subject to further evaluation, which will be conducted after the development process of the Policy is complete, or in a more advanced stage.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-012-Prettier_as_JavaScript_code_formatter.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-012-Prettier_as_JavaScript_code_formatter.md",
+   "adr_id": "12",
+   "title": "DR 012: Prettier as a JavaScript code formatter",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2021-11-09T10:06:48+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted on 2018-03-15.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# DR 012: Prettier as a JavaScript code formatter\n\nCreated on 2018-03-15 by Kamil Kupczy\u0144ski (@y-kkamil).\n\n## Context\n\nThe Code Style Guide is a set of conventions on how to write the source code. It covers many areas, including the use of `camelCase` vs `PascalCase` for variable identifiers, whether or not to use a semicolon as a statement terminator, or the use of tabs or spaces for indentation.\n\nIt is obvious that an enforced, unified code style in a project is beneficial. Not only does it improve the readability, but it also saves you from a lot of noise while looking at diffs, caused by unadjusted whitespaces, different break line settings, and other issues. It also ends discussions around the style itself. Once applied, everyone can write code the way they want, and let the formatter do the work. In the end, it saves time and energy.\n\n[Prettier](https://prettier.io) is one of the solutions dedicated to code formatting. It does not enforce such code quality rules as the use of globally scoped variables or naming. It only enforces the formatting rules. It can be used as a plugin for selected IDEs, as a pre-commit `git` hook, or as a standalone CLI tool. No matter which option you choose, it produces the same output given its configuration.\n\nIt was chosen because of its simplicity, ease of configuration, small amount of available options, and support for JavaScript, TypeScript, GraphQL, CSS, SCSS, and JSON, all of which are used in Kyma projects.\n\n## Decision\n\nThe decision is to use Prettier as the only code formatter for JavaScript-based projects.\n\n## Status\n\nAccepted on 2018-03-15.\n\n## Consequences\n\nEvery team working on a JavaScript-based project within Kyma has to incorporate Prettier into their workflow to ensure that the codebase is clean and unified across all projects.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-013-Allowed_UI_technology_in_the_Console_UI.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-013-Allowed_UI_technology_in_the_Console_UI.md",
+   "adr_id": "13",
+   "title": "DR 013: Allowed UI technology in the Console UI",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2021-11-09T10:06:48+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted 2018-03-28.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# DR 013: Allowed UI technology in the Console UI\n\nCreated on 2018-03-28 by Peter Kurajsky (@pekura).\n\n## Context\n\nThe Console UI is the administration view of Kyma and is a core part of the product.\n\nTo simplify the development process in Kyma, the number of used programming languages and frameworks is limited. It makes the collaboration easier and allows the developers to specialize in a chosen technology.\nFollowing this principle, the Go language is used as the only programming language for the back-end functionality of the core Kyma features.\n\nBy design, the Console UI can be extended using plugins written in any framework, developed either internally or by customers or partners. The interface between the Console UI and the plugins is based on HTML and JavaScript but the approach is to provide libraries for the most popular and well-adapted UI frameworks, and gather knowledge and experience in using them.\n\n## Decision\n\nThe decision is to allow the [React](https://reactjs.org) and [Angular](https://angular.io) frameworks in combination with the JavaScript and TypeScript programming languages to build the core views in the Kyma Console UI.\n\n## Status\n\nAccepted 2018-03-28.\n\n## Consequences\n\nEvery team working on the Console UI functionality must use either [React](https://reactjs.org) or [Angular](https://angular.io). It must be possible to integrate the Console UI with the views built using these frameworks.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-014-Certificate_against_remote_environment.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-014-Certificate_against_remote_environment.md",
+   "adr_id": "14",
+   "title": "DR 014: Certificate validation against remote environment",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2021-11-09T10:06:48+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "proposed",
+   "status_raw": "Proposed on 2018-06-07.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# DR 014: Certificate validation against remote environment\n\nCreated on 2018-06-07 by Szymon Giba\u0142a (@Szymongib).\n\n## Context\n\nEvery remote environment in the cluster should be accessible only for clients authorized to this particular remote environment.\nThis requirement raises a need for a mechanism that will differentiate between clients' permissions.\n\n### Multiple server certificates\n\nHaving separate server certificate per remote environment would make it hard to manage all those certificates.\n\n### Single certificate\n\nHaving only one certificate creates the problem that the client who obtained signed certificate for accessing one of the existing remote environments can access all of them using this particular certificate.\n\n## Decision\n\nThe decision is to check the Distinguished Name of the client's certificate in Ingress-Nginx configuration using `nginx.ingress.kubernetes.io/configuration-snippet` in individual ingresses and grant permissions only in case the client certificate's Common Name matches the required one.\n\n## Status\n\nProposed on 2018-06-07.\n\n## Consequences\n\nThe solution achieves the desired results with the single server certificate. It also does not require a custom Common Name validation mechanism and it is handled in Ingress-Nginx configuration, which is the preferred solution.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "nginx.ingress.kubernetes.io/configuration-snippet"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-016-Decomposition_of_Application_Connector.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-016-Decomposition_of_Application_Connector.md",
+   "adr_id": "16",
+   "title": "DR 016: Decomposition of the Application Connector",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2021-11-09T10:06:48+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "proposed",
+   "status_raw": "Proposed on 2018-06-27.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# DR 016: Decomposition of the Application Connector\n\nCreated on 2018-06-27 by \u0141ukasz Szymik (@lszymik).\n\n## Context\n\nThe Application Connector has three main areas of responsibility:\n\n- Delivery of Events from the external solution to Kyma.\n- Registration of Event Catalog and APIs exposed by the integrated solution.\n- Proxying calls from Kyma to the external solution.\n\nOne big microservice, called the Gateway, implements all these three functionalities. The architecture introduced a technical debt. All functionalities require a different approach to scaling. Proxying the whole traffic over a single component is the introduction to a single point of failure.\n\n## Decision\n\nThe decision is to split the Gateway service into three independent services:\n\n- Event service\n- Metadata service\n- Proxy service\n\n![Architecture](./assets/wormhole-architecture.png)\n\n### Event service\n\nThe Event service will be extracted to a separate service. There will be single Event service per Remote Environment (per connected solution).\n\nNginx-Ingress will expose the Event service. It will also handle the security aspects.\n\n### Metadata service\n\nThe Metadata service will be extracted to a separate service. There will be one global service which will handle the registration of APIs and the Event Catalog within all Remote Environments.\n\nNginx-Ingress will expose the Metadata service. It will also handle the security aspects. Proper path handling will ensure the separation between Remote Environments in Ingress.\n\n### Proxy service\n\nThe Proxy service will be extracted to a separate service which will be integrated into the Service Catalog. The user will take care of triggering the deployment of this service. There will be a possibility to have one or many proxy services in the Environment.\n\n## Status\n\nProposed on 2018-06-27.\n\n## Consequences\n\nThe separate proxy service will require integration with the Service Catalog. The security concept stays unchanged.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/assets/wormhole-architecture.png"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-017-Application-Integration-without-Wormhole-Connector.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-017-Application-Integration-without-Wormhole-Connector.md",
+   "adr_id": "17",
+   "title": "DR 017: Application Integration without the Wormhole Connector",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2021-11-09T10:06:48+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted on 2018-06-19.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# DR 017: Application Integration without the Wormhole Connector\n\nCreated on 2018-06-19 by Bart\u0142omiej Szwej (@bszwej).\n\n## Context\n\nThe Wormhole Connector is a part of the Application Integration. It is used by external systems deployed inside customers' private datacenter to establish a secure connection tunnel to the Kyma platform.\n\n## Decision\n\nThe decision is to get rid of the Wormhole Connector at this stage of the project. It can be an optional component of the Application Connector but a secure tunnel. For now, the Application Connector should focus on stability and on providing the core business features.\n\n## Status\n\nAccepted on 2018-06-19.\n\n## Consequences\n\nThe Wormhole Connector is removed.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-018-Knative_based_Kyma_eventing.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-018-Knative_based_Kyma_eventing.md",
+   "adr_id": "18",
+   "title": "DR 018: Knative-based Kyma Eventing",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2021-11-09T10:06:48+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "proposed",
+   "status_raw": "Proposed on 2018-08-10.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# DR 018: Knative-based Kyma Eventing\n\nCreated on 2018-08-19 by Ahmed Abdalla (@Abd4llA).\n\n## Context\n\nBased on the decision of building Kyma on top of Knative, and along the effort to reuse as much of Knative functionality as possible, the eventing area shines as a good area for alignment. That is why a decision was made to have Kyma leverage as much of Knative Eventing as possible. This is a an architecture decision on how to achieve that target.\n\nThe assumptions are as follows:\n1. Base Kyma on Knative.\n2. Favor a smooth, gradual migration of the Kyma components to Knative Eventing.\n3. Consider areas of contribution to Knative Eventing.\n4. Event Bus public integration: Publish RESTful API, EventActivation and Subscriptions CRDs are still needed.\n5. Leveraging Knative Eventing is a requirement.\n\n## Decision\n\n### Kyma Event Bus\n\nThe decisions is to provide a solution that abstracts the Knative Eventing concepts for the rest of Kyma as a short- or medium-term solution. In that way, the transition to Knative Eventing is transparent to the rest of the Kyma components.\n\nThe architecture is as follows:\n\n![Architecture](./assets/event-bus.png)\n\n### NATS Streaming\n\nKnative provides an abstraction of **The Bus** which is a pluggable component of Knative Eventing that have different implementations backed up by a certain messaging store, for example Kafka Bus, or GCP PubSub Bus.\n\nThe decisions are to:\n\n1. Implement a production-ready Knative Bus `NATS Streaming`.\n2. Provide `NATS Streaming` operator that provides `NATS Streaming` clusters which satisfy all production needs.\n3. Implement Knative Bus `Azure Service Bus Messaging` as a plan B.\n4. Contribute both implementations to `Knative Eventing`.\n\n## Status\n\nProposed on 2018-08-10.\n\n## Consequences\n\nThese are the consequences of this architecture decision:\n- Refactor `Event Bus Publish` application.\n- Merge `Event Bus Push` and `Sub Validator` applications into a single `Event Bus Controller` application.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/assets/event-bus.png"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-019-Changelog_generation_with_PR_labels.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-019-Changelog_generation_with_PR_labels.md",
+   "adr_id": "19",
+   "title": "DR 019: Changelog generation with pull request labels",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2021-11-09T10:06:48+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted on 2018-08-17. Revisited on 2019-01-03.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# DR 019: Changelog generation with pull request labels\n\nCreated on 2018-09-13 by Pawe\u0142 Kosiec (@pkosiec).\nUpdated on 2019-02-08 by Pawe\u0142 Kosiec (@pkosiec).\n\n## Decision log\n\n| Name | Description |\n|-----------------------|------------------------------------------------------------------------------------|\n| Title | Changelog generation with pull request labels |\n| Ultimate decision maker(s) | Kyma Council |\n| Due date | 2018-09-13 |\n| Input provider(s) | Jose Cortina, \u0141ukasz G\u00f3rnicki, Piotr Bochy\u0144ski, Marek Nawa, Rakesh Garimella, Pawe\u0142 Kosiec |\n| Group(s) affected by the decision | All Kyma members |\n| Decision type | Choice |\n| Earliest date to revisit the decision | 2018-12-01 |\n\n## Context\n\nMaintaining the changelog is an essential part of developing an open source project. It is essential as the community wants to keep the maximum transparency. As the changelog should be easy to read, there is a need to group changes. At the same time, creating the changelog should require as little manual work as possible.\n\nThere were two different proposals for creating changelog. In both of them the changelog is generated automatically in the CI pipeline. The only difference is the way to describe changes and categorize them. In the first one, there is a special `release` block in the pull request description. The second proposal is about using the imperative mood in pull request titles and grouping changes with the pull request labels.\n\nThe main advantage of the second approach is having one place to define changes in a pull request. This place is the pull request title, usually prefilled with the commit message, in case there is only one commit. Selecting the type of change is easy. A contributor expands the list of available PR labels and chooses the right category. Another advantage is that the approach enforces the user to make a single type of change in a pull request. There are also many tools available for generating the changelog from the pull requests labels.\n\n## Decision\n\nThe decision is to use pull request titles to describe changes, and to reuse the existing **`area/`** labels for pull request categorization. Changes will be grouped in the changelog by the area.\nThe changelog will be generated as a part of the CI pipeline using the [**Lerna Changelog**](https://github.com/lerna/lerna-changelog) tool, in the form of the GitHub release description.\n\n## Status\n\nAccepted on 2018-08-17.\nRevisited on 2019-01-03.\n\n## Consequences\n\nWhen creating a new pull request, every team member must:\n- use the imperative mood for the pull request title\n- use the **`area/`** labels to categorize changes\nAll pull requests without labels should be rejected during the review process.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "area/"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "sigs-and-wgs/archive/sig-core/decisions/dr-020-Kyma-installer-with-embedded-charts.md",
+   "identity": "sigs-and-wgs/archive/sig-core/decisions/dr-020-Kyma-installer-with-embedded-charts.md",
+   "adr_id": "20",
+   "title": "DR 020: Kyma Installer with embedded Kyma charts",
+   "first_commit": "2021-11-09T10:06:48+01:00",
+   "first_sha": "20c35f56ee4bb66d0365277eda7d442257a37a55",
+   "last_commit": "2021-11-09T10:06:48+01:00",
+   "author": "Klaudia Grzondziel",
+   "email": "35192450+klaudiagrz@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted on 2018-09-26.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# DR 020: Kyma Installer with embedded Kyma charts\n\nCreated on 2018-09-19 by Piotr Bochy\u0144ski (@pbochynski).\n\n## Decision log\n\n| Name | Description |\n|-----------------------|------------------------------------------------------------------------------------|\n| Title | Kyma Installer with embedded Kyma charts |\n| Ultimate decision maker(s) | Kyma Council |\n| Due date | 2018-09-26 |\n| Input provider(s) | Piotr Bochy\u0144ski (@pbochynski) |\n| Group(s) affected by the decision | Kyma developers |\n| Decision type | Binary |\n| Earliest date to revisit the decision | 2018-12-26 |\n\n## Context\n\nFind the context of this decision record in [this](../proposals/kyma-installer-with-charts.md) proposal.\n\n## Decision\n\nThe installer will contain Kyma charts and scripts in the Docker image.\n\n## Status\n\nAccepted on 2018-09-26.\n\n## Consequences\n\nSimpler installation and update processes which will require only deploying a given version of the installer.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/proposals/kyma-installer-with-charts.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 21,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "21"
+}

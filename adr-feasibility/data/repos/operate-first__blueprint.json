@@ -1,0 +1,1235 @@
+{
+ "repo": "operate-first/blueprint",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2020-11-03T12:15:32+01:00",
+ "last_commit": "2023-04-26T16:27:05+02:00",
+ "n_commits": 86,
+ "n_authors": 15,
+ "n_files": 38,
+ "n_code_files": 0,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 23,
+ "adrs": [
+  {
+   "path": "adr/0021-sre-cloud-support.md",
+   "identity": "adr/0021-sre-cloud-support.md",
+   "adr_id": "21",
+   "title": "Operate First Community Cloud support process",
+   "first_commit": "2022-08-02T02:46:49-04:00",
+   "first_sha": "634b70644d050d7a4772f1fbde0ba3e376709b4b",
+   "last_commit": "2023-04-25T17:56:07+02:00",
+   "author": "Humair Khan",
+   "email": "HumairAK@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Operate First Community Cloud support process\n\n* Status: deprecated, no-longer-relevant\n* Deciders: goern\n* Date: 2023-04-25\n\nTechnical Story: https://github.com/open-services-group/scrum/issues/4\n\n## Context and Problem Statement\n\nIn general, the individual or team that onboards a service often assumes the sole role of operating that service indefinitely. There are various issues associated with this:\n\n* Other members of the SRE team are unable to offer sufficient support for the service, support here can refer to:\n  * Operational support (improvements, incidents, fixes, patches, upgrades, etc.)\n  * Responding to end user questions via GitHub, Slack, Mailing List pertaining to the service\n* Siloed knowledge results in fewer team members being able to perform PR reviews pertaining to the service\n* Documentation for the app/service suffers, since now only one person is able to write/understand them\n* The one (or few) engineers responsible for maintaining the service have to devote large portions of their engineer time to operate the service, as opposed to building out new features in Operate First\n\nThe proposed solution is to apply an SRE On Call procedure in such a way as to alleviate the aforementioned concerns.\n\n## Decision Drivers\n\n* All SRE members in Operate First should have the opportunity to be On Call rotation\n* On Call rotation should be able to scale with work and not take up large portions of an engineer's sprint\n* On Call person should have sufficient support to perform on call duties\n* Not aiming for 24/7 on call coverage\n* Need to maintain and improve [documentation][docs] used for on call duties\n\n## Considered Options\n\nThe only options to consider are the duration each engineer spends on call, i.e. the frequency of rotations:\n\n1) On call rotations happen every week\n2) On call rotations happen every day\n\n## Decision Outcome\n\nSelected option 2) as option 1) could result in a major portion of an engineer's sprint time being spent on call and thus does not scale well.\n\n## Process\n\n### On Call List\n\nMaintain an On Call list of engineers to perform site reliability in the Operate First Cloud. Official list can be maintained [here][on-call-list].\n\n### Schedule\n\nScheduled rotations happen every working day. When an engineer is on call, they are expected to perform the following on call duties:\n\n### On Call Duties\n\nWhen on call, perform the following duties:\n\n* Respond to all end-user questions/comments/concerns regarding operations in:\n  * Operate First Slack #support, #operations, #general\n  * Operate First Mailing list\n  * Operate First Operations Repos (i.e, `apps`, `operations`)\n* Check status and notifications in the Operate First OCP console\n* Be first responder to any issues, incidents, and other operational issues for services managed by SRE team\n* Follow documentations to resolve any issues, if no documentation and/or runbook exists, ensure they are updated once the issues are resolved\n* Document your topic work in the [on-call-log]\n* If the on call engineer does not know how to resolve an issue, and no documentation exist, the onus is on the on call engineer to reach out to the rest of the SRE team for assistance.\n* In the event on call engineer is assisted by another engineer, it is still the on call engineer's responsibility to ensure the resolution steps are fully documented in the form of a runbook, for the next on call engineer.\n  * This is essential in helping break down knowledge silos.\n* Handover (via call or chat)\n  * Inform the next on call engineer [on-call-log]\n  * Move checkbox\n  * If the current on call engineer is the last one on the list, shuffle the list in the [on-call-log] manually\n\n### Off Call Duties\n\nThe only requirement for off call engineers is to offer sufficient support for on call engineers when:\n\n* an on call engineer does not know how to resolve an issue\n* there are no documents on how to resolve an issue\n\n[on-call-list]: https://github.com/operate-first/apps/blob/master/slack-first/overlays/moc/smaug/config.yaml#L4\n[on-call-log]: https://hackmd.io/SHcaWaXLS56Fo2Wr9cRfxg\n[docs]: https://www.operate-first.cloud/apps/CONTRIBUTING.html\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "open-services-group/scrum#4",
+     "kind": "issue",
+     "url": "https://github.com/open-services-group/scrum/issues/4",
+     "number": "4"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/operate-first/apps/blob/master/slack-first/overlays/moc/smaug/config.yaml",
+    "www.operate-first.cloud/apps/CONTRIBUTING.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0018-migration-to-keycloak.md",
+   "identity": "docs/adr/0018-migration-to-keycloak.md",
+   "adr_id": "18",
+   "title": "Authentication migration to Keycloak",
+   "first_commit": "2021-07-19T16:45:46+02:00",
+   "first_sha": "dd270cf0a555de4384c325aa75750e34c1566229",
+   "last_commit": "2023-04-25T17:53:57+02:00",
+   "author": "Tom Coufal",
+   "email": "7453394+tumido@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# Authentication migration to Keycloak\n\n* Status: deprecated, no-longer-relevant\n* Deciders: goern\n* Date: 2023-04-25\n\nTechnical Story: https://github.com/orgs/operate-first/projects/24\n\n## Context and Problem Statement\n\nThe Operate First Cloud environment spans multiple data centers and multiple regions.\nA central authentication system helps identifying users and system operators without maintaining multiple isolated user registries.\nThis ADR builds upon and extends [0010-common-auth-for-applications](0010-common-auth-for-applications.md) and [0017-authentication-for-platform](0017-authentication-for-platform.md)\nand decides on technical aspects and implementation.\n\n## Decision Drivers\n\nPrevious ADRs decided input conditions such as:\n\n* GitHub is the ultimate identity provider.\n* Applications running within the platform should be able to leverage common authentication as a client.\n\nThis ADR answers on how to achieve following:\n\n1. Fully declarative - new clusters can be integrated with SSO via a PR.\n2. Provide seamless migration and transition for users.\n3. Centralized and single SSO instance.\n\n## Considered Options\n\n1. Authenticate OpenShift against GitHub directly and provide app authentication via Keycloak\n2. Authenticate OpenShift against GitHub directly and provide app authentication via Dex against OpenShift\n3. Authenticate OpenShift and apps against Keycloak\n4. Authenticate OpenShift and apps against Keycloak and migrate OpenShift groups to Keycloak Groups\n5. Authenticate OpenShift against Keycloak and provide app authentication via Dex against OpenShift\n\n## Decision Outcome\n\nChosen option: _\"5. Authenticate OpenShift against Keycloak and provide app authentication via Dex against OpenShift\"_, because it's a fully declarative solution that is fully supported and available today.\n\nThis ADR should be revisited after Keycloak becomes capable of importing/providing OpenShift Groups data ([Keycloak RFE 18532][1]). Then option _3. Authenticate OpenShift and apps against Keycloak_ should be preferred.\n\n### Authenticating Openshift clusters\n\nEach cluster will connect to a centralized Keycloak instance. This centralized Keycloak is coupled with a GitHub application which facilitates authentication:\n\n![](https://chart.googleapis.com/chart?cht=gv&chl=digraph{\"Openshift+cluster+0\"->Keycloak[type=s];\"Openshift+cluster+1\"->Keycloak[type=s];\"Openshift+cluster+N\"->Keycloak[type=s];Keycloak->Github[type=s]})\n\n### Authenticating application within Operate First\n\nThis doesn't change and remains the same as described in [ADR 0010](0010-common-auth-for-applications.md).\n\n### Positive Consequences\n\n* When adding a new clusters, all SSO configuration happens via Git\n* When adding a new application, all SSO configuration happens via Git\n* Single, centralized Keycloak instance available to all clusters\n\n### Negative Consequences\n\n* Per cluster Dex deployment to allow application authentication due to the fact that Keycloack can't import OpenShift groups.\n\n## Pros and Cons of the Options\n\n### Authenticate OpenShift against GitHub directly and provide app authentication via Keycloak\n\n* Good, because authentication is decentralized and each cluster handles authentication separately.\n* Bad, because authentication is decentralized and there's no single registry of all Operate First users.\n* Bad, since each cluster requires manual changes in GitHub application used as auth provider.\n* Bad, because Keycloak is not able to import OpenShift user groups and surface them in OICD claims. Blocked by [Keycloak RFE 18532][1].\n\n### Authenticate OpenShift against GitHub directly and provide app authentication via Dex against OpenShift\n\n* Good, because authentication is decentralized and each cluster handles authentication separately.\n* Bad, because authentication is decentralized and there's no single registry of all Operate First users.\n* Bad, since each cluster requires manual changes in GitHub application used as auth provider.\n* Bad, because we have to maintain a per cluster Dex deployment to provide applications with identity from OpenShift.\n\n### Authenticate OpenShift and apps against Keycloak\n\n* Good, onboarding new clusters is fully declarative.\n* Good, because authentication is centralized and only one system is the ultimate source of truth for all accounts.\n* Bad, because two separate Keycloak realms are required.\n* Bad, because Keycloak is not able to import OpenShift user groups and surface them in OICD claims. Blocked by [Keycloak RFE 18532][1].\n\n### Authenticate OpenShift and apps against Keycloak and migrate OpenShift groups to Keycloak Groups\n\n* Good, onboarding new clusters is fully declarative.\n* Good, because authentication is centralized and only one system is the ultimate source of truth for all accounts.\n* Bad, because two separate Keycloak realms are required.\n* Bad, because Keycloak Operator doesn't provide a declarative management for user groups.\n\n### Authenticate OpenShift against Keycloak and provide app authentication via Dex against OpenShift\n\n* Good, onboarding new clusters is fully declarative.\n* Good, because authentication is centralized and only one system is the ultimate source of truth for all accounts.\n* Bad, because we have to maintain a per cluster Dex deployment to provide applications with identity from OpenShift.\n\n## Links\n\n* [Keycloak RFE 18532][1]\n\n\n[1]: https://issues.redhat.com/browse/KEYCLOAK-18532\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0012-moc-infra-cluster-deployment-methods.md",
+   "identity": "docs/adr/0012-moc-infra-cluster-deployment-methods.md",
+   "adr_id": "12",
+   "title": "Cluster deployment methods for moc-infra cluster",
+   "first_commit": "2021-03-25T19:00:38+02:00",
+   "first_sha": "0e1eaabd4395b210fcf9531a8b8425cf5de2ba6d",
+   "last_commit": "2023-04-25T17:51:44+02:00",
+   "author": "Ilana Polonsky",
+   "email": "61122099+ipolonsk@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Cluster deployment methods for moc-infra cluster\n\n* Status: deprecated, no-longer-relevant\n* Deciders: goern\n* Date: 2023-04-25\n\n## Context and Problem Statement\n\nThis document suggests options for the preferred deployment method for the **moc-infra cluster** at the MOC(Mass Open Cloud). This hub cluster will be the central OpenShift cluster to manage and deploy other clusters on-demand.\n\nThe moc-infra cluster is a bare-metal cluster. Deploying an OpenShift Container Platform on bare metal can be achieved by several methods.\n\n## Considered Options\n\n### UPI - User provioned indrastructure\n\nDeploy an OpenShift cluster on infrastructure that you prepare and maintain.\n\nWe decided not to take this option under consideration since there is more effort involved in setting up the infrastructure.\n\n### IPI - Installer provisioned infrastructure\n\nDeploy an OpenShift cluster on infrastructure that the installation program provisions and the cluster maintains.\n\n* Good, because the installation is closer to a disconnected environment, and it's a good practice.\n* Good, because this method uses an external tool that is available for all.\n* Good, because this is a lightweight, comfortable and available tool to the general public.\n\n### Assisted Installer\n\nDiscovery ISO that makes it easy to connect discovered hardware.\n\n* Good, because Assisted Installer is a growing Red Hat tool to install a new cluster, getting familiar with it will have future benefits.\n* Good, because this tool will be part of ACM deployment of new clusters.\n* Good, because it's a good opportunity to provided feedback to the developers.\n* Good, because can be easily automated, use API calls.\n* Good, because this method allows booting bare-metal nodes from an ISO image.\n* Bad, because this is a tech preview tool, not completed product.\n\n## Preferred option\n\nWe chose to deploy the cluster using the IPI method because it is a light and easy deployment, available for the public to use, and easy to automate the process for reproducible deployment.\n\n## Outcomes\nWe deployed our moc-infra management cluster using the IPI installation method.\n\n## References\n - [OpenShift Container Platform installation overview](https://docs.openshift.com/container-platform/4.7/installing/index.html#installation-overview_ocp-installation-overview)\n - [IPI baremetal deployment GitHub repo](https://github.com/openshift-kni/baremetal-deploy)\n - [Assisted Installer GitHub repo](https://github.com/openshift/assisted-installer)\n - [OpenShift Assisted Instller Demo](https://www.openshift.com/blog/using-the-openshift-assisted-installer-service-to-deploy-an-openshift-cluster-on-metal-and-vsphere)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "docs.openshift.com/container-platform/4.7/installing/index.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0022-rules-for-entity-mapping-in-service-catalog.md",
+   "identity": "adr/0022-rules-for-entity-mapping-in-service-catalog.md",
+   "adr_id": "22",
+   "title": "Rules for entity mapping in Service Catalog",
+   "first_commit": "2022-09-05T11:52:55+02:00",
+   "first_sha": "ae60bd9e93de515b880b527beff65a1c207c240f",
+   "last_commit": "2022-09-05T11:52:55+02:00",
+   "author": "Tom Coufal",
+   "email": "7453394+tumido@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Rules for entity mapping in Service Catalog\n\n* Status: Proposed\n* Deciders: mimotej, SamoKopecky, tumido\n* Date: 2022-07-26\n\n## Context and Problem Statement\n\nBackstage offers multiple entity types which can be used to represent entities and their relations in a service catalog. We need to have a set of rules present in Operate First that will provide context and guidance on how entities are mapped to Backstage resources.\n\n## Decision Drivers\n\n* Easy and clear guidelines and distinction for each resource type.\n* Supports various caveats like ODH meta operators and Cluster as a service/resource.\n\n## Decision Outcome\n\n[Backstage provides](https://backstage.io/docs/features/software-catalog/descriptor-format) numerous resource types, which has strictly defined relations.\n\n```mermaid\nerDiagram\nDomain ||--o{ System : contains\nSystem ||--o{ Component : contains\nComponent |o--o{ Component : hasSubcomponent\nComponent |o--o{ Component : dependsOn\nComponent ||--o{ Resource : requires\nComponent ||--o{ API : provides\nComponent }|--|| API : consumes\nResource ||--o{ Component : dependsOn\nResource ||--o{ Resource : dependsOn\nLocation\nTemplate\nGroup |o--|{ User : hasMember\nGroup |o--|{ Group : hasMember\n```\n\nRelations are generated from resource manifests. Extensive documentation on all supported and recognized relations is available [upstream][3].\n\nAdditionally:\n\n`Group` and `User` resources own any other resource type. All resources except `Group`, `User` and `Location` is required to have an owner specified.\n\n### Kind: Domain\n\nThis entity represents a top-level non-root entity within the cloud. Think of it as a SIG type of entity. A whole collection of applications or group of services that are meant to work together and be used together.\n\nExamples:\n\n* **SRE Domain**: Contains all monitoring applications, CI/CD etc, Service Catalog, etc.\n* **Data Science Domain**: Contains ODH and, Kubeflow, Data cataloging solutions and other analytics tools.\n* **Thoth Station Domain**: All Thoth related systems including repository storages like Pulp, everything supporting Thoth.\n\n`Domain` owns multiple `System`s.\n\n### Kind: System\n\nSystem means a collection of applications and components that build a singular service. A system is meant as an interaction point for users as an application.\n\nExamples:\n\n* **Service Catalog System**: Represents Backstage as a whole.\n* **ODH System**: Represents ODH as a collection of its components.\n* **ArgoCD System**\n* **Prow System**: Contains all Prow components like Deck, Crier, Horologium, etc.\n\n`System` resource belongs to a one domain. `System` resource owns `Component` resources.\n\nIf there are multiple instances of the same service system, either for different maturity level environments (staging/production) or intended to different audiences (ODH in Smaug and ODH in OS Climate) the System or Component resources need to be duplicated.\n\n### Kind: Component\n\nIndividual service, a runtime, component. Usually describes an individual kubernetes `Deployment`. `Component` kind is the most feature rich entity in Backstage, it allows you to track CI/CD, Kubernetes deployment, Grafana dashboards etc. That means `Component` kind should be used for each individual piece of code base, both home grown and external, that is packaged either as a library, dependency, OCI container and so on.\n\nExamples:\n\n* **ArgoCD Repository Server Component**\n* **Deck Component of Prow**\n\nIn special cases of complicated architectures, where there are multiple entities in between a `Domain`, `System` and a deployment, the `Component` resource can describe a \"System-like\" resources. The most obvious example here is applications which belong to Open Data Hub:\n\n> Open Data Hub is described as a `System` resource in Data Science `Domain`. Due to lack of intermediate resource types in Backstage, all the applications within Open Data Hub, like Superset, JupyterHub, Argo Workflows, etc. are described as `Component` resources. These resources have subcomponents (specified as `Component` resources with the [`.spec.subcomponentOf` field](https://backstage.io/docs/features/software-catalog/descriptor-format#specsubcomponentof-optional) specified) which finally map to individual deployments\n\n* **JupyterHub Component**\n* **JupyterHub Controller subcomponent** `Component` resource\n* **Idle culler subcomponent** `Component` resource\n\nThe `Component` resource requires a [`.spec.type` field](https://backstage.io/docs/features/software-catalog/descriptor-format#spectype-required) to be specified. While any arbitrary value is allowed here, we recognize following main types:\n\n* `service`: Any backend-like application, API provider, bot\n* `website`: Has to provide frontend web interface\n* `library`: Provides a library or any sort of code base dependency\n* `template`: Is used as a repository or service template\n\n### Kind: API\n\nIf a component is a backend service, it may expose an API intended to be consumed by others. Each exposed API should provide an definition, either statically or dynamically. Backstage [requires us to specify](https://backstage.io/docs/features/software-catalog/descriptor-format#kind-api) `.spec.definition` and `.spec.type` fields. Definition should reflect selected type. Additionally `.spec.definition` can directly describe the API verbatim or can reference remote or service provided dynamic API definitions through supported [substitution modifiers](https://backstage.io/docs/features/software-catalog/descriptor-format#substitutions-in-the-descriptor-format).\n\n### Kind: Resource\n\nThis resource type represents any other type of dependency of a `Component`. It can be an object bucket, a cluster where the workload is hosted at, etc. Any external dependency that the service relies on. This entity type describes a concrete resource - a specific database cluster, a named S3 bucket and external SaaS/PaaS out of Operate First control.\n\n### Kind: User\n\nRepresents individual users.\n\n### Kind: Group\n\nRepresents group of users or teams. Composable unit of organization and people structure. Groups should represent individual service owners and contact points.\n\n### Kind: Template\n\nIn Backstage this is used for interactive forms. Since all our configuration is declarative, we don't plan on using this entity.\n\n### Kind: Location\n\nBackstage provides this entity type to allow you to extend catalog from other locations. Since our catalog is co-located in a single place, we don't plan on using this entity to reference external locations. Please refrain from creating new `Location`s, instead extend the ones available at [service catalog manifests folder root](https://github.com/operate-first/apps/tree/master/service-catalog).\n\n## Additional notes\n\n### Name, title and description\n\nEach entity is required to feature `.metadata.name` by definition. Additionally it is advised to provide additional details via:\n\n* `.metadata.title` for a display name\n* `.metadata.description` for human readable description of the entity\n\n### Annotations\n\nIndividual entity types support various annotations, which allow users to enable certain plugins and features. To understand supported annotations, users should refer to our service catalog [documentation][1] and [upstream documentation on annotations][2].\n\n### Tags\n\nAll entity types support tagging. While any arbitrary value is allowed, it's better to restrict ourselves so we can use these values for easy filtering and search. Please be considered when using tags and don't be overly specific (unique tag applied to a single resource only is not helpful).\n\n### Links\n\nAdditionally you can display links for each entity. Please use them to point to additional documentation, repositories and other resources. See [specification](https://backstage.io/docs/features/software-catalog/descriptor-format#links-optional) for more details.\n\n### Example\n\nIn order to understand the mapping better, illustrate it on following well known services:\n\n```mermaid\nflowchart LR\n\na[SRE Domain] --> b[Service Catalog System]\nb --> c[Backstage Component]\nc -- dependsOn --> d[S3 bucket Resource]\nc -- dependsOn --> e[Smaug cluster Resource]\nc -- dependsOn --> f[PG Cluster Resource]\nc -- consumesApi --> u\nc -- implements --> g[Backstage API]\n\na --> h[ArgoCD System]\nh --> i[Repo server Component]\nh --> j[ArgoCD Server Component]\nj -- implements --> u[ArgoCD API]\nh --> k[Redis Component]\n\ni -- dependsOn --> l[Infra cluster Resource]\nj -- dependsOn --> l\nk -- dependsOn --> l\n\nm[Data Science Domain] --> n[ODH System]\nn --> o[Argo Workflows Component]\nn --> p[ODH Dashboard Component]\nn --> q[JupyterHub Component]\nq --> r[Jupyterhub SubComponent]\nq --> s[Jupyterhub DB SubComponent]\nq --> t[Idle culler SubComponent]\nr -- dependsOn --> e\ns -- dependsOn --> e\nt -- dependsOn --> e\n```\n\n## Links\n\n* [Upstream YAMl specification in Backstage](https://backstage.io/docs/features/software-catalog/descriptor-format)\n* [Service catalog `README.md`][1]\n* [Well-known annotations][2]\n* [Well-known relations][3]\n\n\n[1]: https://github.com/operate-first/service-catalog#readme\n[2]: https://backstage.io/docs/features/software-catalog/well-known-annotations\n[3]: https://backstage.io/docs/features/software-catalog/well-known-relations\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0020-service-catalog.md",
+   "identity": "adr/0020-service-catalog.md",
+   "adr_id": "20",
+   "title": "Provide a service catalog",
+   "first_commit": "2022-05-26T14:14:27+02:00",
+   "first_sha": "b8dd9b50f843b7abbb3437cc8211a5cce316190a",
+   "last_commit": "2022-05-26T14:14:27+02:00",
+   "author": "Tomas Coufal",
+   "email": "tcoufal@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Provide a service catalog\n\n* Status: accepted\n* Deciders: tumido, durandom, HumairAK, SamoKopecky\n* Date: 2022-05-26\n\nTechnical Story: https://github.com/operate-first/support/issues/560, https://github.com/operate-first/support/issues/556\n\n## Context and Problem Statement\n\nAs a transparent and open Community cloud we need a simple yet complete way of displaying services that are available on our platform, their current status, support path etc.\n\n## Decision Drivers\n\n* Service catalog is configurable declaratively\n* Tool can be deployed on Kubernetes\n* Learning curve is shallow for service providers, so adding/updating/maintaining entries in the Service catalog is not a burden.\n\n## Considered Options\n\n* Red Hat's Service Dashboard\n* Implement a new solution\n* Backstage\n* Kronicle\n* Third party paid service\n\n## Decision Outcome\n\nChosen option: \"Backstage\", because we don't want to reimplement the tooling, we want something opensource and Backstage is now a CNCF project.\n\n### Positive Consequences\n\n* There's a ready tool to be used that satisfy our needs.\n* It is possible to define the service catalog declaratively via config file\n* Partial Kuberentes support\n* It is the most mature tool of all available ones\n\n### Negative Consequences\n\n* Not fully Kuberentes native\n  * To enable plugins we are required to make code changes and rebuild the container\n  * Service definition is not a custom resource\n* Authentication may be required\n* Doesn't feature Kubernetes operator - services are not defined as custom resources\n* Not a mature project - especially on Kubernetes.\n\n## Pros and Cons of the Options\n\n### Red Hat service dashboard\n\nhttps://gitlab.cee.redhat.com/service/status-board/\n\n* Good, because it's Kubernetes native\n* Good, because it's multicluster by design\n* Bad, because it's not opensource\n* Bad, because it's tightly connected to Red Hat's internal infrastructure\n\n### Implement a new solution\n\n* Good, because can be fully Kubernetes native\n* Good, because can match our needs precisely\n* Bad, because it would be a considerable time and people investment\n* Bad, because we would end up reinventing the wheel yet again\n\n### Kronicle\n\nhttps://kronicle.tech/\n\n* Good, because it's Kubernetes native\n* Good, because it's presumably easy to configure\n* Bad, because UX feels clunky and not easily consumable for ens user\n* Bad, because maturity of this project feels very low\n\n### Third party paid service\n\n* Good, because it is a feature complete solution, polished and integrated experience\n* Bad, because it's not hosted within the Operate First Community cloud\n* Bad, because it's not open sourced\n* Bad, because this goes against principles of operating a community cloud\n\n<!-- markdownlint-disable-file MD013 -->\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "operate-first/support#560",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/support/issues/560",
+     "number": "560"
+    },
+    {
+     "key": "operate-first/support#556",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/support/issues/556",
+     "number": "556"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0000-use-markdown-architectural-decision-records.md",
+   "identity": "docs/adr/0000-use-markdown-architectural-decision-records.md",
+   "adr_id": "0",
+   "title": "Use Markdown Architectural Decision Records",
+   "first_commit": "2020-11-05T11:58:37+01:00",
+   "first_sha": "89af547ecb7d9735083219918a5bf9ce154ba503",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "Christoph G\u00f6rn",
+   "email": "goern@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Use Markdown Architectural Decision Records\n\n## Context and Problem Statement\n\nWe want to record architectural decisions made in Operate First. Which format and structure should these records follow?\n\n## Considered Options\n\n* [MADR](https://adr.github.io/madr/) 2.1.2 \u2013 The Markdown Architectural Decision Records\n* [Michael Nygard's template](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions) \u2013 The first incarnation of the term \"ADR\"\n* [Sustainable Architectural Decisions](https://www.infoq.com/articles/sustainable-architectural-design-decisions) \u2013 The Y-Statements\n* Other templates listed at [https://github.com/joelparkerhenderson/architecture\\_decision\\_record](https://github.com/joelparkerhenderson/architecture_decision_record)\n* Formless \u2013 No conventions for file format and structure\n\n## Decision Outcome\n\nChosen option: \"MADR 2.1.2\", because\n\n* Implicit assumptions should be made explicit.\n\n  Design documentation is important to enable people understanding the decisions later on.\n\n  See also [A rational design process: How and why to fake it](https://doi.org/10.1109/TSE.1986.6312940).\n\n* The MADR format is lean and fits our development style.\n* The MADR structure is comprehensible and facilitates usage & maintenance.\n* The MADR project is vivid.\n* Version 2.1.2 is the latest one available when starting to document ADRs.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "doi.org/10.1109/TSE.1986.6312940"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0001-use-gpl3-as-license.md",
+   "identity": "docs/adr/0001-use-gpl3-as-license.md",
+   "adr_id": "1",
+   "title": "Use GNU GPL as license",
+   "first_commit": "2020-11-05T11:58:37+01:00",
+   "first_sha": "89af547ecb7d9735083219918a5bf9ce154ba503",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "Christoph G\u00f6rn",
+   "email": "goern@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Use GNU GPL as license\n\nEverything needs to be licensed, otherwise the default copyright laws apply.\nFor instance, in Germany that means users may not alter anything without explicitly asking for permission.\nFor more information see <https://help.github.com/articles/licensing-a-repository/>.\n\nWe want to have all source code related to Operate First to be used without any hassle and as free as possible, so that\nusers can just [execute and enjoy the four freedoms](https://fsfe.org/freesoftware/freesoftware.en.html).\n\n## Considered Options\n\n* No license\n* [CC0](https://creativecommons.org/share-your-work/public-domain/cc0/)\n* [GNU GPL](http://www.gnu.org/licenses/gpl-3.0.en.html)\n\n## Decision Outcome\n\nChosen option: \"GNU GPL\", because this license supports a strong copyleft model.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "fsfe.org/freesoftware/freesoftware.en.html",
+    "www.gnu.org/licenses/gpl-3.0.en.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0003-feature-selection-policy.md",
+   "identity": "docs/adr/0003-feature-selection-policy.md",
+   "adr_id": "3",
+   "title": "Users of an Operate First deployment might need different features than provided by upstream project's release",
+   "first_commit": "2020-11-11T09:03:46+01:00",
+   "first_sha": "011413603c412d1b48540d2119f7c1f10baea9cc",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "Christoph G\u00f6rn",
+   "email": "goern@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Users of an Operate First deployment might need different features than provided by upstream project's release\n\n* Status: approved\n* Date: 2020-Nov-09\n\n## Context and Problem Statement\n\nOpen Data Hub has release v0.8.0, some of the Elyra features required by Thoth Station experiments are\nnot part of this ODH release. This would require to update certain components to the HEAD of main branch of ODH upstream\nproject.\n\n## Decision Drivers\n\n* Opertational complexity of an environment diverging from an upstream release\n* User needs of more current software components\n\n## Considered Options\n\n* stay with upstream release\n* deploy specific versions of components\n\n## Decision Outcome\n\nChosen option: \"deploy specific versions of components\", because this will give the most efficient deployment to\nOperate First operators and users.\n\n### Positive Consequences\n\n* operators can gain a maximum of experience, enabling feedback on component versions that might have not been tested\nby the upstream project\n* users get the feature set they need to get the most out of an Operate First deployment\n\n### Negative Consequences\n\n* additional deployment/manifest customizations that are not valuable to upstream project, as they are out of scope\nfor them\n\n<!-- markdownlint-disable-file MD013 -->\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0004-argocd-apps-of-apps-structure.md",
+   "identity": "docs/adr/0004-argocd-apps-of-apps-structure.md",
+   "adr_id": "4",
+   "title": "ArgoCD Apps of Apps Structure",
+   "first_commit": "2020-11-24T09:05:58-05:00",
+   "first_sha": "fdcc4113ad3d6ff5e5c43f010c6604602dc3adba",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# ArgoCD Apps of Apps Structure\n\n## Context and Problem Statement\n\nArgoCD `Applications` manifests are a [declarative way to manage](https://argoproj.github.io/argo-cd/operator-manual/declarative-setup/#applications) ArgoCD `Applications` in git. Often times these are manifests that are stored alongside ArgoCD deployment manifests.\n\nThis has been fine in the past since we controlled the deployment of ArgoCD and had merge access to the repo where the applications were stored. So if we wanted to onboard a new app, we make a PR with the application manifest and someone on our team would merge it.\n\nBut there can be a situation where another team, like cluster-admins or infra, store the ArgoCD deployments in their own repo.\n\nIf we applied our current practice, we'd store our app manifests in this external repo. The problem is that we may not have merge access to this repo, and it wouldn't really make much sense for people who manage the infrastructure to also handle PR's that don't pertain directly to cluster management.\n\n\n## Considered Options\n\n1) Just have All ArgoCD Manifests in one repo and give Operate-First team members access to infra repo so they can review and merge ArgoCD `Applications`.\n2) Have separate teams handle Applications for their Projects in their own Repos, in this way tracking Applications is not a concern for Infra/Operate-first, but rather the individual team belonging to an ArgoCD project\n3) Have a separate Repo that Operate-First manages, and have a an ArgoCD App of Apps that manages this repo.\n\n## Decision Outcome\nChosen Option `(3)`. Problems with `(1)` have been outlined above. The issues with `(3)` is that there is no way to effectively enforce teams to ensure their App Projects belong to their team's project (this is further described below).\n\nThe Proposed Solution is captured by this diagram:\n\n![image](https://user-images.githubusercontent.com/10904967/99705533-d8aac380-2a67-11eb-88e9-b63582271994.png)\n\nThe idea here is that all our operate-first/team-1/team-2/.../team-n ArgoCD `Applications` would go in the `opf-argocd-apps` repo. Then we'd have an App of Apps i.e. the `OPF Parent App` that manages all these apps. This way we can add new applications declaratively to ArgoCD without having to make PR's to the `Infra Repo` (e.g. `moc-cnv-sandbox`). Operate-first admins would manage the `opf-argocd-apps` repo. Any other ArgoCD `Applications` that manage cluster resources like `clusterrolebindings` or operator `subscriptions` etc. can remain in the infra repo since that's a concern for cluster admins. We would direct any _user_ that wants to use ArgoCD to manage their apps to add their ArgoCD `Applications` to the `opf-argocd-apps` repo.\n\n### Positive Consequences\n- Infrastructure/cluster-admins are not bombarded with PR's for ArgoCD App onboarding\n- OperateFirst maintainers can handle the PR's unhindered\n- The `opf-argocd-apps` repo can be leveraged by CRC/Quicklab/Other OCP Clusters to quickly setup ArgoCD ODH/Thoth/etc. Applications.\n\n### Negative Consequences\nBiggest concern here is that there is no way to automatically enforce that Applications in `opf-argocd-apps` repo _belong_ to the `Operate First` ArgoCD project (see diagram).\n\n_Why is this a problem?_ Because we use ArgoCD projects to restrict what types of resources applications _in that project_ can deploy. For example ArgoCD apps in the `Infra Apps` project in the diagram can deploy: `clusterrolebinding`, `operators`, etc. So while `OPF Parent App` cannot deploy `clusterrolebindings` because it belongs to the `Operate First` ArgoCD project, it could deploy another ArgoCD application that belongs to `Infra apps` and _that ArgoCD app_ could deploy clusterrolebindings.\n\nYou can read more about this [issue here](https://github.com/argoproj/argo-cd/issues/3045). The individual there used admission hooks to get around this but I don't think we want to go there just yet. My suggestion is we begin by enforcing this at the PR level, and transition to maybe catching this in CI until there's a proper solution upstream.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "argoproj/argo-cd#3045",
+     "kind": "issue",
+     "url": "https://github.com/argoproj/argo-cd/issues/3045",
+     "number": "3045"
+    }
+   ],
+   "mentioned_paths": [
+    "user-images.githubusercontent.com/10904967/99705533-d8aac380-2a67-11eb-88e9-b63582271994.png"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0005-support-multi-environments-in-repos.md",
+   "identity": "docs/adr/0005-support-multi-environments-in-repos.md",
+   "adr_id": "5",
+   "title": "Repositories Supporting Multiple Environment Deployments",
+   "first_commit": "2020-12-14T06:44:27-05:00",
+   "first_sha": "b3d0b0fae6914cfe9fcc8fc4b738775e3ce401f6",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Repositories Supporting Multiple Environment Deployments\n\n## Context and Problem Statement\n\nWith the introduction of the [app of apps](0004-argocd-apps-of-apps-structure.md) ADR we now have a way to separate application\nmanagement with infrastructure management. The [argocd-apps](https://github.com/operate-first/argocd-apps) repo now serves\nas a central point of managing ArgoCD applications (and in turn our manifests in general) for the operate-first initiative.\n\nAs per the [App of Apps ADR doc](0004-argocd-apps-of-apps-structure.md) we would like both the `argocd-apps` repo and\nthe repos that each application in the `argocd-apps` target to be able to be deployed in multiple environments. Environments\nhere can mean multiple namespaces on the same cluster, or different clusters all together.\n\nFor example, I should be able to create a single `ArgoCD` app, that points to the `argocd-apps` repo and have it create\nall the ArgoCD applications that live in this repo, regardless of environment. This is fine if your manifest\nrepo only has one set of manifest deployment that can be deployed in any environment without needing additional tuning.\nThis is rarely the case however, and often times you'll have a `common` set of manifests, and then your target environments\nwill add additional configurations on top of this. This results in multiple subdirectories with different `paths` for\neach target environment. This essentially means we can only use `argocd-apps` repo for a specific environment only.\n\n\n## Considered Options\n1) Keep argocd-apps repo environment specific, and use multiple repos as \"app-of-apps\" repos for each environment\n2) Use Kustomize overlays/bases for argocd-apps repo and have different overlays that patch the `path` for each environment\n\n## Decision Outcome\nChoose 2) as it accomplishes much of 1) without needing yet more repos and adding bloat to the organization.\n\nThe `argocd-apps` repo would follow the following structure:\n\nThe example makes these assumptions:\n- There are 2 target environments: `environment_1` and `environment_2`\n- There are 2 projects (corresponding to teams) `project_1` and `project_2`\n- Each project has a number of different ArgoCD applications, labelled `app_#.yaml`, note that `project_1/app_1.yaml` does not need to be the same as `project_2/app_1.yaml`\n\n```\n\u251c\u2500\u2500 base\n\u2502   \u251c\u2500\u2500 project_1\n\u2502   \u2502   \u251c\u2500\u2500 app_1.yaml\n\u2502   \u2502   \u2514\u2500\u2500 app_2.yaml\n\u2502   \u2514\u2500\u2500 project_2\n\u2502       \u251c\u2500\u2500 app_1.yaml\n\u2502       \u2514\u2500\u2500 app_2.yaml\n\u2514\u2500\u2500 overlays\n    \u251c\u2500\u2500 environment_1\n    \u2502   \u251c\u2500\u2500 project_1\n    \u2502   \u2502   \u2514\u2500\u2500 patch_app_2.yaml\n    \u2502   \u2514\u2500\u2500 project_2\n    \u2502       \u251c\u2500\u2500 app_3.yaml\n    \u2502       \u2514\u2500\u2500 patch_app_1.yaml\n    \u2502       \u2514\u2500\u2500 patch_app_2.yaml\n    \u2514\u2500\u2500 environment_2\n        \u251c\u2500\u2500 project_1\n        \u2502   \u2514\u2500\u2500 patch_app_1.yaml\n        \u2514\u2500\u2500 project_2\n            \u2514\u2500\u2500 .\n```\n\nIn this sort of a structuring, we can now accommodate various different use cases. The `overlays` folder allows you to update\nthe `path` structure (or anything really) so that it points a different path in a target repository. This is useful if your\ntarget repository follows this sort of a structure:\n\n```\n.\n\u251c\u2500\u2500base\n\u251c\u2500\u2500overlays\n\u2502   \u251c\u2500\u2500 environment_1\n\u2502   \u2514\u2500\u2500 environment_2\n```\n\n\nYou could also include an ArgoCD application that *only* deploys to a single environment.\n\nWith this method any ArgoCD instance can create their own Application and point to either `environment_1` or\n`environment_2` overlay and deploy all the ArgoCD applications (and in turn the manifests they point to).\n\nThe following explains the example structure and what it's doing in more detail:\nNote that all applications in `base` are auto included in `overlays`.\n\nOn `environment_1`\n- `project_1` auto picks up `app_1.yaml` in `base` but updates `app_2.yaml` to point to a different path.\n- `project_2` updates both `app_1.yaml` and `app_2.yaml` but also includes `app_3.yaml` because it only wants to deploy\n`app_3` in `environment_1`, if `project_2` includes `app_3` in `base` then it would be automatically picked up by `environment_2`.\n\nOn `environment_2`\n- `project_1` auto picks up `app_2.yaml` in `base` but updates `app_1.yaml` to point to a different path.\n- `project_2` deploys the `base` apps in this environment without any changes.\n\n### Positive Consequences\n- Lots of flexibility in tuning configurations for target environments and accommodating different usecases\n\n### Negative Consequences\n- Potentially added complexity in onboarding apps\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "app_#.yaml",
+    "project_1/app_1.yaml",
+    "project_2/app_1.yaml",
+    "app_1.yaml",
+    "app_2.yaml",
+    "app_3.yaml"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0006-monitoring-structure.md",
+   "identity": "docs/adr/0006-monitoring-structure.md",
+   "adr_id": "6",
+   "title": "Application Monitoring in Operate First using Prometheus",
+   "first_commit": "2021-01-14T15:03:14-05:00",
+   "first_sha": "574528788b81158b95d77fc6a0f79e834bd0d8a3",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "Anand Sanmukhani",
+   "email": "asanmukh@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Application Monitoring in Operate First using Prometheus\n\n* Status: accepted\n* Deciders: 4n4nd, anishasthana, hemajv, HumairAK, tumido\n* Date: 2021-01-14\n\nTechnical Story: [issue-1](https://github.com/operate-first/blueprint/issues/8)\n                 [issue-2](https://github.com/operate-first/apps/issues/57)\n\n## Context and Problem Statement\n\nSince there will be multiple services deployed in the Operate First environment\n(ex. Jupyterhub, Argo, Superset, Observatorium, etc) distributed over various\nnamespaces, we need to be able to monitor them.\n\nTo do so we will use [Prometheus](https://prometheus.io/).\nThis will be deployed using the [ODH Operator](https://opendatahub.io/) (ODH\noperator includes the Prometheus Operator to do this).\n\nNormally, Prometheus Operator would have been able to monitor services across\nnamespaces using cluster-wide access, but the recent versions of Openshift have\nan instance of Prometheus Operator pre-installed for cluster monitoring. As such we\ncannot do a cluster-wide Prometheus Operator setup since this would conflict\nwith the cluster monitoring instance.\n\nWe also cannot use Operator Groups to do a multiple namespace installation,\nsince selection of multiple target namespaces using operator groups might be\n[deprecated in a future release](https://docs.openshift.com/container-platform/4.6/operators/understanding/olm/olm-understanding-operatorgroups.html#olm-operatorgroups-target-namespace_olm-understanding-operatorgroups).\n\nOne possible solution is User Workload Monitoring, but it is still a\n[feature preview in Openshift v4.5](https://docs.openshift.com/container-platform/4.5/monitoring/monitoring-your-own-services.html#enabling-monitoring-of-your-own-services_monitoring-your-own-services)\nand no documentation is available for UWM in Openshift v4.6 yet.\n\nSo the main question here is how do we structure the\nPrometheus-Operator/Prometheus Deployments in Operate First?\n\n## Decision Drivers <!-- optional -->\n\n* Access to cluster-wide permissions\n  * The Prometheus instance might not have cluster wide resource access\n* Prometheus resource locations\n  * Where do we keep the monitoring resources like servicemonitors/podmonitors?\n  * Whose responsibility is it to create these monitoring resources?\n* Complexity of Prometheus deployments\n  * How many instances of Prometheus do we deploy?\n  * Which namespaces should these Prometheus instances be deployed in?\n\n## Considered Options\n\n* Option 1:\n  * Single Prometheus instance in a dedicated monitoring namespace\n  * Servicemonitors/podmonitors can be kept in the monitoring namespace\n  * Give Prometheus serviceaccount the roles to access services in other\n    namespaces\n* Option 2:\n  * Each namespace with a service has an instance of Prometheus\n  * All servicemonitors/podmonitors will need to be kept in their respective\n    service namespaces\n  * One main Prometheus will federate metrics from all the instances of Prometheus\n* Option 3:\n  * Single Prometheus instance in a dedicated monitoring namespace\n  * Give Prometheus serviceaccount the clusterrole to access services and other\n    monitoring resources cluster wide\n  * Servicemonitors/podmonitors can be kept in any namespace\n\n\n## Decision Outcome\n\nChosen option: Option 1, because:\n  * Set up is less complex than Option 2, only a single Prometheus instance is\n    needed\n  * No clusterroles are required like Option 3, only roles to access specific\n    namespaces are required\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "operate-first/blueprint#8",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/blueprint/issues/8",
+     "number": "8"
+    },
+    {
+     "key": "operate-first/apps#57",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/apps/issues/57",
+     "number": "57"
+    }
+   ],
+   "mentioned_paths": [
+    "docs.openshift.com/container-platform/4.6/operators/understanding/olm/olm-understanding-operatorgroups.html",
+    "docs.openshift.com/container-platform/4.5/monitoring/monitoring-your-own-services.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0007-alerting-setup.md",
+   "identity": "docs/adr/0007-alerting-setup.md",
+   "adr_id": "7",
+   "title": "Alerting Setup for Operate First Monitoring",
+   "first_commit": "2021-01-15T14:59:03-05:00",
+   "first_sha": "3e3d1510f7c32f5d3b0661e9a12e7056952e35a2",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "hema veeradhi",
+   "email": "hveeradh@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Alerting Setup for Operate First Monitoring\n\n* Status: accepted\n* Deciders: hemajv, 4n4nd, anishasthana, HumairAK, tumido, mhild\n\nTechnical Story: [issue-1](https://github.com/operate-first/SRE/issues/14), [issue-2](https://github.com/operate-first/SRE/issues/19), [issue-3](https://github.com/operate-first/blueprint/issues/16)\n\n## Context and Problem Statement\n\nAs we have multiple services/applications deployed and monitored in the Operate First environment (ex. Jupyterhub, Argo, Superset, Observatorium, Project Thoth, AICoE CI pipelines etc), we need to implement an incident reporting setup for handling outages/incidents related to these services.\n\nAll the services are being monitored by [Prometheus](https://prometheus.io/). Prometheus scrapes and stores time series data identified by metric key/value pairs for each of the available services. These metrics can be used for measuring the service performance and alerting on any possible service degradation such as basic availability, latency, durability and any other applicable SLI/SLOs. These SLI/SLOs for the various services are defined and documented in the [SRE repository](https://github.com/operate-first/SRE/tree/master/sli-slo).\n\nAlerting with Prometheus is separated into two parts. Alerting rules in Prometheus servers send alerts to an [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/). The Alertmanager then manages those alerts, including silencing, inhibition, aggregation and sending out notifications via methods such as email, on-call notification systems, and chat platforms.\n\nWhether its a major bug, capacity issues, or an outage, users depending on the services expect an immediate response. Having an efficient incident management process is critical in ensuring that the incidents are always communicated to the users (via on-call notification systems) and handled by the team immediately. An on-call notification system is a system/software that provides an automated means of contacting users and communicating pertinent information during an incident. It also has additional on-call scheduling features that can be used to ensure that the right people on the team are available to address a problem during an incident. There are multiple on-call notification systems such as [PagerDuty](https://www.pagerduty.com/), [JIRA](https://www.atlassian.com/software/jira) etc that can be used for incident reporting, but which of these tools are best suitable for reporting the outages/incidents to our users?\n\n## Decision Drivers <!-- optional -->\n\n* Visibility of incident reporting\n  * How can the incidents be tracked and reported in an open and transparent manner for our users?\n* Compatibility with Prometheus\n  * Is the incident reporting tool compatible with Prometheus i.e. can it handle/receive Prometheus alerts?\n* Complexity and cost of incident reporting tool\n  * How easy/hard is it to manage and operate the incident reporting tool?\n  * Is it a free or paid tool?\n  * Is it open source?\n\n## Considered Options\n\n* Option 1:\n  * Use [PagerDuty](https://www.pagerduty.com/) which is a popular paid on-call management and incident response platform\n* Option 2:\n  * Use open source tools like:\n    * [Cabot](https://github.com/arachnys/cabot) - Python/Djano based monitoring platform\n    * [OpenDuty](https://github.com/openduty/openduty) - Incident escalation tool similar to PagerDuty\n    * [Dispatch](https://github.com/Netflix/dispatch) - Incident management tool by Netflix\n    * [Response](https://github.com/monzo/response) - Django based incident management tool\n\n  which are free, self-hosted infrastructure that provides some of the best features of PagerDuty, Pingdom etc without their cost and complexity\n* Option 3:\n  * Use [GitHub Alertmanager receiver](https://github.com/m-lab/alertmanager-github-receiver) which is a Prometheus Alertmanager webhook receiver that creates GitHub issues from alerts\n\n## Decision Outcome\nChosen option: **Option 3**, because:\n  * The [GitHub alertmanager receiver](https://github.com/m-lab/alertmanager-github-receiver) can easily be configured and operated to function with Prometheus alerts. It automatically creates issues in GitHub repositories for any active alerts being fired, making it visible for any user to track\n  * All communication/updates/concerns related to the incident can be easily handled by adding comments in the issues created by the GitHub receiver\n  * Unlike Option 1, there is no additional cost involved\n  * There is no requirement for using JIRA/Slack for incident tracking, which are the only supported options in some of the tools listed in Option 2 (such as [Dispatch](https://github.com/Netflix/dispatch) and [Response](https://github.com/monzo/response)) In any case that such a requirement surfaces, we can use GitHub bots for different platforms such as [GitHub for Slack](https://slack.github.com/) and [Google Chat](https://support.google.com/chat/answer/9632291?co=GENIE.Platform%3DAndroid&hl=en) to notify us of the issues immediately\n  * It is actively being maintained and supported compared to some of the tools in Option 1 (such as [Cabot](https://github.com/arachnys/cabot) and [OpenDuty](https://github.com/openduty/openduty)) which lack community support\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "operate-first/SRE#14",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/SRE/issues/14",
+     "number": "14"
+    },
+    {
+     "key": "operate-first/SRE#19",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/SRE/issues/19",
+     "number": "19"
+    },
+    {
+     "key": "operate-first/blueprint#16",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/blueprint/issues/16",
+     "number": "16"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0008-secrets-management.md",
+   "identity": "docs/adr/0008-secrets-management.md",
+   "adr_id": "8",
+   "title": "GitOPS and Secrets Management",
+   "first_commit": "2021-01-18T13:22:17-05:00",
+   "first_sha": "fbb287692905389126a99ddb5238be70efd76eb4",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "Humair Khan",
+   "email": "humair88@hotmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# GitOPS and Secrets Management\n\n* Status: accepted\n* Deciders: HumairAK, hemajv, 4n4nd, anishasthana, tumido, mhild\n\nTechnical Story: [issue-1](https://github.com/open-infrastructure-labs/ops-issues/issues/3), [issue-2](https://github.com/operate-first/apps/issues/77)\n\n## Context and Problem Statement\n\nFollowing a GitOps operating model requires us to describe our running system in Git. Since we operate on OpenShift/K8s, we can do this easily by specifying our entire system via `yaml` manifests and storing them in GitHub. Things get a bit more complicated when trying to reconcile where to store confidential information like `secrets`. We use the word `secrets` here a bit loosely to capture all confidential manifests (e.g. k8s secrets, routes with certs, etc.).\n\nObviously we cannot store our `secrets` in Git in plaintext, we would like to store them in some encrypted fashion, ideally alongside the other system manifests. Other considerations are as follows:\n\n- There should be freedom to store/organize the `secrets` in any repo, path, and location.\n- Encrypted manifests should be compatible with Kustomize.\n- Ideally only the specific portions within manifests that are confidential will be encrypted (e.g. specific fields).\n- ArgoCD should be able to decrypt these secrets and thus deploy them.\n- Other teams can easily encrypt their manifests whilst maintaining ease of consumption by ArgoCD.\n- Decryption capabilities are limited to code-owners, operate-first admins, and ArgoCD.\n\n## Considered Options\n\nThere exist many different solutions to tackle GitOps with secret management. ArgoCD has a list of recommended tools one can leverage, you may find it [here](https://argoproj.github.io/argo-cd/operator-manual/secret-management/). We considered the following tools:\n\n1) [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets) - An operator that can decrypt a secret from a custom resource, this resource is stored in Git.\n2) [Hashicorp Vault](https://www.vaultproject.io/) - A server with a backing storage where secrets are stored.\n3) [KSOPS](https://github.com/viaduct-ai/kustomize-sops#argo-cd-integration) - A Kustomize plugin that uses [sops](https://github.com/mozilla/sops) to encrypt, the plugin itself adds a decryption generator step to the Kustomize build.\n4) Store secrets in a private/internal repo.\n\n## Decision Outcome\nChosen Option `(3)`. Reasons are summarized as follows:\n\n- `Sealed Secrets` only allow you to encrypt k8s `secrets`\n- `Hashicorp Vault` a bit too heavy duty for our use case, steep learning curve. Secrets are also stored in a backend storage and not in Git\n- We would like to avoid storing manifests in private/internal repos. This is to stay in line with keeping our system's desired state as public as possible.\n\nBy using KSOPS we can encrypt specific portions of a manifest that are confidential whilst keeping the rest of the non-confidential information visible. Encrypted manifests can be stored in whichever location as needed. By using an ArgoCD image that has KSOPS installed, we can have ArgoCD also decrypt these manifests.\n\nSOPS allows you to use various methods to encrypt your manifests, we opt to use GPG as it's free to generate and use (other methods include using AWS KMS, GCP KMS, and Azure Key Vault).\n\nWe will create a GPG key that we will use to encrypt all our manifests in Git. The secret key will be made available to ArgoCD and other operate-first admins. We offer the public key to other teams should they wish to encrypt their contents and store them in Git. Doing so will allow ArgoCD to decrypt and deploy their manifests. This means that other teams will be able to encrypt, but not decrypt, their manifests in Git. To get around this, SOPS allows you to encrypt the same files with multiple keys, allowing teams to encrypt a file using our Operate-First public key (where they do not have access to the private key) and their own key (for which they also have the private key). This will allow ArgoCD to decrypt their manifests, whilst also allowing teams to retain the ability to decrypt their manifests.\n\n### Positive Consequences\n- Can store secrets in Git alongside other manifests.\n- Compatible with Kustomize.\n- SOPS allows us to configure specific confidential fields we want encrypted inside manifests, while keeping other information public.\n- ArgoCD can decrypt manifests.\n- GPG key access, and SOPS configurations allow us to control who has encryption/decryption capabilities.\n\n### Negative Consequences\n- By using GPG the cost of changing a key becomes expensive. For example, if a key is compromised, we need to update all `.sops.yaml` wherever that key is used and re-encrypt.\n- KSOPS is a Kustomize plugin, and thus requires the `--enable_alpha_plugins`, this gives the impression that Kustomize plugins may be deprecated. However based on [this issue](https://github.com/kubernetes-sigs/kustomize/issues/1504), it seems the real purpose is to just `warn the user against accidentally running 3rd party plugins.`\n- ArgoCD requires a custom image that includes the KSOPS tooling.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "open-infrastructure-labs/ops-issues#3",
+     "kind": "issue",
+     "url": "https://github.com/open-infrastructure-labs/ops-issues/issues/3",
+     "number": "3"
+    },
+    {
+     "key": "operate-first/apps#77",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/apps/issues/77",
+     "number": "77"
+    },
+    {
+     "key": "kubernetes-sigs/kustomize#1504",
+     "kind": "issue",
+     "url": "https://github.com/kubernetes-sigs/kustomize/issues/1504",
+     "number": "1504"
+    }
+   ],
+   "mentioned_paths": [
+    "sops.yaml"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0009-cluster-resources.md",
+   "identity": "docs/adr/0009-cluster-resources.md",
+   "adr_id": "9",
+   "title": "Declarative Definitions for Cluster Scoped Resources",
+   "first_commit": "2021-01-18T18:13:41+01:00",
+   "first_sha": "87b19933aa577d3e71872d7afcc71ce5894bd69f",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "Tomas Coufal",
+   "email": "tcoufal@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Declarative Definitions for Cluster Scoped Resources\n\n- Status: accepted\n- Deciders: 4n4nd, anishasthana, HumairAK, tumido\n- Date: 2021-01-18\n\nTechnical Story: [issue-1](https://github.com/operate-first/odh-moc-support/issues/39), [issue-2](https://github.com/open-infrastructure-labs/ops-issues/issues/2), [pr-2](https://github.com/operate-first/apps/pull/104)\n\n## Context and Problem Statement\n\nA full Git-Ops driven approach we decided to take in the previous ADRs makes us face additional challenges when deploying cluster scoped resources. Resources like `Namespace`, `Group`, `Subscription`, `CustomResourceDefinitions` etc. should be defined declaratively. They should be deployable via ArgoCD and allow users to use an optional encryption layer for sensitive properties/objects that may be considered a PII risk (see [`ADR 0008`](0008-secrets-management.md)). Additionally the resulting layout should be flexible enough that migrating a project between clusters and/or extending the project to multiple clusters is simple enough.\n\n## Decision Drivers\n\n- Declarative manifests in git repo.\n- Deployable via ArgoCD with cluster admin permissions.\n- Common layout that can be adopted by various downstreams and target cluster deployments.\n- Provides consistent secret and sensitive data management.\n- Simplifies application onboarding to ArgoCD driven deployment as a single PR.\n- Allows to collocate cluster scoped resources along with any supplementary namespace scoped resources.\n\n## Considered Options\n\nNarrow scoped requirements and decision drivers leaves us with only a few options to choose from, however the execution of each is of a great importance.\n\n1. A `namespaces` application deployed via ArgoCD\n2. A `cluster-scope` application deployed via ArgoCD\n3. Deploy cluster scoped resources as part of OpenShift bootstrap repository\n\n## Decision Outcome\n\nChoosen option: **2. A `cluster-scope` application deployed via ArgoCD**. This application will live within the [github.com/operate-first/apps](https://github.com/operate-first/apps) repository. There it can support various downstreams in the same manner we defined in [ADR 0004](0004-argocd-apps-of-apps-structure.md) and [ADR 0005](0005-support-multi-environments-in-repos.md).\n\nProposed layout of a `cluster-scope` application:\n\n```\ncluster-scope\n\u251c\u2500\u2500 base\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 clusterrolebindings\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 crds\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 subscriptions\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 groups\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 ...\n\u2502\u00a0\u00a0 \u2514\u2500\u2500 namespaces\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 foo\n\u2502\u00a0\u00a0     ...\n\u2502\u00a0\u00a0     \u2514\u2500\u2500 bar\n\u2502\u00a0\u00a0         \u251c\u2500\u2500 kustomization.yaml\n\u2502\u00a0\u00a0         \u2514\u2500\u2500 namespace.yaml\n\u251c\u2500\u2500 components\n\u2502\u00a0\u00a0 \u2514\u2500\u2500 project-admin-rbac\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 baz\n\u2502\u00a0\u00a0     ...\n\u2502\u00a0\u00a0     \u2514\u2500\u2500 qux\n\u2502\u00a0\u00a0         \u251c\u2500\u2500 kustomization.yaml\n\u2502\u00a0\u00a0         \u2514\u2500\u2500 rbac.yaml\n\u2514\u2500\u2500 overlays\n    \u251c\u2500\u2500 environment_1\n    ...\n    \u251c\u2500\u2500 environment_2\n    \u2502\u00a0\u00a0 \u251c\u2500\u2500 groups                   # Example encrypted patch\n    \u2502\u00a0\u00a0 \u2502\u00a0\u00a0 \u251c\u2500\u2500 baz.enc.yaml\n    \u2502\u00a0\u00a0 \u251c\u2500\u2500 kustomization.yaml\n    \u2502\u00a0\u00a0 \u2514\u2500\u2500 secret-generator.yaml\n    \u2514\u2500\u2500 environment_3\n        \u251c\u2500\u2500 group-user_patch.yaml    # Example plaintext patch\n        \u2514\u2500\u2500 kustomization.yaml\n```\n\nGeneral guidelines:\n\n1. Each folder within `base` corresponds to a cluster-scoped resource kind.\n2. Folder `components` contains all mix-and-match resources (depends on target environment) kustomize `Components` that are meant to be imported to any other kustomization.\n   - An exception: if the resource kind requires using any other `Component` kind, it has to be kept in `base` and selectively picked to an `overlay` from there. Example: `Namespace`s are selected from `base`, because each namespace includes a `rbac` component.\n3. A declarative description of each managed environment is located within the `overlays` folder. There, each environment picks from base what resources to deploy and patches it with the environment specific content.\n\nExample: This environment kustomization would result in deployment selected `Namespaces` and `RoleBinding`, since each namespace uses an `rbac` component.\n\n```yaml\n---\napiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n\nresources:\n  - ../../base/namespaces/odh-operator\n  - ../../base/namespaces/opf-argo\n```\n\n### Positive Consequences\n\n- Environment specific overlay contains a single `kustomization.yaml` file which only contains a list of applied resources - list of namespaces and groups etc. It can also include lightweight patches. That makes it apparent what gets deployed to a given environment on a first sight which makes it easy to review.\n- An ArgoCD application can be defined for each environment in `overlays` ensuring a 1 to 1 mapping of `overlay`s to clusters.\n- Provides easy mix-and-match capabilities, while maintaining a single source of truth for each resource.\n- Only a single ArgoCD application with a resource whitelist allowing deployment of cluster scoped resources is required to exist per target cluster.\n\n### Negative Consequences\n\n- `components` content can't be environment specific. For example you can't apply different values to namespace resource quota while using the same quota component (environment-specific templating of shared `components`). Possibly can be worked around by patches in `overlays`.\n\n## Rejected options\n\n### A `namespaces` application deployed via ArgoCD\n\nAn ad-hock implementation for a `namespaces` application invented for initial support for the cluster scoped resources focusing on `Namespace`s and bundling other resources to those. Other resource kinds like operator `Subscription`s are supposed to be stored within the OpenShift bootstrap repository\n\nProposed layout:\n\n```\nnamespaces\n\u251c\u2500\u2500 base\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 foo\n\u2502\u00a0\u00a0 ...\n\u2502\u00a0\u00a0 \u2514\u2500\u2500 bar\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 kustomization.yaml\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 namespace.yaml\n\u2502\u00a0\u00a0     \u2514\u2500\u2500 rbac.yaml\n\u2514\u2500\u2500 overlays\n    \u251c\u2500\u2500 environment_1\n    ...\n    \u2514\u2500\u2500 environment_2\n        \u251c\u2500\u2500 kustomization.yaml\n        ...\n        \u251c\u2500\u2500 baz                       # Example additional, environment specific namespace\n     \u00a0\u00a0 \u2502\u00a0\u00a0 \u251c\u2500\u2500 group.enc.yaml\n     \u00a0\u00a0 \u2502\u00a0\u00a0 \u251c\u2500\u2500 kustomization.yaml\n     \u00a0\u00a0 \u2502\u00a0\u00a0 \u251c\u2500\u2500 namespace.yaml\n     \u00a0\u00a0 \u2502\u00a0\u00a0 \u251c\u2500\u2500 rbac.yaml\n     \u00a0\u00a0 \u2502\u00a0\u00a0 \u2514\u2500\u2500 secret-generator.yaml\n        ...\n        \u2514\u2500\u2500 bar                        # Example namespace overlayed from base\n            \u2514\u2500\u2500 kustomization.yaml\n```\n\nEach namespace shared between clusters is expected to be hosted in a folder within `base`. All supplementary namespaced resources which requires cluster admin permissions are collocated here as well. Example: `RoleBinding`s for `ClusterRoles`, `Subscription`s for operators etc. If a namespace is environment (cluster) specific, it is expected to live within environment the overlay only.\n\nDisadvantages:\n\n- Too verbose since it requires many files and folders to be created when accommodating minor changes\n- Error prone due to its verbosity and copy-paste nature\n- Lacking clear direction for other resource kinds than `Namespace` and `Group`s and `Rolebinding`s.\n- If a namespace is environment specific and user want to share it to another environment - different cluster, lot of files has to be moved around.\n\n### Deploy cluster scoped resources as part of OpenShift bootstrap repository\n\nStick with the current implementation for MOC environment and replicate the same setup for others. Requires each environment to provide an OpenShift bootstrap or configuration repository, which can be either referenced as an environment specific ArgoCD app or the resources are applied as part of the cluster scheduling from the bootstrap repository.\n\nDisadvantages:\n\n- Sharing resources between environments is very limited and would require us to remotely reference from other environment repositories.\n- Lacking unified sensitive data management.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "operate-first/odh-moc-support#39",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/odh-moc-support/issues/39",
+     "number": "39"
+    },
+    {
+     "key": "open-infrastructure-labs/ops-issues#2",
+     "kind": "issue",
+     "url": "https://github.com/open-infrastructure-labs/ops-issues/issues/2",
+     "number": "2"
+    },
+    {
+     "key": "operate-first/apps#104",
+     "kind": "pull",
+     "url": "https://github.com/operate-first/apps/pull/104",
+     "number": "104"
+    }
+   ],
+   "mentioned_paths": [
+    "kustomization.yaml"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0010-common-auth-for-applications.md",
+   "identity": "docs/adr/0010-common-auth-for-applications.md",
+   "adr_id": "10",
+   "title": "Common Authentication for Applications",
+   "first_commit": "2021-01-19T15:34:15+01:00",
+   "first_sha": "246e677cd96fe0abafa989476fbe9bf07e3e07b9",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "Tomas Coufal",
+   "email": "tcoufal@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Common Authentication for Applications\n\n- Status: accepted\n- Deciders: tumido, HumairAK, anishasthana, 4n4nd\n- Date: 2021-01-19\n\nTechnical Story: [issue-1](https://github.com/open-infrastructure-labs/ops-issues/issues/10), [issue-2](https://github.com/operate-first/apps/issues/65), [issue-3](https://github.com/operate-first/apps/issues/48), [issue-4](https://github.com/operate-first/apps/issues/47), [issue-5](https://github.com/operate-first/apps/issues/39), [issue-6](https://github.com/operate-first/apps/issues/37)\n\n## Context and Problem Statement\n\nApplications deployed within Operate First are run on top of OpenShift. Many applications require users to log in in order to be able to enforce RBAC, quotas and sandboxing. It is also essential for auditing. User management of the applications should be unified so the same user can access all the applications with a single set of credentials. The username should be unique, but also utilized across applications. The accepted solution should provide SSO, so the user can cary over the identity across different applications. The identity and authentication should be based on the OpenShift authentication.\n\n## Decision Drivers\n\n- For the same user a single user identity is provided to all applications.\n- All users are able to authenticate using the same credentials as they use for the underlying OpenShift platform.\n- User identity provided by the SSO allows for similar RBAC settings across different applications.\n\n## Considered Options\n\n1. ArgoCD embedded Dex server\n2. Standalone Dex server in a separate namespace\n3. Keycloak server via a Keycloak operator\n4. OpenShift Oauth server\n\n## Decision Outcome\n\nChosen option: _\"2. Standalone Dex server in a separate namespace\"_, because\n\n### Positive Consequences\n\n- Each Operate First application can consume user identity for all SSO authenticated users.\n- Applications don't have to care about user management.\n- SSO allows us to share the RBAC rules between applications in similar contexts since the user identity structure (LDAP groups, etc.) is the same.\n\n### Negative Consequences\n\n- Introduces a single point of failure for all user authentications.\n\n## Pros and Cons of the Options\n\n### Argo CD embedded Dex server\n\nLives within the Argo CD deployment. Argo CD implements its own wrapper around Dex configuration and deployment, which may prove to be difficult to adjust to application specific usage.\n\nDex server can provide OpenID identity, can connect to variety OpenID Connect identity sources connectors (Openshift, Github, Google, SSO providers, etc.) and since it's confined to its own namespace it allows for easier SRE as well as future expansion with client database for identity carry over between applications.\n\n- Good, because it is already prepared and available and proved to work with ArgoCD.\n- Good, because it is a lightweight bridge solution to existing OpenID Connect providers.\n- Bad, because it's not isolated to a separate namespace and doesn't allow full control over the Dex configuration.\n- Bad, because the deployed Dex server version depends on what Dex version is packaged for ArgoCD by ArgoCD configurator wrapper.\n\n### Standalone Dex server in a separate namespace\n\nThis option allows us to keep all the benefits of a Dex server without compromising ArgoCD stability/reliability.\n\n- Good, because configuration is fully in our control as well as Dex version used.\n- Good, because of the isolation, can be scaled and restricted by quotas.\n- Good, because it is a lightweight bride solution to existing OpenID connect providers.\n\n### Standalone Dex server via an operator\n\nThis option allows us to keep all the benefits of a Dex server without compromising Argo CD stability/reliability. It also simplifies management duties, since it can be managed declaratively via custom resources.\n\n- Good, because configuration is fully in our control as well as Dex version used\n- Good, because of the isolation, can be scaled and restricted by quotas\n- Good, because it is a lightweight bride solution to existing OpenID connect providers\n- Good, because it is easy to configure via custom resources.\n- Bad, because there are only 2 community implementation, no official one.\n- Bad, because neither of the currently available Dex operator implementations are maintained.\n\nIn the end, this would be the preferred solution, if there was a reliable implementation available.\n\n### Keycloak server via an operator\n\nKeycloak is a heavy duty identity provided and access management. It can be installed via a Kubernetes operator and can be managed declaratively via custom resources. It can do all the identity provider bridging provided by Dex as well as many more like provide identity on its own, manage LDAP etc.\n\n- Good, because it is easy to configure via custom resources.\n- Bad, because it is heavy weight, resource intensive solution, requiring external database and other components which may prove to be difficult to use in edge/dev cluster setting.\n\n### OpenShift Oauth server directly\n\nUse OpenShift Oauth directly. This option provides means to authenticate against OpenShift, however OpenShift itself doesn't provide OpenID identity and relies on external sources.\n\n- Good, because it is already available in the platform and no setup is needed.\n- Bad, because we are lacking the essential - there's no identity provided. Only authentication.\n- Bad, because applications usually require identity to be provided no matter if user is authenticated.\n\n## Links\n\n- [Keycloak vs. Dex](https://medium.com/@sct10876/keycloak-vs-dex-71f7fab29919)\n\n<!-- markdownlint-disable-file MD013 -->\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "open-infrastructure-labs/ops-issues#10",
+     "kind": "issue",
+     "url": "https://github.com/open-infrastructure-labs/ops-issues/issues/10",
+     "number": "10"
+    },
+    {
+     "key": "operate-first/apps#65",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/apps/issues/65",
+     "number": "65"
+    },
+    {
+     "key": "operate-first/apps#48",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/apps/issues/48",
+     "number": "48"
+    },
+    {
+     "key": "operate-first/apps#47",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/apps/issues/47",
+     "number": "47"
+    },
+    {
+     "key": "operate-first/apps#39",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/apps/issues/39",
+     "number": "39"
+    },
+    {
+     "key": "operate-first/apps#37",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/apps/issues/37",
+     "number": "37"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0011-operators.md",
+   "identity": "docs/adr/0011-operators.md",
+   "adr_id": "11",
+   "title": "Managing Operators",
+   "first_commit": "2021-01-29T13:52:33+01:00",
+   "first_sha": "450629cefa28f043b2582fc26455d806c2dcdd18",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "Tomas Coufal",
+   "email": "tcoufal@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Managing Operators\n\n- Status: accepted\n- Deciders: tumido, HumairAK, 4n4nd, anishasthana, larsks, martinpovolny\n- Date: 2021-01-27\n\nTechnical Story: [issue-1](https://github.com/operate-first/apps/issues/126), [pr-1](https://github.com/operate-first/apps/pull/131), [pr-2](https://github.com/operate-first/apps/pull/153)\n\n## Context and Problem Statement\n\nA `cluster-scope` application definition introduced by [ADR 0010][] is a bit vague for use cases like deploying operators. Operator Lifecycle Manager (OLM) defines a resource overlap where a single resource kind can be used in different contexts. For example, Subscription resource can subscribe to a specific operator which can be either cluster-scoped or namespace-scoped. This may go against the distinction introduced in [ADR 0010][]. This document provides guidance on how each of the resource kinds for OLM should be treated in each context and usage variant we aim to support.\n\n## Decision Drivers\n\n- The definition of a `cluster-scope` application at [ADR 0010][] does not provide enough guidance for OLM.\n- Various OLM resources can be used in a way which effects the whole cluster or in a way that limits the effects to a single namespace.\n- Various OLM resources have permission restrictions or behave as a singletons within a namespace.\n- Some operators are not deployed via OLM, yet they behave as operators across all namespaces. Placement of those manifests is also disputed.\n- How should we handle meta-operators which operate across all namespaces and deploy other operators that operate across all namespaces?\n\n## Considered Options\n\n1. Deploy all operator-related resources within `cluster-scope` application.\n2. Require all namespaced resources to be deployed within individual applications, outside of `cluster-scope`.\n3. Find balance between 1. and 2. Deploy resources which have effect on a cluster level within `cluster-scope` app (also the namespace-scoped ones). The rest is deployed in individual applications.\n\n## Decision Outcome\n\nChosen option: _\"3. Find balance between 1. and 2.\"_, because it is desired to keep track of all resources which may effect other users and other namespaces i.e. operators provisioned to manage all cluster namespaces.\n\nProposed decision defines strict rules for given resources. These rules are subject to future updates if needed, but the repositories and applications are required to consistently enforce them:\n\n### Operator Lifecycle Manager compatible operators\n\n[Operator Lifecycle Manager][] defines following resource kinds:\n\n- Cluster service version\n- Catalog source\n- Subscription\n- Install plan\n- Operator groups\n\nThese are the set of guidelines we want to enforce on them:\n\n#### Cluster service version\n\nThis resource is not meant to be deployed manually and is expected to be provided from a _Catalog source_. If there's really a need to deploy a custom _Cluster service version_, the resource has to live within the `cluster-scope` application.\n\n#### Catalog source\n\nIt is uncommon for a _Catalog source_ to be declared manually. Operators are expected to be provisioned from the default catalogs and it is advised to publish the desired operator to a community catalog rather than deploying a custom _Catalog source_. If it is necessary to deploy an additional `CatalogSource` resource, this resource must be deployed to the `openshift-marketplace` namespace and therefore must be declared within the `cluster-scope` application.\n\n#### Subscription\n\nA `Subscription` resource is a namespace-scoped resource. It is effectively responsible for the operator deployment. Therefore we recognise 2 possible scenarios and use cases for this resource:\n\n1. A namespaced operator with a single namespace visibility:\n\n   The `Subscription` resource can be hosted along with application manifests in an application repository. This application has to be deployed to the same namespace as specified for the subscription.\n\n2. An operator with all namespaces visibility:\n\n   For operators with global effect, we expect the `Subscription` resource to be hosted in `cluster-scope` application only.\n\nDeciding which namespace the OLM resources should reside for global operators will be done on a case-by-case basis. In general, the rule of thumb is to put them in `openshift-operators`, however we take note that there may be various exceptions to this rule (e.g. ClusterLogging, OpenShift Metering, etc.).\n\nThe `Subscription` resource manifest is expected to be deployed to the same namespace where the corresponding `OperatorGroup` is located.\n\n#### Install plan\n\nOperators are not expected to deploy a custom _Install plan_. We expect every plan to be provided by the _Cluster service version_ resource belonging to the given operator.\n\n#### Operator groups\n\nAn `OperatorGroup` resource is a namespace-scoped resource. However we require this resource to be placed in the `cluster-scope` application only, this is due to the following reasons:\n\n1. This resource is a singleton in namespace context. There can't be multiple instances of the said resource in the same namespace, even if the name differs.\n2. When deployed it generates `ClusterRole` and `ClusterRoleBinding` and aggregation rules.\n3. It can specify all namespaces visibility for an operator.\n4. By default project admins do not have create/edit rights to `OperatorGroup`s (due to points 2 and 3), so only cluster-admins can manage _Operator groups_.\n\nThere are a number [of possible conflicts](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/operatorgroups.md#what-can-go-wrong) that are a direct consequence of an `OperatorGroup` deployment. These resources need to be treated carefully and therefore it is required for them to be placed and maintained at `cluster-scope` application level.\n\nCentralized `Operator Group` management ensures we won't be deploying the same namespaced operator while we already have another instance with all namespace visibility, etc.\n\nAccording to the upstream documentation on [`OperatorGroup` target namespace selection][] we enforce and support only these options for target namespace specification in _Operator groups_ specification:\n\n1. A global, cluster-wide operator with visibility to all namespaces, that means the `.spec` section of the manifest is blank.\n2. A single namespace operator. Resource manifest specifies `.spec.targetNamespaces: [ SINGLE_MEMBER_NAMESPACE ]`. This namespace has to be deployed via `cluster-scope` application as well.\n\nThe `OperatorGroup` resource manifest is expected to be deployed to the same namespace where the corresponding `Subscription` is located.\n\n### Direct operator deployment\n\nSome operators are not deployed via the OLM. That means, their manifests require manual deployment of `CustomResourceDefinition`s, `ClusterRole`s etc. We require this kind of resources to be deployed via `cluster-scope` application.\n\nIn contrast to that, all the other resources required for a non-OLM operator deployment, like `Deployment`, `Route` etc. are treated as any other namespace scoped application and all the manifests required for deployment are expected to be located as a separate application in the `operate-first/apps` repository as a root folder.\n\n### Meta-operators\n\nThis is a special kind of operator. A meta-operator in this context is understood to be any operator allowing deployment of other operators at cluster scope. Our intention is to limit the possibilities of such operator to be able to interfere with our cluster management in `cluster-scope` application. We expect meta-operators to provide options to either:\n\n- Limit their permissions via operator configuration, so they are not able to deploy resources requiring cluster-admin permissions.\n- Limit the create/edit access permission to the custom resources they create, in order to limit normal project users or project admins from escalating their privileges.\n\nIf it is not possible to deploy a meta-operator in a way that respects one of the 2 conditions, it is expected from the operator requester to raise this issue upstream. Until this is fixed we expect the operator to be installed manually via [Direct operator deployment](#direct-operator-deployment), not via OLM framework, therefore allowing us to manually control the custom resource access permissions for regular users or the operator service account `ClusterRole`.\n\n### Positive Consequences\n\n- Clear guidance on each and individual resource regarding operators, which may appear confusing without such rules.\n- Allows operator to be treated like normal applications in case they are deployed manually. This will not clutter the `cluster-scope` applicaton anymore.\n- Enforces restrictions that prevent user privilege escalation via meta-operators.\n\n### Negative Consequences\n\n- Complex set of rules all cluster-admins have to follow and fully understand.\n\n## Pros and Cons of the Options\n\n### Deploy all operator-related resources within `cluster-scope` application\n\n- Good, because it is very easy to implement.\n- Good, because it makes the rules very clear for the users - If you want an operator, it needs to live here every time.\n- Bad, because it is impossible to achieve for meta-operators like ODH.\n- Bad, because it is hard to maintain, since some (especially namespaced) operators may be owned by different teams.\n- Bad, because the amount of resources deployed by the `cluster-scope` application may increase drastically.\n- Bad, because it doesn't solve meta-operators access - their custom resources can be used to deploy operators on cluster scope anyways.\n\n### Require all namespaced resources to be deployed within individual applications, outside of `cluster-scope`\n\n- Good, because it is very easy to implement.\n- Good, because it doesn't require complex rules to follow for the users.\n- Bad, because it is impossible to achieve for meta-operators like ODH.\n- Bad, because some namespace-scoped resources are required to be unique to the said namespace.\n- Bad, because some namespace-scoped resources can grant access to an operator at cluster scope level.\n\n### Find balance between 1. and 2.\n\n- Good, because we can weight each resource kind separately and decide based on the context and use case.\n- Good, because it allows us keep the `cluster-scope` application at a reasonable size.\n- Good, because it gives enough control to individual application/project owners when they want to deploy namespaced operators.\n- Bad, because it requires complex rules and full understanding of the resources by the systems integrators who want to provision an operator.\n\n## Links\n\n- Adds further detail to a specific usecase for [ADR 0010][]\n- [Operator Lifecycle Manager][] concepts\n- [`OperatorGroup` design document](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/operatorgroups.md)\n- [`OperatorGroup` target namespace selection][]\n\n[`operatorgroup` target namespace selection]: https://docs.openshift.com/container-platform/4.6/operators/understanding/olm/olm-understanding-operatorgroups.html#olm-operatorgroups-target-namespace_olm-understanding-operatorgroups\n[adr 0010]: 0010-common-auth-for-applications.md\n[operator lifecycle manager]: https://docs.openshift.com/container-platform/4.6/operators/understanding/olm/olm-understanding-olm.html\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "operate-first/apps#126",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/apps/issues/126",
+     "number": "126"
+    },
+    {
+     "key": "operate-first/apps#131",
+     "kind": "pull",
+     "url": "https://github.com/operate-first/apps/pull/131",
+     "number": "131"
+    },
+    {
+     "key": "operate-first/apps#153",
+     "kind": "pull",
+     "url": "https://github.com/operate-first/apps/pull/153",
+     "number": "153"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/operatorgroups.md",
+    "operate-first/apps",
+    "docs.openshift.com/container-platform/4.6/operators/understanding/olm/olm-understanding-operatorgroups.html",
+    "docs.openshift.com/container-platform/4.6/operators/understanding/olm/olm-understanding-olm.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0013-multicluster-environments.md",
+   "identity": "docs/adr/0013-multicluster-environments.md",
+   "adr_id": "13",
+   "title": "Cluster deployment methods",
+   "first_commit": "2021-03-16T13:41:30-04:00",
+   "first_sha": "c3fafac0896dfa02bcd6580386d787b1fd9a1a7f",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Cluster deployment methods\nTechnical Story: [issue-1](https://github.com/operate-first/apps/issues/306)\n\n## Context and Problem Statement\nFrom the onset we have used the terms \"environment\" and \"cluster\" interchangeably, and our repository structure has been reflective of that. However, there seems to be a clear need for a distinction in certain contexts between environments like \"MOC\" and \"Quicklab\" and specific clusters belonging to those environments. For example, before we used to use \"MOC\" to refer to the original `cnv` cluster, but we now have two clusters that belong to the MOC environment (`infra` and `zero`). Furthermore, since there is no such thing as one defacto \"Quicklab/CRC\" cluster, when we design for these environments we have to design for a very generic environment without adding configurations tuned for one specific cluster. In consideration of these different factors, we must design with _Multi-Cluster Environments_ in mind and restructure existing repos accordingly.\n\n\n## Considered Options\n\n### 1. Organize repos at Cluster level\nThis would mean ignoring logical grouping of clusters into environments and treating clusters at an individual scope without considering commonalities between them.\n\n### Pros:\n\nKeeps things simple, we don't need to think too hard about what resources should be considered \"common\" and what clusters should be considered part of the same environment.\n\n### Cons:\n\nIntroduces redundant configurations. There's also no clear way to include `dev` environments, as these tend to be associated with ephemeral clusters.\n\n### 2. Organize repos at Environment Level\nThis would mean grouping clusters as belonging to certain logical environments. An existing example would be `infra` and `zero` clusters belonging to the \"MOC\" environment.\n\n### Pros:\n\nHaving a `common` location for resources/configs for similar cluster groupings can drastically reduce the work required to copy resources over to clusters belonging to the same environment.\n\n### Cons:\nExtra consideration needs to be put into how clusters are grouped together going forward, and what resources should be considered `common`.\n\n## Preferred option\nOption `2` is the preferred option here, as it's more scalable. Reducing the number of configs associated with each environment is a lot more scalable in the future then the added initial overhead of deciding how clusters ought to be grouped.\n\n## Outcomes\nOption 2 is picked and existing repos re-organized with Apps configured for clusters belonging to common environments. In the case for `dev` environments, Apps will be configured to be entirely generic and non-cluster specific.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "operate-first/apps#306",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/apps/issues/306",
+     "number": "306"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0014-enforcing-resource-quotas.md",
+   "identity": "docs/adr/0014-enforcing-resource-quotas.md",
+   "adr_id": "14",
+   "title": "Enforcing of Resource Quotas",
+   "first_commit": "2021-04-07T09:53:37-04:00",
+   "first_sha": "2f44ca13eaf0a385a50376af8dfc90fe649d4eac",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Enforcing of Resource Quotas\n\nTechnical Story: [1][1], [2][2]\n\n## Context and Problem Statement\nCurrently clusters being managed by Operate-First are not enforcing quotas on compute and storage resources. This means that anyone can use their `namespace` to use hog as many resources as they wish. We should use Kubernetes' [ResourceQuotas][3] to address this concern. Decisions for declaring quotas for resource `requests` and `limits` should be guided by monitoring current trends and usage via available dashboards. We will also need to add default [LimitRanges][4] so current workloads are not prevented from creating resources.\n\n## Considered Options\n\nThe only option is to use [ResourceQuotas][3], what is subject to debate is how we organize/advertise these quotas in git.\n\n### 1. Tiered & Custom Resource quotas\n\nWe identify a tier of standard `ResourceQuotas` that we distribute to each namespace. We will adhere to this tiered system as much as possible, but acknowledge the need for custom quotas, and allow for such exceptions on a need basis. `ResourceQuotas` can be included as `Kustomize` components\n\n### Pros:\n- User friendly. It's a lot easier to tell a new-comer to pick from a set of options then to specify specific requirements.\n- Consistency. Tiers ensure that all new-comers are treated the same and any custom request is treated more carefully.\n- Easy to propagate changes. For example, should we decide to update all `small` tier `ResourceQuotas`, we need only update one manifest in git.\n\n### Cons:\n- May result in waste of compute resources since we're trying to fit various use cases into a small set of tiered options.\n- Could get convoluted if custom `ResourceQuotas` manifests start drastically outnumbering the standard options.\n\n### 2. Only Resource quotas\n\nNo tier option, every namespace has a resource quota customized for their needs.\n\n### Pros:\n- Less likely to waste resources if tuned correctly for each namespace.\n- There's no confusion over when to use a tiered option or custom (since there's only custom option)\n\n### Cons:\n- Adds additional overhead to the on-boarding process, as now we require new-comers to assess their exact resource needs to fully benefit from this option.\n- More resources to track and manage.\n- Each admin can have their own view of what exact quota is necessary for a given project and this can lead to uncertainty and different quota based on who is serving the onboarding ticket.\n\n## Preferred option\nOption 1 is preferred, due to the flexibility it offers. If it comes to the point where everyone is opting for `custom` quotas anyway, we can simply abandon the tier option.\n\n## Outcomes\n\n[1]: https://github.com/operate-first/apps/issues/438\n[2]: https://github.com/operate-first/apps/pull/439\n[3]: https://kubernetes.io/docs/concepts/policy/resource-quotas/\n[4]: https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/memory-default-namespace/\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "operate-first/apps#438",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/apps/issues/438",
+     "number": "438"
+    },
+    {
+     "key": "operate-first/apps#439",
+     "kind": "pull",
+     "url": "https://github.com/operate-first/apps/pull/439",
+     "number": "439"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0015-cluster-resources-amendment.md",
+   "identity": "docs/adr/0015-cluster-resources-amendment.md",
+   "adr_id": "15",
+   "title": "Declarative Definitions for Cluster Scoped Resources",
+   "first_commit": "2021-05-11T10:33:08-04:00",
+   "first_sha": "dddf78db228ee5a78a6d89e45f92aac63f01f188",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Declarative Definitions for Cluster Scoped Resources\n\n- Status: accepted\n- Deciders: larsks, HumairAK, tumido\n\nTechnical Story: [issue-1][1]\n\n## Context and Problem Statement\n\nIn [ADR-0009][2] we laid out a directory structure of organizing cluster scoped resources. For the most part this has worked out relatively well. However, one thing that was not factored into this structure were the possibilities of name conflicts. Consider the following scenario:\n\nSuppose we have:\n1) A resource of kind Project named example-project with an apiversion: project.openshift.io/v1\n2) A resource of kind Project named example-project with an apiversion: config.openshift.io/v1\n\nNote that their API group differs, but everything else is the same. Both of these resources can exist simultaneously on a live cluster. However, these cannot co-exist in our github repo at `operate-first/apps/cluster-scope`, if we are to use the structuring as defined in [ADR-0015][2]. This is because, using the current structure, they would both need to be stored under `operate-first/apps/cluster-scope/base/projects/example-project/project.yaml`.\n\n## Considered Options\n\nThe general consensus has been to keep the current structure and amend it to factor in the API Group. Some suggestions are:\n\n1. Use the following schema: `cluster-scope/base/<API_GROUP>-<KIND_PLURAL>/<METADATA_NAME>/<KIND_SINGULAR>.yaml`\n  This would factor in the API group as part of the name, and would not require additional nesting of directories\n2. Use the following schema: `cluster-scoped-resources/base/<API_GROUP>/<KIND_PLURAL>/<METADATA_NAME>/<KIND_SINGULAR>.yaml`\n  This would require additional nesting of directories, but this method has been observed in other tooling (i.e. how must-gather does their organization)\n\nBoth solutions will require a `kustomization.yaml` at the base directory so that each resource may be included within an overlay without modifying the default `kustomize build` behavior.\n\nThere will also be an exception made for `resourcequotas` in that they will be added alongside `namespace` manifests in the `namespaces` directory. This is because the `resourcequotas` are namespaced resources that are heavily coupled to their respective namespace.\n\n## Preferred option\n\nWe will opt for the second option. The first option may introduce yet another custom way to organize manifests, while the second one seems like a tried and tested method. In the case of the core API group (i.e. where resources like [namespaces][3] belong), they will be stored at the `cluster-scope/base` path (e.g. `cluster/scope/base/namespaces/...`).\n\nTo better illustrate this, an example of how this layout would look like can be found below:\n\n```text\n.\n\u251c\u2500\u2500 config.openshift.io\n\u2502   \u251c\u2500\u2500 oauths\n\u2502   \u2502   \u2514\u2500\u2500 cluster\n\u2502   \u2502       \u251c\u2500\u2500 kustomization.yaml\n\u2502   \u2502       \u2514\u2500\u2500 oauth.yaml\n\u2502   \u2514\u2500\u2500 projects\n\u2502       \u2514\u2500\u2500 cluster\n\u2502           \u251c\u2500\u2500 kustomization.yaml\n\u2502           \u2514\u2500\u2500 project.yaml\n[...]\n```\n\nHere the two resources included are of kind `oauths` and `projects` (their plural forms), they belong to the API group `config.openshift.io` and their singular name is used as the base resource filename.\n\nEach resource's manifest is also accompanied by a `kustomization.yaml` file. As an example the file `config.openshift.io/oauths/cluster/kustomization.yaml` would look like:\n\n```yaml\napiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n- oauth.yaml\n```\n\nAn example of how this resource may be included in an overlay:\n\n```yaml\napiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n\nresources:\n- ../../../base/config.openshift.io/oauths/cluster\n```\n\nWhere the `kustomization.yaml` is stored in `cluster-scope/overlays/$ENVIRONMENT/$CLUSTER/kustomization.yaml`.\n\n[1]: https://github.com/operate-first/blueprint/blob/main/docs/adr/0009-cluster-resources.md\n[2]: https://github.com/operate-first/blueprint/blob/main/docs/adr/0009-cluster-resources.md\n[3]: https://docs.openshift.com/container-platform/4.6/rest_api/metadata_apis/namespace-core-v1.html#namespace-core-v1\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "operate-first/apps/cluster-scope",
+    "operate-first/apps/cluster-scope/base/projects/example-project/project.yaml",
+    "cluster-scope/base/<API_GROUP>-<KIND_PLURAL>/<METADATA_NAME>/<KIND_SINGULAR>.yaml",
+    "cluster-scoped-resources/base/<API_GROUP>/<KIND_PLURAL>/<METADATA_NAME>/<KIND_SINGULAR>.yaml",
+    "kustomization.yaml",
+    "cluster-scope/base",
+    "cluster/scope/base/namespaces/",
+    "config.openshift.io/oauths/cluster/kustomization.yaml",
+    "/../../base/config.openshift.io",
+    "cluster-scope/overlays/$ENVIRONMENT/$CLUSTER/kustomization.yaml",
+    "docs.openshift.com/container-platform/4.6/rest_api/metadata_apis/namespace-core-v1.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0016-pr-review.md",
+   "identity": "docs/adr/0016-pr-review.md",
+   "adr_id": "16",
+   "title": "Reviewing Pull Requests",
+   "first_commit": "2021-06-02T17:47:36+02:00",
+   "first_sha": "cb67c16d2f0c27ad56f1ce32b31c402b5fc50aa7",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "Tom Coufal",
+   "email": "7453394+tumido@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Reviewing Pull Requests\n\n* Status: accepted\n* Deciders: tumido, HumairAK, lars, goern, 4n4nd\n* Date: 2021-05-20\n\nTechnical Story: [#93](https://github.com/operate-first/blueprint/issues/93)\n\n## Context and Problem Statement\n\nEach community has its own `contributing.md` file which outlines how are users expected to contribute to the community. That guide for contributions should also clearly state what will happen once a PR is submitted and how reviews are performed.\n\n\n## Considered Options\n\n* Using inherited processes from AI-CoE - Prow\n* Building upon Prow and modifying and evolving them to operations needs\n\n## Decision Outcome\n\nChosen option: \"Building upon Prow and modifying and evolving them to operations needs\"\n\n### Prerequisites\n\nWe use Prow to automate review process. That means we use following setup:\n\n1. Each repository contains an `OWNERS` file:\n   1. There is always one `OWNERS` file in a repository root folder\n   2. If needed, additional `OWNERS` files can be created within nested folders. This file takes precedence for all resources within this folder.\n2. `OWNERS` file contains several entries:\n   1. `approvers` is a list of GitHub users that are allowed to use the `/approve` chat-ops command. Role of approvers is to gate PRs - they verify that changes in PRs respect our architectural decisions and are in line with the heading of the project. See [upstream docs][4] for better understanding of this role.\n   2. `reviewers` is a list of GitHub users that are allowed to use the `/lgtm` chat-ops command. Their role is to ensure changes in PRs are implemented properly and meet our coding standards. See [upstream docs][4] for details.\n\n### Process\n\n1. A PR is submited\n2. Prow (represented by a Sesheta bot-account) will pick a selection of reviewers from corresponding `OWNERS` file (based on modified files in the PR).\n3. Reviewers assess the code for general code quality, correctness, sane software engineering, and style. They either provide feedback or respond with `/lgtm` chat-ops command.\n   1. Once a `/lgtm` command is sent, Prow (Sesheta) will add a `lgtm` label to the PR. This label will get removed if there are any new pushes to the PR.\n   2. Additionally Prow will ask users to assign a specific `approver` to the PR if there's no assignment yet.\n4. Approvers evaluate architectural aspects of the PR and holistic acceptance criteria, including dependencies with other features, forwards/backwards compatibility, API and flag definitions. They either provide feedback or respond with `/approve` chat-ops command.\n   1. Once an `/approve` command is sent, Prow (Sesheta) will add an `approve` label to the PR. This label stays after subsequent pushes to the PR.\n5. If a PR is large in nature or introduces a breaking change we exercise an **informal rule**:\n   1. PR is put on hold via `/hold`.\n   2. We wait for a second reviewer to come by and approve it via `/lgtm` (2 different people have commented with `/lgtm`).\n   3. PR is held in review for at least a day to give more people chance to look at it.\n6. Prow (Sesheta) waits for conditions to be met to make PR eligible for merge. Required conditions (See [here][2] for details):\n   1. Required CI checks need to finish and pass. Which CI checks are required is configured per repository.\n   2. Both `approve` and `lgtm` labels are present.\n7. Prow merges the pull request.\n\nAdditional chat-ops commands to help with PR review process are:\n\n* `/retest` - re-run failed CI checks\n* `/cc @username` - request a review from an user\n* `/close` - close pull request\n* `/label` - add a label to the PR\n* `/ok-to-test` - if a PR was submitted by somebody who is not a member of the operate-first GitHub organization, Prow doesn't start CI until this command is used by a member\n* `/hold` - prevent PR from being merged\n\n## Links\n\n* [Command help][0]\n* [Merge requirements for organizations managed by our Prow][1]\n* [Enabled Prow plugins][2]\n* [Upstream docs for OWNERS file][3]\n* [Upstream review process description][4]\n\n[0]: https://prow.operate-first.cloud/command-help\n[1]: https://prow.operate-first.cloud/tide\n[2]: https://prow.operate-first.cloud/plugins\n[3]: https://www.kubernetes.dev/docs/guide/owners/#owners\n[4]: https://www.kubernetes.dev/docs/guide/owners/#code-review-using-owners-files\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#93",
+     "kind": "hash",
+     "url": "",
+     "number": "93"
+    },
+    {
+     "key": "operate-first/blueprint#93",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/blueprint/issues/93",
+     "number": "93"
+    }
+   ],
+   "mentioned_paths": [
+    "/approve",
+    "/lgtm",
+    "/hold",
+    "/retest",
+    "/close",
+    "/label",
+    "/ok-to-test"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0017-authentication-for-platform.md",
+   "identity": "docs/adr/0017-authentication-for-platform.md",
+   "adr_id": "17",
+   "title": "Authentication for all platform environments",
+   "first_commit": "2021-06-17T14:44:32+02:00",
+   "first_sha": "05a26972dd6b5849f39754177c961dbd386acc15",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "Marcel Hild",
+   "email": "mhild@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Authentication for all platform environments\n\n* Status: accepted\n* Deciders: durandom\n* Date: 2021-04-26\n\nTechnical Story:\n\n## Context and Problem Statement\n\nThe Operate First environments will span multiple data centers and multiple regions.\nA central authentication system helps identfiying users and system operators without maintaining seperate user registries.\nThis ADR is related to platform systems, such as OpenShift, ArgoCD or ACM - for application workloads refer to [0010-common-auth-for-applications](0010-common-auth-for-applications.md).\nAuthentication is also essential for auditing. User management of the applications should be unified so the same user can access all the systems with a single set of credentials.\nThe username should be unique, but also utilized across systems.\nThe accepted solution should provide [SSO](https://en.wikipedia.org/wiki/Single_sign-on), so the user can cary over the identity across different systems.\n\n## Decision Drivers\n\n1. For the same user a single user identity is provided to all applications.\n2. All users are able to authenticate using the same credentials\n3. Identity provider is responsible for user privacy\n4. Ease of acquiring an account\n5. Publishing data in legal boundaries without worrying about [PII](https://en.wikipedia.org/wiki/Personal_data)\n\n## Considered Options\n\n1. University Authentication\n2. Google\n3. GitHub\n\n## Decision Outcome\n\nChosen option: _\"3. GitHub\"_, because most users already have a GitHub account.\n\n### Positive Consequences\n\n* The only link to direct user personal data is the GitHub account name\n* Users have to take care of setting privacy options in GitHub\n* Gitops actions, such as commits, are directly attributable to system accounts\n\n### Negative Consequences\n\n* Reaching out to users via mail is harder, because we don't maintain a directory of mail addresses\n\n## Pros and Cons of the Options\n\n### University Authentication\n\n* Good, because we also target university research and students usually have a university login\n* Bad, because universities have a strict privacy setup and must not leak any student data\n\n### Google\n\n* Good, because we have email addresses to reach out to users\n* Bad, because we store email addresses in logs\n\n### GitHub\n\n* Good, because users already have a GitHub account - our platform for gitops\n* Good, because users take care of setting privacy\n* Bad, because we don't have email addresses to reach out to users\n\n## Links\n\n* Related ADR: [0010-common-auth-for-applications](0010-common-auth-for-applications.md)\n* [GitHub Privacy Statement](https://docs.github.com/en/github/site-policy/github-privacy-statement)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0019-org-management.md",
+   "identity": "docs/adr/0019-org-management.md",
+   "adr_id": "19",
+   "title": "Maintaining GitHub organization as a code",
+   "first_commit": "2021-10-05T16:19:40+02:00",
+   "first_sha": "dace2fbf564611cb41565eba5bb52d52e91f3bee",
+   "last_commit": "2021-11-04T12:42:06-04:00",
+   "author": "Tom Coufal",
+   "email": "7453394+tumido@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Maintaining GitHub organization as a code\n\n* Status: accepted\n* Deciders: tumido, goern\n* Date: 2021-10-01\n\nTechnical Story: [operate-first/community#36](https://github.com/operate-first/community/issues/36)\n\n## Context and Problem Statement\n\nManaging GitHub organizations via UI is restricted to few individuals only and does not offer any review mechanisms. The same apply to repository creation, organization membership management and label management. This ADR focuses on bringing transparency into this aspect of housekeeping within a community and aims to provide a way to individual contributors, so they can influence and propose changes themselves.\n\nADR seeks a way to manage GitHub organization as a code, declaratively via GitOps as a natural extension of the core paradigm of Operate First movement.\n\n## Decision Drivers\n\nImprove transparency, provide auditing and reviews and allow individual contributors to propose changes.\n\n## Considered Options\n\n1. Prow's [Peribolos][1]\n\n## Decision Outcome\n\nChosen option: _\"1. Prow's Peribolos\"_, because it's a declarative solution that is widely embraced in upstream communities like Kubernetes.\n\n### Positive Consequences\n\n* Repositories can be created declaratively.\n* Even external users can request themselves to be added to the organization via a pull request.\n* Teams can be created and maintained declaratively.\n* Labels can be centrally managed in a unified way as well as updated per repository bases.\n* Solution can be easily automated via post-submit Prow jobs.\n\n### Negative Consequences\n\n* Using a declarative configuration may not be as straightforward as clicking buttons in the UI.\n* Some users can still do manual changes to repositories they own, these changes are undone by the automation.\n\n## Links\n\n* [Peribolos][1]\n* [How Kubernetes Uses GitOps to Manage GitHub Communities at Scale][2]\n\n[1]: https://github.com/kubernetes/test-infra/tree/master/prow/cmd/peribolos\n[2]: https://www.youtube.com/watch?v=te3Xj2zr1Co\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "operate-first/community#36",
+     "kind": "issue",
+     "url": "https://github.com/operate-first/community/issues/36",
+     "number": "36"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0002-release-policy.md",
+   "identity": "docs/adr/0002-release-policy.md",
+   "adr_id": "2",
+   "title": "Operate First Release Policy",
+   "first_commit": "2020-11-03T17:31:45+01:00",
+   "first_sha": "d3128f7be022a68aee50f7c83e8c7ef289285e40",
+   "last_commit": "2020-11-04T16:17:05+01:00",
+   "author": "Christoph G\u00f6rn",
+   "email": "goern@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Operate First Release Policy\n\n* Status: proposed\n* Deciders: durandom\n* Date: 2020-Nov-03\n\nTechnical Story: As an Open Source project, we want to document the policies and guideline on how we create a new\nrelease.\n\n## Context and Problem Statement\n\nThe Operate First project itself consists of many components all having their own release cycles. Op1st users might\ndecide to updata or customize individual components such as container images used by JupyterHub or ArgoCD.\nNevertheless it is required to create releases of the Operate First project as a whole, so that a stable baseline\nis provided to our users.\n\n## Considered Options\n\n* do a monolithic, coordinated release of all components by creating a tag within the relevant repositories\n* have a rolling release, and no tags on any repository\n\n## Decision Outcome\n\nChosen option: we do a monolithic, coordinated release, because it will enable us to have a release at the\nproject/product level while maintianing freedom of others to update.\n\n### Positive Consequences <!-- optional -->\n\n* users have a clear base line of versions, these versions have been tested with each other and have\n  undergone integration testing.\n* a release can be referenced from documents, so that operational procedures have a clear relationship with component \n  versions being used\n* users can update individual components\n\n### Negative Consequences <!-- optional -->\n\n* A release might not contain the latest versions of components\n\n<!-- markdownlint-disable-file MD013 -->",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/adr/0018-migration-to-keycloak.md",
+   "identity": "docs/adr/0018-migration-to-keycloak.md",
+   "commit": "a273e14e16a2a2b882448e7b2676b91dc6215df3",
+   "date": "2021-07-19T16:55:53+02:00",
+   "old_state": "unknown",
+   "new_state": "deleted",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Revert \"feat: Migrate to Keycloak ADR (#101)\" (#102)",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "deleted-without-replacement-pointer",
+   "author": "Tom Coufal",
+   "email": "7453394+tumido@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0018-migration-to-keycloak.md",
+   "identity": "docs/adr/0018-migration-to-keycloak.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0012-moc-infra-cluster-deployment-methods.md",
+   "identity": "docs/adr/0012-moc-infra-cluster-deployment-methods.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0000-use-markdown-architectural-decision-records.md",
+   "identity": "docs/adr/0000-use-markdown-architectural-decision-records.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0001-use-gpl3-as-license.md",
+   "identity": "docs/adr/0001-use-gpl3-as-license.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0003-feature-selection-policy.md",
+   "identity": "docs/adr/0003-feature-selection-policy.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0004-argocd-apps-of-apps-structure.md",
+   "identity": "docs/adr/0004-argocd-apps-of-apps-structure.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0005-support-multi-environments-in-repos.md",
+   "identity": "docs/adr/0005-support-multi-environments-in-repos.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0006-monitoring-structure.md",
+   "identity": "docs/adr/0006-monitoring-structure.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0007-alerting-setup.md",
+   "identity": "docs/adr/0007-alerting-setup.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0008-secrets-management.md",
+   "identity": "docs/adr/0008-secrets-management.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0009-cluster-resources.md",
+   "identity": "docs/adr/0009-cluster-resources.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0010-common-auth-for-applications.md",
+   "identity": "docs/adr/0010-common-auth-for-applications.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0011-operators.md",
+   "identity": "docs/adr/0011-operators.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0013-multicluster-environments.md",
+   "identity": "docs/adr/0013-multicluster-environments.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0014-enforcing-resource-quotas.md",
+   "identity": "docs/adr/0014-enforcing-resource-quotas.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0015-cluster-resources-amendment.md",
+   "identity": "docs/adr/0015-cluster-resources-amendment.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0016-pr-review.md",
+   "identity": "docs/adr/0016-pr-review.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0017-authentication-for-platform.md",
+   "identity": "docs/adr/0017-authentication-for-platform.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0019-org-management.md",
+   "identity": "docs/adr/0019-org-management.md",
+   "commit": "401b97f24b7f5dd325eb50e788dacc95309e9fec",
+   "date": "2021-11-04T12:42:06-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Move userstories to apps repo as docs. (#105)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Humair",
+   "email": "HumairAK@users.noreply.github.com"
+  },
+  {
+   "path": "docs/adr/0002-release-policy.md",
+   "identity": "docs/adr/0002-release-policy.md",
+   "commit": "675264d6cda4edcbe78827896433e3eeac215136",
+   "date": "2020-11-04T16:17:05+01:00",
+   "old_state": "unknown",
+   "new_state": "deleted",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "minor update of text",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "deleted-without-replacement-pointer",
+   "author": "Christoph G\u00f6rn",
+   "email": "goern@redhat.com"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 23,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "19"
+}

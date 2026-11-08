@@ -1,0 +1,474 @@
+{
+ "repo": "bbc/digital-paper-edit-firebase",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2019-11-22T10:40:41+00:00",
+ "last_commit": "2021-07-09T11:27:44+01:00",
+ "n_commits": 342,
+ "n_authors": 13,
+ "n_files": 260,
+ "n_code_files": 105,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 12,
+ "adrs": [
+  {
+   "path": "docs/ADR/2019-11-27-firestore-saving-timed-transcripts.md",
+   "identity": "docs/ADR/2019-11-27-firestore-saving-timed-transcripts.md",
+   "adr_id": "2019",
+   "title": "Saving word level transcripts in Firebase",
+   "first_commit": "2019-12-05T12:22:30+00:00",
+   "first_sha": "554290aac38c377945cf957e149b7ec498c9cce8",
+   "last_commit": "2020-05-12T12:13:37+01:00",
+   "author": "Pietro",
+   "email": "pietro.passarelli@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Saving word level transcripts in Firebase\n\n- Status: in progress <!-- optional -->\n- Deciders: Eimi, Pietro <!-- optional -->\n- Date: 2019-11-27 <!-- optional -->\n\nTechnical Story: [description | ticket/issue URL] <!-- optional -->\n\n## Context and Problem Statement\n\n### The Context\n\nThe context is the development of applications to work with transcriptions of audio or video interviews, these could range from 20 minutes to 1 hour or over in length, depending on the production requirements.\n\nWe need to save word level timed text transcriptions into Firebase and Firestore.\nIn this domain we generally use components such as [@bbc/react-transcript-editor](https://github.com/bbc/react-transcript-editor) as a way to manipulate timed text.\n\nWe have seen that 20 min worth of timed text transcription in JSON (see below, referred to as DPE JSON) format is roughly 315 KB - roughly 3581 words.\n\n20 minutes is conservative - could also be pushed up to 30 minutes. I think if the limit is 1000KB, we should at least aim to be around the 50% mark (500KB).\n\nGenerally the data structure for the transcription is quite efficient. Comparing 1 hour worth of transcription in GCP STT and DPE JSON, GCP STT is easily 2MB while the equivalent DPE data format is 1.3MB.\n\n_For an example see [Soleio interiview as example in DPE demo](https://bbc.github.io/digital-paper-edit-client/#/projects/10046281c4ad4938b7d0ae6fa9899bec/transcripts/1000cjw29xii80000ird74yb19swa/correct), (click export btn arrow top right, and choose last option `Digital Paper Edit - Json`)_\n\n#### Transcription\n\nParagraphs and speakers are interpolated on the client.\nData structure (referred to as DPE JSON)\n\n```json\n{\n  \"words\": [\n    {\n      \"id\": 0,\n      \"start\": 1.4,\n      \"end\": 3.9,\n      \"text\": \"Hello\"\n    },\n    ...\n  ],\n  \"paragraphs\": [\n    {\n      \"id\": 0,\n      \"start\": 1.4,\n      \"end\": 4.2,\n      \"speaker\": \"TBC 0\"\n    },\n  ...\n  ]\n}\n```\n\n### The Problem\n\nThe problem is balancing technical limitations and cost: while we want to take advantage of Firestore, there is a limit (1MB) for uploads per document. The challenge is balancing the number of IO operations ([monetary cost](https://firebase.google.com/pricing)) and engineering effort.\n\nFor instance these are the following is the limit to free-tier:\n\n#### Firestore\n\n- GiB stored - 1 GiB / about 20 M chat messages at 50 bytes per chat message\n- Document writes - 600,000 writes / number of times data is written\n- Document reads - 1,500,000 reads / number of times data is read\n- Document deletes - 600,000 deletes / number of times data is deleted\n\n#### Firebase Storage\n\n- GB stored - 5 GB / about 2,500 high-res photos at 2 MB per photo\n- GB transferred - 30 GB / about 15,000 high-res photos at 2 MB per photo\n- Operations (uploads & downloads) - 2,100,000 ops /about 210,000 uploads & 1,890,000 downloads\n\n#### Cloud Functions\n\n- Invocations - 2,000,000 invocations / number of times a function is invoked\n- GB-seconds - 400,000 GB-seconds / time with 1 GB of memory provisioned\n- CPU-seconds - 200,000 CPU-seconds / time with 1 GHz CPU provisioned\n- Networking (egress) - 5 GB / outbound data transfer\n\n## Decision Drivers <!-- optional -->\n\n1. Easy to reason around\n2. Keeping cost down\n3. Firestore document size limit of 1mb\n4. In Firestore reads of documents are charged individually\n5. Ideally a solution that can scale for storing over 1 hour worth of transcription without breaking a sweat\n6. if needed paragraphs and words attribute could be saved in separate collections/documents.\n\n## Considered Options\n\n1. Break down data in firestore - \"paginated\" every 20 min\n2. Break down data in firestore - \"paginated\" every paragraph\n3. Break down data in firestore - every word is a document\n4. Saving JSON as a file in Firebase cloud storage, while storing the location of path in Firestore\n5. Compression - BSON - Binary JSON\n6. Compression - JSONC with Gzip\n7. Compression - UBJSON - Universal Binary JSON\n8. Convert to a collection of 3 `tsv` documents\n9. Compression - Gzip only using `zlib`\n\n## Decision Outcome\n\n_TBC_\n\n<!-- Chosen option: \"[option 1]\", because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)]. -->\n\n<!-- ### Positive Consequences\n\n* [e.g., improvement of quality attribute satisfaction, follow-up decisions required, \u2026]\n* \u2026\n\n### Negative consequences\n\n* [e.g., compromising quality attribute, follow-up decisions required, \u2026]\n* \u2026 -->\n\n## Pros and Cons of the Options <!-- optional -->\n\n### 1. Break down data in firestore - \"paginated\" every 20 min\n\nData could be \"paginated\" in firestore, so that there could be a collection of words, and every x number of words (eg roughly every 3581 words objects), corresponding to 20 min worth of word objects could be split into a new document, eg words fragment.\n\nThis means that one hour for instance would only need to be split into a collection of 3 documents.\n\nTwo hours would be split into a collection of 6 documents, and so on.\n\nWhen saving it could be splitted into these documents, and when retrieving could be combined back into one data structure.\n\nThis is to show that the cost of the extra reads per transcription, would not be outrageous.\n\nA [firebase HTTPS callable functions](https://firebase.google.com/docs/functions/callable) could be used to save and retrieve from firestore to do this fragmenting and aggregating.\n\nUsing a cloud function as way to perform CRUD operations, would also incur the extra cost for the use of the cloud function.\n\nAlso need to double check if this would introduce a considerable delay in the user experience, as the function might need to boot up before performing the operation (?).\n\n- Good, because cost of reads would only increase by smaller increments based on length of content\n- Good, because it's easy to do cost estimation\n- Bad, because introduces cost of calling a firebase cloud function to perform the operation\n- \u2026 <!-- numbers of pros and cons can vary -->\n\n### 2. Break down data in firestore - \"paginated\" every paragraph\n\nAn alternative could also be to group the words by paragraphs.\n\nHowever when correcting paragraphs on the client, these might change and get re-arranged, so there might not be a lot of value in this. Eg when saving back to firestore might be easier to override everything then diff changes.\n\n- Good, because easy to reason around\n- Bad, because could get expensive, as it would increase number of reads\n- Bad, because could get expensive, as it would increase number of writes\n- Bad, because paragraph breakdown subject to change\n- \u2026 <!-- numbers of pros and cons can vary -->\n\n### 3. Break down data in firestore - every word is a document\n\nAn alternative could also be to save each word as it's on document in a collection of words. Same thing could be done for paragraphs.\n\nHowever it could get very expensive to do a read of a whole document, as we'd need to fetch all the words etc.. and we'd get charge for every read. So even for a 20 minute transcript, with 3581 words, this could incur a substantial cost.\n\n- Good, because easy to reason around\n- Bad, because could get expensive, as it would increase number of reads\n\n### 4. Saving JSON in Firebase cloud storage?\n\nAnother option is to use firestore triggers and/or [HTTPS callable functions](https://firebase.google.com/docs/functions/callable) to save the DPE json format into cloud storage.\n\nThere would be no size limit, but we would not be able to take advantages of firebase functionalities for the data.\n\nIn the current client, when saving a timed transcript the whole payload is returned, there is currently no option to save intermediate results, or only what's the latest change.\n\nThis might change and get optimised in the future, but we also just want a solution that works for the now, and then look at ahead at further refactor and optimization.\n\n- Good, because file size limit on cloud storage is more then enough at [5TB](https://cloud.google.com/storage/quotas)\n- Bad, because introduces cost of calling a firebase cloud function to perform the operation\n- Bad, because it might introduce a delay (?)\n\n### 5. Compression - BSON\u00a0\n\nAnother option is to compress the json. eg with [js-bson](https://github.com/mongodb/js-bson)\n\nIf we consider that 1 hour in DPE format is 1.3 MB, and for reference in GCP STT json format it is 2mb. After BSON compressed is 836 KB.\n\nAs we so in the data structure example above for DPE json, paragraphs and words could be separated.\n\nSo if you do words only then it's 1.1MB compressed to 822KB.\nAnd paragraphs that are 15KB in DPE json, and after JSONB compression they go down to 11KB.\n\nOn average, this saves up to 60% in size - but there has been an occasion when it's increased in size, so we would need to do more testing. The is [some documentation](https://stackoverflow.com/questions/24114932/which-one-is-lighter-json-or-bson) in the official FAQ of BSON as to why that may happen more frequently than not.\nFor more comparison information, see [here](https://www.educba.com/json-vs-bson/)\n\nHard to know if this compression option would be reliable and consistent.\n\n- Good, because for around an hour worth of transcript, could get it below 1mb\n- Bad, because we need to do a lot more testing\n\n### 6. Compression - JSONC\n\n[github JSONC](https://github.com/tcorral/JSONC), [npm jsonc](https://www.npmjs.com/package/jsoncomp)\n\n> Be careful with this method because it's really impressive if you use it with a JSON with a big amount of data, but it could be awful if you use it to compress JSON objects with small amount of data because it could increase the final size.\n\narticle from [coderwall, compress your json data](https://coderwall.com/p/mekopw/jsonc-compress-your-json-data-up-to-80)\n\n```js\nconst fs = require(\"fs\");\nconst jsonc = require(\"jsonc\");\nconst gcpSttResponseJson = require(\"./create-1574786669322.json\");\n\nconst gcpToDpe = require(\"gcp-to-dpe\");\nconst gcpTranscript = gcpSttResponseJson.response;\nconst dpeTranscript = gcpToDpe(gcpTranscript);\nfs.writeFileSync(\"dpe.json\", JSON.stringify(dpeTranscript, null, 2));\n\nconst compressedJSON = jsonc.parse(dpeTranscript);\nfs.writeFileSync(\"jsonc-compressed.json\", compressedJSON);\n```\n\ngot an error\n\n```\nreturn result + (insideComment ? strip(jsonString.slice(offset)) : jsonString.slice(offset));\n\nTypeError: jsonString.slice is not a function\n```\n\n<!-- * Good, because [argument a]\n* Good, because [argument b] -->\n\n- Bad, because wasn't able to try out the libary\n\n### 7. Compression - binary with UBJSON\n\n[ubjson](https://www.npmjs.com/package/@shelacek/ubjson)\n\nFirestore can support binary data, so json could be compressed to binary.\n\nWhen trying this out\n\n```js\nconst fs = require(\"fs\");\nconst ubjson = require(\"@shelacek/ubjson\");\nconst gcpToDpe = require(\"gcp-to-dpe\");\n\nconst gcpSttResponseJson = require(\"./create-1574786669322.json\");\nconst gcpTranscript = gcpSttResponseJson.response;\nconst dpeTranscript = gcpToDpe(gcpTranscript);\n\nconst buffer = ubjson.encode({ dpeTranscript, from: [\"UBJSON\"] });\n\nfs.writeFileSync(\"Ubjson\", buffer);\n```\n\nGot an error\n\n```\nRangeError: Maximum call stack size exceeded\n```\n\n<!-- * Good, because [argument a]\n* Good, because [argument b] -->\n\n- Bad, because wasn't able to try out the libary\n\n### 8. Convert to a collection of 3 `tsv` documents\n\nIt is stated in firebase docs, that within 1mb, you could hold a whole book (soruce needed). As generally a whole book in plain text it's under 1mb.\n[Moby dick from project gutenberg](<(https://www.gutenberg.org/files/2701/2701-h/2701-h.htm)>) it's 1.3mb. roughly 215,831 words.\n\nIf 3581 words in 20 minutes then in 215,831 words it's 1,205.42 minutes, which is roughly 20 hours.\n\n_if my math is not failing me_\n\nSo words like this\n\n```json\n{\n  \"words\": [\n    {\n      \"id\": 0,\n      \"start\": 1.4,\n      \"end\": 3.9,\n      \"text\": \"Can\"\n    },\n    {\n      \"id\": 1,\n      \"start\": 3.9,\n      \"end\": 4,\n      \"text\": \"you\"\n    },\n   ",
+   "truncated_text": true,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/create-1574786669322.json",
+    "www.gutenberg.org/files/2701/2701-h/2701-h.htm",
+    "/dpe.json",
+    "github.com/emettely/compare-json-compression/blob/master/src/gzip.js"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2020-03-12-integrating-with-new-pstt-module.md",
+   "identity": "docs/ADR/2020-03-12-integrating-with-new-pstt-module.md",
+   "adr_id": "2020",
+   "title": "Designing the integration with the new NewsLab's PSTT service",
+   "first_commit": "2020-03-26T15:23:52+09:00",
+   "first_sha": "fb08d0e7b693b25a9cbf5ce61580c37a0a7ade4b",
+   "last_commit": "2020-03-30T20:51:18+09:00",
+   "author": "Eimi Okuno",
+   "email": "emettely@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "The endpoint for requesting the status of a transcription uses [this lambda](https://github.com/bbc/newslabs-stt/tree/master/newslabs-stt-check-transcription), which returns the transcription status. There is an example response in the README. Make a request to an API Gateway endpoint (please ask) w",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Designing the integration with the new NewsLab's PSTT service\n\n- Status: [accepted | superseded by [ADR-0005](0005-example.md) | deprecated | \u2026] <!-- optional -->\n- Deciders: Eimi, Ashley, Ben\n- Date: 2020-03-26\n\nTechnical Story: As of March 2020, there is a contractor working on a reusable component that fronts Platform STT.\n\n## Context and Problem Statement\n\nWe want to connect to Newslabs' shared STT service (named Newslabs PSTT).\n\n## Decision Outcome\n\nAshley is building a service that will have an API Gateway and an S3 bucket. Uploading to the S3 bucket will trigger the STT event. We will be uploading to a bucket, as the previous architecture, with limitations that will define how we will communicate with Newslabs' PSTT service.\n\nThere will only be one shared bucket per environment for services using this service. The name of the bucket is \"newslabs-stt-media-to-transcribe\" and \"newslabs-stt-media-to-transcribe-test\".\n\n### Limitations\n\n- Newslabs pstt will only handle audio files (`mp3`, `mp4`, `wav`, `flac`)\n- the client (dpe) need to ensure they upload audio not video\n- do not use the eTag as the reference, use object key instead: `<service_name>/<object_key>.<ext>`\n- assume that the client is sending a unique object key\n\n### Example\n\n#### Upload\n\nWhen uploading a file with Object Key: `280612.mp3`, the Object Key should be prepended with the service name: `dpe/280612.mp3`\n\n#### Status\n\nThe endpoint for requesting the status of a transcription uses [this lambda](https://github.com/bbc/newslabs-stt/tree/master/newslabs-stt-check-transcription), which returns the transcription status.\nThere is an example response in the README.\n\nMake a request to an API Gateway endpoint (please ask) with something like this in the request body:\n\n```json\n{\n  \"objectKey\": \"dpe/uuid.ext\"\n}\n```\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "<service_name>/<object_key>.<ext>",
+    "dpe/280612.mp3",
+    "dpe/uuid.ext"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-12-02-nosql-schema-security.md",
+   "identity": "docs/ADR/2019-12-02-nosql-schema-security.md",
+   "adr_id": "2019",
+   "title": "NoSQL Schema (Firestore) for Security Rules",
+   "first_commit": "2019-12-02T17:12:33+00:00",
+   "first_sha": "896bebd62fa5301b7c9b71ae75276a7f66531bfa",
+   "last_commit": "2020-03-23T17:19:37+00:00",
+   "author": "Eimi Okuno",
+   "email": "emettely@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# NoSQL Schema (Firestore) for Security Rules\n\n- Status: accepted\n- Deciders: Eimi\n- Date: 2019-12-02\n- Updated: 2020-03-17\n\nTechnical Story: Related to #4. Needing to rethink the design of the database schema so that we can balance ease of security implementation and easy of use.\n\n## Context and Problem Statement\n\n[Security rules](https://firebase.google.com/docs/firestore/security/get-started) in Firebase is glob-like.\n\n```c++\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /<some_path>/ {\n      allow read, write: if <some_condition>;\n    }\n  }\n}\n```\n\nWe need to add user authentication ID to the conditional statement above to tighten security for who can access our data. This means that we might need to rethink how we want to organise the data, as it was initially thought to be flat:\n\n```text\n/users/{uId}\n/projects/{pId}\n/transcripts/{trId}\n/paperedits/{peId}\n/uploads/{upId}\n```\n\nIf we retained flatness, it will be easy to access the data - however we need to complicate our data structure by retaining the user ID in each of the records.\n\n## Decision Drivers <!-- optional -->\n\n- Security\n- Ease in implementation (DB)\n- Ease in implementation (Security Rules)\n- Extensibility\n\n## Considered Options\n\n- Flat collections with `users` in every collections' field\n- Users with rest as subcollections\n- 2 collections: Users and Projects with `users` field and rest as subcollections\n\n## Decision Outcome\n\nChosen option: \"2 collections\", because when thinking about membership and extensibility, we'd want to be able to have multiple `users` in a single `project` and every asset (`transcripts`, `paperEdits`) should be associated with a `project`.\n\nWe will authenticate users based on a field in projects called `users`. Each project will have several users like so:\n\n- `projects/{id}/users` = []\n\nA security rule like below will be able to test authentication and membership of the project on users.\n\n```js\nfunction isOnProject() {\n  return (\n    request.auth.uid in\n    get(/databases/$(database) / documents / projects / $(pid)).data.users\n  );\n}\n```\n\n### Uploads (Storage and Firestore)\n\nThe `uploads` subcollection has been added to the `users` for security and convenience: Storage rules are a lot easier to implement based on users, and we want to make things symmetric as possible.\n\n| Firestore                   | Storage                     |\n| --------------------------- | --------------------------- |\n| `users/{id}/uploads/{upId}` | `users/{id}/uploads/{upId}` |\n\nTo keep consistency, we also use the same `id` for `transcript` and `uploads` in Firestore\n\n| Firestore                            | Firestore                     |\n| ------------------------------------ | ----------------------------- |\n| `projects/{id}/transcripts/{itemId}` | `users/{id}/uploads/{itemId}` |\n\n## Other schemas\n\nRelated to #23, #24, #25.\nThe structure for projects should be as follows:\n\n| Firestore                                              |\n| ------------------------------------------------------ |\n| `projects/{id}/transcripts/{tr_id}`                    |\n| `projects/{id}/paperedits/{pe_id}`                     |\n| `projects/{id}/labels/{l_id}`                          |\n| `projects/{id}/transcripts/{tr_id}/annotations/{a_id}` |\n\n### Collections\n\n#### Projects Collection\n\nA document contains:\n\n| field       | type           |\n| ----------- | -------------- |\n| id          | string         |\n| title       | string         |\n| description | string         |\n| updated     | timestamp      |\n| url         | string         |\n| users       | array (string) |\n| paperedits  | collection     |\n| transcripts | collection     |\n| labels      | collection     |\n\n#### PaperEdits Collection\n\nA document contains:\n\n| field       | type        |\n| ----------- | ----------- |\n| id          | string      |\n| projectId   | string      |\n| title       | string      |\n| description | string      |\n| created     | timestamp   |\n| updated     | timestamp   |\n| url         | string      |\n| elements    | array (map) |\n\n##### elements\n\n###### Title, Note, Voice Over element\n\n| field | type   |\n| ----- | ------ |\n| id    | string |\n| index | number |\n| type  | string |\n| text  | string |\n\n###### Paper Cut element\n\n| field        | type   |\n| ------------ | ------ |\n| id           | string |\n| transcriptId | string |\n| index        | number |\n| type         | string |\n| start        | number |\n| end          | number |\n\nInfer `words` and `paragraphs` from `transcript` collection using `transcriptId`, `start` and `end` time.\n\n#### Transcripts Collection\n\nA document contains:\n\n| field       | type        |\n| ----------- | ----------- |\n| id          | string      |\n| projectId   | string      |\n| title       | string      |\n| description | string      |\n| media       | map         |\n| status      | string      |\n| created     | timestamp   |\n| updated     | timestamp   |\n| url         | string      |\n| words       | array (map) |\n| paragraphs  | array (map) |\n| annotations | collection  |\n\nThe `url` is for the `react transcript editor` interface.\n\n**Media (map)**\n| field | type |\n| ----- | ------ |\n| url | string |\n| type | string |\n\nType is either \"video\" or \"audio\"\n\n**Words (map)**\n\n| field | type   |\n| ----- | ------ |\n| start | number |\n| end   | number |\n| text  | string |\n\n**Paragraphs (map)**\n\n| field   | type   |\n| ------- | ------ |\n| id      | number |\n| start   | number |\n| end     | number |\n| speaker | string |\n\n##### Annotation Collection\n\nA document contains:\n\n| field        | type   |\n| ------------ | ------ |\n| id           | string |\n| projectId    | string |\n| transcriptId | string |\n| labelId      | string |\n| start        | number |\n| end          | number |\n| note         | string |\n\n#### Labels Collection\n\nA document contains:\n\n| field       | type   |\n| ----------- | ------ |\n| id          | string |\n| projectId   | string |\n| label       | string |\n| description | string |\n| value       | string |\n| color       | string |\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#4",
+     "kind": "hash",
+     "url": "",
+     "number": "4"
+    },
+    {
+     "key": "#23",
+     "kind": "hash",
+     "url": "",
+     "number": "23"
+    },
+    {
+     "key": "#24",
+     "kind": "hash",
+     "url": "",
+     "number": "24"
+    },
+    {
+     "key": "#25",
+     "kind": "hash",
+     "url": "",
+     "number": "25"
+    }
+   ],
+   "mentioned_paths": [
+    "projects/{id}/users",
+    "users/{id}/uploads/{upId}",
+    "projects/{id}/transcripts/{itemId}",
+    "users/{id}/uploads/{itemId}",
+    "projects/{id}/transcripts/{tr_id}",
+    "projects/{id}/paperedits/{pe_id}",
+    "projects/{id}/labels/{l_id}",
+    "projects/{id}/transcripts/{tr_id}/annotations/{a_id}"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-11-05-firebase.md",
+   "identity": "docs/ADR/2019-11-05-firebase.md",
+   "adr_id": "2019",
+   "title": "Firebase infrastructure",
+   "first_commit": "2019-11-22T10:40:41+00:00",
+   "first_sha": "edbd9b4c447f32a68fc6ba56c0eb9486aee3bf12",
+   "last_commit": "2020-03-17T10:55:08+00:00",
+   "author": "Eimi Okuno",
+   "email": "eimi.okuno@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Firebase infrastructure\n\n- Status: accepted\n- Deciders: Eimi, James, Alli, Susie\n- Date: 2019-11-05\n\nThis is related to a previous ADR: see [modular architecture ADR](./2019-05-09-modular-architecture.md)\n\nTechnical Story: Evaluating Firebase for our backend, replacing most of the AWS infrastructure, except for PSTT client (queue and instance to talk to PSTT).\n\n## Context and Problem Statement\n\nWe have quite a few components to build up in the backend to get DPE to a stable point. Although initially decided to do development in AWS, working on AWS had been quite challenging with a steep learning curve. In a single project cycle, we've reached a point where we had infrastructures of most microservices setup. Unfortunately resources were removed from the project and priorities shifted to UX research, while back-end development halted. Picking these development tasks from half baked microservices is difficult. We now have to relearn what we've developed and complete integration. In order to simplify back-end development, we are looking at Firebase (Google Cloud Platform). Since Firebase is a plaftorm that targets development for startups and R&D, it provides many features out of the box. This could speed up developing the backend, namely the realtime database, authentication, while keeping possibilities open for offline, mobile, and multi-user solutions. We must consider technical (security, development, transfer, upfront learning) and non-technical (legal) cost.\n\nSince we've designed the React components to be reusable, there is a question of whether AWS vs GCP makes it easier for transfer. Previous projects had all been rebuilt from scratch, including the infrastructure. Realistically, does it matter which Cloud provider we go with?\n\n![Firebase architectural diagram](https://github.com/bbc/digital-paper-edit-client/blob/firebase/docs/img/firebase-arch.png)\n\n### Description of Microservices\n\n| Name                     | Technology                           | Description                                                                                                                                              |\n| ------------------------ | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |\n| Firebase                 | GCP Firebase hosting, main component | The hosted solution                                                                                                                                      |\n| Firestore                | GCP Firestore, database              | The database with additional capabilities (realtime)                                                                                                     |\n| Audio Converter Function | GCP Function, serverless             | The serverless service that strips audio from the original AV content                                                                                    |\n| AWS Uplaoder Function    | GCP Function, serverless, KMS        | The serverless service that uploads a file to S3                                                                                                         |\n| STT Client               | AWS EC2, PSTT                        | SQS Consumer that consumes messages to send to Platform STT (third party) and forwards the status updating messages from the SNS topics from PSTT        |\n| STT Client Queue         | AWS SQS                              | A SQS service that takes new Job messages to send to PSTT Client                                                                                         |\n| Notification Function    | Functions, serverless                | A serverless service that takes Notification messages off the Pub/Subs serice to update Firestore                                                        |\n| STT Topic                | AWS STS                              | A topic for anything to subscribe to for notifications. This is to help with collecting all the notification. The messages are created by the STT Client |\n\n- Audio Converter Function is listening for Storage changes\n- AWS Proxy Function is listening for Storage changes\n- STT Client is listening for messages (job creation) from a queue\n\n### Steps\n\n1. User uploads AV file to Storage from Firebase\n2. Audio Converter Function:\n   1. detects file upload\n   2. strips audio from file\n   3. upload file to Storage\n3. AWS Proxy Function:\n   1. detects file upload\n   2. retrieves Key from GCP KMS\n   3. assumes role as AWS IAM\n   4. uploads file to S3\n4. [S3 Event triggers to be sent to Queue](https://docs.aws.amazon.com/AmazonS3/latest/user-guide/enable-event-notifications.html)\n5. STT Client:\n   1. creates new Plaform STT job:\n      4. upload file to Platform STT's S3 bucket\n      5. send message with file loaded to Platform STT\n   2. Forwards notifications from Platform STT's SNS to STT Notifications SNS\n6. [AWS notification Subscription Function](https://cloud.google.com/community/tutorials/cloud-functions-sns-pubsub)\n   1. updates Firestore\n7. Firestore listener updates Firebase\n\n![AWS architectural diagram](https://raw.githubusercontent.com/bbc/digital-paper-edit-infrastructure/master/docs/adr/newest_arch.png)\n![Firebase - what's done?](https://github.com/bbc/digital-paper-edit-client/blob/firebase/docs/img/dpe-aws-not-available.png)\n\n## Decision Drivers\n\n- Security (Authentication, PSTT integration)\n- Legal\n- Transfer\n- Technical feasibility of DPE only\n- Technical feasibility of CI, reproduceability\n- Cost (time, money, engineering, opportunity)\n\n## Considered Options\n\n1. AWS only\n2. Firebase and AWS\n\n## Decision Outcome\n\nFirebase and AWS combined as PSTT integration is feasible to do, even with cross acount complications. Features such as authentication, user specific data retrieval, integration with database without migrations is already completed. Firebase provides abstractions around security and integrations with the database, as well as Functions. To save time around the project with features such as realtime database and easy API use, let's progress with Firebase. There are still some things such as CI, Deployment management that can be worked on, but this is a stretch goal for now. All in all, I believe that it will save time, and simply the overall architecture and code.\n\n### Positive Consequences\n\n- Faster turnaround for development\n- Authentication\n- Realtime database beneficial for some of our DPE requirements\n- Managed services with many abstractions\n\n#### Secondary positive consequences\n\n- Growing knowledge of GCP\n- BBC Login (stretch goal)\n- monitoring given out of the box (console.log maps to logging to GCP Logging Console)\n\n### Negative consequences\n\n- Upfront cost of learning for developers and there are many unknowns, until looked into\n- Security concerns\n- Redesigning architecture\n- Redesigning database model\n- Transfer not possible with infrastructure (?)\n\n## Pros and Cons of the Options\n\nBefore we discuss the pros and cons of each of the options, we needed to have a clear idea about each component, how far it is from so-called-completion in AWS and GCP and pros and cons of each technology. Here I describe:\n\nWhat it needs to do\nWhat it currently does\n\nAnywhere noted with \\* is an indicator of a stretch goal.\n\n### Client\n\n#### What it needs to do\n\n- From the UI, users can view and alter (their own\\*) data\n- Initiate transcription process\n\n#### AWS and GCP\n\n- [x] The integration with the API works on both AWS and GCP.\n- [x] both are deployed as web endpoints.\n- [x] both endpoints are secured by some form of authentication.\n\n#### AWS\n\n- [x] There is a cert-based authentication set up.\n- [ ] Individual user data.\\*\n- [ ] file upload\n- [ ] S3 setup and access\n\n#### GCP\n\n- [x] there is already an authentication set up for GCP that is whitelisting based.\n- [x] User specific data retrieval\\*\n- [ ] file upload (there are easy ways of showing progress of uploading of files)\n- [ ] Storage access (see security rules setup, is open by default)\n- [ ] The potential here is BBC Login integration, which is more user friendly.\\*\n\n```js\nvar storageRef = firebase.storage.ref(\"folderName/file.jpg\");\nvar fileUpload = document.getElementById(\"fileUpload\");\nfileUpload.on(\u2018change\u2019, function(evt) {\n  var firstFile = evt.target.file[0]; // get the first file uploaded\n  var uploadTask = storageRef.put(firstFile);\n  uploadTask.on(\u2018state_changed\u2019, function progress(snapshot) {\n     console.log(snapshot.totalBytesTransferred); // progress of upload\n  });\n});\n```\n\n### API and Database\n\nWhat it needs to do\n\n- The API connects to the database to do CRUD operations\n- The API invokes the audio conversion\n- The API invokes the transcription service\n- The API is notified by PSTT Client to update status of transcription\n- Secure connection to database, audio conversion, transcription service\n\nAWS and GCP\n\n- [ ] API is incomplete\n- [x] Can connect to the DB (AWS has been buggy as of late)\n\nAWS\n\n- [x] deployed API\n- [x] deployed Postgres DB\n- [ ] full integration with database\n- [ ] migrations setup\n- [ ] local environment setup\\*\n  - [ ] VM\n- [x] environment set up is complete\n\nGCP\n\n- [ ] local environment setup\\*\n  - [ ] Setup with Firebase's [emulator tool](https://firebase.google.com/docs/functions/local-emulator)\n- [x] deployed Firestore (realtime DB, NoSQL)\n- [ ] full integration with database\n- no migrations necessary as it is a NoSQL database\n- it is also possible to store references to a specific data, which simplifies certain aspects of file retrieval\n- The setup in client is also simplified as there needs to be no abstraction of the database connection\n- removes the need for `setTimeout()` setup in Client for data retrieval as Firestore offers realtime data retrieval\n\n### Audio converter\n\nWhat it needs to do\n\n- Convert input to audio\n- Store output in an accessible online location\n- Handle long form content\\*\n\nAWS and GCP\n\n- [x] Deployed\n- [ ] Uploads audio content to storage\n- [ ] Integration with PSTT Client\n\nAWS\n\n- [ ] Integration with API\n  - [ ] Queue message being sent from API to Audio Converter queue\n- [x] environment set up is complete\n\nGCP\n\n- [ ] Integration with Client\n  - [x] I've done it but not currently operating due to cost (free tier)\n- [ ] environment set up is complete (follow [instructions from their docs](https://firebase.google.com/docs/projects/multiprojects))\n\n### PSTT Client\n\nWhat it needs to do\n\n- send content (URL) to PSTT\n- send notifications of status change to API\n- send output back to users by getting the content from the S3 bucket.\n\nWhat it currently does\n\nAWS and GCP\n\n- [x] deployed\n- [x] logic is functional\n- [ ] does ^ (unknown until further tested)\n\nGCP\n\n- [ ] IAM for the AWS / GCP integration (this requires 2 account creations with credentials. One to access the PSTT client's queue, and another for the PSTT client to use to update the database with the status and the JSON transcription blob).\n  - [ ] store Key in GCP's KMS\n\nTo do this, we:\n\n1. create an IAM in AWS as part of PSTT Client\n2. store the credentials of the IAM in GCP's KMS.\n3. the GCP service assumes the IAM role and\n\nThis is something that Datalab has already done so we can use their knowledge.\n\n### AWS Only\n\nContinuing development of AWS only. This will mean picking up where we left off. We currently have a setup around every single microservice. It is difficult to say how far we are, as each setup in Jenkins and integration could provide some challenges.\n\n- Good, because best practices are ensured and infosec approved.\n- Good, because all the microservices are there (infrastructrually)\n- Bad, because the best practices means jumping through many developmental steps which could be time consuming.\n- Bad, we currently don't have any integration other than UI, DB and API.\n- Bad, DB and API does connect but is faulty at the moment\n- Bad, no easy way to setup local ",
+   "truncated_text": true,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/2019-05-09-modular-architecture.md",
+    "github.com/bbc/digital-paper-edit-client/blob/firebase/docs/img/firebase-arch.png",
+    "docs.aws.amazon.com/AmazonS3/latest/user-guide/enable-event-notifications.html",
+    "raw.githubusercontent.com/bbc/digital-paper-edit-infrastructure/master/docs/adr/newest_arch.png",
+    "github.com/bbc/digital-paper-edit-client/blob/firebase/docs/img/dpe-aws-not-available.png",
+    "folderName/file.jpg"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-04-29-SQL-database-schema.md",
+   "identity": "docs/ADR/2019-04-29-SQL-database-schema.md",
+   "adr_id": "2019",
+   "title": "SQL Database schema - draft",
+   "first_commit": "2019-11-22T10:40:41+00:00",
+   "first_sha": "edbd9b4c447f32a68fc6ba56c0eb9486aee3bf12",
+   "last_commit": "2019-11-22T10:40:41+00:00",
+   "author": "Eimi Okuno",
+   "email": "eimi.okuno@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# SQL Database schema - draft\n\n* Status: In progress <!-- optional -->\n* Deciders: Pietro, Eimi <!-- optional -->\n* Date: 2019-04-29 <!-- [YYYY-MM-DD when the decision was last updated]  optional -->\n\n<!-- Technical Story: [description | ticket/issue URL] optional -->\n\n## Context and Problem Statement\n\n<!-- [Describe the context and problem statement, e.g., in free form using two to three sentences. You may want to articulate the problem in form of a question.] -->\n\nA schema for the SQL database in PostgreSQL for the web app, to be reused for SQLite electron desktop version.\n\nIt should consider [the project Milestones](https://github.com/bbc/digital-paper-edit/milestones) and be easy to version incrementally. \nEg have 3 version of the schema for the 3 main milestones:\n- [Feature: Transcript Editing](https://github.com/bbc/digital-paper-edit/milestone/3)\n- [Feature: Transcript Annotations](https://github.com/bbc/digital-paper-edit/milestone/4)\n- [Feature: Paper Editing](https://github.com/bbc/digital-paper-edit/milestone/5)\n\n[DB Designer](https://dbdesigner.page.link/cq9FMHVVxsYqTasf7) - let's you export SQL code to Create and drop tables.\n\n\n## Decision Drivers <!-- optional -->\n\n* easy to reason around\n* \u2026 <!-- numbers of drivers can vary -->\n\n## Considered Options\n\n_TBC_\n<!-- * [option 1]\n* [option 2]\n* [option 3] -->\n* \u2026 <!-- numbers of options can vary -->\n\n## Decision Outcome\n\n<!-- Chosen option: \"[option 1]\", because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)]. -->\n_TBC_\n\n### Positive Consequences <!-- optional -->\n\n<!-- * [e.g., improvement of quality attribute satisfaction, follow-up decisions required, \u2026] -->\n* \u2026\n\n_TBC_\n\n### Negative consequences <!-- optional -->\n\n<!-- * [e.g., compromising quality attribute, follow-up decisions required, \u2026] -->\n* \u2026\n_TBC_\n\n\n## Pros and Cons of the Options \n\n_TBC_\n\n<!-- \n### [option 1]\n\n[example | description | pointer to more information | \u2026] \n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n* \u2026 \n\n### [option 2]\n\n[example | description | pointer to more information | \u2026] \n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n* \u2026 \n\n### [option 3]\n\n[example | description | pointer to more information | \u2026] \n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n* \u2026\n\n## Links\n\n* [Link type] [Link to ADR]  -->",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-05-01-security.md",
+   "identity": "docs/ADR/2019-05-01-security.md",
+   "adr_id": "2019",
+   "title": "Architecture Security",
+   "first_commit": "2019-11-22T10:40:41+00:00",
+   "first_sha": "edbd9b4c447f32a68fc6ba56c0eb9486aee3bf12",
+   "last_commit": "2019-11-22T10:40:41+00:00",
+   "author": "Eimi Okuno",
+   "email": "eimi.okuno@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Architecture Security\n\n* Status: pending\n* Deciders: Pietro, Eimi, Ben (InfoSec)\n* Date: 2019-05-09\n\nTechnical Story: https://github.com/bbc/digital-paper-edit/issues/1\n\n## Context and Problem Statement\n\nThese are notes based on the InfoSec meeting held on the 30th of May 2019.\n\n## Decision Drivers\n\n* Ease of use for journalists when system authenticates them\n* Security levels (public, protect, or restrict)\n* Data retention based on inactivity\n* Complexity\n\n## Considered Options\n\n### Authentication\n\nCert-based authentication is fine for now. We might want to move to BBC Login\n(SSO). This will make it easier for journalists to access the system. When\nthere's a mobile version of the application, it will simplify accessing the system, as people will have to follow an additional step to [enrol their devices into MDM](https://confluence.dev.bbc.co.uk/display/ops3/MDM+Airwatch+Cluster) if using a cert-based authenticator.\n\n### Data Retention Period\n\n90 days of inactivity as the data retention period and logic.\n### Levels of Security\n\nThere are currently 3 levels of security. We are aiming for the second tier -\nwhich is **protect**. The Electron App, which will be out of scope initially,\nwill be in **restrict** - as it will require locally cached pre-production\nfiles and offline STT.\n\nIn order to have a **protect** level system we must:\n\n* S3:\n  * encrypt (bucket-only, not contents of bucket) and private\n  * If hosting website inside S3, we must use Cloudfront to authenticate and\n    write our own proxy to redirect to S3.\n* RDS:\n  * toggle encrypt option\n* Communication between assets:\n  * use either IAM policies to go between VPC (SecurityGroups?) or use different\n    subnets to restrict communciations\n\nFor **restrict** level, we must:\n\n* encrypt the **contents*** of S3 and RDS.\n    \n### Option 1 (Suggested by Ben)**\n\n* Some examples by Ben:\n    - https://confluence.dev.bbc.co.uk/display/mdm/AWS+setup\n    - https://confluence.dev.bbc.co.uk/display/mdm/Apache+Configuration\n    - https://confluence.dev.bbc.co.uk/display/mdm/Generating+Signed+Cookies%3A+Not+implemented+-+does+not+work\nHe suggested adding a load balancer or Cloudfront in front of EC2 that serves\nReact, then adding VPCs. The VPC can be a singular or multiple. He also\nrecommended within these VPCs to use different subnets for the components to talk\nto each other.\n\n#### Concerns\n\n* We would need to keep the web endpoint open to the public and authenticate via\n  a proxy server in Apache. This seems to require writing our own Apache server.\n  In this case, I would prefer to use Nginx, as it is more resilient and can\n  replace Apache easily.\n* We would need to have an EC2 or Lambda instance to do the redirects.\n  In this case, it might be simpler to have a web endpoint in EC2.\n* This is not a traditional web UI and might need a more complex set up than a\n  static web hosted set up.\n\n### Option 2\n\n* Following the guidelines above to implement a **protected** level service, we\n  can host the UI in EC2 instance in Cosmos. Cosmos will automatically give us\n  the ELBs, and most imporantly the automatic authentication capabilities.\n* The UI and backend server (Express) can be both hosted on the same EC2 instance, which will\n  reduce the APIs exposure only to the UI. The fronting UI will have it's own Express server. This means that the UI Express will communicate with the API Express via `localhost`. The backend server will only be on\n  `localhost` and won't be exposed to the wider world.\n* Although the UI and Express server live in the same box, they are still both\n  in the Cosmos VPC, with cert authentication.\n* We can use SecurityGroups between ELBs to restrict communication between each\n  AWS service.\n\n## Decision Outcome\n\nWe are going with Option 2 as this provides us with security, while\nproviding a simpler way to set up access for journalists.\n\nBen Thornton has agreed to this.\n\nThe benefits of this approach means that we will be\nusing existing BBC services to implement security, rather than implementing our\nown servers. A single VPC is sufficient for **protected** levels of service, and\nwe can apply SecurityGroups in between to have added security.\n\nThe downside of this approach is that it is not using SSO but we can add that\nlater on. \n\nIn terms of data retention, we will go with the recommended 90 days.\n\n![Architecture Diagram with Security](./dpe-transcript-EC2_security.png)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "bbc/digital-paper-edit#1",
+     "kind": "issue",
+     "url": "https://github.com/bbc/digital-paper-edit/issues/1",
+     "number": "1"
+    }
+   ],
+   "mentioned_paths": [
+    "/dpe-transcript-EC2_security.png"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-05-09-modular-architecture.md",
+   "identity": "docs/ADR/2019-05-09-modular-architecture.md",
+   "adr_id": "2019",
+   "title": "Modular Architecture (breaking down repositories and packages)",
+   "first_commit": "2019-11-22T10:40:41+00:00",
+   "first_sha": "edbd9b4c447f32a68fc6ba56c0eb9486aee3bf12",
+   "last_commit": "2019-11-22T10:40:41+00:00",
+   "author": "Eimi Okuno",
+   "email": "eimi.okuno@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Modular Architecture (breaking down repositories and packages)\n\n- Status: accepted\n- Deciders: Pietro, Eimi, Dan (Data solutions), James, Alli\n- Date: 2019-06-13\n\nTechnical Story: Exploring a better way to organise the project than in a monorepo.\n\n## Context and Problem Statement\n\nAs this is an opensource project, we might want to separate out the projects so they are more digestible.\n\n## Decision Drivers\n\n- opensource means removing BBC specific code\n- separating infrastructure\n- electron and cep (future integration)\n\n## Considered Options\n\nThere are 3 logically separated packages:\n\n1. UI\n2. API (monorepo)\n3. (AWS/CEP/Electron) Infrastructure\n\n- Option 1 - bundle everything (UI, API, Infra) into an RPM.\n- Option 2 - separate the UI to a new github repository, bundle it as an NPM package. Keep infrastructure in the same repository as API. API will pull in UI as a dependency.\n- Option 3 - separate the UI, API and infrastructure. Bundle UI and API separately as NPM packages. Infrastructure will have UI and API packages as dependencies.\n- Option 4 - separate the UI, API and infrastructure. Bundle only UI as NPM package, and API will be bundled as RPM. Infrastructure repo will have UI as a dependency.\n\n## Decision Outcome\n\nWe opted for Option 4 after another iteration of the architectual flow.\nInitially we went for option 3 because we wanted to have a uniform approach for possible future users.\nHowever, after much consideration, we collectively agreed to remove NPM packaging for the API (and the microservices).\n\nSimilarly to option 3, we are still keeping the AWS stacks separate in the infrastructure repository.\nWe will be using Travis CI for the NPM build.\nWe will be using Jenkins (not publicly accessible) for the RPM build and releasing to Cosmos.\nWe will be using Speculate, which is an open-source BBC project to generate SPEC files, which adds little overhead in the projects.\nWe will not automate the release of NPM, but as a manual step which also does testing.\nWe will retain the public state of each repository and not be concerned with \"ready\" state of our repositories.\n\n### Why move out API from NPM? (Cons)\n\n- Unknown benefits to external person\n- Using NPM for versioning (this can be done through other means)\n- Possibly atypical use of NPM (although this is inconclusive)\n\nThey can fork the repository to try out the services.\n\n### Reasons for option 3 initially\n\nThere is a separation to all the packages, which means it will be simpler to version, test and contribute to individual packages. The API repository will contain different infrastructural flavours of the business logic. There will be a browser (Cloud) package, CEP package, and Electron package that does the same thing. Each is compatible with the UI. To package these similar packages, we can look at `lerna`. The browser flavoured package will have another Express server in the repository to simplify local testing. Infrastructure, which will have UI and API as dependencies will not have an Express server inside.\n\nA potential problem here is that during development, the packages will have features not implemented in the other packages. In order to have parallel set of features, we will add BDD tests to automatically test that all the packages have the same features which are functional.\n\nWe are also keeping the AWS Infrastructure public, as the generic cloudformation JSON has no confidential or security issues in it.\n\n#### Why release API in NPM? (Pros)\n\n- Abstraction\n- Clear separation of concerns (RPM)\n- Simpler to set up for external people (???)\n\n### RPM deployment flow\n\n```\n+-------------------------+\n| Infrastructure          |           +----------------+\n|                         |           |                |      +-------+\n| /api                    |           |                |      |       |\n| /client                 +---------->+    Jenkins     +----->+  RPM  |\n| - speculate (SPEC gen)  |           |                |      |       |\n| /... microservices      |           |                |      +-------+\n|                         |           +----+------+----+\n+-------------------------+                ^      |\n                                           |      |\n                                           |      |\n+-------------------------+                |      |\n| API                     |                |      |    Pulls client from NPM\n|                         |                |      |    when creating RPM for client\n| package.json            +----------------+      +--------------+\n| - speculate (SPEC gen)  |                                      |\n|                         |                                      |\n+-------------------------+                                      |\n                                                                 |\n                                                                 |\n+-------------------------+        +-----------------+           v\n| Client                  |        |                 |       +---+---+\n|                         |        |                 |       |       |\n|                         +------->+    Travis CI    +------>+  NPM  |\n|                         |        |                 |       |       |\n|                         |        |                 |       +-------+\n+-------------------------+        +-----------------+\n\nhttp://asciiflow.com/\n```\n\nJenkins will then be used to deploy the RPMs to each BBC Cosmos project.\nOnce deployed, this will be two separate EC2 instances.\n\n```\n+---------------------------+           +-----------------------------+\n|Client                     |           |API                          |\n|   +-------------------+   |           |   +---------------------+   |\n|   |Express            |   |           |   |Express              |   |\n|   | +---------------+ |   |           |   |                     |   |\n|   | |NPM package    | |   |           |   |                     |   |\n|   | |with static    | |   |           |   |                     |   |\n|   | |files of Client| |   +---------->+   |                     |   +--------->...\n|   | |               | |   |           |   |                     |   |\n|   | |               | |   |           |   |                     |   |\n|   | +---------------+ |   |           |   |                     |   |\n|   |                   |   |           |   |                     |   |\n|   +-------------------+   |           |   +---------------------+   |\n|                           |           |                             |\n+---------------------------+           +-----------------------------+\n```\n\n### Repo naming conventions\n\nPrefix will be `digital-paper-edit`:\n\n- client: `-client`\n- server: `-api`\n- electron: `-electron`\n- cep: `-cep`\n- infrastructure: `-infrastructure` or `-aws`\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-05-20-previewing-papercuts.md",
+   "identity": "docs/ADR/2019-05-20-previewing-papercuts.md",
+   "adr_id": "2019",
+   "title": "Previewing Paper Cuts - React component",
+   "first_commit": "2019-11-22T10:40:41+00:00",
+   "first_sha": "edbd9b4c447f32a68fc6ba56c0eb9486aee3bf12",
+   "last_commit": "2019-11-22T10:40:41+00:00",
+   "author": "Eimi Okuno",
+   "email": "eimi.okuno@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Previewing Paper Cuts - React component\n\n* Status: accepted\n* Deciders: Pietro\n* Date: 2019-05-20<!--YYYY-MM-DD -->\n\nTechnical Story: https://github.com/bbc/digital-paper-edit/issues/3\n\n## Context and Problem Statement\n\nAs part of the Paper-edit view\n\n![Screen Shot 2019-04-18 at 13 54 26](https://user-images.githubusercontent.com/4661975/56362368-8fd2bf00-61e1-11e9-9e87-edf71c0da030.png)\n\n\n> As a user, I want to be able to get (watch or listen to) a preview of the paper-edit/program script so that I can see how my program's paper-cuts (transcripts text selections) will \"render\" as audio and/or video.\n\nIn the sketch, this would be the \"canvas\" - _borrowing terminology from to the NLE video editors distinction between preview and canvas_\n\nA React component that takes a sequence of audio or video clips as an input, with start and end time, and displays a player that can \n- [ ] Seamlessly play this EDL (edit decision list) without buffer or load time in between clips\n- [ ] Has player controls, such as\n   - [ ] progress bar\n   - [ ] play/pause \n   - [ ] stop\n\nNote that the component should be able to generate the preview if the sequence is made of audio, video or a mix of audio and video files.\n\nIn first version it could just deal with sequences of media, but it be good if in subsequent versions it could handle things like text, titles (as a possible way to display place holders for voice over text?) - this second part needs to be flashed out more. But the general thing to keep in mind is the extensibility of the elements to display, if that makes sense.\n\n\n## Decision Drivers <!-- optional -->\n\n* easy to reason around\n* performant \n\n\n## Considered Options\n\n1.  Vanilla Js\n2. BBC Video compositor\n3. Popcorn JS\n4. Hyperaud.io\n5.  `bbc/VideoContext`\n\n### 1.Vanilla Js\n\nin [autoedit2](http://www.autoedit.io/), [paper-editing](https://autoedit.gitbook.io/user-manual/paperediting) because the files are stored locally, there's no network buffer issue when loading the different clips so used [a vanilla js implementation that you can see in this js fiddle](https://jsfiddle.net/pietrops/kus10b48/)\nThis also uses media fragments to only get the specific segment.\n\n### 2. BBC Video compositor\n\n[html5-video-compositor](https://github.com/bbc/html5-video-compositor) was a precoursor of `bbc/VideoContext`, now deprecated.\n\n- https://github.com/bbc/html5-video-compositor/wiki/Quick-Start-Guide \n- https://github.com/bbc/html5-video-compositor/wiki/Playlists \n\n### 3. Popcorn JS\nPopcorn js was a library by Mozilla, but is no longer mantained.\nThere was a [JSfiddle with an example](https://jsfiddle.net/pietrops/0adkfke9/) but \nit's not working, coz no popcorn js CDN url is not valid.\n\n[The Documentation shows what the `sequence` function used to do](https://github.com/mozilla/popcorn-docs/blob/gh-pages/modules/_posts/2012-12-12-sequence.md)\n\n### 4. Hyperaud.io\nHyperaud.io was one of the first project to experiment with the idea of [Hypertranscripts\n](https://hyperaud.io/blog/hypertranscripts/) and you can see in the [hyperaud.io pad](https://hyperaud.io/pad/) how you can mix from multiple selections and then get a preview. \n\nI think under the hood two HTML5 video elements are cued up one after the other as a workaround to reduce load time of the media.\n\n### 5. `bbc/VideoContext`\nMain option considered is to use [`bbc/VideoContext`](https://github.com/bbc/VideoContext) within a React component. \n\nSee this issue for more details on how it works with an EDL(Edit Decision List) sequence of clips https://github.com/bbc/VideoContext/issues/42\n\nThere are other examples and indications in the repo on how to enable, play, pause, and a progress bar. \n\nI think under the hood, Video Context, used the HTML5 canvas to concat the videos in the sequence and then provides a unified interface to treat it as a single media.\n\n\n## Decision Outcome\n\nChosen option: option 5 `bbc/VideoContext`, because it seems to be a performant way to display an EDL/playlist of clips with start and end times options. It is also currently being mantained by BBC R&D.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "bbc/digital-paper-edit#3",
+     "kind": "issue",
+     "url": "https://github.com/bbc/digital-paper-edit/issues/3",
+     "number": "3"
+    },
+    {
+     "key": "bbc/VideoContext#42",
+     "kind": "issue",
+     "url": "https://github.com/bbc/VideoContext/issues/42",
+     "number": "42"
+    }
+   ],
+   "mentioned_paths": [
+    "user-images.githubusercontent.com/4661975/56362368-8fd2bf00-61e1-11e9-9e87-edf71c0da030.png",
+    "bbc/VideoContext",
+    "github.com/mozilla/popcorn-docs/blob/gh-pages/modules/_posts/2012-12-12-sequence.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-05-22-exporting-video-preview.md",
+   "identity": "docs/ADR/2019-05-22-exporting-video-preview.md",
+   "adr_id": "2019",
+   "title": "Exporting a video preview - draft",
+   "first_commit": "2019-11-22T10:40:41+00:00",
+   "first_sha": "edbd9b4c447f32a68fc6ba56c0eb9486aee3bf12",
+   "last_commit": "2019-11-22T10:40:41+00:00",
+   "author": "Eimi Okuno",
+   "email": "eimi.okuno@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Exporting a video preview - draft\n\n* Status: in progress\n* Deciders: Pietro\n* Date: 2019-05-22 \n\nTechnical Story: exporting video preview of a program script.\n\n## Context and Problem Statement\n\nWe are using BBC `VideoContext` to display a preview of the paper-cuts in a program script.\n\nMain export is an EDL or XML to import into audio or video editing software to continue from rough cut to fine cut.\n\nHowever it be useful to be able to export the \"rough cut preview\" as a video to remove extra steps if users need to share it as is.\n\n\n## Decision Drivers <!-- optional -->\n\n* Easy to reason around\n* Light on the client, for low performance PC running IE (for web version)\n\n\n## Considered Options\n\n1. Server side `ffmpeg-remix`\n2. Export from `VideoContext`\n3. client side ffmpeg\n\n\n## Decision Outcome\n<!-- \nChosen option: \"[option 1]\", because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)]. -->\n\n_TBC, most likely 1 - `ffmpeg-remix`_\n\n<!-- ### Positive Consequences \n\n* [e.g., improvement of quality attribute satisfaction, follow-up decisions required, \u2026]\n* \u2026\n\n### Negative consequences\n\n* [e.g., compromising quality attribute, follow-up decisions required, \u2026]\n* \u2026  -->\n\n## Pros and Cons of the Options <!-- optional -->\n\n### 1. Server side `ffmpeg-remix`\n\n<!-- [example | description | pointer to more information | \u2026]  -->\n\n[`ffmpeg-remix`](https://www.npmjs.com/package/ffmpeg-remix)\n\nFast server side cutting of mp4s.\n\nVideos need to be mp4, as it's changing the header info and cut/copy blocks rather then transcoding.\n\nTakes in a json sequence and returns the edited video.\n\n\n* Good, because it's faster then transcoding\n* Bad, because it's server side, needs it's own microservice\n\n### 2. Export from `VideoContext`\n\n[Export high quality video? `#124`](https://github.com/bbc/VideoContext/issues/124#issuecomment-493722339)\n\n\n* Good, because we are already using VideoContext to display a preview\n* Bad, because it might not be possible\n* Bad, because it might be resource intense on the client\n\n### 3. client side ffmpeg\n\n- [`ffmpeg.js`](https://github.com/Kagami/ffmpeg.js)\n- [`videoconverter.js`](https://bgrins.github.io/videoconverter.js)\n\neg via webworker to offload effort\n\n\n* Good, because it could run client side\n* Bad, because it might not be production ready, ie too buggy\n* Bad, because it might be resource intense on the client\n\n\n<!-- ## Links \n\n* [Link type] [Link to ADR]  -->",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#124",
+     "kind": "hash",
+     "url": "",
+     "number": "124"
+    },
+    {
+     "key": "bbc/VideoContext#124",
+     "kind": "issue",
+     "url": "https://github.com/bbc/VideoContext/issues/124",
+     "number": "124"
+    }
+   ],
+   "mentioned_paths": [
+    "ffmpeg.js",
+    "github.com/Kagami/ffmpeg.js",
+    "videoconverter.js",
+    "bgrins.github.io/videoconverter.js"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-06-20-environment-injection.md",
+   "identity": "docs/ADR/2019-06-20-environment-injection.md",
+   "adr_id": "2019",
+   "title": "[short title of solved problem and solution]",
+   "first_commit": "2019-11-22T10:40:41+00:00",
+   "first_sha": "edbd9b4c447f32a68fc6ba56c0eb9486aee3bf12",
+   "last_commit": "2019-11-22T10:40:41+00:00",
+   "author": "Eimi Okuno",
+   "email": "eimi.okuno@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# [short title of solved problem and solution]\n\n* Status: accepted\n* Deciders: James, Eimi\n* Date: 2019-06-20\n\nTechnical Story: [description | ticket/issue URL] <!-- optional -->\n\n## Context and Problem Statement\n\nThis addresses the fact that we could not configure different environments to point to different API URLs as necessary (across Int, Test, and Live envs in Cosmos).\n\nAt the point of deployment, `npm run build` is called in Jenkins to build the static  bundle and minify etc. Environment config (`REACT_APP_SERVER_URL` etc. variables declared in `.env`) get baked into the bundle and obfuscated at this point.\n\nWe would need different Jenkins jobs or parameters to bake in the environment config (eg. the correct server URL) multiple times, which goes against the idea of having an _unconfigured / environment agnostic_ RPM in Cosmos.\n\n## Decision Drivers <!-- optional -->\n\n* Avoiding too much extra code overhead\n* Trying to avoid security converns with proxy solutions (injection / DB manipulations)\n* Avoiding having to re-build in Cosmos or on the box\n\n## Considered Options\n\n### 1. Proxy\n* The react app is build / bundled and served statically as usual\n* It continues to make API requests to localhost:8080\n* An additional express server acts as a proxy and passes on these requests to the correct API_URL, according to NODE_ENV config which is passed to the proxy server at runtime\n\n### 2. Re-build at runtime\n* There is environment configuration\n* The RPM used for the EC2 contains a script that performs a rebuild when on the box\n\n\n### 3. Using the react-scripts development Server\n* Using the NODE_ENV config to configure the server and URL, without build / bundling\n\n### 4. Environment replacement with bake-script\n* Using `window.env` as a replacement for `process.env`\n* Playing config in public folder to avoid minifying\n* Bake-script replaces the file with env-specific config at launch\n\n## Decision Outcome\n\nThis is a common problem with create-react-app and the need to configure it. We came across [this solution](https://github.com/facebook/create-react-app/issues/578#issuecomment-277843310) which detailed a simple way of consuming config with the `window` global.\n\nIn source code this remains localhost:8080 as a local development fallback and it is passed in via Cosmos environment config.\n\n## Pros and Cons of the Options <!-- optional -->\n\n### Proxy\n\n* Good - it aligns initial idea that client could be pulled in _unconfigured_ via NPM.\n* Good - no additional rebuilds required\n* Bad - additional server config and boilerplate required\n* Bad - additional issues and concerns around CORS, security and injection required\n* Bad - Not hugely replicable\n\n\n### Re-build at runtime\n\n* Bad, because of the release not mapping accurately to the system on the EC2\n\n### react-scripts development Server\n\n* Good, because can use environment config easily\n* Bad, not a typical pattern\n* Bad, security concerns\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "facebook/create-react-app#578",
+     "kind": "issue",
+     "url": "https://github.com/facebook/create-react-app/issues/578",
+     "number": "578"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-09-28-exporting-placeholder-media.md",
+   "identity": "docs/ADR/2019-09-28-exporting-placeholder-media.md",
+   "adr_id": "2019",
+   "title": "Placeholder Media in Programme Script",
+   "first_commit": "2019-11-22T10:40:41+00:00",
+   "first_sha": "edbd9b4c447f32a68fc6ba56c0eb9486aee3bf12",
+   "last_commit": "2019-11-22T10:40:41+00:00",
+   "author": "Eimi Okuno",
+   "email": "eimi.okuno@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Placeholder Media in Programme Script\n\n* Status: accepted\n* Deciders: Eimi, Pietro\n* Date: 2019-10-01\n\nTechnical Story: [Investigate: Voiceover time buffer (EDL / FCPX)](https://github.com/bbc/digital-paper-edit-client/issues/65) and [UX investigations: how to better signpost Voice over/link](https://github.com/bbc/digital-paper-edit-client/issues/63)\n\n## Context and Problem Statement\n\nPeople have mentioned they want to be able to insert placeholders. The placeholders will then be also present in their editing tool of their choice, i.e. Sadie (ADL, EDL) or FCP. Since this is not a prioritised feature (it is a nice-to-have), it has been placed out-of-scope for now. Also \"Placeholders\" features are sometimes not used at all by content producers.\n\n## Decision Drivers <!-- optional -->\n\n* Ease of implementation\n* User Experience\n* Demand of feature\n\n## Considered Options\n\n1. Add Placeholder configuration to each type of export files\n2. Add dummy content where the content will be replaced\n3. Add dummy content with UI to specify filename, so when importing it will point to the right place\n\n## Decision Outcome\n\nThis implementation needs investigation from a technical and UX point of view.\nWe need to clear up assumptions about how things work technically by trying out the placeholder features of each editing tool.\nWe also need to clear up assumptions about how people use the placeholders, if it needs to be presented in a certain way in the Workspace view.\nIdeally I would say Option 1, but we will need to investigate further to conclude properly. This document needs updating once investigations have been done.\n\n### Positive Consequences <!-- optional -->\n\n* Placeholder works out of the box for specific editing tools\n\n### Negative consequences <!-- optional -->\n\n* Will require reverse engineering to understand specific editing tools\n\n## Pros and Cons of the Options <!-- optional -->\n\n### Add \"Placeholder\" data for specific tools\n\nThis means creating solutions for specific editing tools - most likely three (EDL, ADL, FCPX).\n\n* Good, because very specific, could potentially integrate existing flows\n* Bad, because it's specific and that requires resources, such as access to the tools and OS to test solutions\n\n### Add dummy data to be specified later\n\nAdd dummy data with default content, which will be added into the export file.\nThis will need to be replaced by the user manually and this could be a frustrating process.\n\n* Good, because dummy data works with all editing tools.\n* Bad, because you will have to replace the content later and that could mean you'd have to fiddle quite a bit in the editing tool (assumption)\n* Bad, because have to create and store dummy data. (Unknown)\n\n### Add dummy data and specify\n\nAdd dummy data with default content, which at export will be replaced with the name provided by the user.\nThis will require an interface where the user specifies at the point of creating the placeholder.\n\n* Good, because dummy data works with all all editing tools.\n* Good, because you can specify what the filename is.\n* Bad, because specifying the filename not work out of the box. (Unknown)\n* Bad, because you still might need the above dummy data.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "bbc/digital-paper-edit-client#65",
+     "kind": "issue",
+     "url": "https://github.com/bbc/digital-paper-edit-client/issues/65",
+     "number": "65"
+    },
+    {
+     "key": "bbc/digital-paper-edit-client#63",
+     "kind": "issue",
+     "url": "https://github.com/bbc/digital-paper-edit-client/issues/63",
+     "number": "63"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/ADR/2019-09-28-time-estimation-for-links.md",
+   "identity": "docs/ADR/2019-09-28-time-estimation-for-links.md",
+   "adr_id": "2019",
+   "title": "Time Estimations based on Text in Voice Over",
+   "first_commit": "2019-11-22T10:40:41+00:00",
+   "first_sha": "edbd9b4c447f32a68fc6ba56c0eb9486aee3bf12",
+   "last_commit": "2019-11-22T10:40:41+00:00",
+   "author": "Eimi Okuno",
+   "email": "eimi.okuno@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Time Estimations based on Text in Voice Over\n\n* Status: accepted\n* Deciders: Eimi, Pietro, Rob\n* Date: 2019-10-01\n\nTechnical Story: [Investigate: Voiceover time buffer (EDL / FCPX)](https://github.com/bbc/digital-paper-edit-client/issues/65) and [UX investigations: how to better signpost Voice over/link](https://github.com/bbc/digital-paper-edit-client/issues/63)\n\n## Context and Problem Statement\n\nPeople want to include time taken for voice overs to estimate the time of the rough cut.\n\n## Decision Drivers <!-- optional -->\n\n* Ease of implementation\n* Accuracy of time estimated\n* Extensibility\n\n## Considered Options\n\n1. Words per minute calculator\n2. Reading time calculator\n3. Record words, get time from audio\n4. Use STT service, get time from audio\n\n## Decision Outcome\n\nChosen option: 1, because it's the simplest implementation and a standardised way of calculating voice over estimations within the company.\n\n### Positive Consequences <!-- optional -->\n\n* A fairly easy implementation.\n\n### Negative consequences <!-- optional -->\n\n* Less accurate than other options.\n* Would require us to change the icon and description of the Voice over, such that it's features are not misunderstood. (This was a point raised in [UX investigations: how to better signpost Voice over/link](https://github.com/bbc/digital-paper-edit-client/issues/63))\n\n## Pros and Cons of the Options <!-- optional -->\n\n### Words per minute calculator\n\nCalculate aggregate time based on 3 seconds per word.\n\n* Good, because it's simple to calculate, doesn't require any additional tooling to implement.\n* Good, because it's vouched for by someone with strong editorial experience.\n* Bad, because it's very basic, and won't give the most accurate time estimate.\n\n### Reading time calculator\n\nCalculate aggregate time based on read time per word.\n\n* Good, because it's similar to the above - it's simple to implement.\n* Bad, because it's even less accurate than the above. Reading time != speaking time\n\n### Record words, get time from audio\n\nRecording audio then retrieving time from audio\n\n* Good, because it produces an accurate time estimate\n* Bad, because the audio recorded will most likely be replaced - which will also probably change the time estimate also.\n* Bad, because recording audio is a completely new feature that will require additional development in feature that will need storage, transfer and transcoding, based on different platforms and devices.\n\n### Use STT service, get time from audio\n\nUsing STT to estimate time of the word, then retrieving time from audio\n\n* Bad, because of similar reasons to above.\n* Bad, because also then we would need STT service, which means adding more libraries and potential dependencies to external services, based on platforms and devices.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "bbc/digital-paper-edit-client#65",
+     "kind": "issue",
+     "url": "https://github.com/bbc/digital-paper-edit-client/issues/65",
+     "number": "65"
+    },
+    {
+     "key": "bbc/digital-paper-edit-client#63",
+     "kind": "issue",
+     "url": "https://github.com/bbc/digital-paper-edit-client/issues/63",
+     "number": "63"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 12,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "12"
+}

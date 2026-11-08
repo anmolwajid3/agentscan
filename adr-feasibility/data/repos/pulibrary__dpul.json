@@ -1,0 +1,250 @@
+{
+ "repo": "pulibrary/dpul",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2016-01-11T09:20:58-08:00",
+ "last_commit": "2026-09-30T15:04:20-04:00",
+ "n_commits": 1816,
+ "n_authors": 32,
+ "n_files": 546,
+ "n_code_files": 295,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 7,
+ "adrs": [
+  {
+   "path": "architecture-decisions/0007-indexing-visibility.md",
+   "identity": "architecture-decisions/0007-indexing-visibility.md",
+   "adr_id": "7",
+   "title": "Indexing resources with non-public visibility",
+   "first_commit": "2021-03-12T15:32:07-05:00",
+   "first_sha": "e36d7eee62911aacdd4244b34c13090eeb1c3cc3",
+   "last_commit": "2021-03-12T15:32:07-05:00",
+   "author": "Anna Headley",
+   "email": "anna.headley@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 7. Indexing resources with non-public visibility\n\nDate: Archaeological\n\n## Status\n\nAccepted\n\n## Context\n\nFiggy resources may have any of the following visibilities:\n- Open (public)\n- Princeton (netid)\n- On Campus (ip)\n- Reading Room\n- Private\n\nFor each of these we need a policy regarding whether it will be indexed in DPUL.\n\nWe used to index only public / complete items. But to support the music reserves\ncollection we need pages that would have a viewer for logged-in institutional\nusers only.\n\n## Decision\n\nResources with the following visibilities should index into DPUL:\n- Open (public)\n- Princeton (netid)\n- On Campus (ip)\n\nThis is implemented with a token authentication mechanism in `iiif_resource#def\nurl`\n\n## Consequences\n\n* Users will see metadata for resources they may not be able to access.\n* Users with access will be able to search everything they can view.\n* There's no support in DPUL for private or reading room material.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "architecture-decisions/0006-exhibits-are-collections.md",
+   "identity": "architecture-decisions/0006-exhibits-are-collections.md",
+   "adr_id": "6",
+   "title": "Label \"Exhibits\" as \"Collections\"",
+   "first_commit": "2020-02-28T06:50:01-08:00",
+   "first_sha": "04441c9903d08965e304e22a87c4b3c98e6ce8ec",
+   "last_commit": "2020-02-28T06:50:01-08:00",
+   "author": "Trey Pendragon",
+   "email": "tpendragon@princeton.edu",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 6. Label \"Exhibits\" as \"Collections\"\n\nDate: Archaeological\n\n## Status\n\nAccepted\n\n## Context\n\nSpotlight uses the term \"Exhibits\" because its primary use case is generating\nmultiple exhibit sites. However, as per\n[ADR #2](./0002-build-on-spotlight.md) we want to use it as landing pages for\ncollections.\n\nThe term \"Collection\" was used everywhere else, including PUDL, so we decided to\nuse that instead. Originally reported in\n[#89](https://github.com/pulibrary/pomegranate/issues/89).\n\n## Decision\n\n* Use \"Collection\" in the UI everywhere \"Exhibit\" is mentioned in Spotlight.\n\n## Consequences\n\n* The UI says \"Collection,\" but the code says \"Exhibit,\" which is potentially\n  confusing to developers.\n\n* A couple of views will have to be overridden, which complicates the upgrade\n  path. See [#90](https://github.com/pulibrary/pomegranate/pull/90/files)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#2",
+     "kind": "hash",
+     "url": "",
+     "number": "2"
+    },
+    {
+     "key": "#89",
+     "kind": "hash",
+     "url": "",
+     "number": "89"
+    },
+    {
+     "key": "pulibrary/pomegranate#89",
+     "kind": "issue",
+     "url": "https://github.com/pulibrary/pomegranate/issues/89",
+     "number": "89"
+    },
+    {
+     "key": "#90",
+     "kind": "hash",
+     "url": "",
+     "number": "90"
+    },
+    {
+     "key": "pulibrary/pomegranate#90",
+     "kind": "pull",
+     "url": "https://github.com/pulibrary/pomegranate/pull/90",
+     "number": "90"
+    }
+   ],
+   "mentioned_paths": [
+    "/0002-build-on-spotlight.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "architecture-decisions/0005-resource-per-collection.md",
+   "identity": "architecture-decisions/0005-resource-per-collection.md",
+   "adr_id": "5",
+   "title": "Create a IIIFResource for each Collection that a resource is a member of",
+   "first_commit": "2020-02-25T15:24:11-05:00",
+   "first_sha": "fc59fd70173ae7e7bfc96d4fe206b91ca7f3e193",
+   "last_commit": "2020-02-25T15:24:11-05:00",
+   "author": "Anna Headley",
+   "email": "anna.headley@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 5. Create a IIIFResource for each Collection that a resource is a member of\n\nDate: Archaeological\n\n## Status\n\nAccepted\n\n## Context\n\nWe needed to be able to display a resource in more than one collection, because\nin Figgy a resource can be a member of multiple collections.\n\nAt the time of this decision, one IIIFResource could only be a member of one Exhibit.\n\n## Decision\n\nWe create one IIIFResource per Collection of which it is a member.\n\nWe map each IIIFResource to one SolrDocument.\n\n## Consequences\n\n* 'Search Across' requires a complicated grouping mechanism (in solr) in order\n  to keep a resource from appearing multiple times.\n\n* It's easy to delete a collection and all its resources. It's easy to delete a\n  resource if it's no longer in a given collection.\n\n* The resource that appears in 'Search Across' displays metadata as shown in the\n  exhibit it happened to pull the resource from. This may be be specialized to\n  the exhibit, and different from the canonical data as stored in figgy.\n\n* If spotlight introduces the ability to have one resource in multiple exhibits\n  we may have a different implementation than is in core (this happened).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "architecture-decisions/0003-synchronization-via-rabbitmq.md",
+   "identity": "architecture-decisions/0003-synchronization-via-rabbitmq.md",
+   "adr_id": "3",
+   "title": "Synchronization via RabbitMQ",
+   "first_commit": "2020-01-29T13:10:33-08:00",
+   "first_sha": "6115a68d8aa0df84b8e7cefb681eab153c9afde2",
+   "last_commit": "2020-01-29T16:26:19-05:00",
+   "author": "Trey Pendragon",
+   "email": "tpendragon@princeton.edu",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 3. Synchronization via RabbitMQ\n\nDate: Archaeological\n\n## Status\n\nAccepted\n\n## Context\n\nWe want Pomegranate to be a separate application from Figgy, but need some way\nfor Figgy to tell Pomegranate about new resources so that when something is\nmarked Complete in Figgy or taken down that it's reflected in Pomegranate.\n\n## Decision\n\nFiggy will send create/update/delete messages to a fanout RabbitMQ Exchange.\nPomegranate will register a durable queue which listens to that exchange and\nprocess messages using [Sneakers](https://github.com/jondot/sneakers).\n\nThe message will contain the following information:\n * Collection slugs the object is a member of\n * Manifest URL of the object\n * change event (create / update / delete)\n\n## Consequences\n\n* If Sneakers workers stop processing, then new documents don't make it in to\nPomegranate and we have to perform a reindex.\n\n* We have to monitor the status of our queues to make sure things are working.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "architecture-decisions/0004-index-from-iiif-manifests.md",
+   "identity": "architecture-decisions/0004-index-from-iiif-manifests.md",
+   "adr_id": "4",
+   "title": "Indexing from IIIF Manifests",
+   "first_commit": "2020-01-29T16:26:19-05:00",
+   "first_sha": "9357d205e0ee8aba9a8ab8b17f0149481aabfea2",
+   "last_commit": "2020-01-29T16:26:19-05:00",
+   "author": "Anna Headley",
+   "email": "anna.headley@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 4. Indexing from IIIF Manifests\n\nDate: Archaeological\n\n## Status\n\nAccepted\n\n## Context\n\nObjects in Pomegranate need to get their metadata from Figgy, where they are\nadministered. Spotlight ships with a IIIF-based indexer. Figgy already produces\nIIIF manifests to support viewing the objects. However the metadata bucket\ndoesn't contain rich enough metadata for pomegranate use cases.\n\nFiggy (plum, at the time) didn't have an API at the time this decision was made. Manifests were the\nonly way to get data out. Today Figgy has a graphql API.\n\n## Decision\n\nWe will use the IIIF Manifests to pull data from Figgy into Pomegranate. The\nManifest gives us the manifest url (used for presenting a viewer), the thumbnail\niiif image url, and the jsonld metadata location (via seeAlso).\n\n## Consequences\n\n* We have to do multiple queries for each index action.\n\n* Efficiency of synchronization is bound to the efficiency of generating\n  manifests\n\n* Access authorization must be negotiated via headers, where an API might be more\n  straightforward.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "architecture-decisions/0002-build-on-spotlight.md",
+   "identity": "architecture-decisions/0002-build-on-spotlight.md",
+   "adr_id": "2",
+   "title": "Build on Spotlight",
+   "first_commit": "2020-01-29T13:48:40-08:00",
+   "first_sha": "0a578796103a89936e95372e6f5fe716130610f9",
+   "last_commit": "2020-01-29T13:48:40-08:00",
+   "author": "Trey Pendragon",
+   "email": "tpendragon@princeton.edu",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 2. Build on Spotlight\n\nDate: Archaeological\n\n## Status\n\nAccepted\n\n## Context\n\nPUDL has [collection landing\npages](http://pudl.princeton.edu/collections/pudl0058) because it's a digital collections site which\nstaff pushed content into. PUDL required all items be in a single collection,\nand couldn't provide good search-across. Figgy is a staff back-end, so we need some sort of\napplication to provide that functionality.\n\nCurators also had a history of either requesting or creating ad-hoc websites to showcase\ntheir material or accompany on-site exhibits. We wanted instead to provide a CMS for\nthem to create those experiences based on material they curate which wouldn't\ncreate metadata silos and increased maintenance.\n\nFurther, curators often had different use cases about how metadata should\ndisplay in different contexts. For example, items with the same title in the catalog may need to be differentiated in an exhibit. It was important that certain fields display a certain\nway, but be cataloged according to best practices.\n\nSpotlight is an exhibit building platform that provides controlled CMS\nfunctionality and is built on Blacklight similar to our new catalog. It allows\nfor local overrides of fields.\n\n## Decision\n\nWe will use Spotlight to fulfill both the requirements of a Collection Landing\nPage as well as exhibits. Curators of collections will generate the collection\npages. Staff who wish to generate exhibits will be able to manage membership in\nFiggy but have the tools to create those exhibits in Pomegranate.\n\n## Consequences\n\n* There's a maintenance burden on these pages for Curators.\n* Different curators may display fields in different ways, leading to a less\nuniform experience than PUDL.\n* Most metadata can be managed centrally in the ILS/Figgy/EADs.\n* Metadata can still be created which only lives in Pomegranate. This metadata\nis less preserved and should be losable.\n* The use cases of a Digital Collections site may conflict with the use cases of\nexhibit generation.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "architecture-decisions/0001-document-architecture-decisions.md",
+   "identity": "architecture-decisions/0001-document-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2020-01-29T12:44:02-08:00",
+   "first_sha": "e6d29343e294f6814415646d542d9439b90b168e",
+   "last_commit": "2020-01-29T12:44:02-08:00",
+   "author": "Trey Pendragon",
+   "email": "tpendragon@princeton.edu",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record architecture decisions\n\nDate: 2020-01-29\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as described at https://adr.github.io/\n\n## Consequences\n\n* Pull requests that significantly change Pomegranate's architecture should be accompanied by an ADR.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 7,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "7"
+}

@@ -1,0 +1,459 @@
+{
+ "repo": "theupdateframework/python-tuf",
+ "clone_ok": true,
+ "error": null,
+ "description": "Python reference implementation of The Update Framework (TUF)",
+ "first_commit": "2013-01-31T13:54:15-05:00",
+ "last_commit": "2026-11-05T08:50:56+01:00",
+ "n_commits": 6820,
+ "n_authors": 129,
+ "n_files": 171,
+ "n_code_files": 49,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 10,
+ "adrs": [
+  {
+   "path": "docs/adr/0010-repository-library-design.md",
+   "identity": "docs/adr/0010-repository-library-design.md",
+   "adr_id": "10",
+   "title": "Repository library design built on top of Metadata API",
+   "first_commit": "2021-11-24T10:48:07+02:00",
+   "first_sha": "845f3070d0f41ea297ff260496046e8a3da53166",
+   "last_commit": "2021-11-30T16:05:49+02:00",
+   "author": "Jussi Kukkonen",
+   "email": "jkukkonen@vmware.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Repository library design built on top of Metadata API\n\n\n## Context and Problem Statement\n\nThe Metadata API provides a modern Python API for accessing individual pieces\nof metadata. It does not provide any wider context help to someone looking to\nimplement a TUF repository.\n\nThe legacy python-tuf implementation offers tools for this but suffers from\nsome issues (as do many other implementations):\n* There is a _very_ large amount of code to maintain: repo.py,\n  repository_tool.py and repository_lib.py alone are almost 7000 lines of code.\n* The \"library like\" parts of the implementation do not form a good coherent\n  API: methods routinely have a large number of arguments, code still depends\n  on globals in a major way and application (repo.py) still implements a lot of\n  \"repository code\" itself\n* The \"library like\" parts of the implementation make decisions that look like\n  application decisions. As an example, repository_tool loads _every_ metadata\n  file in the repository: this is fine for CLI that operates on a small\n  repository but is unlikely to be a good choice for a large scale server.\n\n\n## Decision Drivers\n\n* There is a consensus on removing the legacy code from python-tuf due to\n  maintainability issues\n* Metadata API makes modifying metadata far easier than legacy code base: this\n  makes significantly different designs possible\n* Not providing a \"repository library\" (and leaving implementers on their own)\n  may be a short term solution because of the previous point, but to make\n  adoption easier and to help adopters create safe implementations the project\n  would benefit from some shared repository code and a shared repository design \n* Maintainability of new library code must be a top concern\n* Allowing a wide range of repository implementations (from CLI tools to\n  minimal in-memory implementations to large scale application servers)\n  would be good: unfortunately these can have wildly differing requirements\n\n\n## Considered Options\n\n1. No repository packages\n2. repository_tool -like API\n3. Minimal repository abstraction\n\n\n## Decision Outcome\n\nOption 3: Minimal repository abstraction\n\nWhile option 1 might be used temporarily, the goal should be to implement a\nminimal repository abstraction as soon as possible: this should give the\nproject a path forward where the maintenance burden is reasonable and results\nshould be usable very soon. The python-tuf repository functionality can be\nlater extended as ideas are experimented with in upstream projects and in\npython-tuf example code.\n\nThe concept is still unproven but validating the design should be straight\nforward: decision could be re-evaluated in a few months if not in weeks.\n\n\n## Pros and Cons of the Options\n\n### No repository packages\n\nMetadata API makes editing the repository content vastly simpler. There are\nalready repository implementations built with it[^1] so clearly a repository\nlibrary is not an absolute requirement.\n\nNot providing repository packages in python-tuf does mean that external\nprojects could experiment and create implementations without adding to the\nmaintenance burden of python-tuf. This would be the easiest way to iterate many\ndifferent designs and hopefully find good ones in the end.\n\nThat said, there are some tricky parts of repository maintenance (e.g.\ninitialization, snapshot update, hashed bin management) that would benefit from\nhaving a canonical implementation, both for easier adoption of python-tuf and\nas a reference for other implementations. Likewise, a well designed library\ncould make some repeated actions (e.g. version bumps, expiry updates, signing)\nmuch easier to manage.\n\n### repository_tool -like API\n\nIt won't be possible to support the repository_tool API as it is but a similar\none would certainly be an option.\n\nThis would likely be the easiest upgrade path for any repository_tool users out\nthere. The implementation would not be a huge amount of work as Metadata API\nmakes many things easier.\n\nHowever, repository_tool (and parts of repo.py) are not a great API. It is\nlikely that a similar API suffers from some of the same issues: it might end up\nbeing a substantial amount of code that is only a good fit for one application.\n\n### Minimal repository abstraction\n\npython-tuf could define a tiny repository API that\n* provides carefully selected core functionality (like core snapshot update)\n* does not implement all repository actions itself, instead it makes it easy\n  for the application code to do them\n* leaves application details to specific implementations (examples of decisions\n  a library should not always decide: \"are targets stored with the repo?\",\n  \"which versions of metadata are stored?\", \"when to load metadata?\", \"when to\n  unload metadata?\", \"when to bump metadata version?\", \"what is the new expiry\n  date?\", \"which targets versions should be part of new snapshot?\")\n\npython-tuf could also provide one or more implementations of this abstraction\nas examples -- this could include a _repo.py_- or _repository_tool_-like\nimplementation.\n\nThis could be a compromise that allows:\n* low maintenance burden on python-tuf: initial library could be tiny\n* sharing the important, canonical parts of a TUF repository implementation\n* ergonomic repository modification, meaning most actions do not have to be in\n  the core code\n* very different repository implementations using the same core code and the\n  same abstract API\n\nThe approach does have some downsides:\n* it's not a drop in replacement for repository_tool or repo.py\n* A prototype has been implemented (see Links below) but the concept is still\n  unproven\n\nMore details in [Design document](../repository-library-design.md).\n\n## Links\n* [Design document for minimal repository abstraction](../repository-library-design.md)\n* [Prototype implementation of minimal repository abstraction](https://github.com/vmware-labs/repository-editor-for-tuf/)\n\n\n[^1]:\n    [RepositorySimulator](https://github.com/theupdateframework/python-tuf/blob/develop/tests/repository_simulator.py)\n    in python-tuf tests is an in-memory implementation, while\n    [repository-editor-for-tuf](https://github.com/vmware-labs/repository-editor-for-tuf)\n    is an external Command line repository maintenance tool.\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/repository-library-design.md",
+    "github.com/theupdateframework/python-tuf/blob/develop/tests/repository_simulator.py"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0000-use-markdown-architectural-decision-records.md",
+   "identity": "docs/adr/0000-use-markdown-architectural-decision-records.md",
+   "adr_id": "0",
+   "title": "Use Markdown Architectural Decision Records",
+   "first_commit": "2020-10-20T22:50:00+01:00",
+   "first_sha": "e3d84391b4242d6c9e3c986ffe956124e6f37de3",
+   "last_commit": "2021-09-01T11:14:55+01:00",
+   "author": "Joshua Lock",
+   "email": "jlock@vmware.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Use Markdown Architectural Decision Records\n\n* Status: accepted\n* Date: 2020-10-20\n\nTechnical Story: https://github.com/theupdateframework/python-tuf/issues/1141\n\n## Context and Problem Statement\n\nWe want to record architectural decisions made in this project.\nWhich format and structure should these records follow?\n\n## Considered Options\n\n* [MADR](https://adr.github.io/madr/) 2.1.2 \u2013 The Markdown Architectural Decision Records\n* Formless \u2013 No conventions for file format and structure\n\n## Decision Outcome\n\nChosen option: \"MADR 2.1.2\", because\n\n* Implicit assumptions should be made explicit.\n  Design documentation is important to enable people understanding the decisions\n  later on.\n* The MADR structure is comprehensible and facilitates usage & maintenance.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "theupdateframework/python-tuf#1141",
+     "kind": "issue",
+     "url": "https://github.com/theupdateframework/python-tuf/issues/1141",
+     "number": "1141"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0001-python-version-3-6-plus.md",
+   "identity": "docs/adr/0001-python-version-3-6-plus.md",
+   "adr_id": "1",
+   "title": "Default to Python 3.6 or newer for new development",
+   "first_commit": "2020-10-20T22:51:57+01:00",
+   "first_sha": "71de3f64efe39c5de3011c4a86fe758d85def973",
+   "last_commit": "2021-09-01T11:14:55+01:00",
+   "author": "Joshua Lock",
+   "email": "jlock@vmware.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Default to Python 3.6 or newer for new development\n\n* Status: accepted\n* Date: 2020-10-20\n\nTechnical Story: https://github.com/theupdateframework/python-tuf/issues/1125\n\n## Context and Problem Statement\n\nWe are planning a refactor of tuf where:\n\n* We do not want to try and support end-of-life versions of the language.\n* We want to use modern language features, such as typing.\n* We want to ease maintainer burden, by reducing the major language versions supported.\n\n## Decision Drivers\n\n* Python 2.7 is end-of-life\n* Python 3.5 is end-of-life\n* Modern Python allows use of desirable features such as type hints\n* Supporting end-of-life Python versions adds maintenance overhead\n\n## Considered Options\n\n* Support Python 2.7 and 3.5+\n* Support Python 2.7 and 3.6+\n* Support Python 2.7 and 3.6+ (with polyfill modules)\n* Support only Python 3.6+\n\n## Decision Outcome\n\nChosen option: \"Support only Python 3.6+\", because we want modern features and lower\nmaintainer effort as we work to improve our codebase through the refactor effort.\n\nNew modules should target Python 3.6+.\n\nUsing modules to polyfill standard library features from Python 3.6+ feels\nuntenable as more libraries are dropping support for EOL Python releases.\n\n### Negative Consequences\n\n* Leaves major adopter and contributor without an actively developed client for some of\n  their customers stuck on older Python versions.\n\n## Links\n\n* [Discussion of how/where to develop the refactored codebase](https://github.com/theupdateframework/python-tuf/issues/1126)\n* [Discussion of deprecation policy for the pre-1.0, Python 2.7 supporting, code](https://github.com/theupdateframework/python-tuf/issues/1127)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "theupdateframework/python-tuf#1125",
+     "kind": "issue",
+     "url": "https://github.com/theupdateframework/python-tuf/issues/1125",
+     "number": "1125"
+    },
+    {
+     "key": "theupdateframework/python-tuf#1126",
+     "kind": "issue",
+     "url": "https://github.com/theupdateframework/python-tuf/issues/1126",
+     "number": "1126"
+    },
+    {
+     "key": "theupdateframework/python-tuf#1127",
+     "kind": "issue",
+     "url": "https://github.com/theupdateframework/python-tuf/issues/1127",
+     "number": "1127"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0002-pre-1-0-deprecation-strategy.md",
+   "identity": "docs/adr/0002-pre-1-0-deprecation-strategy.md",
+   "adr_id": "2",
+   "title": "Deprecation strategy for current release series (0.x)",
+   "first_commit": "2020-11-05T12:00:53+00:00",
+   "first_sha": "35177fbe9c63236a5321768da3bfd5f2446adc75",
+   "last_commit": "2021-09-01T11:14:55+01:00",
+   "author": "Joshua Lock",
+   "email": "jlock@vmware.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Deprecation strategy for current release series (0.x)\n\n* Date: 2020-11-05\n\nTechnical Story: https://github.com/theupdateframework/python-tuf/issues/1127\n\n## Context and Problem Statement\n\nWe plan to refactor the reference implementation significantly and, as part of\nthat effort, drop support for no-longer maintained versions of Python\n(see ADR 0001).\n\nHowever, a major user of (and contributor to) the project has users of the\nclient stuck on older Python versions.\n\nWe would like to define a reasonable support policy for the current, Python 2.7\nsupporting, codebase.\n\n## Decision Drivers\n\n* We have finite resources.\n* A major adopter/user of the project has a need to maintain support for\n  Python 2.7 clients.\n\n## Considered Options\n\n* Maintain the code in parallel for a fixed period of time after releasing the\n  refactored code.\n* Abandon the old code once the refactored code is released.\n* Support the old code on a best-effort basis once the refactored code is\n  released.\n\n## Decision Outcome\n\nChosen option: \"Support the old code on a best-effort basis once the refactored\ncode is released\", because we only have finite resources and want to focus them\non moving the project forward, including supporting PyPI/pip integration and\nproviding a solid implementation for developing specification enhancements in.\n\nWe should document this outcome clearly in a governance document describing\nthe release process with words along the lines of:\n\n\"Support for older releases:\nBugs reported with tuf versions prior to 1.0.0 will likely not be addressed\ndirectly by tuf\u2019s maintainers. Pull Requests to fix bugs in the last release\nprior to 1.0.0 will be considered, and merged (subject to normal review\nprocesses). Note that there may be delays due to the lack of developer resources\nfor reviewing such pull requests.\"\n\n## Links\n\n* [ADR 0001](0001-python-version-3-6-plus.md) Python version\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "theupdateframework/python-tuf#1127",
+     "kind": "issue",
+     "url": "https://github.com/theupdateframework/python-tuf/issues/1127",
+     "number": "1127"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0003-where-to-develop-TUF-1-0-0.md",
+   "identity": "docs/adr/0003-where-to-develop-TUF-1-0-0.md",
+   "adr_id": "3",
+   "title": "Develop TUF 1.0.0 in a subdirectory of the current TUF implementation",
+   "first_commit": "2020-11-23T19:05:27+02:00",
+   "first_sha": "3a1ec87d52aff9870115086f5bb5cfa1f9d8d9b9",
+   "last_commit": "2021-09-01T11:14:55+01:00",
+   "author": "Teodora Sechkova",
+   "email": "tsechkova@vmware.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Develop TUF 1.0.0 in a subdirectory of the current TUF implementation\n\n* Status: accepted\n* Date: 2020-11-23\n\nTechnical Story: https://github.com/theupdateframework/python-tuf/issues/1126\n\n## Context and Problem Statement\n\nThe plan is to implement a refactored TUF (1.0.0) alongside the current\ncode base, in order to not disrupt existing usage and keep providing\na Python 2.7 client.\n\nWe need to decide on the best place to do this development.\n\n## Decision Drivers\n\n* Developing the new code piecemeal\n* Continuing to make releases in the interim\n* Avoiding maintenance overhead\n\n## Considered Options\n\nDevelop TUF 1.0.0:\n\n* In its own repository\n* In a separate development branch of the current TUF implementation\n* In the default branch, archiving the current implementation\n* In a subdirectory of the current TUF implementation\n\n## Decision Outcome\n\nChosen option: \"Develop TUF 1.0.0 in a subdirectory of the current TUF\nimplementation\", because we want to add the new TUF code gradually\nwhile keep maintaining the current implementation given limited\nmaintenance resources.\n\nOnce development of the new version is complete, we will transition\nfrom TUF 1.0.0 in a subdirectory to stand-alone TUF 1.0.0 by the following\nprocedure:\n\n* flesh out tuf/api/*\n* implement tuf/client/new-updater.py\n* implement tuf/repository/*\n* \\<iterate\\>\n* git mv tuf/client/new-updater.py tuf/client/updater.py\n* git rm tuf/\\*.py\n* tag 1.0.0\n\n## Pros and Cons of the Options\n\nDeveloping TUF 1.0.0 in a subdirectory of the current TUF\nimplementation seems to have the least maintenance overhead compared to\noption 1 and 2, while allowing us to continue making releases with the\nold code unlike option 3.\n\n### Negative Consequences\n\n* In progress development in the default branch causes messiness\n  in plain sight.\n\n## Links\n\n* [Discussion of Python version support in TUF 1.0.0](https://github.com/theupdateframework/python-tuf/issues/1125)\n* [Discussion of deprecation policy for the pre-1.0, Python 2.7 supporting, code](https://github.com/theupdateframework/python-tuf/issues/1127)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "theupdateframework/python-tuf#1126",
+     "kind": "issue",
+     "url": "https://github.com/theupdateframework/python-tuf/issues/1126",
+     "number": "1126"
+    },
+    {
+     "key": "theupdateframework/python-tuf#1125",
+     "kind": "issue",
+     "url": "https://github.com/theupdateframework/python-tuf/issues/1125",
+     "number": "1125"
+    },
+    {
+     "key": "theupdateframework/python-tuf#1127",
+     "kind": "issue",
+     "url": "https://github.com/theupdateframework/python-tuf/issues/1127",
+     "number": "1127"
+    }
+   ],
+   "mentioned_paths": [
+    "tuf/client/new-updater.py",
+    "tuf/client/updater.py"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0004-extent-of-OOP-in-metadata-model.md",
+   "identity": "docs/adr/0004-extent-of-OOP-in-metadata-model.md",
+   "adr_id": "4",
+   "title": "Add classes for complex metadata attributes",
+   "first_commit": "2020-11-30T14:58:28+01:00",
+   "first_sha": "229e9df63051460304d8bebbc56c5a591650b48c",
+   "last_commit": "2021-09-01T11:14:55+01:00",
+   "author": "Lukas Puehringer",
+   "email": "lukas.puehringer@nyu.edu",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Add classes for complex metadata attributes\n\n* Status: accepted\n* Date: 2020-11-30\n\nTechnical Story: https://github.com/theupdateframework/python-tuf/issues/1133\n\n## Context and Problem Statement\nCustom classes for the TUF signed metadata wrapper (Metadata) and metadata\npayload containers (Root, Timestamp, Snapshot, Targets) were added recently.\nComplex attributes on these classes are still represented as dictionaries.\nShould we add classes for these attributes too?\n\n## Decision Drivers\n\n* Transition to class-based role metadata containers in progress (see *\"class\n  model\"* links below)\n* Harden in-memory representation of metadata model\n* Replace `securesystemslib` schema validation (see *\"schema checker\"* link\n  below)\n\n## Considered Options\n\n* Use custom classes for complex attributes\n* Use dictionaries for complex attributes\n\n## Decision Outcome\n\nChosen option: \"Use custom classes for complex attributes\", to provide a\nconsistently object-oriented, well-defined, single source of truth about the\nTUF metadata model (not only its containers). In addition to convenience update\nmethods, the model may be extended with self-validation behavior (see\n*\"validation guidelines\"* link below) to replace `securesystemslib` schema\nchecks.\n\n### Negative Consequences\n\n* Implementation overhead\n* Less flexibility in usage and development (this is actually desired)\n* Maybe less idiomatic than dictionaries\n\n## Links\n\n* [class model](https://github.com/theupdateframework/python-tuf/pull/1112)\n* [class model (root)](https://github.com/theupdateframework/python-tuf/pull/1193)\n* [WIP: class model (complex attributes)](https://github.com/theupdateframework/python-tuf/pull/1223)\n* [new TUF validation guidelines](https://github.com/theupdateframework/python-tuf/issues/1130)\n* [securesystemslib schema checker issues](https://github.com/secure-systems-lab/securesystemslib/issues/183)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "theupdateframework/python-tuf#1133",
+     "kind": "issue",
+     "url": "https://github.com/theupdateframework/python-tuf/issues/1133",
+     "number": "1133"
+    },
+    {
+     "key": "theupdateframework/python-tuf#1112",
+     "kind": "pull",
+     "url": "https://github.com/theupdateframework/python-tuf/pull/1112",
+     "number": "1112"
+    },
+    {
+     "key": "theupdateframework/python-tuf#1193",
+     "kind": "pull",
+     "url": "https://github.com/theupdateframework/python-tuf/pull/1193",
+     "number": "1193"
+    },
+    {
+     "key": "theupdateframework/python-tuf#1223",
+     "kind": "pull",
+     "url": "https://github.com/theupdateframework/python-tuf/pull/1223",
+     "number": "1223"
+    },
+    {
+     "key": "theupdateframework/python-tuf#1130",
+     "kind": "issue",
+     "url": "https://github.com/theupdateframework/python-tuf/issues/1130",
+     "number": "1130"
+    },
+    {
+     "key": "secure-systems-lab/securesystemslib#183",
+     "kind": "issue",
+     "url": "https://github.com/secure-systems-lab/securesystemslib/issues/183",
+     "number": "183"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0005-use-google-python-style-guide.md",
+   "identity": "docs/adr/0005-use-google-python-style-guide.md",
+   "adr_id": "5",
+   "title": "Use Google Python style guide with minimal refinements",
+   "first_commit": "2020-12-03T18:15:09+01:00",
+   "first_sha": "b5252fed65e71eede7ddef917a5e12993f92938f",
+   "last_commit": "2021-09-01T11:14:55+01:00",
+   "author": "Lukas Puehringer",
+   "email": "lukas.puehringer@nyu.edu",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Use Google Python style guide with minimal refinements\n\nTechnical Story: https://github.com/theupdateframework/python-tuf/issues/1128\n\n## Context and Problem Statement\n\nThe Secure Systems Lab code style guide, which has been used for most of the\ncode base, has become outdated. Through the upcoming rewrite, we have the\nchance to ignore consistency considerations with existing code style and can\nchoose a more standard and up-to-date style guide.\n\n## Decision Drivers\n\n* Flaws in original Secure Systems Lab style guide\n* Curating a complete custom style guide is time consuming\n* Well-established style rules lower contribution barrier\n* Custom style is not supported by default in common tooling (i.e. editors\n  and linters)\n\n## Considered Options\n\n* Use custom style guide\n* Use Google style guide with refinements\n\n## Decision Outcome\n\nChosen option: \"Use Google style guide with refinements\", because the Google\nstyle guide is a comprehensive, well-established style guide that is mostly\nbased on PEP-8 and was accepted by everyone on the TUF team. There is no need\nto replicate these recommendations. However, we do provide a very slim document\nwith additional refinements, in order to emphasize items the we consider\nespecially important, want to be handled differently, or in one specific way,\nwhere the Google guide would allow multiple.\n\n**Course of Action:**\n* Follow existing style when working on existing code (files)\n* Follow new style in any new code (files)\n* Consider providing linter and formatter configuration (e.g. pylint, flake8,\n  black, yapf) to enforce and facilitate new style\n\n\n## Links\n* [New Slim Secure Systems Lab style guide](https://github.com/secure-systems-lab/code-style-guidelines/pull/21)\n* [Google Python style guide](https://google.github.io/styleguide/pyguide.html)\n* [PEP 8](https://www.python.org/dev/peps/pep-0008/)\n* [Issues in original Secure Systems Lab style guide](https://github.com/secure-systems-lab/code-style-guidelines/issues/20)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "theupdateframework/python-tuf#1128",
+     "kind": "issue",
+     "url": "https://github.com/theupdateframework/python-tuf/issues/1128",
+     "number": "1128"
+    },
+    {
+     "key": "secure-systems-lab/code-style-guidelines#21",
+     "kind": "pull",
+     "url": "https://github.com/secure-systems-lab/code-style-guidelines/pull/21",
+     "number": "21"
+    },
+    {
+     "key": "secure-systems-lab/code-style-guidelines#20",
+     "kind": "issue",
+     "url": "https://github.com/secure-systems-lab/code-style-guidelines/issues/20",
+     "number": "20"
+    }
+   ],
+   "mentioned_paths": [
+    "google.github.io/styleguide/pyguide.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0006-where-to-implemenent-model-serialization.md",
+   "identity": "docs/adr/0006-where-to-implemenent-model-serialization.md",
+   "adr_id": "6",
+   "title": "Separate metadata serialization from metadata class model but keep helpers",
+   "first_commit": "2021-01-22T16:13:05+01:00",
+   "first_sha": "164074dbd314a8cfba6b4337af74ae01ea776a3e",
+   "last_commit": "2021-09-01T11:14:55+01:00",
+   "author": "Lukas Puehringer",
+   "email": "lukas.puehringer@nyu.edu",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Separate metadata serialization from metadata class model but keep helpers\n\nTechnical Story: https://github.com/theupdateframework/python-tuf/pull/1279\n\n## Context and Problem Statement\nIn the course of implementing a class-based role metadata model we have also\nreviewed options on how to design serialization infrastructure between wire\nformats and the class model. In an initial attempt we have implemented\nserialization on the metadata class (see option 1), but issues with inheritance\nand calls for more flexibility have caused us to rethink this approach.\n\n## Decision Drivers\n* A class-based role metadata model (see ADR4) requires serialization routines\n  from and to wire formats\n* TUF integrators may require custom serialization implementations for custom\n  wire formats\n* Readability and simplicity of implementation for users and maintainers\n* Recognizability of specification\n\n## Considered Options\n1. Serialization in metadata classes\n2. Serialization in metadata subclasses\n3. Serialization separated from metadata classes\n4. Compromise 1: Default serialization methods in metadata classes /\n   non-default serialization separated\n5. Compromise 2: Serialization separated / dict conversion helper methods for\n   default serialization in metadata classes\n\n## Decision Outcome\nChosen option: \"Compromise 2\", because implementing dict conversion as methods\non a corresponding class is idiomatic and allows for well-structured code.\nTogether with a separated serialization interface, it provides both ease of use\nand maintenance, and full flexibility with regards to custom serialization\nimplementations and wire formats.\n\n## Pros and Cons of the Options\n\n### Option 1: Serialization in metadata classes\n\nSerialization is implemented on metadata classes, e.g.\n`Metadata.serialize_as_json()`, etc.\n\n* Good, because serialization for any object is encapsulated within the\n  corresponding class and thus structured in small code chunks, using the\n  already existing hierarchical class model structure.\n* Good, because the TUF specification is heavily based on json, even if only\n  for illustrative purposes, thus this option facilitates recognizability.\n* Bad, because it might suggest that TUF is limited to json alone.\n* Bad, because it does not facilitate custom serialization implementations.\n* Bad, because it can get complicated with inheritance in the class model.\n  *NOTE: a workaround exists in #1279.*\n\n### Option 2: Serialization in metadata subclasses\nSerialization is implemented on metadata subclasses, e.g.\n`JsonMetadata.serialize()`, etc.\n\n* Good, because the wire format is decoupled from the base classes, not giving\n  the impression that TUF is limited to json, and facilitating custom\n  implementations.\n* Bad, because a user needs to decide on serialization ahead of time, when\n  instantiating the metadata objects.\n* Bad, because the metadata model has many classes, which would all need to be\n  subclassed accordingly.\n\n### Option 3: Serialization separated from metadata classes\nSerialization is implemented independently of the metadata class, e.g. by\ndefining an abstract `Serializer` interface, which must be implemented in\nsubclasses, e.g. `JsonSerializer`, etc.\n\n* Good, because the wire format is completely decoupled from the class model,\n  not giving the impression that TUF is limited to json, and facilitating\n  custom implementations.\n* Good, because it can serve as exact blueprint for custom implementations.\n* Bad, because a decoupled serialization implementation needs to \"re-implement\"\n  the entire class hierarchy, likely in a procedural manner.\n\n### Option 4: Compromise 1\nDefault json serialization is implemented on the metadata class as described in\n(1), but can be overridden using an independent `Serializer` interface as\ndescribed in (3).\n\n* Good, for the reasons outlined in options (1) and (3), i.e. encapsulation\n  within classes but decoupled class model and wire format.\n* Bad, because it creates two different code paths for default and non-default\n  wire formats making the code more complex and prone to deteriorate,\n  especially on the non-default path.\n* Bad, because the on-the-class default implementation can not be used as\n  blueprint for custom implementations.\n\n### Option 5: Compromise 2\nSerialization is implemented independently of the metadata class as described\nin (3). However, the *meat* of the default `JsonSerializer`, i.e. conversion\nbetween metadata objects and dicts, is implemented on the metadata class, e.g.\nas `Metadata.to_dict()`, etc.\n\n* Good, for the reasons outlined in options (1) and (3), i.e. encapsulation\n  within classes but decoupled class model and wire format, without the\n  disadvantage in (4) of having two completely different code paths.\n* Good, because it makes the separate default serializer a minimal wrapper\n  around the dict conversion methods.\n* Good, because other serialization implementations might also make use of dict\n  conversion methods.\n* Good, because conversion between class objects and dicts is akin to type\n  casting, which is idiomatic to implement on the class.\n* Bad, because the on-the-class default implementation can not be used as\n  blueprint for custom implementations.\n\n## Links\n* [ADR4: Add classes for complex metadata attributes (decision driver)](/Users/lukp/tuf/tuf/docs/adr/0004-extent-of-OOP-in-metadata-model.md)\n* [PR: Add simple TUF role metadata model (implements option 1)](https://github.com/theupdateframework/python-tuf/pull/1112)\n  - [details about separation of serialization and instantiation](https://github.com/theupdateframework/python-tuf/commit/f63dce6dddb9cfbf8986141340c6fac00a36d46e)\n  - [code comment about issues with inheritance](https://github.com/theupdateframework/python-tuf/blob/9401059101b08a18abc5e3be4d60e18670693f62/tuf/api/metadata.py#L297-L306)\n* [PR: New metadata API: add MetadataInfo and TargetFile classes (recent ADR discussion impetus)](https://github.com/theupdateframework/python-tuf/pull/1223)\n  - [more discussion about issues with inheritance](https://github.com/theupdateframework/python-tuf/pull/1223#issuecomment-737188686)\n* [SSLIB/Issue: Add metadata container classes (comparison of options 1 and 2)](https://github.com/secure-systems-lab/securesystemslib/issues/272)\n* [tuf-on-a-plane parser (implements option 3)](https://github.com/trishankatdatadog/tuf-on-a-plane/blob/master/src/tuf_on_a_plane/parsers/)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "theupdateframework/python-tuf#1279",
+     "kind": "pull",
+     "url": "https://github.com/theupdateframework/python-tuf/pull/1279",
+     "number": "1279"
+    },
+    {
+     "key": "#1279",
+     "kind": "hash",
+     "url": "",
+     "number": "1279"
+    },
+    {
+     "key": "theupdateframework/python-tuf#1112",
+     "kind": "pull",
+     "url": "https://github.com/theupdateframework/python-tuf/pull/1112",
+     "number": "1112"
+    },
+    {
+     "key": "theupdateframework/python-tuf#1223",
+     "kind": "pull",
+     "url": "https://github.com/theupdateframework/python-tuf/pull/1223",
+     "number": "1223"
+    },
+    {
+     "key": "secure-systems-lab/securesystemslib#272",
+     "kind": "issue",
+     "url": "https://github.com/secure-systems-lab/securesystemslib/issues/272",
+     "number": "272"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/theupdateframework/python-tuf/blob/9401059101b08a18abc5e3be4d60e18670693f62/tuf/api/metadata.py"
+   ],
+   "implementation": {
+    "sha": "8e9afc96f90cfee91493f887f208cf03aea59b44",
+    "date": "2021-03-04T12:46:16+01:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "tuf/api/metadata.py"
+    ]
+   }
+  },
+  {
+   "path": "docs/adr/0008-accept-unrecognised-fields.md",
+   "identity": "docs/adr/0008-accept-unrecognised-fields.md",
+   "adr_id": "8",
+   "title": "Accept metadata that includes unrecognized fields",
+   "first_commit": "2021-04-08T19:40:23+03:00",
+   "first_sha": "d0fa8fc8caf2b71c1cd6abf32532c02eb2d61a5a",
+   "last_commit": "2021-09-01T11:14:55+01:00",
+   "author": "Martin Vrachev",
+   "email": "mvrachev@vmware.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "#  Accept metadata that includes unrecognized fields\n\n- Status: accepted\n- Date: 2021-04-08\n\nTechnical Story: https://github.com/theupdateframework/python-tuf/issues/1266\n\n## Context and Problem Statement\n\nThe current reference implementation will ignore unrecognized fields in a\nmetadata file when loading it.\nThis leads to the side effect that if you read a metadata file with unrecognized\nfields and immediately write it back to the disk, this file will be modified.\n\nFurthermore, some TAPs like:\n- [TAP 6](https://github.com/theupdateframework/taps/blob/master/tap6.md)\n- [TAP 10](https://github.com/theupdateframework/taps/blob/master/tap10.md)\n- [TAP 14](https://github.com/theupdateframework/taps/blob/master/tap14.md)\n- [TAP 15](https://github.com/theupdateframework/taps/blob/master/tap15.md)\n- [TAP 16](https://github.com/theupdateframework/taps/blob/master/tap16.md)\n\nare relying on that unrecognized fields will be accepted to introduce new fields\nto the specification without making the metadata invalid for older clients who\ndon't recognize the field.\n\n## Decision Drivers\n- The TUF specification implies support for unrecognized attribute-value fields,\nsee [Document formats](https://theupdateframework.github.io/specification/latest/#document-formats)\n- If we perform the following operations on a metadata file with no\nintermediate operations:\n1. read the metadata file\n2. write the metadata file back to the disk\n\nthen, the checksum (the content) of the file must not be changed.\n- Flexibility to add new fields in the spec without adding breaking changes.\n\n## Considered Options\n- Ignore and drop unrecognized fields.\n- Ignore, but store unrecognized fields as an additional attribute.\n\n## Decision Outcome\n\nChosen option: \"Ignore, but store unrecognized fields as an additional\nattribute.\"\nThe motivation for this decision is that the TUF specification already implies\nthat we should accept unrecognized fields for backward compatibility and easier\nfuture extensibility.\n\nAdditionally, it seems unacceptable to change a metadata file content just by\nreading and writing it back.\n\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "theupdateframework/python-tuf#1266",
+     "kind": "issue",
+     "url": "https://github.com/theupdateframework/python-tuf/issues/1266",
+     "number": "1266"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/theupdateframework/taps/blob/master/tap6.md",
+    "github.com/theupdateframework/taps/blob/master/tap10.md",
+    "github.com/theupdateframework/taps/blob/master/tap14.md",
+    "github.com/theupdateframework/taps/blob/master/tap15.md",
+    "github.com/theupdateframework/taps/blob/master/tap16.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0009-what-is-a-reference-implementation.md",
+   "identity": "docs/adr/0009-what-is-a-reference-implementation.md",
+   "adr_id": "9",
+   "title": "Primary purpose of the reference implementation",
+   "first_commit": "2021-08-30T18:27:45+01:00",
+   "first_sha": "3877e24346b4cb6ae7f8aaac6a70a9261af27ec6",
+   "last_commit": "2021-08-30T18:27:45+01:00",
+   "author": "Joshua Lock",
+   "email": "jlock@vmware.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Primary purpose of the reference implementation\n\n* Status: accepted\n* Date: 2021-08-25\n\n## Context and Problem Statement\n\nThe original goal for the reference implementation refactor was to provide an\nimplementation which is both an aid to understanding the specification and a\ngood architecture for other implementations to mimic.\n\nDuring refactoring efforts on the metadata API and ngclient, several friction\npoints have arisen where a safe object-oriented API would result in a less\ndirect mapping to the [Document formats] in the specification.\n\nThe archetypal example friction point is that [Timestamp] lists snapshot _only_\nin a `meta` dictionary of `METAPATH` -> attribute fields. The dictionary will\nonly ever contain one value and creates an extra level of indirection for\nimplementations which try to map to the file format.\n\nWhen presented with such cases, we have considered multiple options:\n* Strict mapping to the [Document formats]\n* Simple and safe API in preference to mapping to the [Document formats]\n* Strict mapping to the [Document formats] with additional convenience API\n  which is documented as the preferred interface for users\n\nSo far implementation has tended towards the final option, but this is\nunsatisfying because:\n* the API contains traps for the unsuspecting users\n* two code paths to achieve the same goal is likely to result in inconsistent\n  behaviour and bugs\n\nTherefore, we would like to define our primary purpose so that we can make\nconsistent decisions.\n\n[Document formats]: https://theupdateframework.github.io/specification/latest/#document-formats\n[Timestamp]: https://theupdateframework.github.io/specification/latest/#file-formats-timestamp\n\n## Decision Drivers\n\n* The reference implementation is often the starting point for new\n  implementations, porting architecture of the reference implementation to new\n  languages/frameworks\n* Reading reference implementation code is a common way to learn about TUF\n* The TUF formats include non-intuitive JSON object formats when mapping to OOP\n  objects\n* Multiple code paths/API for the same feature is a common source of bugs\n\n## Considered Options\n\nPrimary purpose of the reference implementation is:\n* a learning resource to aid understanding of the specification (pedagogical reference)\n* a good architecture for other implementations to mimic (exemplary reference)\n\n## Decision Outcome\n\nPrimary purpose of the reference implementation is as an exemplary reference:\nproviding a safe, consistent API for users and a good architecture for other\nimplementations to mimic.\n\n## Links\n\n* Discussed [on Slack](https://cloud-native.slack.com/archives/C01GT17AC5D/p1629357567021600)\n* Discussed in the [August 2021 TUF community meeting](https://hackmd.io/jdAk9rmPSpOYUdstbIvbjw#August-25-2021-Meeting)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 10,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "sourcegraph:docs_adr;buchgeher-2022",
+ "stars": "1732",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "10"
+}

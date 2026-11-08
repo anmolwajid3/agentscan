@@ -1,0 +1,634 @@
+{
+ "repo": "st3v3nhunt/dotfiles",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2016-06-09T16:48:47+01:00",
+ "last_commit": "2026-11-05T08:09:38+00:00",
+ "n_commits": 1574,
+ "n_authors": 7,
+ "n_files": 128,
+ "n_code_files": 0,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 7,
+ "adrs": [
+  {
+   "path": "doc/adr/0007-use-mise-for-runtimes-and-global-tools.md",
+   "identity": "doc/adr/0007-use-mise-for-runtimes-and-global-tools.md",
+   "adr_id": "7",
+   "title": "Use mise for runtimes and global tools",
+   "first_commit": "2026-10-26T11:17:46+00:00",
+   "first_sha": "9fc142a38515a0709895027bc610b41b0ae4cfdf",
+   "last_commit": "2026-10-26T11:17:46+00:00",
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 7. Use mise for runtimes and global tools\n\nDate: 2026-10-26\n\n## Status\n\nAccepted\n\n## Context\n\nLanguage runtimes were installed by a different tool each: nvm for Node.js, pyenv and pyenv-virtualenv for Python,\ntfenv for Terraform, Homebrew for Go, and Homebrew or a curl installer for Deno depending on the OS. Global tools were\ninstalled by lists of `npm install -g`, `cargo install`, `go install` and `uv tool install` commands spread across\nseveral install scripts. This meant:\n\n1. Several version managers, each with its own shell initialisation\n2. No single place listing the installed tools\n3. Removing a tool from a script did not uninstall it, and upgrading meant re-running each script\n\n## Decision\n\nUse [mise](https://mise.jdx.dev) to install the runtimes and the global npm, cargo, go and PyPI tools, declared in\n`.config/mise/config.toml`. mise itself is installed from the Brewfile. Rust toolchains stay with rustup, and system\npackages and apps stay in the Brewfile.\n\n## Consequences\n\n- One declarative file lists the runtimes and tools, and `mise upgrade` upgrades them all on macOS, Linux and WSL\n- `mise activate` replaces the nvm, pyenv and Deno shell setup\n- Projects can pin versions with `mise.toml`, and `.python-version` and `.terraform-version` files keep working\n- Machines set up before this change keep their old copies until `scripts/uninstall-pre-mise-tools.sh` is run\n- Neovim's Python provider moves from a pyenv virtualenv to a venv created by the `mise` step\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "config/mise/config.toml",
+    "scripts/uninstall-pre-mise-tools.sh"
+   ],
+   "implementation": {
+    "sha": "9fc142a38515a0709895027bc610b41b0ae4cfdf",
+    "date": "2026-10-26T11:17:46+00:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "scripts/uninstall-pre-mise-tools.sh"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/0006-migrate-to-pure-lua-neovim-configuration.md",
+   "identity": "doc/adr/0006-migrate-to-pure-lua-neovim-configuration.md",
+   "adr_id": "6",
+   "title": "Migrate to Pure Lua Neovim Configuration",
+   "first_commit": "2025-10-04T14:57:37+01:00",
+   "first_sha": "5799b7aeb016b8e316ef00b1859fb9921d2e46d3",
+   "last_commit": "2025-10-04T14:57:37+01:00",
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted Supersedes [4. Use vim-plug in favour of Vundle](0004-use-vim-plug-in-favour-of-vundle.md) Supersedes [5. Use coc in place of YCM](0005-use-coc-in-place-of-ycm.md)",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 6. Migrate to Pure Lua Neovim Configuration\n\nDate: 2025-10-04\n\n## Status\n\nAccepted\n\nSupersedes [4. Use vim-plug in favour of Vundle](0004-use-vim-plug-in-favour-of-vundle.md)\n\nSupersedes [5. Use coc in place of YCM](0005-use-coc-in-place-of-ycm.md)\n\n## Context\n\nThe Neovim configuration had evolved into a hybrid setup with both Vimscript (`.vimrc`) and Lua files, using vim-plug\nfor plugin management and a mix of traditional Vim plugins and modern Neovim plugins. This created several issues:\n\n1. **Maintenance complexity**: Managing two configuration languages and understanding which parts were Vimscript vs Lua\n2. **Plugin manager limitations**: vim-plug, while good, is primarily designed for Vimscript and doesn't take full\n   advantage of Neovim's Lua capabilities\n3. **Performance**: Vimscript is slower than Lua, and vim-plug loads all plugins at startup\n4. **Modern tooling**: Newer Neovim plugins are increasingly Lua-first, and some popular plugins (like NERDTree,\n   vim-airline) have superior Lua-native alternatives\n5. **Archived plugins**: null-ls (used for formatting/linting) was archived, with the community moving to more focused\n   tools\n\n## Decision\n\nCompletely migrate to a pure Lua Neovim configuration using lazy.nvim as the plugin manager, replacing all Vimscript\nfiles and upgrading to modern Lua-native plugins where appropriate.\n\n### Plugin Manager\n\n- **From**: vim-plug\n- **To**: [lazy.nvim](https://github.com/folke/lazy.nvim)\n- **Rationale**: Lazy.nvim provides lazy-loading by default, better startup performance, cleaner plugin specifications\n  in Lua, and is actively maintained for Neovim\n\n### Plugin Upgrades\n\n- **NERDTree** \u2192 **nvim-tree**: Lua-native file explorer with better performance\n- **vim-airline** \u2192 **lualine**: Lua-native statusline, lighter and faster\n- **vim-gitgutter** \u2192 **gitsigns.nvim**: Lua-native git integration with better features\n- **ALE** \u2192 Removed (using LSP + conform.nvim + nvim-lint instead)\n- **null-ls** \u2192 Replaced with **conform.nvim** (formatting) and **nvim-lint** (linting)\n- **coc.nvim** \u2192 **nvim-lspconfig** (native LSP support)\n\n### Configuration Structure\n\nAll Vimscript files removed and replaced with Lua:\n\n- `dotfiles/.vimrc` (167 lines) \u2192 Migrated to `lua/plugins/*.lua` files\n- `vim/ftplugin/*.vim` \u2192 `.config/nvim/ftplugin/*.lua`\n- `.config/nvim/vscode/settings.vim` \u2192 `.config/nvim/vscode/settings.lua`\n\nPlugin organization:\n\n- `lua/plugins/theme.lua` - Colorscheme\n- `lua/plugins/editor.lua` - Core editor enhancements\n- `lua/plugins/ui.lua` - UI components (lualine, nvim-tree)\n- `lua/plugins/git.lua` - Git integration\n- `lua/plugins/languages.lua` - Language-specific plugins\n- `lua/plugins/lsp.lua` - LSP configuration\n- `lua/plugins/completion.lua` - nvim-cmp and sources\n- `lua/plugins/formatting.lua` - conform.nvim\n- `lua/plugins/linting.lua` - nvim-lint\n- `lua/plugins/mason.lua` - Tool installer\n- And others for telescope, treesitter, hop, etc.\n\n### Tool Installation\n\nAdded Mason for automatic installation of formatters, linters, and LSP servers, reducing manual setup on new machines.\n\n## Consequences\n\n### Positive\n\n1. **Better performance**: Lazy-loading plugins and Lua's speed improve startup time\n2. **Cleaner codebase**: Single language (Lua) for all configuration\n3. **Modern tooling**: Access to the latest Neovim ecosystem\n4. **Better documentation**: Lua configurations are more readable and self-documenting\n5. **Easier maintenance**: Separation of concerns with focused plugins (formatting vs linting)\n6. **Portability**: Mason auto-installs tools, making setup easier on new machines\n7. **Active maintenance**: All core plugins are actively maintained\n\n### Negative\n\n1. **Learning curve**: Need to understand Lua and lazy.nvim syntax\n2. **Migration effort**: One-time cost of converting all Vimscript to Lua\n3. **Some Vimscript remains**: Language-specific plugins (vim-go, Copilot, fugitive) still use Vimscript but work fine\n   with Lua configuration\n\n### Breaking Changes\n\n1. Plugin commands changed:\n   - `:PlugInstall` \u2192 `:Lazy install`\n   - `:PlugUpdate` \u2192 `:Lazy update`\n   - `:PlugClean` \u2192 `:Lazy clean`\n2. Plugin storage location:\n   - `~/.vim/plugged/` \u2192 `~/.local/share/nvim/lazy/`\n3. No longer maintaining `.vimrc` (pure Neovim, no Vim compatibility)\n4. Formatters/linters now managed by Mason instead of system packages\n\n### Migration Notes\n\n- Old `~/.vimrc` symlink removed\n- All ftplugin files converted to Lua\n- Autocmds migrated to `lua/user/autocmds.lua`\n- VS Code integration updated to use Lua functions\n- CLAUDE.md and README.md updated to reflect new architecture\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/folke/lazy.nvim",
+    "dotfiles/.vimrc",
+    "lua/plugins/*.lua",
+    "vim/ftplugin/*.vim",
+    "config/nvim/ftplugin/*.lua",
+    "config/nvim/vscode/settings.vim",
+    "config/nvim/vscode/settings.lua",
+    "lua/plugins/theme.lua",
+    "lua/plugins/editor.lua",
+    "lua/plugins/ui.lua",
+    "lua/plugins/git.lua",
+    "lua/plugins/languages.lua",
+    "lua/plugins/lsp.lua",
+    "lua/plugins/completion.lua",
+    "lua/plugins/formatting.lua",
+    "lua/plugins/linting.lua",
+    "lua/plugins/mason.lua",
+    "~/.vim/plugged/",
+    "~/.local/share/nvim/lazy/",
+    "~/.vimrc",
+    "lua/user/autocmds.lua"
+   ],
+   "implementation": {
+    "sha": "5799b7aeb016b8e316ef00b1859fb9921d2e46d3",
+    "date": "2025-10-04T14:57:37+01:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "dotfiles/.vimrc"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/0002-replace-travis-ci-with-github-actions.md",
+   "identity": "doc/adr/0002-replace-travis-ci-with-github-actions.md",
+   "adr_id": "2",
+   "title": "Replace Travis CI with GitHub Actions",
+   "first_commit": "2019-09-18T12:22:24+01:00",
+   "first_sha": "9cb932eca5a641aede51fadad3166c17307a9d5a",
+   "last_commit": "2021-11-16T18:28:32+00:00",
+   "author": "Steven Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 2. Replace Travis CI with GitHub Actions\n\nDate: 2019-09-18\n\n## Status\n\nAccepted\n\n## Context\n\nGitHub Actions are the new shiny and have been in Beta for sometime. They are\ngoing to be generally available on\n[2019-11-13](https://github.blog/2019-08-08-github-actions-now-supports-ci-cd/).\nThey are a thing that will have a long term future. It is likely GitHub Actions\nwill become the default CI mechanism (and possibly more) for projects hosted on\nGitHub. Using them in this repository which has a very basic use case will\nprovide some exposure to the service.\n\n## Decision\n\nThe decision is to replace Travis CI with GitHub Actions.\n\n## Consequences\n\nWhilst GitHub Actions are a much newer service than Travis CI the ability for\nan organisation such as GitHub to manage the heavy demand one would imagine\nwill be placed on the service is likely to be first class.\nThe act of executing shellcheck on the scripts in the repository is not critical.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0005-use-coc-in-place-of-ycm.md",
+   "identity": "doc/adr/0005-use-coc-in-place-of-ycm.md",
+   "adr_id": "5",
+   "title": "Use CoC in place of YCM",
+   "first_commit": "2021-01-19T18:27:31+00:00",
+   "first_sha": "291705e41c6dcfba11e972eceeb27d6caba22175",
+   "last_commit": "2021-01-19T18:27:31+00:00",
+   "author": "Steven Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 5. Use CoC in place of YCM\n\nDate: 2021-01-19\n\n## Status\n\nAccepted\n\n## Context\n\nYCM has been a mostly positive experience over the years of using it, however,\nthere have been many occasions where time has been spent fixing issues. The\ntime has come to look at using an alternative.\n\n## Decision\n\nThe decision is to use [CoC](https://github.com/neoclide/coc.nvim).\n\n## Consequences\n\nUsing any new tool takes a bit of time to get up to speed, however, the\nfunctionality available appears to largely match that available within YCM.\nTherefore, the learning is largely going to the nuances of how the\nfunctionality is implemented rather than learning a set of new functionality.\nThere might be issues with CoC that I haven't been made aware of during testing\nin which the use of CoC would need to be considered against the effort involved\nin resolving them against the known experience of YCM.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/neoclide/coc.nvim"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0004-use-vim-plug-in-favour-of-vundle.md",
+   "identity": "doc/adr/0004-use-vim-plug-in-favour-of-vundle.md",
+   "adr_id": "4",
+   "title": "Use vim-plug in favour of Vundle",
+   "first_commit": "2021-01-18T18:09:07+00:00",
+   "first_sha": "73a4f3df764640dada291d9461df537f75d8fc95",
+   "last_commit": "2021-01-18T18:09:07+00:00",
+   "author": "Steven Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 4. Use vim-plug in favour of Vundle\n\nDate: 2021-01-18\n\n## Status\n\nAccepted\n\n## Context\n\nVundle hasn't been updated for a while (Aug 2019 at time of writing) and I'd\nread a bit about how vim-plug was pretty good. And it felt like it was time for\na change.\n\n## Decision\n\n[vim-plug](https://github.com/junegunn/vim-plug) will be used to manage Vim\nplugins in favour of [Vundle](https://github.com/VundleVim/Vundle.vim).\n\n## Consequences\n\nThere should be no negative consequences from the change other than the small\namount of time it takes to install the plugins with vim-plug.\nOne change that might be worth remembering is that vim-plug stores plugins in\n`~/.vim/plugged/` rather than `~/.vim/bundle`.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/VundleVim/Vundle.vim",
+    "~/.vim/plugged/",
+    "~/.vim/bundle"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0001-record-architecture-decisions.md",
+   "identity": "doc/adr/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2017-06-08T08:30:00+01:00",
+   "first_sha": "b62ddf5de03ddcef0560c8b22b0e04cf9b7615b5",
+   "last_commit": "2020-09-12T23:14:00+01:00",
+   "author": "steven hunt",
+   "email": "st3v3n.hunt@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 1. Record architecture decisions\n\nDate: 2017-06-08\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as described by Michael Nygard in this article: [http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions)\n\n## Consequences\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's _adr-tools_ at [https://github.com/npryce/adr-tools](https://github.com/npryce/adr-tools).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0003-switch-to-use-zsh-in-place-of-bash.md",
+   "identity": "doc/adr/0003-switch-to-use-zsh-in-place-of-bash.md",
+   "adr_id": "3",
+   "title": "Switch to use zsh in place of bash",
+   "first_commit": "2019-10-18T13:41:44+01:00",
+   "first_sha": "1c0dcf842b01e86fb39daf34ad0231a49f9b3def",
+   "last_commit": "2019-10-18T13:41:44+01:00",
+   "author": "Steven Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 3. Switch to use zsh in place of bash\n\nDate: 2019-10-18\n\n## Status\n\nAccepted\n\n## Context\n\n[Starting with macOS Catalina, zsh will be the default shell](https://support.apple.com/en-us/HT208050).\n\n## Decision\n\nzsh should be used in place of bash.\n\n## Consequences\n\nThere are some differences between the shells which will require changes to the\nway they are configured. There may be a small learning curve whilst getting\nused to any differences between the shells.\nzsh is widely thought of to be a better shell than bash and there should be\nsome productivity gains to be had.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [
+  {
+   "kind": "file:primary",
+   "name": "CLAUDE.md",
+   "date": "2025-10-04T14:57:37+01:00",
+   "commit": "5799b7aeb016b8e316ef00b1859fb9921d2e46d3",
+   "evidence": "Convert vimscript to lua. Use Lazy (#437)",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "file:primary",
+   "name": "AGENTS.md",
+   "date": "2026-02-03T17:48:56+00:00",
+   "commit": "fb76bd0fd5731af37ad99004361639bd5aa2ed1d",
+   "evidence": "Install Ghostty and config (#445)",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "file:primary",
+   "name": ".config/claude/CLAUDE.md",
+   "date": "2026-04-05T22:04:37+01:00",
+   "commit": "8b56f44bbb803ae50bf28e2f21343be3795284fc",
+   "evidence": "Tweaks (#464)",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "file:primary",
+   "name": ".config/codex/AGENTS.md",
+   "date": "2026-04-05T22:04:37+01:00",
+   "commit": "8b56f44bbb803ae50bf28e2f21343be3795284fc",
+   "evidence": "Tweaks (#464)",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-25T18:52:42+00:00",
+   "commit": "05135cf79431ff097bd17f9d2d248207c2a93a5d",
+   "evidence": "fix(brew): correct invalid Brewfile entries",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-25T18:52:42+00:00",
+   "commit": "65ea09b00c99882c67ad636cfd1196f3e1d11edb",
+   "evidence": "fix(git): remove duplicate user block from mac gitconfig",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-25T18:53:01+00:00",
+   "commit": "93660fa01c7cd95c2ce9d9bd40bd7673a47056b0",
+   "evidence": "feat: manage symlinks from a single links.txt manifest",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-25T18:53:01+00:00",
+   "commit": "4fa93283f093f9f31bd692a9533a5684614476f2",
+   "evidence": "feat: run install.sh as named, selectable steps",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-25T18:53:26+00:00",
+   "commit": "e4b8d14de6cde6159f040443ff83d1f8738fd185",
+   "evidence": "fix(zsh): install oh-my-zsh plugins and theme to the right paths",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-25T18:53:26+00:00",
+   "commit": "04fdb9ece5441a0cf705141e1dd2b526f6af71fe",
+   "evidence": "fix(node): install and load nvm in the node install script",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-25T18:53:26+00:00",
+   "commit": "cc37316f8aa457668731ebeab6c483b1fe3187f4",
+   "evidence": "fix(rust): make rust install non-interactive and re-runnable",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-25T18:53:27+00:00",
+   "commit": "291bb07319659b534b2bfc59238fab7226e0a377",
+   "evidence": "fix(python): install python CLIs with uv tool",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-25T18:53:27+00:00",
+   "commit": "bfffb5dcfdb8109f2c30c0c2925ac1f838f8fd19",
+   "evidence": "fix(scripts): fix smaller install script failures",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-25T18:53:27+00:00",
+   "commit": "d7f3bed29358d80736709a892edfc8053957a793",
+   "evidence": "docs: document links.txt and install steps",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-25T18:59:27+00:00",
+   "commit": "4fbf80817bfa47bc10cbcab11f99966b0840eb17",
+   "evidence": "chore: remove asdf",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-25T19:03:35+00:00",
+   "commit": "0003fe9747b6265e698b94ce43a33eb8c156e62e",
+   "evidence": "fix(brew): resolve brew doctor tap and cask warnings",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T07:59:44+00:00",
+   "commit": "4bfad68d6e201a129c96057cde3b4a35c72a70fd",
+   "evidence": "chore: drop semantic-release",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T08:00:35+00:00",
+   "commit": "7bf290a5c9995973c2c50fda726cb766cfa017f7",
+   "evidence": "refactor(brew): move scattered brew installs into the Brewfile",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T08:01:26+00:00",
+   "commit": "e3d0065ec53678337312dcc85c7462e9d5580647",
+   "evidence": "refactor(shell): set up pyenv and GPG_TTY once in shared setup",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T08:01:43+00:00",
+   "commit": "323cc850ed39ff7a928b597e6ab0d803efca8d28",
+   "evidence": "fix(shell): use $HOME for the Docker Desktop PATH entry",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T08:02:20+00:00",
+   "commit": "1e0144c282d3c1c8187dfde85ecbced5e94c2b9d",
+   "evidence": "perf(bash): source Homebrew's completion files instead of generating them",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T08:02:34+00:00",
+   "commit": "c9be16a9875af052678749e18bc5676ce6df4a78",
+   "evidence": "feat(shell): source optional machine-local zsh and bash overrides",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T08:02:49+00:00",
+   "commit": "166066d89bef463fcf68432e44f25f4a7e5ee15a",
+   "evidence": "chore: remove work-specific ffc tmux and repo clone scripts",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T08:02:49+00:00",
+   "commit": "462148650ac4f583597feef52cfb49eee5b98a1e",
+   "evidence": "chore: remove iTerm2 preferences plist",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T08:03:34+00:00",
+   "commit": "affac172ae242aa8cf688255983a764b8988bc63",
+   "evidence": "fix(gcloud): make gcloud install re-runnable",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T08:27:49+00:00",
+   "commit": "6589a6d264b9e2594d4a9d6effd126761a1bef5b",
+   "evidence": "fix: satisfy super-linter shfmt and executable checks",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T08:34:50+00:00",
+   "commit": "c6c062b77fa0630f5e3edb30dbd137ea387a9ab8",
+   "evidence": "chore(github): allow rebase merging only",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T08:48:12+00:00",
+   "commit": "ef0d5cc5ce7ee41f1c32bb58ca33c889ff41b71b",
+   "evidence": "chore(github): use squash merging only",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T08:48:12+00:00",
+   "commit": "6e0fa8fa9b601a5320a0cca35af23d9782a7d069",
+   "evidence": "ci: lint PR titles with commitlint",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T11:17:46+00:00",
+   "commit": "9fc142a38515a0709895027bc610b41b0ae4cfdf",
+   "evidence": "feat: manage runtimes and global tools with mise (#474)",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T11:43:17+00:00",
+   "commit": "95414c41dfce64373733de6cc98dfbd02a814e7a",
+   "evidence": "style(nvim): format Lua with stylua",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T11:43:18+00:00",
+   "commit": "adedcd39c6cda82feec4f16bbd2e8b81861b611b",
+   "evidence": "ci: run the CI checks locally with pre-commit hooks",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T12:22:56+00:00",
+   "commit": "834551b93b4adffcc4ad49d087d40b13d4a4e13e",
+   "evidence": "chore: remove Ansible and the open-files limit it needed (#476)",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T12:50:26+00:00",
+   "commit": "5c85dc3061d0a4da62c013d26a2df750dfdffa0f",
+   "evidence": "fix: repair the Neovim Node.js provider and the Karabiner config link (#475)",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-02T09:01:32+00:00",
+   "commit": "722e3f4aa18483908db5206a26c80123cb694c16",
+   "evidence": "fix: support Linux machines without Homebrew (#479)",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-05T08:09:38+00:00",
+   "commit": "bd644518fe3c26b1ff25be3bfa482d6e339be88c",
+   "evidence": "feat: make zsh the login shell on WSL and Linux (#480)",
+   "official": true,
+   "author": "Steve Hunt",
+   "email": "st3v3nhunt@users.noreply.github.com"
+  }
+ ],
+ "signal_date": "2025-10-04T13:57:37+00:00",
+ "signal_kind": "file:primary",
+ "mentions": {
+  "strict": [
+   {
+    "sha": "af80d57011c4841b7d08e9c5c7628f9d78ba0c70",
+    "date": "2025-02-13T10:14:13+00:00",
+    "subject": "WSL teaks and GitHub Copilot (#429)"
+   },
+   {
+    "sha": "957655eb1d5f97e9e2998b02710921b09af9cd4e",
+    "date": "2026-04-05T22:19:53+01:00",
+    "subject": "fix: correct path to AGENTS for CLAUDE (#465)"
+   },
+   {
+    "sha": "e80aea8df2b9d2719dead062654a83d8ffa078b4",
+    "date": "2026-04-06T18:12:42+01:00",
+    "subject": "Claude portability improvements (#466)"
+   },
+   {
+    "sha": "5224d7203c5b3f437f9e645eace380348bec33b8",
+    "date": "2026-04-06T18:40:21+01:00",
+    "subject": "Remove copilot vim plugin (#467)"
+   }
+  ],
+  "strict_count": 4,
+  "literal_only_count": 1,
+  "capped": false
+ },
+ "group": "ai-eligible",
+ "adr_count_before_signal": 5,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-before-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "5"
+}

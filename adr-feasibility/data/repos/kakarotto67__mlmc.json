@@ -1,0 +1,305 @@
+{
+ "repo": "kakarotto67/mlmc",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2019-06-10T14:28:51+03:00",
+ "last_commit": "2019-10-27T18:45:16+02:00",
+ "n_commits": 128,
+ "n_authors": 1,
+ "n_files": 872,
+ "n_code_files": 143,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 8,
+ "adrs": [
+  {
+   "path": "docs/adr/configure.txt",
+   "identity": "docs/adr/readme.txt",
+   "adr_id": "",
+   "title": "1.",
+   "first_commit": "2019-09-10T16:48:22+03:00",
+   "first_sha": "4da9d22b8563bc3a29641c6a3d371b50667ed51c",
+   "last_commit": "2019-09-22T15:51:28+03:00",
+   "author": "Roman Vovk",
+   "email": "arromanvk@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "1.\r\nuse\r\n\tnpm install madr\r\nand copy files from /templates/* into docs/adr\r\n\r\n2.\r\nuse\r\n\tadr-log -i\r\nto regenerate index.md after new ADR is added\r\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0006-post-signalr-directly-from-mgcc.md",
+   "identity": "docs/adr/0006-post-signalr-directly-from-mgcc.md",
+   "adr_id": "6",
+   "title": "Post launched active missile status updates directly from MGCC via SignalR",
+   "first_commit": "2019-09-17T16:42:39+03:00",
+   "first_sha": "ca28f80235a30db70d9decb0ef849b35485aec59",
+   "last_commit": "2019-09-17T16:46:05+03:00",
+   "author": "Roman Vovk",
+   "email": "arromanvk@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Post launched active missile status updates directly from MGCC via SignalR\r\n\r\n* Status: [accepted]\r\n* Deciders: [[@kakarotto67](https://github.com/kakarotto67)]\r\n* Date: [2019-09-17]\r\n\r\nTechnical Story: [Create Missile Guidance Controller Chip](https://github.com/kakarotto67/mlmc/issues/15)\r\n\r\n## Context and Problem Statement\r\n\r\nThere is a need to send real time SignalR-based notifications about current missile position to the map.\r\n\r\n## Decision Drivers\r\n\r\n* Need easy way to post missile status updates\r\n* Need easy way to get those updates using SignalR on client side\r\n\r\n## Considered Options\r\n\r\n* Use MGCC->Message Bus->Handler->CosmosDB->Function trigger->SignalR flow\r\n* Use MGCC->SignalR flow\r\n\r\n## Decision Outcome\r\n\r\nDecided to simply push SignalR messages directly from MGCC module.\r\n\r\n### Positive Consequences\r\n\r\n* Initially I planned to post current missile status to Message Bus, then process it to CosmosDB, then have Azure Function to send SignalR messages. But that seemed too complicated. With direct SignalR messages from MGCC module the implementation will be much easier and faster.\r\n\r\n### Negative Consequences\r\n\r\n* n/a\r\n\r\n## Links\r\n\r\n* n/a\r\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "kakarotto67/mlmc#15",
+     "kind": "issue",
+     "url": "https://github.com/kakarotto67/mlmc/issues/15",
+     "number": "15"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0004-use-aks-orchestrator.md",
+   "identity": "docs/adr/0004-use-aks-orchestrator.md",
+   "adr_id": "4",
+   "title": "Use AKS orchestrator for the MLMC app",
+   "first_commit": "2019-09-14T20:04:05+03:00",
+   "first_sha": "2b058e622e72b9fda6b8d5396f162a28b6f17d24",
+   "last_commit": "2019-09-14T20:05:23+03:00",
+   "author": "Roman Vovk",
+   "email": "arromanvk@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Use AKS orchestrator for the MLMC app\r\n\r\n* Status: [accepted]\r\n* Deciders: [[@kakarotto67](https://github.com/kakarotto67)]\r\n* Date: [2019-09-14]\r\n\r\nTechnical Story: [Configure Kubernetes orchestrator for whole app and deploy it to AKS](https://github.com/kakarotto67/mlmc/issues/12)\r\n\r\n## Context and Problem Statement\r\n\r\nSince the product is going to be based on Microservices architecture there is a need for good orchestrator to host its different parts.\r\n\r\n## Decision Drivers\r\n\r\n* Easy to use\r\n* Easy to learn\r\n* Possibility to host modules as Docker containers\r\n* Well integrated with Azure\r\n* Well integrated with Azure DevOps\r\n\r\n## Considered Options\r\n\r\n* [Azure Kubernetes Service](https://azure.microsoft.com/en-us/services/kubernetes-service/)\r\n* [Azure Service Fabric](https://azure.microsoft.com/en-us/services/service-fabric/)\r\n\r\n## Decision Outcome\r\n\r\nDecided to use AKS since\r\n\r\n* It is more powerfull than ASF\r\n* It is more suitable for Docker containers hosting\r\n* ASF have to be used when you plan to use its programming model (stateless services, stateful services, actors), but I didn't need that\r\n* Kubernetes seems more popular and evolved\r\n* Kubernetes has managed implementation for Azure - AKS\r\n\r\n### Positive Consequences\r\n\r\n* I will be able to use orchestrator to host app's modules.\r\n\r\n### Negative Consequences\r\n\r\n* n/a\r\n\r\n## Links\r\n\r\n* n/a\r\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "kakarotto67/mlmc#12",
+     "kind": "issue",
+     "url": "https://github.com/kakarotto67/mlmc/issues/12",
+     "number": "12"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0005-use-api-gateway.md",
+   "identity": "docs/adr/0005-use-api-gateway.md",
+   "adr_id": "5",
+   "title": "Use API Gateway for MLMC app",
+   "first_commit": "2019-09-14T20:04:05+03:00",
+   "first_sha": "2b058e622e72b9fda6b8d5396f162a28b6f17d24",
+   "last_commit": "2019-09-14T20:04:05+03:00",
+   "author": "Roman Vovk",
+   "email": "arromanvk@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use API Gateway for MLMC app\r\n\r\n* Status: [proposed]\r\n* Deciders: [[@kakarotto67](https://github.com/kakarotto67)]\r\n* Date: [2019-09-14]\r\n\r\nTechnical Story: [Move all interservices communication into API Gateway](https://github.com/kakarotto67/mlmc/issues/11)\r\n\r\n## Context and Problem Statement\r\n\r\nFor Microservices architecture it is a good idea to have API Gateway service to manage interservices communication and handle cross-cutting concerns (logging, security, caching, etc.).\r\n\r\n## Decision Drivers\r\n\r\n* Easy to use\r\n* Easy to learn\r\n* Can be hosted on Azure\r\n* Can be hosted in Docker container\r\n\r\n## Considered Options\r\n\r\n* [Ocelot](https://threemammals.com/ocelot/)\r\n* [Azure API Management](https://azure.microsoft.com/en-us/services/api-management/)\r\n\r\n## Decision Outcome\r\n\r\nNo outcome yet. Have to investigate both a bit and then will decide.\r\n\r\n### Positive Consequences\r\n\r\n* I will be able to manage communication between services more effectively and securely with API Gateway.\r\n\r\n### Negative Consequences\r\n\r\n* n/a\r\n\r\n## Links\r\n\r\n* n/a\r\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "kakarotto67/mlmc#11",
+     "kind": "issue",
+     "url": "https://github.com/kakarotto67/mlmc/issues/11",
+     "number": "11"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0003-use-rabbit-mq-for-eda.md",
+   "identity": "docs/adr/0003-use-rabbit-mq-for-eda.md",
+   "adr_id": "3",
+   "title": "Use RabbitMQ for messaging & publish-subsribe pattern",
+   "first_commit": "2019-09-13T22:41:17+03:00",
+   "first_sha": "749232c635a1cf6f31e344cbdec3701f3cdc4afc",
+   "last_commit": "2019-09-13T22:41:17+03:00",
+   "author": "Roman Vovk",
+   "email": "arromanvk@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use RabbitMQ for messaging & publish-subsribe pattern\r\n\r\n* Status: [accepted]\r\n* Deciders: [[@kakarotto67](https://github.com/kakarotto67)]\r\n* Date: [2019-09-13]\r\n\r\nTechnical Story: [Setup Message Bus for MLMC](https://github.com/kakarotto67/mlmc/issues/7)\r\n\r\n## Context and Problem Statement\r\n\r\nDifferent services are going to push different kind of messages so there is a need in EDA architecture and some messaging server.\r\n\r\n## Decision Drivers\r\n\r\n* Easy to use\r\n* Easy to learn\r\n* Possibility to run from Docker\r\n\r\n## Considered Options\r\n\r\n* [RabbitMQ](https://www.rabbitmq.com/)\r\n* [NServiceBus](https://particular.net/nservicebus)\r\n\r\n## Decision Outcome\r\n\r\nDecided to use RabbitMQ since\r\n\r\n* It provides exact functionality that is neded for the product (publish-subscribe event messaging)\r\n* It is easy to learn and use and I already had some knowledge of how to use it\r\n* It has official container on Docker Hub\r\n* It seems to be popular and trending these days\r\n\r\n### Positive Consequences\r\n\r\n* I will be able to setup EDA messaging in the product.\r\n\r\n### Negative Consequences\r\n\r\n* n/a\r\n\r\n## Links\r\n\r\n* n/a\r\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "kakarotto67/mlmc#7",
+     "kind": "issue",
+     "url": "https://github.com/kakarotto67/mlmc/issues/7",
+     "number": "7"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0002-use-mongodb-for-operation.md",
+   "identity": "docs/adr/0002-use-mongodb-for-operation.md",
+   "adr_id": "2",
+   "title": "Use MongoDB for Operation service",
+   "first_commit": "2019-09-10T19:53:31+03:00",
+   "first_sha": "056bbc9c4af90d58203720b27d9b2cb4fb1e25c4",
+   "last_commit": "2019-09-12T18:44:16+03:00",
+   "author": "Roman Vovk",
+   "email": "arromanvk@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Use MongoDB for Operation service\n\n* Status: [accepted]\n* Deciders: [[@kakarotto67](https://github.com/kakarotto67)]\n* Date: [2019-09-10]\n\nTechnical Story: [Move Operation API to MongoDB](https://github.com/kakarotto67/mlmc/issues/2)\n\n## Context and Problem Statement\n\nOperation API need some data storage to be able to list/commission/decommission/launch missiles.\n\n## Decision Drivers\n\n* Easy to use storage\n* Fast storage\n* Dynamic and/or schemaless storage\n\n## Considered Options\n\n* [MS SQL Server](https://www.microsoft.com/en-us/sql-server/sql-server-2019)\n* [MongoDB](https://www.mongodb.com/)\n\n## Decision Outcome\n\nDecided to use MongoDB since\n\n* The product growths without strict requirements, so entitites are changed very often. In this circumstances schemaless approach is better than predefined schema approach\n* No need to use RDBMS just to store some random missiless on a stock\n* I wanted to get some experience in MongoDB\n\n### Positive Consequences\n\n* Implementation will be faster and easier since schema is going to be changed lot of times\n\n### Negative Consequences\n\n* n/a\n\n## Links\n\n* n/a\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "kakarotto67/mlmc#2",
+     "kind": "issue",
+     "url": "https://github.com/kakarotto67/mlmc/issues/2",
+     "number": "2"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0001-use-azure-maps.md",
+   "identity": "docs/adr/0001-use-azure-maps.md",
+   "adr_id": "1",
+   "title": "Use Azure Maps instead of Google Maps",
+   "first_commit": "2019-09-10T16:38:36+03:00",
+   "first_sha": "9d57e2ebc1b44e6c0a4d728af74ed7f5c4d905be",
+   "last_commit": "2019-09-12T18:43:52+03:00",
+   "author": "Roman Vovk",
+   "email": "arromanvk@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Use Azure Maps instead of Google Maps\n\n* Status: [accepted]\n* Deciders: [[@kakarotto67](https://github.com/kakarotto67)]\n* Date: [2019-09-10]\n\nTechnical Story: [Change map provider to Azure Maps](https://github.com/kakarotto67/mlmc/issues/3)\n\n## Context and Problem Statement\n\nMap have to be added to the product so missiles can be shown there at real time.\n\n## Decision Drivers\n\n* Easy to use\n* Some knowledge already exists\n* Native for other product technologies\n\n## Considered Options\n\n* [Google Maps](https://developers.google.com/maps/documentation/)\n* [Azure Maps](https://azure.microsoft.com/en-us/services/azure-maps/)\n\n## Decision Outcome\n\nDecided to use Azure Maps since\n\n* They are native to Azure and .NET which are used for the product\n* They are well integrated with Azure SignalR that is going to be used for real-time notifications\n* I got some experience with Azure Maps already\n\n### Positive Consequences\n\n* Implementation will be faster and easier in this particular case\n\n### Negative Consequences\n\n* I planned to get some Google Maps API knowledge as well\n\n## Links\n\n* n/a\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "kakarotto67/mlmc#3",
+     "kind": "issue",
+     "url": "https://github.com/kakarotto67/mlmc/issues/3",
+     "number": "3"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0000-use-markdown-architectural-decision-records.md",
+   "identity": "docs/adr/0000-use-markdown-architectural-decision-records.md",
+   "adr_id": "0",
+   "title": "Use Markdown Architectural Decision Records",
+   "first_commit": "2019-09-10T16:38:36+03:00",
+   "first_sha": "9d57e2ebc1b44e6c0a4d728af74ed7f5c4d905be",
+   "last_commit": "2019-09-10T16:38:36+03:00",
+   "author": "Roman Vovk",
+   "email": "arromanvk@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use Markdown Architectural Decision Records\n\n## Context and Problem Statement\n\nWe want to record architectural decisions made in this project.\nWhich format and structure should these records follow?\n\n## Considered Options\n\n* [MADR](https://adr.github.io/madr/) 2.1.2 \u2013 The Markdown Architectural Decision Records\n* [Michael Nygard's template](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions) \u2013 The first incarnation of the term \"ADR\"\n* [Sustainable Architectural Decisions](https://www.infoq.com/articles/sustainable-architectural-design-decisions) \u2013 The Y-Statements\n* Other templates listed at <https://github.com/joelparkerhenderson/architecture_decision_record>\n* Formless \u2013 No conventions for file format and structure\n\n## Decision Outcome\n\nChosen option: \"MADR 2.1.2\", because\n\n* Implicit assumptions should be made explicit.\n  Design documentation is important to enable people understanding the decisions later on.\n  See also [A rational design process: How and why to fake it](https://doi.org/10.1109/TSE.1986.6312940).\n* The MADR format is lean and fits our development style.\n* The MADR structure is comprehensible and facilitates usage & maintenance.\n* The MADR project is vivid.\n* Version 2.1.2 is the latest one available when starting to document ADRs.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "doi.org/10.1109/TSE.1986.6312940"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/adr/configure.txt",
+   "identity": "docs/adr/readme.txt",
+   "commit": "670d742115bf7f36e1ea040b56d7ca9e119c1f36",
+   "date": "2019-09-22T15:51:28+03:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Renamed readme so index is default.",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "kakarotto67",
+   "email": "arromanvk@gmail.com"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 8,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "7"
+}

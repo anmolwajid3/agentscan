@@ -1,0 +1,16 @@
+case_id,decision_type,hard,d1,d2,d3,d4,d5,minutes,note
+C5-01,code-structure,yes,0,2,1,1,1,8,SDK users who customised panic handling have to change. No stored data.
+C5-02,code-structure,no,0,0,1,0,0,4,A personal site moved framework. Data fetching is not a data migration.
+C5-03,interface,yes,0,2,1,0,1,6,Removing TimeoutHint is a breaking change for engine implementers.
+C5-04,integration,yes,0,2,1,1,2,6,Claimants and the identity service have to change. GOV.UK Verify is an outside system.
+C5-05,deployment,yes,0,2,2,1,1,7,New IP ranges. Other systems that hold the old ranges have to change.
+C5-06,data-storage,no,1,0,1,0,1,7,How tables are created changes. The record does not say existing data was converted.
+C5-07,data-storage,no,1,0,1,0,1,6,Whether production data is used in staging. No conversion of that data is described.
+C5-08,data-storage,no,1,0,1,0,1,6,The migration tool was removed. The record does not say content was converted.
+C5-09,deployment,no,0,0,2,1,1,5,Prometheus moved from ECS to EC2. No stored data and no outside user change.
+C5-10,deployment,no,0,1,1,0,0,4,Lambda plus Fargate. External stores stay. Callers do not have to change.
+C5-11,deployment,yes,0,2,2,1,1,6,Replacing the registry means other teams change where they pull images.
+C5-12,deployment,no,0,1,2,1,1,6,Logging stack deprecated with no successor. No data migration and no required outside change.
+C5-13,interface,yes,0,2,2,1,1,5,Integrations must run on the new minimum Python. That is an outside-user change.
+C5-14,code-structure,no,0,0,1,0,0,4,Build tool only. The record says it was backfilled.
+C5-15,code-structure,no,0,0,2,0,1,5,Monorepo tool change. Package layout moves. Outside users do not.

@@ -1,0 +1,622 @@
+{
+ "repo": "rubyforgood/casa",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2020-03-19T00:09:18-04:00",
+ "last_commit": "2026-11-04T02:48:24+05:30",
+ "n_commits": 13802,
+ "n_authors": 541,
+ "n_files": 1879,
+ "n_code_files": 1213,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 5,
+ "adrs": [
+  {
+   "path": "doc/architecture-decisions/0005-android-app-as-a-pwa.md",
+   "identity": "doc/architecture-decisions/0005-android-app-as-a-pwa.md",
+   "adr_id": "5",
+   "title": "The android app is a [PWA](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps) running in a [TWA](https://developer.chrome.com/docs/android/trusted-web-activity/overview/)",
+   "first_commit": "2021-07-07T21:44:06-05:00",
+   "first_sha": "82e1b82c5ba591c80b71f9020c9093685abec5fc",
+   "last_commit": "2021-07-07T21:49:47-05:00",
+   "author": "Shen Yang",
+   "email": "shenyang64@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 1. The android app is a [PWA](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps) running in a [TWA](https://developer.chrome.com/docs/android/trusted-web-activity/overview/)\n\nDate: 2021-07-07\n\n## Context\n\nBuilding a [progressive web app(PWA)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps) is a very quick way to convert a website into a mobile app for android.\nPWAs can support offline mode and push notifications.\nOur app runs in a [trusted web activity(TWA)](https://developer.chrome.com/docs/android/trusted-web-activity/overview/) which is very similar to having the web page load in a mobile browser. The trusted web activity offers browser like support for the PWA.\n\n## Consequences\nMore javascript support for [service workers](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Offline_Service_workers) to support offline mode.  \n[Maintaining a key for app signing](https://github.com/rubyforgood/casa-android/wiki/How-to-manage-app-signing)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/architecture-decisions/0004-use-bootstrap.md",
+   "identity": "doc/architecture-decisions/0003-use-bootstrap.md",
+   "adr_id": "4",
+   "title": "Use Bootstrap for styling",
+   "first_commit": "2020-04-04T23:13:50-04:00",
+   "first_sha": "0151907641e4eb355663623423d210428f3c0ca9",
+   "last_commit": "2021-07-07T21:35:39-05:00",
+   "author": "Eric Tillberg",
+   "email": "eric.tillberg@gmail.com",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 1. Use Bootstrap for styling\n\nDate: 2020-04-05\n\n## Status\n\nProposed\n\n## Context\n\nWe would like to have an easy-to-use system for consistent styles that doesn't\ntake much tinkering. We propose using the `bootstrap` gem.\n\n## Decision\n\nPending\n\n## Consequences\n\nSome familiarity with\n[Bootstrap](https://getbootstrap.com/docs/4.4/getting-started/introduction/)\nwill likely be necessary but we hope the medium-to-long term benefits will\noutweigh the cost to learn up front.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "getbootstrap.com/docs/4.4"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/architecture-decisions/0003-multiple-user-tables.md",
+   "identity": "doc/architecture-decisions/0003-multiple-user-tables.md",
+   "adr_id": "3",
+   "title": "Having 2 user tables",
+   "first_commit": "2020-04-05T12:00:57-07:00",
+   "first_sha": "7fec95d7a825e8bdab71bfc85d0c18f3784e98e4",
+   "last_commit": "2020-04-05T12:14:57-07:00",
+   "author": "Linda",
+   "email": "linda@semprehealth.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 3. Having 2 user tables\n\nDate: 2020-04-05\n\n## Status\n\nAccepted\n\n## Context\n\nThis is planned to be a multi-tenant system. There will be multiple CASA orgs in the system, so every case, case_contact, volunteer, supervisor, casa_admin etc must have a casa_org_id, because no one is allowed to belong to multiple CASAs. Volunteer, supervisor, and casa_admin are all roles for a \"User\" db object. In addition to those existing roles, we want to create a new kind of user: all_casa_admin. We need to handle the case of super users who have access to multiple casa_orgs, so they would be difficult to handle in the existing User table--with null handling around their casa_org_id field. We have used the built-in Devise ability to have multiple user tables, as recommended to us by our Rails expert Betsy. This is to prevent needing null handling around casa_id for User records since all_casa_admin users will not have casa_id populated.\n\nAdditionally, all_casa_admin users are currently intended to be allowed to create casa_admin users, but NOT to be able to see or edit any CASA data like volunteer assignments, cases, case_updates etc.\n\n## Decision\n\nWe are using two tables for users: \"user\" table for volunteers,supervisors, and casa_admin (all of which must have a casa_id). \"all_casa_admin\" for all_casa_admins, which will have no casa_id.\n\n## Consequences\n\nThe login behavior and dashboard page for all_casa_admin will need to be created and handled separately from the regular user login and dashboard\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/architecture-decisions/0002-disallow-ui-sign-ups.md",
+   "identity": "doc/architecture-decisions/0002-disallow-ui-sign-ups.md",
+   "adr_id": "2",
+   "title": "Disallow user sign-ups from the UI",
+   "first_commit": "2020-04-05T12:00:57-07:00",
+   "first_sha": "7fec95d7a825e8bdab71bfc85d0c18f3784e98e4",
+   "last_commit": "2020-04-05T12:00:57-07:00",
+   "author": "Linda",
+   "email": "linda@semprehealth.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 2. Disallow user sign-ups from the UI\n\nDate: 2020-04-04\n\n## Status\n\nAccepted\n\n## Context\n\nWe want it to be easy for people to join the organization, however we don't want random people signing up and spamming us. We want admin users to have control over who has accounts on the system. We don't have the capacity to handle this properly through the user interface right now.\n\n## Decision\n\nWe are going to disable Devise 'registerable' for the user model so that there will no longer be a public sign up option on the site. Creation of new accounts will be done on the backend.\n\n## Consequences\n\nAdmins have to do more work to sign up users, but this gives them more control over who can access the site.",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/architecture-decisions/0001-record-architecture-decisions.md",
+   "identity": "doc/architecture-decisions/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2020-04-04T11:52:47-07:00",
+   "first_sha": "08bc8fd3d5f7590d794c26f9d9498456abd4edf5",
+   "last_commit": "2020-04-04T11:52:47-07:00",
+   "author": "Lisa Vogt",
+   "email": "lisavogt.sf@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record architecture decisions\n\nDate: 2020-04-04\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as [described by Michael Nygard](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions).\n\n## Consequences\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's [adr-tools](https://github.com/npryce/adr-tools).",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "doc/architecture-decisions/0004-use-bootstrap.md",
+   "identity": "doc/architecture-decisions/0003-use-bootstrap.md",
+   "commit": "7a19c5f51caaa099c774200f511c9bed860ca09a",
+   "date": "2021-07-07T21:35:39-05:00",
+   "old_state": "proposed",
+   "new_state": "proposed",
+   "old_raw": "Proposed",
+   "new_raw": "Proposed",
+   "replacement": null,
+   "message": "Rename 0003-use-bootstrap.md to 0004-use-bootstrap.md",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Shen Yang",
+   "email": "shenyang64@gmail.com"
+  }
+ ],
+ "ai_signals": [
+  {
+   "kind": "file:primary",
+   "name": "CLAUDE.md",
+   "date": "2026-05-02T23:09:00-07:00",
+   "commit": "5b75f580935c997f8c431e2e935e3f5f10baad53",
+   "evidence": "claude config (#6924)",
+   "official": true,
+   "author": "compwron",
+   "email": "compiledwrong@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude <noreply@anthropic.com>",
+   "date": "2025-10-09T16:12:51-07:00",
+   "commit": "67d2a4300babfe1982736ae9d7076cc66580de25",
+   "evidence": "Remove unused FLIPPER_USERNAME and FLIPPER_PASSWORD credentials",
+   "official": true,
+   "author": "Linda Goldstein",
+   "email": "linda.goldstein@parachutehealth.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude <noreply@anthropic.com>",
+   "date": "2025-10-22T08:11:57-07:00",
+   "commit": "854a5de76d96d0d21a7ba5273fad42ddf7096e46",
+   "evidence": "Remove unused and suspicious npm packages",
+   "official": true,
+   "author": "Linda Goldstein",
+   "email": "linda.goldstein@parachutehealth.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude <noreply@anthropic.com>",
+   "date": "2025-11-28T17:30:36-05:00",
+   "commit": "4fc401b3f37b579a5d1b85e164b76f9494070249",
+   "evidence": "fix: Prevent uniqueness validation error when updating case contact types",
+   "official": true,
+   "author": "Linda Goldstein",
+   "email": "linda.goldstein@parachutehealth.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude <noreply@anthropic.com>",
+   "date": "2025-11-28T18:35:00-05:00",
+   "commit": "97d52f3f5d22142ba15efc638547e8c43fa5c3e9",
+   "evidence": "fix: Add browser environment to read_more test for MouseEvent",
+   "official": true,
+   "author": "Linda Goldstein",
+   "email": "linda.goldstein@parachutehealth.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude <noreply@anthropic.com>",
+   "date": "2025-11-28T19:53:19-05:00",
+   "commit": "1ed84e68fb5ac59da0c65cf41c51c5b2ad0642e3",
+   "evidence": "fix: add template validation for sablon 0.4.3 compatibility",
+   "official": true,
+   "author": "Linda Goldstein",
+   "email": "linda.goldstein@parachutehealth.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude <noreply@anthropic.com>",
+   "date": "2025-11-28T19:53:19-05:00",
+   "commit": "687e12308129cb526fd92ef1ca1d6aa37359f1b1",
+   "evidence": "fix: add template validation for sablon 0.4.3 compatibility",
+   "official": true,
+   "author": "Linda Goldstein",
+   "email": "linda.goldstein@parachutehealth.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-02-13T08:15:06-08:00",
+   "commit": "0c7c01256feb12a33ff04e50f8eef231a1df8c5b",
+   "evidence": "Improve Gemfile organization and documentation",
+   "official": true,
+   "author": "Linda Goldstein",
+   "email": "linda.goldstein@parachutehealth.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-03-20T12:03:32-07:00",
+   "commit": "d15d25f737bcdbd0013249ae3ee699637ed68a13",
+   "evidence": "fix prosopite config: enable raise, scope envs, clean up hooks",
+   "official": true,
+   "author": "Linda Goldstein",
+   "email": "linda.goldstein@parachutehealth.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-04-05T08:22:30-05:00",
+   "commit": "7d4579b768d1a745e4640971a8288bed455ee94a",
+   "evidence": "Fix window.location mock incompatibility with Node 24 jsdom",
+   "official": true,
+   "author": "Clifton McIntosh",
+   "email": "cliff.mcintosh@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-04-05T08:23:12-05:00",
+   "commit": "8123ca7f40c583dd1af9aa3dc10663b7e4d6eca0",
+   "evidence": "Fix CSS color assertion incompatibility with Node 24 jsdom",
+   "official": true,
+   "author": "Clifton McIntosh",
+   "email": "cliff.mcintosh@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: claude-sonnet-4-6 <noreply@anthropic.com>",
+   "date": "2026-04-01T13:22:41-05:00",
+   "commit": "e01fe3e9ce505e8d7ec95030f50ef08a35aaca19",
+   "evidence": "Add contact_topic_answers and notes to case contact datatable response",
+   "official": true,
+   "author": "Clifton McIntosh",
+   "email": "cliff.mcintosh@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: claude-sonnet-4-6 <noreply@anthropic.com>",
+   "date": "2026-04-01T13:45:31-05:00",
+   "commit": "7161d00981bee9debced47b6edf5a26592a2eb8e",
+   "evidence": "Implement case contact row expansion using DataTables child rows API",
+   "official": true,
+   "author": "Clifton McIntosh",
+   "email": "cliff.mcintosh@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: claude-sonnet-4-6 <noreply@anthropic.com>",
+   "date": "2026-04-01T13:47:23-05:00",
+   "commit": "114247148b2ccfd2de2b2fd2e79e5e99734504c7",
+   "evidence": "Add chevron rotation animation for case contact row expansion",
+   "official": true,
+   "author": "Clifton McIntosh",
+   "email": "cliff.mcintosh@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: claude-sonnet-4-6 <noreply@anthropic.com>",
+   "date": "2026-04-01T13:52:13-05:00",
+   "commit": "aa879629e0bdc790a381907269e7841c0f4f2a74",
+   "evidence": "Match expanded row layout to Figma design",
+   "official": true,
+   "author": "Clifton McIntosh",
+   "email": "cliff.mcintosh@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-04-02T18:14:37-05:00",
+   "commit": "dd131590c8683c754d569a0cd0e8eb6f53fc3859",
+   "evidence": "Render contact topics as pill badges in case contacts table",
+   "official": true,
+   "author": "Clifton McIntosh",
+   "email": "cliff.mcintosh@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-04-05T07:22:03-05:00",
+   "commit": "d07292854e13f9070837ec760328d4d218fe19fc",
+   "evidence": "Improve chevron toggle accessibility using button element and aria-expanded",
+   "official": true,
+   "author": "Clifton McIntosh",
+   "email": "cliff.mcintosh@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: claude-sonnet-4-6 <noreply@anthropic.com>",
+   "date": "2026-04-15T16:56:56-05:00",
+   "commit": "e24f0e0355b885042470506927cc706bbbb153ed",
+   "evidence": "New Case Contacts Table: row actions menu (#6834)",
+   "official": true,
+   "author": "Clifton McIntosh",
+   "email": "cliff.mcintosh@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+   "date": "2026-04-15T18:04:46-07:00",
+   "commit": "88eb623b1c677d36b63302d685fcc8dcccc1421e",
+   "evidence": "Add acts_as_paranoid test coverage (#6862)",
+   "official": true,
+   "author": "compwron",
+   "email": "compiledwrong@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-05-02T17:46:55-07:00",
+   "commit": "48772d3c86254b289393333c6748f08a705ebcf1",
+   "evidence": "Improve README: tech stack, resources, collapsible issues, credential tables, contributors (#6883)",
+   "official": true,
+   "author": "compwron",
+   "email": "compiledwrong@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-02T19:02:21-07:00",
+   "commit": "91c7f1e7d85fb170256d539581d387d551206f39",
+   "evidence": "refactor: centralize controller rescues, enable index policy scoping, fix Docker mount perms (#6894)",
+   "official": true,
+   "author": "compwron",
+   "email": "compiledwrong@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-04T22:53:05-07:00",
+   "commit": "813e04ee5358ad8c0863ab1c8c8fa619bceddc58",
+   "evidence": "upgrade: ruby 4.0.2 \u2192 4.0.3 and fix devcontainer base image (#6928)",
+   "official": true,
+   "author": "compwron",
+   "email": "compiledwrong@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-05-10T09:11:21-05:00",
+   "commit": "fbcf4c4f6705c6a6ef4574717edd7d767a765472",
+   "evidence": "feat(#6502): Filter for new case contact table (#6942)",
+   "official": true,
+   "author": "Clifton McIntosh",
+   "email": "cliff.mcintosh@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-05-14T14:38:07-05:00",
+   "commit": "2e140613c149d79b9539cf0a9e46596c011e1420",
+   "evidence": "#(feat): 6503 New case contacts table column visibility (#6945)",
+   "official": true,
+   "author": "Clifton McIntosh",
+   "email": "cliff.mcintosh@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-21T11:18:39-07:00",
+   "commit": "70d7cd3c181fc4a344ba3b398010e73b662129fc",
+   "evidence": "fix(user): restrict_with_error on case_assignments to prevent history loss (#6947)",
+   "official": true,
+   "author": "Matt Van Horn",
+   "email": "mvanhorn@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-05-29T07:32:13-07:00",
+   "commit": "069668b18533e65d6d094ab9ad4f7dd5e649177f",
+   "evidence": "Bump mcp from 0.8.0 to 0.9.2 (GHSA-qvqr-5cv7-wh35) (#6933)",
+   "official": true,
+   "author": "Copilot",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-06-09T23:04:21-07:00",
+   "commit": "c694dce5d1cdc308cd5b34417c276aaaf0f6d12a",
+   "evidence": "fix: repair broken Heroku Scheduler rake tasks (#6990)",
+   "official": true,
+   "author": "John Costa",
+   "email": "costajohnt@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-28T21:34:37-04:00",
+   "commit": "ad9c14980f073b8b8eaa6864312155874907b449",
+   "evidence": "Casadesign  (#7051)",
+   "official": true,
+   "author": "gia",
+   "email": "56228717+giacoelho@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-30T15:55:34-04:00",
+   "commit": "464b78f8e397e8cf41638f4008b06c3f696dc65a",
+   "evidence": "Part2 of design rebuild - DO NOT MERGE YET (#7087)",
+   "official": true,
+   "author": "gia",
+   "email": "56228717+giacoelho@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-08-01T09:12:49-04:00",
+   "commit": "eb742e8c593614fa18ab2341ae227d7e3e539bca",
+   "evidence": "Casadesign part3 (#7091)",
+   "official": true,
+   "author": "gia",
+   "email": "56228717+giacoelho@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-08-06T21:34:02-07:00",
+   "commit": "7d77d5517273d5e5183d2bdcb77b381fe5ace746",
+   "evidence": "Stop rendering raw exceptions when court report generation fails (#7097)",
+   "official": true,
+   "author": "compwron",
+   "email": "compiledwrong@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-08-27T03:30:13-04:00",
+   "commit": "7e61e94036335900dfb9e736c9f97af7599ead0c",
+   "evidence": "7101 - Fix Prosopite N+1 harness and clear datatable + request specs (#7102)",
+   "official": true,
+   "author": "Sutton Demlong",
+   "email": "69323179+suttondemlong@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>",
+   "date": "2026-09-07T23:23:13-07:00",
+   "commit": "62fbfc4cfd21d094f85f46078b9d73342274e8f1",
+   "evidence": "ci: let Renovate automerge every non-major update once CI is green (#7171)",
+   "official": true,
+   "author": "compwron",
+   "email": "compiledwrong@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>",
+   "date": "2026-10-28T10:19:48-07:00",
+   "commit": "ad42d48f5487421adcd15f46408f344465a23fb9",
+   "evidence": "Make bin/setup fail fast, fail clearly, and stop dropping the dev DB (#7172)",
+   "official": true,
+   "author": "compwron",
+   "email": "compiledwrong@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-29T11:19:03-07:00",
+   "commit": "3dd861177e6f1cdfa5704fc0350dc8832e02cf20",
+   "evidence": "Recover from stale CSRF tokens on sign-in and password forms (#7243) (#7260)",
+   "official": true,
+   "author": "compwron",
+   "email": "compiledwrong@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-29T11:23:36-07:00",
+   "commit": "7c417909f396375b39fe4ba26484246b284491ba",
+   "evidence": "build(deps): bump standard from 1.56.0 to 1.57.0 (#7254)",
+   "official": true,
+   "author": "dependabot[bot]",
+   "email": "49699333+dependabot[bot]@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-11-01T01:05:36-08:00",
+   "commit": "e0dedf07ebcffb28a3d455ab3f59b9f605cf435c",
+   "evidence": "Merge commit from fork",
+   "official": true,
+   "author": "compwron",
+   "email": "compiledwrong+github@gmail.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "Copilot <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-05-29T07:32:13-07:00",
+   "commit": "069668b18533e65d6d094ab9ad4f7dd5e649177f",
+   "evidence": "Bump mcp from 0.8.0 to 0.9.2 (GHSA-qvqr-5cv7-wh35) (#6933)",
+   "official": true,
+   "author": "Copilot",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  }
+ ],
+ "signal_date": "2025-10-09T23:12:51+00:00",
+ "signal_kind": "coauthor",
+ "mentions": {
+  "strict": [
+   {
+    "sha": "de771a950d037199d1e67792ce2bc7e8c54f09d0",
+    "date": "2025-07-04T12:00:27-03:00",
+    "subject": "Copilot suggestions"
+   },
+   {
+    "sha": "84aff8a36ac51662be3a077b3dd44bafc0ca0b43",
+    "date": "2025-09-26T14:58:00-07:00",
+    "subject": "thanks claude"
+   },
+   {
+    "sha": "0b7ba735ab9f847a33fed33b0c953e7e604295cb",
+    "date": "2025-11-06T22:03:13-08:00",
+    "subject": "claude lint"
+   },
+   {
+    "sha": "46e1dc2a47097797e01108166506ccc747a715c1",
+    "date": "2025-11-12T12:54:45-08:00",
+    "subject": "wip claude js tests"
+   },
+   {
+    "sha": "479e59e7c998c4fe13ab81001e7a31a8acc04008",
+    "date": "2025-11-12T13:52:16-08:00",
+    "subject": "WIP claude fix user login bugsnag"
+   },
+   {
+    "sha": "3b781ee24c317660f64bc9706db892459c36be64",
+    "date": "2025-12-12T11:07:37-08:00",
+    "subject": "Apply suggestion from @Copilot"
+   },
+   {
+    "sha": "2d4aff2909a15c37dfe75e5c615f16478642e8c3",
+    "date": "2025-12-16T00:27:20-05:00",
+    "subject": "fix copilot concerns and unit tests"
+   },
+   {
+    "sha": "a53a73c49c5f6c2023e2f2f77f6074d3e2c67d29",
+    "date": "2026-01-16T09:42:56-08:00",
+    "subject": "claude spec for prod bug"
+   },
+   {
+    "sha": "f4fbb305a07604540c2eec802ed71a738118f2f8",
+    "date": "2026-01-19T14:22:25-08:00",
+    "subject": "Merge pull request #6654 from rubyforgood/bigfix-claude"
+   },
+   {
+    "sha": "bc29a921ec68d199a4bfff18448df20d97bfd1e6",
+    "date": "2026-04-15T17:20:38-07:00",
+    "subject": "Add GitHub Copilot review instructions (#6860)"
+   },
+   {
+    "sha": "5b75f580935c997f8c431e2e935e3f5f10baad53",
+    "date": "2026-05-02T23:09:00-07:00",
+    "subject": "claude config (#6924)"
+   }
+  ],
+  "strict_count": 11,
+  "literal_only_count": 2,
+  "capped": false
+ },
+ "group": "ai-eligible",
+ "adr_count_before_signal": 5,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-before-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "yes",
+ "buchgeher_adr_count": "7"
+}

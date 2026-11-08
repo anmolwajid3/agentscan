@@ -1,0 +1,1090 @@
+{
+ "repo": "UST-MICO/docs",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2018-10-22T16:11:28+02:00",
+ "last_commit": "2019-10-06T22:33:25+02:00",
+ "n_commits": 236,
+ "n_authors": 23,
+ "n_files": 183,
+ "n_code_files": 1,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 30,
+ "adrs": [
+  {
+   "path": "adr/0027-simple-composition-components.md",
+   "identity": "adr/0027-simple-composition-components.md",
+   "adr_id": "27",
+   "title": "Simple Composition Components",
+   "first_commit": "2019-05-27T21:55:46+02:00",
+   "first_sha": "04f0a19cb1a5181d187d112991b8ace94b7a247e",
+   "last_commit": "2019-06-04T12:10:05+02:00",
+   "author": "Pascal Wei\u00df",
+   "email": "pa-weiss@gmx.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# Simple Composition Components\n\nTechnical Story: \n- Depends on: \n  - https://github.com/UST-MICO/mico/issues/724\n- Related issues: \n  - https://github.com/UST-MICO/mico/issues/717\n  - https://github.com/UST-MICO/mico/issues/718\n\n## Context and Problem Statement\nA Simple Composition Component is a [Generic Component](https://github.com/UST-MICO/mico/issues/724), that follows the concept of a certain [Enterprise Integration Pattern](https://www.enterpriseintegrationpatterns.com) by invoking a user-defined (or predefined) openFaaS function and acting upon its results. In contrast to the [Complex Integration Components](https://github.com/UST-MICO/docs/blob/master/adr/0025-implementation-of-complex-eai-patterns-with-faas.md) there are no further efforts (such as maintaining a state) needed for implementing the corresponding Simple Composition Component. \n\n\n## Decision Drivers\nWe want to have a list of all Enterprise Integration Patterns, that can be implemented as Simple Composition Components with a reasonable amount of effort.\n\n## Considered Options\nTheoretically, all Enterprise Integration Pattern could be implemented as Simple Composition Components\n\n## Decision Outcome\n\nWhich of those do we want to implement??\n\n### Routing Patterns\n\nThe following tables describes for all Routing, Transformation and Management patterns, if they can be implemented as Simple Composition Components (As defined above). \n\nThe following assumptions are made:\n- We have two Generic Components:\n  - A Generic Transformation Component: Provide each message to a user-defined function and forward the result to a predefined target topic\n  - A Generic Routing Component: Provides each message to a user-defined function and forward the result to the topic, that is returned by the user-defined function.\n- Both components read from a single topic only\n- There are no external resources available (e.g. for storing a state)\n\n| Name                       | Implementation Strategy                                                                                                              | Return Value                                                                |         Possible as <br/>Simple Composition Component         |\n|----------------------------|--------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|:--------------------------------------------------------:|\n| Content-Based router       | All rules are implemented in the user-defined function                                                                               | The topic, to which it is routed                                            | Yes                                                      |\n| Message Filter             | All rules are implemented in the user-defined function                                                                               | Either nothing, or the topic to which it is routed                          | Yes                                                      |\n| Dynamic Router             | All rules are implemented in the user-defined function                                                                               | The topic, to which it is routed                                            | No                                                       |\n| Recipient List             | The recipients are hard coded in the user-defined function | All topics, to which the message shall be forwarded                         | Yes                                                       |\n| Splitter                   | The splitting rules are implemented in the user-defined function                                                                     | The sub messages, that contain the splitted <br/>content of the original message | Yes                                                      |\n| Aggregator                 | Would require that the user provides a message storage, <br/>in which the messages can be stored until they are aggregated                                   | The aggregated message                                                      | No                                                       |\n| Resequencer                | Would require that the user provides a message storage, <br/>in which the messages can be stored until they are forwarded in the right order                 | The (correct) sequence of messages                                          | No                                                       |\n| Composed Message <br/>Processor | Could be implemented by combining a Splitter, Router and Aggregator                                                                    | The composed message                                                        | No (since the aggregator <br/>is not considered to be simple) |\n| Scatter-Gather             | Could be implemented by combining an aggregator, multiple <br/>transformers and a topic, to which all transformers subscribe                | the transformed and aggregated message                                      | No (since the aggregator <br/>is not considered to be simple) |\n| Routing Slip               | Probably too complex <br/>for Simple Composition Component                                                                                      | -                                                                           | No                                                       |\n| Process Manager            | Probably too complex <br/>for Simple Composition Component                                                                                      | -                                                                           | No                                                       |\n| Message Broker             | Probably too complex <br/>for Simple Composition Component                                                                                      | -                                                                           | No                                                       |\n\n\n### Transformation Patterns\n\n| Name                 | Implementation Strategy                                                                                                                                                                        | Return Value                     | Possible as Simple <br/>Composition Component |\n|----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|------------------------------------------|\n| Content Enricher     | The user-defined function contains all the information, that may eventually be added to a message  | The transformed message          | Yes                                       |\n| Content Filter       | The user-defined function implements the whole process of filtering <br/>out content of a message                                                                                                   | The filtered message             | Yes                                      |\n| Envelope Wrapper     | A Content Enricher for wrapping a message in an envelope. A <br/>Content Filter for unwrapping                                                                                                      | -                                | Yes                                      |\n| Claim Check          | Combination of a special Content Filter for replacing message data <br/>with a 'claim', and a Content Enricher <br/>for recovering the data. Also a data storage for storing the data until it is recovered  | -                                | No                                       |\n| Normalizer           | A combination of a Router, and a set of Translators                                                                                                                                            | The transformed message          | Yes                                      |\n| Canonical Data Model | The user-defined function is implemented in such a way, that <br/>receives/returns messages with a canoncial data format                                                                            | Message in canonical data format | Yes                                      |\n\n### System Management\n\n| Name            | Implementation Strategy                                                                      | Return Value                                | Possible as Simple Composition Component |\n|-----------------|----------------------------------------------------------------------------------------------|---------------------------------------------|:----------------------------------------:|\n| Control Bus     | It would be necessary to receive from more than one topic                                    | -                                           | No                                       |\n| Detour          | Would require a control bus                                                                  | -                                           | No                                       |\n| Wire Tap        | Special case of Recipient List                                                               | The topic to which the message is forwarded | Yes                                      |\n| Message History | Every user-defined function adds a reference of itself to the message history of a function  | The modified message                        | Yes                                      |\n| Message Store   | Would require, that a data storage is available                                              | -                                           | NO                                      |\n| Smart Proxy     | Would require a data storage for storing the return address                                  | -                                           | No                                       |\n| Test Message    | Would require, that the Test Data Verifier receives from two topics                          | -                                           | No                                       |\n| Channel Purger  | This would be a feature, that is implemented in the Generic Component. It is not planned yet | -                                           | No                                       |",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "UST-MICO/mico#724",
+     "kind": "issue",
+     "url": "https://github.com/UST-MICO/mico/issues/724",
+     "number": "724"
+    },
+    {
+     "key": "UST-MICO/mico#717",
+     "kind": "issue",
+     "url": "https://github.com/UST-MICO/mico/issues/717",
+     "number": "717"
+    },
+    {
+     "key": "UST-MICO/mico#718",
+     "kind": "issue",
+     "url": "https://github.com/UST-MICO/mico/issues/718",
+     "number": "718"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0025-generic-component.md",
+   "identity": "adr/0025-generic-component.md",
+   "adr_id": "25",
+   "title": "[WIP] Kafka-faas-connector requirements (aka generic component requirements)",
+   "first_commit": "2019-05-21T22:51:25+02:00",
+   "first_sha": "b44d4cb81a22d71ba69433845ae5bc9754e01ed8",
+   "last_commit": "2019-05-31T13:52:53+02:00",
+   "author": "wagnerdk",
+   "email": "18245675+wagnerdk@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# [WIP] Kafka-faas-connector requirements (aka generic component requirements)\n\n\nTechnical Story: [https://github.com/UST-MICO/mico/issues/724]\n\n## Context and Problem Statement\n\nWe want to realize the following user story: As a user, I want to connect two components of a distributed app. Both components write/listen to different topics and\nuse a different message format. \nTo realize this, a message router and a message transformer ([EAI Pattern](https://www.enterpriseintegrationpatterns.com/)) is needed as depicted in the following sketch.\n![First scenario](images/FirstScenario.png)\nThe transformation and the routing logic is provided via functions which are hosted on a FaaS solution. This functions are user specific and could be provided via a function store. The transformer doesn't need to know how to transform/split/enrich/filter the messages. It simply reads the message from a specific topic, hands it over to the function and sends the (transformed) result of the function to an output topic. Likewise, the router does not need to know how to route the messages (content or context based, e.g. if `itemPrice>50000` than route to high-value department). It reads the message from a topic, hands it over to a function and sends the message to a function determined topic. Both components have in common that they only read messages from a topic, hand the message to a function and act upon the result. We could draw the image above like this:\n![generic component sketch](images/genericComponent.png)\n\n\n## Considered Options\n\n* A generic message processor component\n* OpenFaaS Kafka connector\n\n## Decision Outcome\n\nChosen option: Kafka-faas-connector, because we don't want to mix messaging and business logic in the functions and need to have dynamic topics which are not supported by the OpenFaaS Kafka connector at the moment.\n\n## Detailed Option describtion\n\n### Kafka-faas-connector (aka generic message processor component)\n\nAs described above we could solve this with a generic message processor component which reads messages from an input topic, hands them over to a function and then acts upon the results. This could either be to post the transformed message to an output topic (message transformer) or to send the original message to a function determined output topic (message router). This generic message processor needs the following capabilities:\n\n* Read messages from a Kafka topic\n* Call a function hosted on a FaaS solution with a message payload\n* Receive zero, one or multiple (splitter) messages from the function\n* Call a function with a message payload and read the [routingslip attributes](https://mico-docs.readthedocs.io/en/latest/messaging/cloudevents.html) of all returned messages\n* Route each returned message according to its routing slip\n* Send messages to a function or configuration determined topic \n* If there was an error during processing, then send the message to an Invalid Message Topic\n* If there was an error during routing (topic does not exist), then send the message to a Dead Letter Topic\n* Attach a message history to the message. The history contains the name of the generic component and the name of the configured FaaS function.\n* Use an HTTP interface for debugging and metrics (Spring actuator)\n* TODO State handling for aggregator and other stateful message patterns\n\n### OpenFaaS Kafka connector\n\nIn contrast to the generic message processor component approach, we could use the [Kafka connector](https://github.com/openfaas-incubator/kafka-connector) to read messages from topics.\nWe could transform the first image on the fly into something like this: \n![generic component sketch](images/openFaasKafka.png)\nThe functions are still user provided but we deploy or update the functions with annotations which contain the input topic (e.g. for f1 we would add `topic=Topic1`). The functions get the output topic via an environment variable or determine it them self (in case of a router). \n\n**Example function yaml**\n```yaml\nprovider:\n  name: openfaas\n  gateway: http://127.0.0.1:8080\nfunctions:\n  msg-payload-transformer:\n    lang: java8\n    handler: ./msg-payload-transformer\n    image: msg-payload-transformer:latest\n    environment:\n      output_topic: Topic2\n    annotations:\n      topic: Topic1\n```\n\nPros and cons:\n* Good, because we don't need the generic message processor\n* Good, because we save a round trip from the processor to the function\n* Bad, because we need to know all used topics beforehand ([Issue #2](https://github.com/openfaas-incubator/kafka-connector/issues/2))\n* Bad, because each function has to handle message sending\n* Bad, because we mix business logic in functions with messaging logic",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "UST-MICO/mico#724",
+     "kind": "issue",
+     "url": "https://github.com/UST-MICO/mico/issues/724",
+     "number": "724"
+    },
+    {
+     "key": "#2",
+     "kind": "hash",
+     "url": "",
+     "number": "2"
+    },
+    {
+     "key": "openfaas-incubator/kafka-connector#2",
+     "kind": "issue",
+     "url": "https://github.com/openfaas-incubator/kafka-connector/issues/2",
+     "number": "2"
+    }
+   ],
+   "mentioned_paths": [
+    "images/FirstScenario.png",
+    "images/genericComponent.png",
+    "mico-docs.readthedocs.io/en/latest/messaging/cloudevents.html",
+    "images/openFaasKafka.png"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0026-implementation-of-complex-eai-patterns-with-faas.md",
+   "identity": "adr/0022-implementation-of-complex-eai-patterns-with-faas.md",
+   "adr_id": "26",
+   "title": "Implementation of complex EAI-Patterns with FaaS",
+   "first_commit": "2019-05-16T15:39:05+02:00",
+   "first_sha": "949b3fafa85446a22d17a01797d4fd336c29998d",
+   "last_commit": "2019-05-28T23:44:04+02:00",
+   "author": "Fabian B\u00fchler",
+   "email": "17296905+buehlefs@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 9,
+   "text": "# Implementation of complex EAI-Patterns with FaaS\n\n\n## Context and Problem Statement\n\nSome [Enterprise Integration Patterns](https://www.enterpriseintegrationpatterns.com) have a complex structure where parts of the behaviour can be implemented generically while some parts need to be modifiable by the end user (in our case the system admin using MICO).\nWe have already [decided to use a FaaS platform](0023-faas.md) to provide this modifiability in form of code as configuration.\nWhile this works well for most patterns, for some of the more complex patterns it is not easy to allow modifiability via FaaS.\nThis is especially the case if the user want to write as little code as possible meaning the [generic part](0025-generic-component.md) of the component has to be implemented by the MICO team.\n\n\n## Decision Drivers\n\n* Modifiability of the patterns must be provided via a FaaS function\n* The function should only have to contain as little code as possible\n* Generic code for the pattern should be provided by the MICO platform either as a library to import into the FaaS function or in the component that calls said function\n\n\n## Challenges\n\n### Where / how to implement generic logic\n\n* Implement all logic in the FaaS function\n* Implement custom logic + some of the generic logic in the FaaS function\n* Implement only custom logic in the FaaS function\n\n### State of configuration channel\n\nHow can the FaaS function get the current state of the configuration (e.g. dynamic router).\n\n* Let the FaaS function subscribe to Kafka\n* Have a separate DB\n* Send the current configuration together with the message\n\n### Sending to multiple destinations / unknown destinations\n\nA router does not have a specific endpoint to send all messages to and may even send messages to many endpoints.\n\n* Implement generic routing with `recipientList` / `routingSlip` only and let FaaS function write the route into the message header\n* Let the function send the messages directly to Kafka\n\n### Stateful components\n\nSome patterns are inherently stateful.\n\n* Store state in a DB\n* Store state in generic component and send to FaaS function with message\n\n### Performing intermediate request steps\n\nA content enricher needs to perform requests to get the content to inject into the message.\n\n* Offload implementation completely to the user\n* Split into two parts, one determining which requests are needed and one injecting the requested content into the message.\n\n\n## Affected patterns\n\n```eval_rst\n======================= ================ ============== ==========\n Pattern                 dynamic config   destinations   stateful\n======================= ================ ============== ==========\nRouter                  no               yes            maybe\nDynamic Router          yes              yes            maybe\nContent based Router    maybe            yes            maybe\nAggregator              no               no             yes\nResequencer             no               no             yes\nProcess Manager         maybe            yes            maybe\nMessage Normalizer      maybe            no             no\n======================= ================ ============== ==========\n```\n\n## Decision Outcome\n\n**Where to implement logic**: To be decided\n\n**State of configuration channels**: To be decided\n\n**Stateful functions**: To be decided\n\n**Routing**: We will support custom routing decisions in the FaaS function by always interpreting a routing slip if it is present.\nThe routing slip has to support multiple destinations for one routing step.\nThis will also allow us to make more patterns possible (everything that is not stateful) with a single generic kafka to FaaS connector.\n\n**Intermediate requests**: To be decided\n\n\n## Evaluation of Options\n\n### Where to implement generic logic\n\n#### Implement generic logic in FaaS-Function\n\n* Good because we can use Kafka as trigger for the function\n* Good because it allows easy extension and modification of the generic logic where needed\n* Bad because we need to implement the generic logic in all supported languages as a library/framework\n* Bad because the alternative would mean complex FaaS networks/dependencies if generic logic is capsuled in FaaS functions\n\n#### Implementing generic logic in Kafka to FaaS Adapter\n\n* Good because we only need one implementation in one language\n* Bad because generic logic needs to support all patterns => possibly more complex implementation\n\n### Stateful patterns\n\n#### Store state in compacted Kafka topic\n\n* Good because it uses no extra component\n* Bad because only useful for storing configuration channel state/state that does not change too often\n* Bad because it needs many assumptions\n* Bad because whole channel needs to be read to load state\n\n#### Store state in DB\n\n* Good because DBs are really good for storing and querying state\n* Bad because management of DBs (isolation of DBs for different FaaS functions) is difficult\n\n#### Send state with the message to the FaaS function\n\n* Good because FaaS function can be trivially stateless\n* Bad because state could be large\n* Bad because generic component needs to know what state to send (up priori assumption)\n\n### Sending to multiple or unknown destinations\n\n#### Allow FaaS function to send messages directly to kafka\n\n* Good because it allows complex routing patterns\n* Bad because FaaS function needs to understand and react to various header fields in the cloud event (routingSlip, route history)\n\n#### Implement generic routing via header fields (routingSlip/recipientList)\n\n* Good because we can ensure semantics of some header fields in our implementation\n* Bad because header fields need to be sufficiently complex to support complex routing decisions\n\n### Intermediate requests\n\n#### Offload complete implementation to user\n\n* Good because all requests can be controlled by user code\n* Bad because user may need to (re-)implement generic code\n* Bad because FaaS function needs to know about kafka topics\n\n#### Split into request part and merge part\n\n* Good because split implementation is easyer to understand\n* Good because split implementation allows for generic request handling implemented by MICO\n* Bad because split pattern implementation is  more complex\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0024-language-for-a-generic-composition-pattern-implementation.md",
+   "identity": "adr/0024-language-for-a-generic-composition-pattern-implementation.md",
+   "adr_id": "24",
+   "title": "Language for a generic composition pattern implementation",
+   "first_commit": "2019-05-21T15:42:05+02:00",
+   "first_sha": "c27795ed45bea02d6b1d4f868ab7ace6ac92d572",
+   "last_commit": "2019-05-24T19:32:28+02:00",
+   "author": "Unknown",
+   "email": "th3chinese@gmx.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Language for a generic composition pattern implementation\n\n\n## Context and Problem Statement\nWe need to decide which language to use for implementing a MICO composition service. \nThe framework will be [Apache Kafka](https://kafka.apache.org) [See ADR0021](0021-kafka-as-messaging-middleware.md) \n\n## Decision Drivers \n\n* Should be known by everyone (on the developement team)\n* Must support Apache Kafka\n\n## Considered Options\n\n### Java \nPro: \n* Easy setup with [Spring boot](https://spring.io/projects/spring-kafka)\n* Java is the only language in which every team member is proficient in\n\n### Python\nPython was only used in the prototyping stage and was not explored further\n\n## Decision Outcome\n\nWe want to use Java. Since existing knowledge and experience is given for everyone.\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0022-function-to-component-mapping.md",
+   "identity": "adr/0022-function-to-component-mapping.md",
+   "adr_id": "22",
+   "title": "Function to component mapping",
+   "first_commit": "2019-05-21T14:05:15+02:00",
+   "first_sha": "f3c78e6f922b32ee343b2a086edb6d164f23ec76",
+   "last_commit": "2019-05-21T15:43:45+02:00",
+   "author": "wagnerdk",
+   "email": "18245675+wagnerdk@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Function to component mapping\n\nTechnical Story: [Issue #713](https://github.com/UST-MICO/mico/issues/713) <!-- optional -->\n\n## Context and Problem Statement\n\nTo implement the EAI patterns we use a combination of a generic component\nwhich handles the communication with Kafka and a FaaS solution. The business logic of the EAI patterns (message splitting/aggregation or transformation) is provided via functions which are hosted on the FaaS solution. The generic component communicates with Kafka and de/serializes the messages. We need a means to wire the instances of the generic component with the functions. E.g. A user wants to insert a message splitter between two message-based components. To realize this an instance of the generic component in combination with a splitting FaaS function will be used. The generic component needs the address of the FaaS gateway and the function name (e.g. http://address:8080/function/msg-payload-splitter) to call the function. To provide the necessary information to instances of the generic component we considered the following techniques. \n\n## Decision Drivers <!-- optional -->\n\n* MUST be supported by the language/technology which is used to implement the generic component\n* MUST be easy to integrate into MICO\n* SHOULD be a well known and proven solution\n\n## Considered Options\n\n* Environment variables\n* Function registry\n* Control Topic\n* Function composition\n* Function proxy\n* Configuration file\n\n## Decision Outcome\n\nChosen option: \"Environment variables\", because MICO already supports this and it is easy to implement in the generic component.\n\n## Pros and Cons of the Options \n\n### Environment variables\n\nThis option uses environment variables to store the necessary information. These variables are controlled by MICO.\n\n* Good, because MICO already supports setting environment variables\n* Good, because most languages support reading environment variables\n* Good, because we need environment variables anyway because we need to provide the Kafka configuration\n* Good, because it is a well known and proven solution\n* Good, because it follows the (twelve-factor app methodology)[https://12factor.net/de/config]\n* Bad, because the configuration can not be changed on the fly (do we want this?)\n\n### Function registry\n\nWe implement a separate component which stores the mapping of the functions to the instances of the generic component. We could evaluate if (Apache ZooKeeper)[https://zookeeper.apache.org] or (etcd)[https://github.com/etcd-io/etcd] fits this purpose.\n\n* Good, because the mapping can change in the fly\n* Good, because there is support for this approach in most languages\n* Bad, because more development/evaluation overhead\n\n### Control Topic\n\nWe already use Kafka so we could follow the [dynamic router pattern](https://www.enterpriseintegrationpatterns.com/patterns/messaging/DynamicRouter.html) and use a control channel(topic) to configure the instances. This topic could use the [compaction feature](https://kafka.apache.org/documentation/#compaction) to always retain the last known configuration for each message key.\n\n* Good, because we already decided to use Kafka\n* Good, because this option provides a log of configuration changes\n* Bad, because the configuration for Kafka could not be provided via this method\n* Bad, because more development/evaluation overhead\n\n\n### Function composition\n\nWe don't implement the generic component as a separate component but as a function which is hosted on the FaaS solution. There is a [Kafka connector](https://github.com/openfaas-incubator/kafka-connector) for OpenFaaS. Then compose the functions with a composer like [this](https://github.com/s8sg/faas-flow) or follow the workflow techniques described in the OpenFaaS [documentation](https://github.com/openfaas/workshop/blob/master/lab4.md#create-workflows).\n\n* Good, because the basic components for this approach already exist\n* Good, because no separate generic component is necessary\n* Bad, because the composer does not seem to be very mature and proven\n\n### Function proxy (API Gateway)\n\nEach instance of the generic component calls the API gateway which handles the routing/mapping to the functions.\n\n* Good, because each instance of the generic component calls the same gateway and therefore needs the same configuration\n* Bad, because we don't have this proxy and therefore this adds development overhead\n\n### Configuration file\n\nGenerate a configuration file per instance of the generic component and deploy it with the instance. Same pros and cons like environment variables but more complexity for file generation/parsing and deployment.",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#713",
+     "kind": "hash",
+     "url": "",
+     "number": "713"
+    },
+    {
+     "key": "UST-MICO/mico#713",
+     "kind": "issue",
+     "url": "https://github.com/UST-MICO/mico/issues/713",
+     "number": "713"
+    }
+   ],
+   "mentioned_paths": [
+    "www.enterpriseintegrationpatterns.com/patterns/messaging/DynamicRouter.html",
+    "github.com/openfaas/workshop/blob/master/lab4.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/index.rst",
+   "identity": "adr/index.rst",
+   "adr_id": "",
+   "title": "Architectural Decision Log",
+   "first_commit": "2018-10-31T18:08:38+01:00",
+   "first_sha": "9985000dd857bfcc5c55301ac1845af5e6118e10",
+   "last_commit": "2019-05-21T15:42:50+02:00",
+   "author": "Fabian B\u00fchler",
+   "email": "st16290@stud.uni-stuttgart.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "Architectural Decision Log\n==========================\n\nThis log lists the architectural decisions for MICO.\n\n.. toctree::\n   :name: adr-toc\n   :titlesonly:\n   :numbered:\n   :glob:\n\n   Template <template>\n   *\n\n\nFor new ADRs, please use :doc:`template.md <template>` as basis.\n\n.. seealso::\n\n   More information on MADR is available at https://adr.github.io/madr/.\n\n   General information about architectural decision records is available at https://adr.github.io/.\n\n\nOpen Decisions\n--------------\n\nThis section contains open decisions that may not have an ADR yet but are relevant for the project in the (near) future. Each decision should be a list item with a short description.\n\n *  Application Graph Editor: Winery Topologymodeler OR custom d3 editor\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0023-faas.md",
+   "identity": "adr/0023-faas.md",
+   "adr_id": "23",
+   "title": "FaaS",
+   "first_commit": "2019-05-20T12:55:57+02:00",
+   "first_sha": "179376476b5b65eff7657ec3c16632d0c2b4e4ae",
+   "last_commit": "2019-05-20T12:55:57+02:00",
+   "author": "David Kopp",
+   "email": "david@kopp-heim.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# FaaS\n\n## Context and Problem Statement\n\nTo execute a variety of different functions that are based on different messaging patterns we want to use the Function as a Service (FaaS) approach.\n\n## Decision Drivers\n\n* MUST support Kubernetes\n* MUST support Kafka to trigger events\n* SHOULD be a well known and proven solution\n* SHOULD support the most common programming languages (at least Java, Python, JavaScript)\n* SHOULD support the Serverless framework\n\n## Considered Options\n\n* [OpenFaaS](https://www.openfaas.com/)\n* [OpenWhisk](https://openwhisk.apache.org/)\n* [Kubeless](https://kubeless.io/)\n* [Knative Serving](https://github.com/knative/serving)\n\n## Decision Outcome\n\nWe want to use OpenFaaS.\n\n## Pros and Cons of the Options\n\n### OpenFaaS\n\n* Good, because it supports Kubernetes\n  * via [faas-netes](https://github.com/openfaas/faas-netes) (installation via Helm or `kubectl`)\n  * via [OpenFaaS Operator](https://github.com/openfaas-incubator/openfaas-operator)\n* Good, because it supports the Serverless framework\n* Good, because it is an easy to use Serverless framework\n* Good, because it has a simple architecture and can be well understood\n* Good, because it supports Kafka via the [Kafka-connector](https://github.com/openfaas-incubator/kafka-connector)\n\n### OpenWhisk\n\n* Good, because it supports Kubernetes (installation via Helm)\n* Good, because it supports the Serverless framework\n* Good, because it is a mature Serverless framework supported by the Apache foundation and backed by IBM\n* Bad, because it is more complex than OpenFaaS and it leverages many components (CouchDB, Kafka, Nginx, Redis and Zookeeper)\n\n### Kubeless\n\n* Good, because it integrates natively into Kubernetes as a CRD\n* Good, because it supports the Serverless framework\n* Good, because it doesn't require extra tooling (`kubectl` is enough)\n* Good, because it uses Kafka messaging system as event triggers\n* Bad, because it isn't as mature as OpenFaaS or OpenWhisk, documentation isn't as good as the others\n\n### Knative Serving\n\n* Good, because it is baked by Google\n* Good, because it supports Kubernetes\n* Good, because Knative Eventing supports Kafka events\n* Bad, because it requires Istio\n* Bad, because it is more complex than e.g. OpenFaaS\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0021-kafka-as-messaging-middleware.md",
+   "identity": "adr/0021-kafka-as-messaging-middleware.md",
+   "adr_id": "21",
+   "title": "Kafka as Messaging Middleware",
+   "first_commit": "2019-05-09T20:08:59+02:00",
+   "first_sha": "d32b4d38b7429ba172009b2a2ca3f709b83d153f",
+   "last_commit": "2019-05-09T20:08:59+02:00",
+   "author": "Fabian B\u00fchler",
+   "email": "17296905+buehlefs@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Kafka as Messaging Middleware\n\n\n## Context and Problem Statement\n\nTo compose service with the mico application we need a messaging middleware that is highly scalable and supports the [Enterprise Integration Patterns](https://www.enterpriseintegrationpatterns.com).\n\n\n## Decision Drivers\n\n* Should be a well known and proven solution\n* Support a pipes and filters style architecture\n\n\n## Considered Options\n\n### [Apache Kafka](http://kafka.apache.org)\n\nPro: Proven system with high scalability. Well suited for pipes and filters architectures.\n\nContra: Topics have different semantics than traditional message queues. Some patterns don't work well/at all with the topic semantic.\n\n### Some other messaging middleware\n\nThis option was not explored further.\n\n\n## Decision Outcome\n\nWe want to use Kafka as our messaging middleware.\n\n### Important things to know about Kafka\n\nKafka topics have a different semantic than traditional message queues. Kafka also does NOT log wether a message was consumed. It only stores the last comitted offset for a consumer. Because of that and the different topic semantic some patterns need to be adapted to work with Kafka.\n\nFor more detailed information about the inner workings of Kafka consult the following links:\n\n *  [Client subscriptions](https://kafka.apache.org/intro#intro_consumers)\n *  [Client positions](https://kafka.apache.org/documentation/#design_consumerposition)\n *  [Guarantees for message delivery](https://kafka.apache.org/intro#intro_guarantees)\n *  [Message delivery modes (how to achive exactly once)](https://kafka.apache.org/documentation/#semantics)\n *  [Use topics storage for key based data](https://kafka.apache.org/documentation/#compaction)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0007-database-technology.md",
+   "identity": "adr/0007-database-technology.md",
+   "adr_id": "7",
+   "title": "Database Technology (Relational/Graph)",
+   "first_commit": "2018-11-04T16:21:28+01:00",
+   "first_sha": "92ae8daed5d423955ebdbcb3506408e089eae99d",
+   "last_commit": "2019-03-26T00:07:25+01:00",
+   "author": "Fabian B\u00fchler",
+   "email": "17296905+st116290@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# Database Technology (Relational/Graph)\n\nTechnical Story: [Evaluate database technologies #46](https://github.com/UST-MICO/mico/issues/46)\n\n## Context and Problem Statement\n\nWe want to use a state of the art database that can store services/applications according to our data Model and is easy to integrate with [Spring Boot](0001-java-framework.md).\n\n\n## Decision Drivers\n\n* Integration with [Spring Boot](0001-java-framework.md)\n* Different versions of a service will be stored as individual services\n* Applications will be seen  as concrete instances of services\n\n### Data Model Relational\n\n```eval_rst\n.. graphviz::\n\n    graph G {\n\n        {\n            subgraph cluster_0 {\n                label=\"not deployable\"\n                style=dotted\n\n                service [label=Service, shape=rectangle]\n                serviceID [label=<<U>ID</U>>]\n                serviceVersion [label=Version]\n                serviceName [label=Name]\n                serviceExtra [label=\"...\"]\n\n                predecessor [shape=diamond]\n                depends [label=\"depends on\" shape=diamond]\n                has [shape=diamond]\n\n                versionRange [label=\"Version Range\"]\n\n                serviceDescription [label=\"Service Description\", shape=rectangle]\n                serviceDescriptionID [label=<<U>ID</U>>]\n                serviceDescriptionProtocol [label=Protocol]\n                serviceDescriptionType [label=\"Type (REST, gRPC)\"]\n\n            }\n\n\n            subgraph cluster_1 {\n                label=\"deployable\"\n                style=dotted\n\n                isA [shape=diamond]\n                includes [shape=diamond]\n\n                application [label=Application, shape=rectangle]\n                applicationID [label=<<U>ID</U>>]\n\n                deployInfo [label=\"Deploy Information\", peripheries=2]\n                vizData [label=\"Visualization Data\", peripheries=2]\n            }\n        }\n\n        service -- {serviceID, serviceVersion, serviceName, serviceExtra}\n\n        service -- has [label=1]\n        has -- serviceDescription [label=\"1..n\"]\n\n        service -- depends [label=1]\n        depends -- versionRange\n        depends -- service [label=\"1..n\"]\n\n        service -- predecessor [label=1]\n        predecessor -- service [label=1]\n\n        serviceDescription -- {serviceDescriptionID, serviceDescriptionProtocol, serviceDescriptionType}\n\n        application -- {applicationID, deployInfo, vizData}\n\n        application -- includes [label=1]\n        includes -- service [label=\"1..n\"]\n\n        application -- isA [label=1]\n        isA -- service [label=1]\n\n    }\n\n.. important::\n\n    The :samp:`Service Description` entity in the model describes a :term:`Service Interface`.\n```\n\n### Data Model Graph\n\n```eval_rst\n.. graphviz::\n\n    digraph G {\n\n        {\n            service [label=<<U>Service</U>>]\n            serviceID [label=<<U>ID</U>>, shape=plaintext]\n            serviceVersion [label=Version, shape=plaintext]\n            serviceName [label=Name, shape=plaintext]\n            serviceExtra [label=\"...\", shape=plaintext]\n\n            x [shape=point]\n            versionRange [label=\"Version Range\", shape=plaintext]\n\n            serviceDescription [label=<<U>Service Description</U>>]\n            serviceDescriptionID [label=<<U>ID</U>>, shape=plaintext]\n            serviceDescriptionProtocol [label=Protocol, shape=plaintext]\n            serviceDescriptionType [label=\"Type (REST, gRPC)\", shape=plaintext]\n\n\n            application [label=<<U>Application</U>, <U>Service</U>>]\n            applicationID [label=<<U>ID</U>>, shape=plaintext]\n\n            deployInfo [label=\"Deploy Information\", shape=plaintext]\n            vizData [label=\"Visualization Data\", shape=plaintext]\n        }\n\n        service -> {serviceID, serviceVersion, serviceName, serviceExtra} [dir=none]\n\n        service -> x [dir=none]\n        x -> service [taillabel=\"depends on\"]\n        x -> versionRange [dir=none]\n\n        service -> service [label=predecessor]\n\n        service -> serviceDescription [label=has]\n\n        serviceDescription -> {serviceDescriptionID, serviceDescriptionProtocol, serviceDescriptionType} [dir=none]\n\n        application -> {applicationID, deployInfo, vizData} [dir=none]\n\n        application -> service [label=includes]\n\n    }\n\n.. important::\n\n    The :samp:`Service Description` entity in the model describes a :term:`Service Interface`.\n```\n\n\n## Considered Options\n\n* Relational database:\n  + __MySQL__\n  + MariaDB\n  + PostgreSQL\n  + SQlite\n* Graph database:\n  + Neo4J\n\n## Decision Outcome\n\nChosen option: The graph database Neo4J, because it fits our data model best.\n\n## Pros and Cons of the Options\n\n### Relational database\n\n* Good, because team already has sql knowledge\n* Good, because Spring Boot integrations and ORM for java available\n* Good, because sql scheme\n* Bad, because sql scheme needs to be defined\n* Bad, because data migrations to new database format need to update schema and data\n\n### Graph database\n\n* Good, because applications and services naturally form a graph\n* Good, because Spring Boot integrations and OGM for java available\n* Good, because node/edge properties are dynamic\n* Bad, because new query language\n* Bad, because no rigid schema like in sql databases and therefore more necessary checks (e.g. type, exists) in code\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#46",
+     "kind": "hash",
+     "url": "",
+     "number": "46"
+    },
+    {
+     "key": "UST-MICO/mico#46",
+     "kind": "issue",
+     "url": "https://github.com/UST-MICO/mico/issues/46",
+     "number": "46"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0015-building-oci-images.md",
+   "identity": "adr/0015-building-oci-images.md",
+   "adr_id": "15",
+   "title": "Building OCI Images",
+   "first_commit": "2018-11-23T16:25:46+01:00",
+   "first_sha": "78c70f1433bc4cc91aded404a1a99f3420c78fbb",
+   "last_commit": "2019-03-25T14:17:33+01:00",
+   "author": "David Kopp",
+   "email": "david@kopp-heim.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Building OCI Images\n\nPart of the Technical Story: [Evaluate Knative build](https://github.com/UST-MICO/mico/issues/49)</br>\nRelated to the [ADR-0013 Source-to-Image Workflow](./0013-source-to-image-workflow.md).\n\n## Context and Problem Statement\n\nWe want to build OCI images based on Dockerfiles inside our Kubernetes cluster.\n\n## Decision Drivers\n\n* MUST run completely in userspace (no privileged rights required)\n* MUST be runable on Kubernetes\n* MUST be controlled in an automatic manner (CI/CD)\n* SHOULD be compatible with Knative Build\n\n## Considered Options\n\n* Docker out of Docker\n* Docker in Docker\n* BuildKit\n* img\n* Jib\n* Buildah\n* Kaniko\n\n## Decision Outcome\n\nChosen option: Kaniko, because it is designed for the use case we need. It works on Kubernetes and build OCI images without any daemon and without privileged rights.\n\n## Pros and Cons of the Options\n\n### Docker out of Docker\n\n* Good, because Docker daemon is already running in the Kubernetes cluster\n* Bad, because it would interfere the Kuberentes scheduling\n* Bad, because it requires privileged mode in order to function, which is a significant security concern\n* Bad, because it is not compatible with *Knative Build*\n\n### Docker in Docker\n\n* Good, because it is a well known approach\n* Bad, because it requires privileged mode in order to function, which is a significant security concern (still better than [Docker out of Docker](#docker-out-of-docker))\n* Bad, because it generally incurs a performance penalty and can be quite slow\n* Bad, because it is not compatible with *Knative Build*\n\n### BuildKit\n\n[GitHub: BuildKit](https://github.com/moby/buildkit)\n\n* Good, because it is created by Docker (Moby) as a \"next generation `docker build`\"\n* Good, because it is already successfully used by the OpenFaaS Cloud\n* Good, because it can run on Kubernetes without privileged rights\n* Good, because an official *Knative Build Template* exists\n* Bad, because it needs a deamon\n\n### img\n\n[GitHub: img](https://github.com/genuinetools/img)\n\n* Good, same as *BuildKit* but daemonless\n* Bad, because it needs a special Linux Capability [\"RawProc](https://github.com/kubernetes/community/pull/1934/files) to create nested containers\n* Bad, because currently no official *Knative Build Template* exists (nevertheless it could be created ourself)\n\n### Jib\n\n[GitHub: Jib](https://github.com/GoogleContainerTools/jib)\n\n* Good, because it is fast and daemonless\n* Good, because an official *Knative Build Template* exists\n* Bad, because it is designed for Java applications only\n\n### Buildah\n\n[GitHub: Buildah](https://github.com/containers/buildah)\n\n* Good, because it is a popular tool for creating OCI container images and maintained by Red Hat (also included by default in RHEL)\n* Good, because it is daemonless\n* Good, because an official *Knative Build Template* exists\n* Bad, because it requires privileged rights (same as Docker daemon), rootless mode is planned\n\n### Kaniko\n\n[GitHub: kaniko](https://github.com/GoogleContainerTools/kaniko)\n\n* Good, because it is a popular open source project created by Google\n* Good, because it is well documented and easy to use (readymade executor image `gcr.io/kaniko-project/executor` exists)\n* Good, because it is designed to work on Kubernetes\n* Good, because it is daemonless\n* Good, because it does not need privileged rights (however it requires to run as root inside the build container)\n* Good, because an official *Knative Build Template* exists\n* Bad, because there are security concerns about malicious Dockerfiles due to the lack of isolation [Issue #106](https://github.com/GoogleContainerTools/kaniko/issues/106)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "UST-MICO/mico#49",
+     "kind": "issue",
+     "url": "https://github.com/UST-MICO/mico/issues/49",
+     "number": "49"
+    },
+    {
+     "key": "kubernetes/community#1934",
+     "kind": "pull",
+     "url": "https://github.com/kubernetes/community/pull/1934",
+     "number": "1934"
+    },
+    {
+     "key": "#106",
+     "kind": "hash",
+     "url": "",
+     "number": "106"
+    },
+    {
+     "key": "GoogleContainerTools/kaniko#106",
+     "kind": "issue",
+     "url": "https://github.com/GoogleContainerTools/kaniko/issues/106",
+     "number": "106"
+    }
+   ],
+   "mentioned_paths": [
+    "/0013-source-to-image-workflow.md",
+    "gcr.io/kaniko-project/executor"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0020-configurable-service-dependencies.md",
+   "identity": "adr/0020-configurable-service-dependencies.md",
+   "adr_id": "20",
+   "title": "Configurable Service Dependencies",
+   "first_commit": "2019-03-11T11:54:37+01:00",
+   "first_sha": "79adbd9613b0372492ab5f431cab2bb0f7c5df07",
+   "last_commit": "2019-03-11T11:54:37+01:00",
+   "author": "Fabian B\u00fchler",
+   "email": "17296905+buehlefs@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Configurable Service Dependencies\n\n\n## Context and Problem Statement\n\nServices currently have a static network of dependencies. This makes it impossible to have a service that depends on a SQL based database use a different database that is compatible with the service.\n\n\n## Decision Drivers\n\n* Should fit in the current domain model\n* Easy to add afterwards\n* Should support existing services with their static dependencies\n\n\n## Considered Options\n\n### Let service specify options for dependencies\n\nLet the user specify if the dependency is optional and/or what other services may be used to fulfill the dependency.\n\nPro: High control over allowed alternatives.\n\nContra: Can't capture all alternatives.\n\n### Specify if services are a compatible alternative to a different service\n\nLet the user specify if a service can be used as alternative to an existing service.\n\nMaybe add meta-services that are similar to meta-packages in linux package managers.\n\nPro: Works for all existing services.\n\nContra: There may still be incompatibilites.\n\n### Add service groups for services that are interchangeable\n\nSame as above but with different implementation.\n\nLet the user define service groups to group services that can be used interchangeable.\n\nContra: Needs dependency edges to group objects that are not deployable (=> more implementation work)\n\n### Hardcode some service groups\n\nHardcode some service groups (e.g. Database services). The service groups can have special properties customized for the included services. The services can still be added to the hardcoded groups by a user.\n\n\n## Decision Outcome\n\nTo be decided.\n\nThis adr purely documents possible decisions for this problem.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0019-architecture-for-background-jobs.md",
+   "identity": "adr/0018-architecture-for-background-jobs.md",
+   "adr_id": "19",
+   "title": "Architecture for background jobs",
+   "first_commit": "2019-01-14T16:56:56+01:00",
+   "first_sha": "070ca65067af4238204535478a8819624bdb1e05",
+   "last_commit": "2019-01-25T11:29:43+01:00",
+   "author": "Marvin Wohlfarth",
+   "email": "st112462@stud.uni-stuttgart.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Architecture for background jobs\n\nPart of Technical Story: [https://github.com/UST-MICO/mico/issues/95]\n\n## Context and Problem Statement\n\nSeveral operations (crawl repo, deploy services, ...) are required to run in the background. Therefore, a background job architecture is required being able to launch arbitrary jobs in the background.\n\n## Decision Drivers\n\n* MUST be implemented in Java\n* MUST offer a callback functionality\n\n## Considered Options\n\n* Java ExecutorService\n* Java CompletableFuture\n* Spring Scheduling\n\n## Decision Outcome\n\nChosen option: Java CompletableFuture, because of the possibility to chain multiple actions and the option to attach callbacks on completion of a background task. \n\n### Positive Consequences\n\n* Possibility to chain together multiple actions after a succesful execution of a background task. \n* Use of FixedThreadPool, i.e., a pool of threads with a predefined number of threads which are reused. If all threads are active at a time and additional tasks are submitted, they will wait in a queue.  \n\n### Negative Consequences\n\n* With the use of a FixedThreadPool, a background task may be delayed if all threads are active at the time of submission.This may produces time of waiting in the frontend of MICO.\n\n## Pros and Cons of the Options\n\n### Java ExecutorService\n\n* Good, because it offers a simple interface.\n* Good, because it enables basic functionality for async background task execution and scheduling.\n\n### Java CompletableFuture\n\n* Good, because of possibility to chain multiple actions.   \n* Good, because built-in Java feature. \n* Good, because callbacks can be attached to be executed on completion.\n\n### Spring Scheduling\n\n* Good, because of easy implementation as a result of existing spring injections implemented in the application.\n* Good, because well suited for monitoring and management (providing several useful attributes).\n* Bad, because of no known possibility to receive a feedback of an async executed action.\n\n## Links\n\n* [Java ExecutorService](https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html)\n* [Java CompletableFuture](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html)\n* [Spring Scheduling](https://docs.spring.io/spring/docs/current/spring-framework-reference/integration.html#scheduling)",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "UST-MICO/mico#95",
+     "kind": "issue",
+     "url": "https://github.com/UST-MICO/mico/issues/95",
+     "number": "95"
+    }
+   ],
+   "mentioned_paths": [
+    "docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html",
+    "docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html",
+    "docs.spring.io/spring/docs/current/spring-framework-reference/integration.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0018-requirements-application-composition.md",
+   "identity": "adr/0018-requirements-application-composition.md",
+   "adr_id": "18",
+   "title": "Requirements regarding the Composition of Applications",
+   "first_commit": "2019-01-21T11:24:46+01:00",
+   "first_sha": "60e9e683fa66d17914e3585700885f06c970c5be",
+   "last_commit": "2019-01-21T11:24:46+01:00",
+   "author": "Jakob Benz",
+   "email": "jakob.michael.benz@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Requirements regarding the Composition of Applications\n\n\n## Context and Problem Statement\n\nWe want to have clear and simple requirements when it comes to the way applications can be created in the user interface.\n\n## Decision Drivers\n\n* MUST be compatible with Lombok\n\n## Considered Options\n\n* Applications cannot be composed out of other applications. Applications can only be created using single services.\n* Applications can be part of other (new) applications. Therefore inheritance between MicoApplication and MicoService is necessary. This would mean difficulties with Lombok.\n\n## Decision Outcome\n\nChosen option: the first option, since we want a simple solution, in order to have the system running as soon as possible.\n\n### Positive Consequences\n\n* Lombok can be used.\n* Better code quality.\n\n### Negative consequences\n\n* Applications cannot be created using other existing applications.",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0017-istio-vs-envoy.md",
+   "identity": "adr/0017-istio-vs-envoy.md",
+   "adr_id": "17",
+   "title": "Istio vs. Envoy",
+   "first_commit": "2018-12-08T18:03:07+01:00",
+   "first_sha": "77125581fdfde9abcaa90e77da38b386955a9e97",
+   "last_commit": "2018-12-08T18:03:07+01:00",
+   "author": "David Kopp",
+   "email": "david@kopp-heim.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Istio vs. Envoy\n\nPart of the Technical Story: [Evaluate Istio vs. Envoy vs. xxx](https://github.com/UST-MICO/mico/issues/75)\n\n## Context and Problem Statement\n\nWe want to have telemetry (performance, monitoring) and log collections for each MICO service that should be added automatically during deployment.\n\n## Decision Drivers\n\n* MUST be compatible with Kubernetes\n* MUST at least provide all required features (telemetry, logs)\n* MUST be independent of the technology used in the respective service\n* SHOULD consume less resources\n\n## Considered Options\n\n* Istio\n* Envoy\n\n## Decision Outcome\n\nChosen option: Istio, because it is easier to configure than only using Envoy. By using Istio the Envoy proxies can be used as the data plane and Istio as the control plane to manage the whole service mesh.\nMoreover Istio is the better choice for the future, because it has all features that could be potentially helpful for the management of a service mesh.\n\n### Positive Consequences\n\n* Istio enables more than just having telemetry and log collections. In addition it provides many more features that could be useful for MICO in future (follow-up decisions required).\n\n  [Examples](https://istio.io/docs/concepts/what-is-istio/#why-use-istio):\n  + Automatic Load Balancing\n  + Routing rules, retries, failovers, and fault injection\n  + Pluggable policy layer with access controls, rate limits and quotas\n  + Secure service-to-service communication in the cluster\n\n### Negative consequences\n\n* Istio consumes many resources\n* Istio brings more complexity into the MICO system\n\n## Pros and Cons of the Options\n\n### Istio\n\n* Good, because it provides the control plane to configure the Envoy proxies (sidecars)\n  + Istio Proxy (extended version of Envoy) is easier to configure than plain Envoy\n  + It is integrated into Kubernetes with Custom Resource Definitions, therefore Istio is configurable with the same YAML DSL than Kubernetes\n* Good, because it provides additional functionality that could be relevant in future (e.g. access control, secure communication, routing rules)\n* Bad, because Istio has a steep learning curve to get familiar with all its features\n* Bad, because it is still in development (though the current version is 1.0.5)\n\n### Envoy\n\n* Good, because it is a high-performance proxy with a lightweight footprint (developed in C++)\n* Good, because it a graduated project of the Cloud Native Computing Foundation (next to Kubernetes and Prometheus)\n* Bad, because the YAML DSL for configuration of Envoy differs from that of Kubernetes, which we are accustomed to use\n* Bad, because in a service mesh it's complex and error prone to configure\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "UST-MICO/mico#75",
+     "kind": "issue",
+     "url": "https://github.com/UST-MICO/mico/issues/75",
+     "number": "75"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0016-documentation-structure.md",
+   "identity": "adr/0016-documentation-structure.md",
+   "adr_id": "16",
+   "title": "Documentation Structure",
+   "first_commit": "2018-12-07T11:19:51+01:00",
+   "first_sha": "6b3c1c36f5e8cff860f8b51316e893cd73d064e1",
+   "last_commit": "2018-12-07T11:19:51+01:00",
+   "author": "Fabian B\u00fchler",
+   "email": "17296905+st116290@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Documentation Structure\n\n## Context and Problem Statement\n\nWe want to have a well defined structure for what to document where.\n\n\n## Considered Options\n\n* Everything in docs repository\n* Everything in mico repository\n* Leave it as is (mostly in docs repository & code documentation in mico repository)\n\n\n## Decision Outcome\n\nChosen option: Leave it as is.\n\n### Clarification for what to document where:\n\n#### Docs Repository\n\nRationale: If I want wo use mico this documentation should contain all I need to know.\n\nExamples:\n\n* Design Decisions\n* Architecture\n* Component descriptions (mico-core, mico-admin, mico-grapheditor)\n* API Interfaces (REST Api, etc.)\n* How To's (How To install mico, How To use mico, etc.)\n\n#### Mico Repository\n\nRationale: If I want to change something in the code this documentation should contain additional information about code specifics.\n\n* Javadoc, Typedoc, etc.\n* Descriptions for important classes and how to use them\n* How to write a new REST Endpoint, Unit Test, Plugin, etc.\n* Links to dependencies (with documentation), relevant documentation in docs repo\n\nIf possible use links to the relevant documentation instead of describing the whole thing.\n\n\n## Everything in docs repository\n\n### Docker out of Docker\n\n* Good, because of clear seperation of documentation and code\n* Bad, because sphinx can use language native documentation (like javadoc) only if code is in the same repository\n\n### Everything in mico repository\n\n* Good, because one repository for everything\n* Bad, because the workflow for documentation (without pull requests) and the workflow for code changes (with pull requests) oppose each other\n\n### Leave it as is (mostly in docs repository & code documentation in mico repository)\n\n* Good, because it enables fast documentation workflow without pull requests\n* Good, because seperate code documentation still supports javadoc, etc.\n* Good, because built documentation still feels like one if interlinked properly\n* Bad, because it needs explanation for what goes where\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0009-features-first.md",
+   "identity": "adr/0009-features-first.md",
+   "adr_id": "9",
+   "title": "Features first",
+   "first_commit": "2018-11-14T11:43:34+01:00",
+   "first_sha": "5136e4c827693ed012f6deff753910590a45810e",
+   "last_commit": "2018-12-01T17:45:57+01:00",
+   "author": "Fabian B\u00fchler",
+   "email": "17296905+st116290@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Features first\n\n## Context and Problem Statement\n\nHow should we prioritise certain non-/extra- functional requirements?\n\n## Considered Options\n\n**Requirements:**\n\n* Translatable text in user Interface\n* Minimal security (username+password login for user interface/tokens for api)\n* Responsive Web design\n\n\n## Decision Outcome\n\nFor the initial project we won't implement the requirements from above to increase our efficiency in implementing features.\n\n\n```eval_rst\n.. seealso::\n\n   * :doc:`0002-quality-attribute-performance`\n   * :doc:`0003-quality-attribute-security`\n```\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0012-winery-topology-modeler.md",
+   "identity": "adr/00012-winery-topology-modeler.md",
+   "adr_id": "12",
+   "title": "Re-use capabilites of Winery Topology Modeler",
+   "first_commit": "2018-11-15T17:48:14+01:00",
+   "first_sha": "1d4d9ae63ea0204d204f9f0c004a5e6c3b1b8d86",
+   "last_commit": "2018-12-01T17:45:57+01:00",
+   "author": "Joachim Spalink",
+   "email": "j.spalink@gmx.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Re-use capabilites of Winery Topology Modeler\n\nTechnical Story: [Evaluate re-use capabilites of Winery Topology Modeler #32](https://github.com/UST-MICO/mico/issues/32)\n\n## Context and Problem Statement\n\nWe want to use a component to graphically model nodes and edges in a web application.\n\n## Decision Drivers <!-- optional -->\n\n* usable with Angular\n* number of dependecies\n* features\n  + create Nodes\n  + create Connections\n* usability\n\n## Considered Options\n\n* [Winery Topology Modeler](https://github.com/eclipse/winery/tree/master/org.eclipse.winery.topologymodeler.ui)\n* [ngx-graph](https://github.com/swimlane/ngx-graph)\n* [d3.js](https://d3js.org/), from React Version implemented in Angular\n\n## Decision Outcome\n\nChosen option: Choosen a Combination of ngx-graph and plain d3.js, because ngx-graph might miss some usefull features but has good usability which is worth to have a look at\n\n### Positive Consequences <!-- optional -->\n\n* easy to use graph modeler\n* only a few dependencies\n* full control over features and behavior\n\n### Negative consequences <!-- optional -->\n\n* needs to be implemented\n\n## Pros and Cons of the Options <!-- optional -->\n\n### Winery Topology Modeler\n\n* Bad, since package doesnt work when importing into plain Angular App, created issue report on their repository\n\n### ngx-graph\n\n* Good, because possibility to create templates for nodes, links\n* Good, because runs as angular component\n* Bad, because might not provide all the needed features\n\n### d3.js\n\n* Good, because full control over everything\n* Good, because can implement the necessary behavior\n* Bad, because implementation has to be done\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#32",
+     "kind": "hash",
+     "url": "",
+     "number": "32"
+    },
+    {
+     "key": "UST-MICO/mico#32",
+     "kind": "issue",
+     "url": "https://github.com/UST-MICO/mico/issues/32",
+     "number": "32"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/eclipse/winery/tree/master/org.eclipse.winery.topologymodeler.ui"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0013-source-to-image-workflow.md",
+   "identity": "adr/0013-source-to-image-workflow.md",
+   "adr_id": "13",
+   "title": "Source-to-Image Workflow",
+   "first_commit": "2018-11-25T16:14:50+01:00",
+   "first_sha": "4329cf0f80aef17f7f932abafb0468cd36a0b10d",
+   "last_commit": "2018-12-01T17:45:57+01:00",
+   "author": "David Kopp",
+   "email": "david@kopp-heim.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Source-to-Image Workflow\n\nTechnical Story: [Evaluate Knative build](https://github.com/UST-MICO/mico/issues/49)\n\n## Context and Problem Statement\n\nWe want to have a Source-to-Image workflow to import services based on a GitHub repository. It should run inside our Kubernetes cluster, however currently Kubernetes doesn't have a resource build-in that is able to build container images. Therefore another technology is required.\n\n## Decision Drivers\n\n* MUST run on our Kubernetes cluster\n* MUST run completely in userspace (no root access required)\n* MUST be sufficient to provide a single URL to a GitHub repository (with included Dockerfile)\n* SHOULD be independent of any cloud service provider\n\n## Considered Options\n\n* Gitkube\n* Google Cloud Build\n* Azure Container Registry Tasks (ACR Tasks)\n* OpenShift Source-to-Image (S2I)\n* Knative Build\n\n## Decision Outcome\n\nChosen option: *Knative Build*, because it meets all of our criterion decision drivers. It allows us to implement a Source-to-Image workflow on our Kubernetes cluster independently to any cloud service provider.\n\n### Positive Consequences\n\n* By using *Knative Build* we have the choice to use different kinds of `Builders`, follow-up decision is required: [Building OCI images](./0015-building-oci-images.md)\n\n### Negative consequences\n\n* *Nothing known*\n\n## Pros and Cons of the Options\n\n### Gitkube\n\n[GitHub: Gitkube](https://github.com/hasura/gitkube)\n\n* Good, because it is easy to use (only git and kubectl are required)\n* Good, because it is designed to build and deploy images to Kubernetes\n* Bad, because it uses Docker-in-Docker approach (see [Building OCI Images](./0015-building-oci-images.md))\n* Bad, because it is build for a different purpose: Helping developers to trigger the build and deployment of an image by using `git push`\n\n### Google Cloud Build\n\n[Cloud Build documentation](https://cloud.google.com/cloud-build/docs/)\n\n* Good, because it is easy to use, nothing has to be installed (only a call to the `Cloud Build API` is required)\n* Good, because it is a managed service therefore it doesn't consume our own resources\n* Good, because it allows us to use different `Builder` technologies (see [Building OCI Images](./0015-building-oci-images.md))\n* Bad, because we depend on the continuity of a third-party service (Google Cloud Build)\n* Bad, because it runs only on Google Cloud, that forces vendor lock-in\n* Bad, because it leads to additional costs (first 120 builds-minutes per day are free, see [Pricing](https://cloud.google.com/cloud-build/pricing)\n\n### Azure Container Registry Tasks (ACR Tasks)\n\n[Tutorial: Automate container image builds with Azure Container Registry Tasks](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-tutorial-build-task)\n\n* Good, because it is a managed service therefore it doesn't consume our own resources\n* Good, because we already run on the Azure Cloud\n* Bad, because it uses the Docker daemon internally, no other `Builders` can be used (see [Building OCI Images](./0015-building-oci-images.md))\n* Bad, because there is no public API available, only usable with the Azure CLI\n* Bad, because we depend on the continuity of a third-party service (ACR Tasks)\n* Bad, because it runs only on Azure, that forces vendor lock-in\n* Bad, because it leads to additional costs (100 minutes are included for free per month, see [Pricing calculator](https://azure.microsoft.com/en-us/pricing/calculator/#)\n\n### OpenShift Source-to-Image (S2I)\n\n[GitHub: Source-To-Image (S2I)](https://github.com/openshift/source-to-image)\n\n* Good, because it is the way to go for creating a Source-to-Image workflow on a OpenShift cluster\n* Bad, because it is designed for the OpenShift Container Platform (additional effort is required to use it on plain Kubernetes)\n* Bad, because it uses the Docker daemon internally (in future *Buildah*), no other `Builders` can be used (see [Building OCI Images](./0015-building-oci-images.md))\n\n### Knative Build\n\n[GitHub: Knative Build](https://github.com/knative/build)\n\n* Good, because it has the backing of industry giants (Google, Red Hat, IBM, SAP)\n* Good, because it is designed for Kubernetes\n* Good, because it provides a standard, portable, reusable, and performance optimized method for defining and running on-cluster container image builds\n* Good, because it allows us to use different `Builder` technologies (see [Building OCI Images](./0015-building-oci-images.md))\n* Good, because *Knative Build* consumes little resources (2 pods a ~11 MB).\n* Bad, because it is still work-in-progress\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "UST-MICO/mico#49",
+     "kind": "issue",
+     "url": "https://github.com/UST-MICO/mico/issues/49",
+     "number": "49"
+    }
+   ],
+   "mentioned_paths": [
+    "/0015-building-oci-images.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0014-Spring-Data-REST.md",
+   "identity": "adr/0014-Spring-Data-REST.md",
+   "adr_id": "14",
+   "title": "Evaluate Spring Data REST",
+   "first_commit": "2018-11-21T18:14:06+01:00",
+   "first_sha": "d52c4bb9fa4027e557009699eb58aeabfeb32126",
+   "last_commit": "2018-12-01T17:45:57+01:00",
+   "author": "wagnerdk",
+   "email": "18245675+wagnerdk@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Evaluate Spring Data REST\n\nTechnical Story: [Evaluate Spring data rest](https://github.com/UST-MICO/mico/issues/83)\n\n## Context and Problem Statement\n\nWe want to use CRUD operations to manipulate our domain model.\nFurthermore, we don't want to write REST controllers if it is not necessary.\n\n## Decision Drivers\n\n* Must allow CRUD operations\n* It must be possible to extend the API and to add resources or sub resources which are not managed by Neo4j\n* It must be compatible with Springfox\n* The API must be RESTful\n\n## Considered Options\n\n* Spring Data REST\n* Manually writing Spring REST controllers (based on Spring HATEOAS)\n\n## Decision Outcome\n\nChosen option: Spring Data REST, because it automatically exposes or domain model and so we don't have to write the required rest controllers our self. In addition to that paging, sorting and the HAL media type are supported out-of-the-box. Extending or overwriting Spring Data REST Response Handler is also possible and allows us to add custom logic if needed [[1]].\n\n## Pros and Cons of the Options\n\n### Spring Data Rest\n\n* Good, because our model is exposed automatically\n* Good, because it supports paging, sorting and HAL\n* Good, because changes in the model are automatically reflected in the API\n* Bad, because we have to use a nonstable version of Springfox (3.0.0-SNAPSHOT) [[2]]\n* Bad, because we need to tweak the generated API to map some features of our domain model nicely (e.g. service1->dependsOn->service2->...)\n\n### Manuel approach\n\n* Good, because we have more control over the resources which are offered be our API\n* Good, because it is easier to hide internal changes to offer a more stable API\n* Bad, because it requires more manual work\n\n[1]: https://docs.spring.io/spring-data/rest/docs/current/reference/html/#customizing-sdr.overriding-sdr-response-handlers\n[2]: https://github.com/springfox/springfox/issues/1957\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "UST-MICO/mico#83",
+     "kind": "issue",
+     "url": "https://github.com/UST-MICO/mico/issues/83",
+     "number": "83"
+    },
+    {
+     "key": "springfox/springfox#1957",
+     "kind": "issue",
+     "url": "https://github.com/springfox/springfox/issues/1957",
+     "number": "1957"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0013-source-to-url-deployment.md",
+   "identity": "adr/0013-source-to-url-deployment.md",
+   "adr_id": "13",
+   "title": "Source-to-URL deployment",
+   "first_commit": "2018-11-16T12:38:49+01:00",
+   "first_sha": "51806d259c76cf6d157bcf79319478dc0dd15787",
+   "last_commit": "2018-11-25T16:14:50+01:00",
+   "author": "David Kopp",
+   "email": "david@kopp-heim.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Source-to-URL deployment\n\nTechnical Story: [Evaluate Knative build](https://github.com/UST-MICO/mico/issues/49)\n\n## Context and Problem Statement\n\nWe want to have a source-to-URL deployment on Kubernetes to import services based on a GitHub repository with an included Dockerfile.\n\n## Decision Drivers\n\n* MUST run on Kubernetes cluster\n* MUST run completely in userspace (no root access required)\n* URL to GitHub repository (with included Dockerfile) SHOULD be sufficient\n\n## Considered Options\n\n* Google Cloud Build\n* Azure Container Registry Tasks\n* Knative Build\n\n## Decision Outcome\n\nChosen option: \"[option 1]\", because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)].\n\n### Positive Consequences <!-- optional -->\n\n* [e.g., improvement of quality attribute satisfaction, follow-up decisions required, \u2026]\n* \u2026\n\n### Negative consequences <!-- optional -->\n\n* [e.g., compromising quality attribute, follow-up decisions required, \u2026]\n* \u2026\n\n## Pros and Cons of the Options\n\n### Google Cloud Build\n\n[example | description | pointer to more information | \u2026] <!-- optional -->\n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n* \u2026 <!-- numbers of pros and cons can vary -->\n\n### Azure Container Registry Tasks\n\n[example | description | pointer to more information | \u2026] <!-- optional -->\n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n* \u2026 <!-- numbers of pros and cons can vary -->\n\n### Knative Build\n\n[GitHub: Knative Build](https://github.com/knative/build)\n\n* Good, because it has the backing of industry giants (Google, Red Hat, IBM, SAP)\n* Good, because it is designed for Kubernetes\n* Good, because it provides a standard, portable, reusable, and performance optimized method for defining and running on-cluster container image builds\n* Bad, because it is still work-in-progress\n* Bad, because Knative requires Istio that adds many complications to the cluster and consumes much resources\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "UST-MICO/mico#49",
+     "kind": "issue",
+     "url": "https://github.com/UST-MICO/mico/issues/49",
+     "number": "49"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0011-json+hal.md",
+   "identity": "adr/0011-json+hal.md",
+   "adr_id": "11",
+   "title": "JSON+hal as serialization Format for the API",
+   "first_commit": "2018-11-15T14:40:49+01:00",
+   "first_sha": "15bf53b74d722d1d39b397cb7a94ed0c7cbc8a86",
+   "last_commit": "2018-11-19T15:33:28+01:00",
+   "author": "Fabian B\u00fchler",
+   "email": "17296905+st116290@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# JSON+hal as serialization Format for the API\n\n## Context and Problem Statement\n\nThe backend needs to serialize the REST resources before sending them via http to the client.\n\n## Decision Drivers\n\n- the format should be REST/[HATEOAS](https://spring.io/understanding/HATEOAS) compatible (e.g. allow hyperlinks)\n- the format should be easy to parse/serialize for the backend and the client\n\n## Considered Options\n\n- xml\n- pure json\n- [json+hal](http://stateless.co/hal_specification.html)\n\n## Decision Outcome\n\nWe will use json+hal (or the spring implementation for json with hyperlinks) without the [`_embedded`](https://tools.ietf.org/html/draft-kelly-json-hal-08#section-4.1.2) attribute (because of its complexity to implement correctly).\n\n```eval_rst\n.. seealso::\n\n   * :doc:`0010-rest-api-design`\n   * `Richardson Maturity Model <https://martinfowler.com/articles/richardsonMaturityModel.html>`_\n   * `HATEOAS is for Humans <http://intercoolerjs.org/2016/05/08/hatoeas-is-for-humans.html>`_\n```\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "stateless.co/hal_specification.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0001-java-framework.md",
+   "identity": "adr/0001-java-framework.md",
+   "adr_id": "1",
+   "title": "Java Framework",
+   "first_commit": "2018-10-30T10:53:45+01:00",
+   "first_sha": "1d8d6e4ed1b14899221303404942a532c5e3573c",
+   "last_commit": "2018-11-15T15:59:51+01:00",
+   "author": "Michael Wurster",
+   "email": "miwurster@googlemail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Java Framework\n\n## Context and Problem Statement\n\nWe want to use a well established Java framework in order to bootstrap and boost our development process.\n\n## Considered Options\n\n* <https://spring.io/projects/spring-boot>\n* <http://micronaut.io/index.html>\n* <https://www.playframework.com>\n* <https://akka.io>\n* <https://www.dropwizard.io/1.3.5/docs>\n* <https://projects.eclipse.org/proposals/eclipse-microprofile> with <https://openliberty.io>\n\n## Decision Outcome\n\nWe chose option 1, Spring Boot, since existing knowledge and experience with this framework is available.\nTo reduce training costs (time) we chose this option.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "micronaut.io/index.html",
+    "www.dropwizard.io/1.3.5"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0010-rest-api-design.md",
+   "identity": "adr/0010-rest-api-design.md",
+   "adr_id": "10",
+   "title": "REST API Design",
+   "first_commit": "2018-11-14T12:44:14+01:00",
+   "first_sha": "d99ada433bb1d69571ab7e127b9511b72612a4c2",
+   "last_commit": "2018-11-14T12:44:14+01:00",
+   "author": "Michael Wurster",
+   "email": "miwurster@googlemail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# REST API Design\n\n## Context and Problem Statement\n\nRESTful APIs can be designed differently, e.g., there are discussions about how to name resources correctly or what kind of HTTP methods should be used to trigger actions.\n\n## Decision Outcome\n\nWe follow the guidelines proposed by the [Learn REST: A RESTful Tutorial](https://www.restapitutorial.com).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0008-browser-compatibility.md",
+   "identity": "adr/0008-browser-compatibility.md",
+   "adr_id": "8",
+   "title": "Browser Compatibility",
+   "first_commit": "2018-11-14T11:43:34+01:00",
+   "first_sha": "5136e4c827693ed012f6deff753910590a45810e",
+   "last_commit": "2018-11-14T11:43:34+01:00",
+   "author": "Fabian B\u00fchler",
+   "email": "17296905+st116290@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Browser Compatibility\n\n## Context and Problem Statement\n\nWhich browser should we actively support with the MICO web interface?\n\n## Considered Options\n\n* Chrome\n* Firefox\n* Edge\n* Internet Explorer\n\n## Decision Outcome\n\nWe will only actively support Chrome (above version 70). We may test the web interface occasionally with Firefox (above version 63) to fix issues rendering the web interface unusable with firefox.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0000-use-markdown-architectural-decision-records.md",
+   "identity": "adr/0000-use-markdown-architectural-decision-records.md",
+   "adr_id": "0",
+   "title": "Use Markdown Architectural Decision Records",
+   "first_commit": "2018-10-26T10:39:29+02:00",
+   "first_sha": "37523d03256c2ad36b2fb57cd99006e821f03df6",
+   "last_commit": "2018-10-30T21:11:44+01:00",
+   "author": "Lukas Harzenetter",
+   "email": "lharzenetter@gmx.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Use Markdown Architectural Decision Records\n\n## Context and Problem Statement\n\nWe want to record architectural decisions made in this project.\nWhich format and structure should these records follow?\n\n## Considered Options\n\n* [MADR](https://adr.github.io/madr/) 2.1.0 - The Markdown Architectural Decision Records\n* [Michael Nygard's template](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions) - The first incarnation of the term \"ADR\"\n* [Sustainable Architectural Decisions](https://www.infoq.com/articles/sustainable-architectural-design-decisions) - The Y-Statements\n* Other templates listed at <https://github.com/joelparkerhenderson/architecture_decision_record>\n* Formless - No conventions for file format and structure\n\n## Decision Outcome\n\nChosen option: \"MADR 2.1.0\", because\n\n* Implicit assumptions should be made explicit.\n  Design documentation is important to enable people understanding the decisions later on.\n  See also [A rational design process: How and why to fake it](https://doi.org/10.1109/TSE.1986.6312940).\n* The MADR format is lean and fits our development style.\n* The MADR structure is comprehensible and facilitates usage & maintenance.\n* The MADR project is vivid.\n* Version 2.1.0 is the latest one available when starting to document ADRs.\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "doi.org/10.1109/TSE.1986.6312940"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0002-quality-attribute-performance.md",
+   "identity": "adr/0002-quality-attribute-performance.md",
+   "adr_id": "2",
+   "title": "Performance considerations",
+   "first_commit": "2018-10-30T10:53:45+01:00",
+   "first_sha": "1d8d6e4ed1b14899221303404942a532c5e3573c",
+   "last_commit": "2018-10-30T10:53:45+01:00",
+   "author": "Michael Wurster",
+   "email": "miwurster@googlemail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Performance considerations\n\n## Context and Problem Statement\n\nShould we consider and address performance requirements?\n\n## Decision Outcome\n\nFor the initial start of the project we do not consider performance as a must have.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0003-quality-attribute-security.md",
+   "identity": "adr/0003-quality-attribute-security.md",
+   "adr_id": "3",
+   "title": "Security considerations",
+   "first_commit": "2018-10-30T10:53:45+01:00",
+   "first_sha": "1d8d6e4ed1b14899221303404942a532c5e3573c",
+   "last_commit": "2018-10-30T10:53:45+01:00",
+   "author": "Michael Wurster",
+   "email": "miwurster@googlemail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Security considerations\n\n## Context and Problem Statement\n\nShould we consider and address security requirements?\n\n## Decision Outcome\n\nFor the initial start of the project we do not consider security as a must have.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0004-monolith-first.md",
+   "identity": "adr/0004-monolith-first.md",
+   "adr_id": "4",
+   "title": "Monolith as Architectural Style",
+   "first_commit": "2018-10-30T10:53:45+01:00",
+   "first_sha": "1d8d6e4ed1b14899221303404942a532c5e3573c",
+   "last_commit": "2018-10-30T10:53:45+01:00",
+   "author": "Michael Wurster",
+   "email": "miwurster@googlemail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Monolith as Architectural Style\n\n## Context and Problem Statement\n\nWhich architectural style should we use to build MICO?\n\n## Considered Options\n\n* Monolith: <https://martinfowler.com/bliki/MonolithFirst.html>\n* Microservice Architecture: <https://martinfowler.com/articles/microservices.html>\n\n## Decision Outcome\n\nFor the initial project we apply the \"Monolith first\" approach in order to avoid the additional complexity of a microservice architecture.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "martinfowler.com/bliki/MonolithFirst.html",
+    "martinfowler.com/articles/microservices.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0005-mono-repo.md",
+   "identity": "adr/0005-mono-repo.md",
+   "adr_id": "5",
+   "title": "Repository Structure Frontend/Backend",
+   "first_commit": "2018-10-30T10:53:45+01:00",
+   "first_sha": "1d8d6e4ed1b14899221303404942a532c5e3573c",
+   "last_commit": "2018-10-30T10:53:45+01:00",
+   "author": "Michael Wurster",
+   "email": "miwurster@googlemail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Repository Structure Frontend/Backend\n\n## Context and Problem Statement\n\nShould we use different repositories for Frontend and Backend or use a single repository?\n\n## Considered Options\n\n* Mono Repo\n* Different repositories\n\n## Decision Outcome\n\nWe chose option 1, Mono Repo, because as a starting point it reduces unnecessary complexity when working with frontend and backend logic.\nFurthermore, we can have a single CI build in order to verify the whole project source code.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0006-ui-framework.md",
+   "identity": "adr/0006-ui-framework.md",
+   "adr_id": "6",
+   "title": "Web-UI Framework",
+   "first_commit": "2018-10-30T10:53:45+01:00",
+   "first_sha": "1d8d6e4ed1b14899221303404942a532c5e3573c",
+   "last_commit": "2018-10-30T10:53:45+01:00",
+   "author": "Michael Wurster",
+   "email": "miwurster@googlemail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Web-UI Framework\n\n## Context and Problem Statement\n\nWe want to use a well established UI framework in order to bootstrap and boost our development process for state-of-the-art web applications.\n\n## Considered Options\n\n* Angular\n* React\n\n## Decision Outcome\n\nWe chosen option 1, Angular, since existing knowledge and experience with this framework is available.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "adr/0024-implementation-of-complex-eai-patterns-with-faas.md",
+   "identity": "adr/0022-implementation-of-complex-eai-patterns-with-faas.md",
+   "commit": "32e89175d0ff5550d700a9d9e41a074bf9908fd6",
+   "date": "2019-05-21T14:07:03+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Fix adr numbering",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "wagnerdk",
+   "email": "18245675+wagnerdk@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0025-implementation-of-complex-eai-patterns-with-faas.md",
+   "identity": "adr/0022-implementation-of-complex-eai-patterns-with-faas.md",
+   "commit": "bb04ba8218d0df612e0e5e133583648034702c18",
+   "date": "2019-05-21T22:38:55+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Fix number collision in adrs",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Fabian B\u00fchler",
+   "email": "17296905+buehlefs@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0026-implementation-of-complex-eai-patterns-with-faas.md",
+   "identity": "adr/0022-implementation-of-complex-eai-patterns-with-faas.md",
+   "commit": "5d57801f257f45a1b74e30950e20ec56dfee7d0b",
+   "date": "2019-05-28T11:32:43+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Fix numbering conflict in adrs",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Fabian B\u00fchler",
+   "email": "17296905+buehlefs@users.noreply.github.com"
+  },
+  {
+   "path": "adr/0019-architecture-for-background-jobs.md",
+   "identity": "adr/0018-architecture-for-background-jobs.md",
+   "commit": "a5f2a3fc2f60faa47f04a3e2aa65ac50524d0b98",
+   "date": "2019-01-25T11:29:43+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Update number of adr",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Marvin Wohlfarth",
+   "email": "st112462@stud.uni-stuttgart.de"
+  },
+  {
+   "path": "adr/0012-winery-topology-modeler.md",
+   "identity": "adr/00012-winery-topology-modeler.md",
+   "commit": "f22a5a938acf5d36313493d442627b703eaf54ea",
+   "date": "2018-11-15T17:50:26+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "correct naming",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Joachim Spalink",
+   "email": "j.spalink@gmx.de"
+  },
+  {
+   "path": "adr/0013-source-to-url-deployment.md",
+   "identity": "adr/0013-source-to-url-deployment.md",
+   "commit": "4329cf0f80aef17f7f932abafb0468cd36a0b10d",
+   "date": "2018-11-25T16:14:50+01:00",
+   "old_state": "unknown",
+   "new_state": "deleted",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Refactor ADR about Source-to-Image workflow and notes about `Knative Build`",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "deleted-without-replacement-pointer",
+   "author": "David Kopp",
+   "email": "david@kopp-heim.de"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 30,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "28"
+}

@@ -1,0 +1,600 @@
+{
+ "repo": "informalsystems/tendermint-rs",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2018-10-22T15:22:27-07:00",
+ "last_commit": "2026-10-26T17:22:57+01:00",
+ "n_commits": 848,
+ "n_authors": 84,
+ "n_files": 1240,
+ "n_code_files": 399,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 12,
+ "adrs": [
+  {
+   "path": "docs/architecture/adr-002-light-client-adr-index.md",
+   "identity": "docs/architecture/adr-002-light-client-adr-index.md",
+   "adr_id": "2",
+   "title": "ADR 002: Light Client ADR Index",
+   "first_commit": "2020-02-09T23:50:11-05:00",
+   "first_sha": "f9287e04ee84e6659ea209529a1bb700ab53e45b",
+   "last_commit": "2024-05-29T09:46:48+02:00",
+   "author": "Ethan Buchman",
+   "email": "ethan@coinculture.info",
+   "status": "unknown",
+   "status_raw": "ADR Index.",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# ADR 002: Light Client ADR Index\n\n## Changelog\n\n- 2019-10-30: First draft.\n- 2019-12-27: Add diagram and align with the code.\n- 2020-01-22: Refactor into multiple ADRs\n\n## Status\n\nADR Index.\n\n## Context\n\nThis is the first of multiple ADRs about the Tendermint light client in Rust.\nLight client specification and implementation is an ongoing work in progress, in \n[English][english-spec],\n[TLA+][tla-spec], \n[Go][go-impl],\nand [Rust][rust-impl]. Note/TODO these links will soon be stale and need\nupdating.\n\nIt is especially important to review the Motivation and Structure of the Light\nClient as described in the English Specification before reading these ADRs for\nthe necessary context.\n\nHere we are concerned primarily with the implementation of a light node in Rust.\nThe light node process makes RPC requests to full nodes for blockchain data, uses\nthe core verification library to verify this data, and updates its state accordingly. \nIt also makes requests to other full nodes to detect and report on forks.\n\nThat said, as much as possible, we would like the implementation here to be\nreusable for the IBC protocol, which supports communiction between blockchains. \nIn this case, instead of making RPC requests, IBC-enabled blockchains receive the relevant data in transactions and\nverify it using the same core verification library. Thus implementations should\nabstract over the source of data as necessary.\nFor more information on IBC, see the \n[spec repo](https://github.com/cosmos/ics),\nespecially the specifications for\n[client\nsemantics](https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics)\nand [handler\ninterface](https://github.com/cosmos/ics/tree/master/spec/ics-025-handler-interface)\n\nA complete implementation of the light node includes many components, each of\nwhich deserves their own ADR. This ADR thus serves as an index for those, and\nmay be updated over time as other components come into view or\nexisting components are iterated upon.\n\nComponents include (TODO: links):\n\n- ADR-003 - Core Verification Library: Data types, traits, and public API for\n  the core verification protocol, with support for use in light nodes and IBC\n  implemented\n- ADR-004 - Command Line Interface: Choice of framework for the CLI and\n  daemon, including config, arguments, logging, errors, etc.\n- ADR-005 - Fork Detection Module: Simple module to manage an address book of \n  peers and search for conflicting commits\n\n\nA schematic diagram of the light node, as taken from the [English\nspecification][english-spec], is provided below:\n\n![Light Node Diagram](assets/light-node.png).\n\n\n[english-spec]: https://github.com/tendermint/spec/tree/bucky/light-reorg/spec/consensus/light\n[tla-spec]: https://github.com/interchainio/verification/tree/igor/lite/spec/light-client\n[go-impl]: https://github.com/tendermint/tendermint/tree/main/lite2\n[rust-impl]: https://github.com/interchainio/tendermint-rs/tree/master/tendermint-lite\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "assets/light-node.png"
+   ],
+   "implementation": {
+    "sha": "f9287e04ee84e6659ea209529a1bb700ab53e45b",
+    "date": "2020-02-09T23:50:11-05:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "docs/architecture/assets/light-node.png"
+    ]
+   }
+  },
+  {
+   "path": "docs/architecture/adr-010-time-api-sanity.md",
+   "identity": "docs/architecture/adr-010-time-api-sanity.md",
+   "adr_id": "10",
+   "title": "ADR 010: Improvements of Time API, internal representation, and serialization",
+   "first_commit": "2022-08-05T14:21:09-04:00",
+   "first_sha": "dda924504332f3fad45a984b3201ef4d5ed350c9",
+   "last_commit": "2024-05-29T09:46:48+02:00",
+   "author": "Thane Thomson",
+   "email": "thane@informal.systems",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# ADR 010: Improvements of Time API, internal representation, and serialization\n\n## Changelog\n\n* 2021-11-29: Created the ADR.\n\n## Context\n\nThe `Time` type is defined in `tendermint` to provide a data type for time\ncalculations with better safety and ergonomics than the `prost`-dictated\n`Timestamp` struct, defined in `tendermint-proto` based on Google's\ncommon protobuf message description.\n[Concerns](https://github.com/informalsystems/tendermint-rs/issues/865) have\nbeen raised about the need for such a type in the API; however, as we\ncurrently lack a well-supported library in the Rust ecosystem that would provide\nthe desirable formatting through serde and enforce a range of usable values,\nthe domain type seems to be necessary.\n\nThe current API of `Time` has the following problems:\n\n* It's a newtype struct publicly exposing a `DateTime<Utc>` inner value\n  provided by the `chrono` crate. `chrono` has a known\n  [issue][RUSTSEC-2020-0159] with soundness and security and there is no ETA yet\n  on getting it fixed.\n  The dependency on chrono triggers cargo audit failures for every project\n  using the `tendermint` library.\n\n* The range of usable values supported by `Time` has not been explicitly\n  defined or enforced. Currently `Time` allows values which can't have\n  a valid RFC 3339 representation and whose equivalent Unix timestamp values\n  are not allowed by the Google protobuf specification of `Timestamp`.\n\n* The serde implementations for `Time` and the proto `Timestamp` struct\n  always serialize or expect the value as a string, even in serialization\n  formats that are not human-readable and allow a more efficient binary\n  representation.\n\n* Arithmetic operators have been provided for `Time` via `Add`/`Sub` trait\n  implementations. However, the `Result` output type is\n  [surprising][guideline-overload] and makes for poor usability of overloaded\n  operators.\n\n* Arithmetic and comparison operations are much slower on parsed date/time\n  structures than on an integer timestamp representation.\n  If `Time` is meant to be used in performance-sensitive workloads\n  for operations with date-time values, such as offsetting by a duration,\n  time difference, or time comparisons, its internal representation should be\n  more optimized for integer arithmetic.\n\n* The `Time::as_rfc3339` conversion method is\n  [named improperly][guideline-naming] with regard to Rust naming guidelines.\n\n[RUSTSEC-2020-0159]: https://rustsec.org/advisories/RUSTSEC-2020-0159.html\n[guideline-overload]: https://rust-lang.github.io/api-guidelines/predictability.html#c-overload\n[guideline-naming]: https://rust-lang.github.io/api-guidelines/naming.html#c-conv\n\n## Decision\n\nMake these changes, possibly in steps:\n\n* Make the inner member(s) of the `Time` struct private.\n\n* Specify that only date-times in the year range 1-9999 inclusive\n  can be represented by a `Time` value. This matches the restrictions\n  specified in the Google protobuf message definition for `Timestamp`.\n\n* Remove conversions from/to `chrono::DateTime`,\n  introducing these impls instead:\n  * `impl TryFrom<time::OffsetDateTime> for Time`\n    (fallible due to the additional range restrictions)\n  * `impl From<Time> for time::OffsetDateTime`\n\n* Change the serde implementations for `tendermint_proto::Timestamp`\n  (and, by deriving-via-conversions, for `tendermint::Time`) to use\n  member-wise struct serialization on non-human-readable serializers.\n\n* Remove the `Add` and `Sub` impls for `Time`, replacing the operator\n  overloading with `checked_add` and `checked_sub` methods in the fashion of\n  `SystemTime` and `time::OffsetDateTime`. This provides a speed bump for the\n  API users who must take care of potential range overflows, in a way that\n  does not force parentheses appended with error handling cruft nested\n  through the expression tree.\n\n* Change the internal representation of `Time` to an `i128` Unix timestamp\n  in nanoseconds.\n\n* Rename `Time::as_rfc3339` back to `Time::to_rfc3339`.\n  Also in `tendermint_proto`, the public helper function named\n  `serializers::timestamp::as_rfc3339_nanos` should be similarly renamed.\n\n## Status\n\nProposed\n\n## Consequences\n\n### Positive\n\n* `Time` gets a clear purpose and a documented validity range.\n* The implementation details of `Time` are made private and can be changed\n  in the future with little or no breakage for the API consumers.\n* Interfacing with ecosystem libraries for time computations can be made\n  optional, enabled via feature-gated conversions. In particular, `chrono`\n  can be completely cut out until its `localtime_r` issue is fixed,\n  giving the Tendermint library consumers their `cargo audit` peace.\n* The `checked_add` and `checked_sub` methods replacing arithmetic operators\n  over `Time` are conventional and chainable.\n* Duration arithmetic over integer timestamp values is fast.\n* Changing the internal representation to a Unix timestamp puts treatment of\n  leap seconds outside of tendermint-rs, making it aligned with representation\n  of time in the Tendermint protocol. None of Rust libraries explicitly\n  support Google's [24-hour linear smear][google-smear] over standard UTC.\n  `chrono` has [its own ideas][chrono-leap] about representing leap seconds,\n  which are rather complex and hard to use correctly.\n\n[google-smear]: https://developers.google.com/time/smear\n[chrono-leap]: https://docs.rs/chrono/0.4.19/chrono/naive/struct.NaiveTime.html#leap-second-handling\n\n### Negative\n\n* Breaking changes in the API.\n* Application developers who prefer `chrono` despite its faults lose\n  convenient ways to convert between `Time` and `chrono::DateTime`.\n* The timestamp-based internal representation of `Time` is less\n  memory-efficient than a parsed time struct.\n\n### Inconclusive\n\n* Performance of code that needs to retrieve a human time representation\n  out of `Time` (or `Timestamp`) will be affected. The only such use cases\n  supported internally by the redesigned `Time` API are parsing and formatting,\n  including the serde implementations for human-readable formats;\n  in these cases, the added conversion overhead should be negligible\n  in proportion to other parsing/formatting logic.\n  For other uses, the application can convert a `Time` value to\n  `time::OffsetDateTime` (or, potentially, `chrono::DateTime`, or any other\n  foreign crate types that may become popular in the future) and use that\n  value for further computations.\n\n## References\n\n### Issues\n\n* https://github.com/informalsystems/tendermint-rs/issues/865\n* https://github.com/informalsystems/tendermint-rs/issues/1008\n* https://github.com/informalsystems/tendermint-rs/issues/1012\n\n### Implementation PRs\n\n* https://github.com/informalsystems/tendermint-rs/pull/1030\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "informalsystems/tendermint-rs#865",
+     "kind": "issue",
+     "url": "https://github.com/informalsystems/tendermint-rs/issues/865",
+     "number": "865"
+    },
+    {
+     "key": "informalsystems/tendermint-rs#1008",
+     "kind": "issue",
+     "url": "https://github.com/informalsystems/tendermint-rs/issues/1008",
+     "number": "1008"
+    },
+    {
+     "key": "informalsystems/tendermint-rs#1012",
+     "kind": "issue",
+     "url": "https://github.com/informalsystems/tendermint-rs/issues/1012",
+     "number": "1012"
+    },
+    {
+     "key": "informalsystems/tendermint-rs#1030",
+     "kind": "pull",
+     "url": "https://github.com/informalsystems/tendermint-rs/pull/1030",
+     "number": "1030"
+    }
+   ],
+   "mentioned_paths": [
+    "rustsec.org/advisories/RUSTSEC-2020-0159.html",
+    "rust-lang.github.io/api-guidelines/predictability.html",
+    "rust-lang.github.io/api-guidelines/naming.html",
+    "docs.rs/chrono/0.4.19/chrono/naive/struct.NaiveTime.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-012-multi-version.md",
+   "identity": "docs/architecture/adr-012-multi-version.md",
+   "adr_id": "12",
+   "title": "ADR 012: Support for multiple versions of CometBFT Core",
+   "first_commit": "2023-03-10T12:06:12+02:00",
+   "first_sha": "12e83a71c3c87a656dd2bb07b891b8abdc5428fc",
+   "last_commit": "2024-05-29T09:46:48+02:00",
+   "author": "Mikhail Zabaluev",
+   "email": "mikhail@informal.systems",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR 012: Support for multiple versions of CometBFT Core\n\n## Changelog\n\n* 2023-03-02: First draft\n\n## Context\n\nAs new releases of CometBFT come out, tendermint-rs should have a\nviable way to support the versions of the protocol in use by the Cosmos\ncommunity. Hermes presents a particular challenge of needing to support\nmultiple different versions of the protocol within a single software agent\nthat performs IBC relaying across chains that are not necessarily using the\nsame CometBFT version.\n\nPreviously, it was feasible for tendermint-rs to support a single version of\nthe CometBFT protocols and expect all chain and relayer operators to\nupgrade their software in sync. But now there is a number of established chains\nusing CometBFT 0.34 in production, and new chains using future versions of the\nprotocol are expected to be deployed into the shared Cosmos ecosystem\nso that relaying is possible between the old and the new chains.\n\nThe approach to protocol evolution and versioning in CometBFT has not been\nvery rigorous to date. As a result, the 0.37 release has a number of breaking\nchanges in the RPC protocol format. Though the changes seem beneficial\nin the long term, there is only an ad-hoc way to discover which version is used\nby the node and select the appropriate encoding. It appears to be too\nlate in the development process to introduce significant changes to mitigate\nthis in the 0.37 release timeframe. A requirement to specify the\nprotocol version in chain configuration would complicate the deployment\nexperience for chain and relayer operators and should be avoided.\n\nAnother motivation for multi-version support is versioning of tendermint-rs\nitself: previously, the semver compatibility of tendermint-rs releases was\ntied with corresponding CometBFT version sequences in a none too obvious way.\nIt's desirable to decouple tendermint-rs versioning from that of CometBFT,\nmaking it solely a matter of Rust crate API evolution. In the long term,\na single version of the tendermint-rs libraries should be able to support all\nversions of CometBFT protocols that are relevant to the community.\nThe developers of CometBFT protocols should take versioning practices into use\nfor future revisions that support backward compatibility on the source code level.\n\n## Decision\n\nThe tendermint-rs library API will be modified to provide support for\nmultiple versions of CometBFT APIs, at this moment being 0.34 and 0.37.\n\n### tendermint-proto\n\nThe generated Rust files providing bindings for Tendermint protobuf definitions\nwill be emitted in two side-by-side modules, `tendermint::v0_34` and\n`tendermint::v0_37`. All names under the latter module are also reexported under\nthe `tendermint` module, providing a low-change migration path for code bases\nthat used previous versions of the crate, and the \"default\" import paths for\nthose applications that only need to target the latest version.\n\n### tendermint\n\nThe domain types are largely unchanged, except where additional fields are\nneeded to support version 0.37. Some new types are added as required by the\nnew version. Conversions to and from Protobuf types defined in\n`tendermint-proto` are provided for both `tendermint::v0_34` and\n`tendermint::v0_37` generated types, except where the types are new to 0.37.\n\n### tendermint-rpc\n\nA compatibility mode parameter is introduced for HTTP and WebSocket clients,\nwith the following type:\n\n```rust\npub enum CompatMode {\n    /// Use the v0.37 version of the protocol.\n    V0_37,\n    /// Use v0.34 version of the protocol.\n    V0_34,\n}\n```\n\nThe mode parameter is used to dynamically select the encoding used by a client.\nBy default, the clients use the latest protocol (designated by the associated\nconst function `CompatMode::latest()`), but it's possible to specify\nthe compatibility mode at construction using the newly introduced configuration\nAPI. In the HTTP client, it's also possible to switch the mode for a client\nthat has been already connected; this is useful for dynamic version discovery\nusing the `status` endpoint.\n\nThe `Client` trait is extended to support methods new to CometBFT 0.37,\nwhich are emulated using older protocol endpoints when `V0_34` compatibility\nmode is selected. There is no need to deprecate any methods. All data types\nin the public client API are the domain types of `tendermint`, so the\ndifference in encoding is confined to the crate internals.\n\nProtocol version discovery is not implemented in the library in a way that\nwould be invisible to the API user. To discover the Tendermint version, a client\nneeds to make a `status` request and process the version data from the response.\nThe format of the response is not divergent between the supported protocol\nversions, which is why this should succeed regardless of the compatibility mode\ninitially selected. As the RPC client API represents individual endpoint requests,\nit would be wrong to have the implementation perform a hidden RPC roundtrip to\ndiscover the version when needed, and have the client exhibit interior\nmutability that is otherwise not needed. In the future, a more formalized way\nto discover the protocol version in use should be provided, so this ad-hoc\napproach is expected to be eventually deprecated.\n\n#### Examples\n\nConnecting to the WebSocket endpoint with a specified compatibility mode:\n\n```rust\nuse tendermint_rpc::client::{CompatMode, WebSocketClient};\n\n// ...\n\nlet client = WebSocketClient::builder(rpc_url)\n    .compat_mode(CompatMode::V0_34)\n    .build()\n    .await?;\n```\n\nDiscovery of the RPC compatibility mode while preserving the HTTP connection:\n\n```rust\nuse tendermint_rpc::client::{Client, CompatMode, HttpClient, HttpClientUrl};\nuse tendermint_rpc::error::Error;\n\nasync fn rpc_client_with_version_discovery<U>(url: U) -> Result<HttpClient, Error>\nwhere\n    U: TryInto<HttpClientUrl, Error = Error>,\n{\n    let mut rpc_client = HttpClient::new(url)?;\n    let status = rpc_client.status().await?;\n    let compat_mode = CompatMode::from_version(status.node_info.version)?;\n    rpc_client.set_compat_mode(compat_mode);\n    Ok(rpc_client)\n}\n```\n\n### tendermint-abci\n\nThis crate is not actively supported and we should only make the minimal effort\nto update it to the 0.37 version of ABCI. No backward compatibility with 0.34\nor multi-version support is to be implemented; the consumers should be steered\ntowards [tower-abci](https://github.com/penumbra-zone/tower-abci).\n\n## Status\n\nProposed\n\n## Consequences\n\n### Positive\n\nRPC interoperability with both 0.34 and 0.37 nodes is possible in a single built\nexecutable and a single runtime process without much extra coding effort.\n\nConsumers of other tendermint-rs crates will get support for both 0.34 and 0.37\nversions of the protobuf messages and be able to use either or both.\n\n### Negative\n\nThe consumers of `tendermint-rpc` wishing to remain interoperable with 0.34 nodes\nwill have to configure the compatibility mode or add version discovery when\nmigrating to the release of the crate that introduces these changes.\n\nConversions from and to Protobuf message types in `tendermint-proto`\nand the domain types in `tendermint` are no longer unambiguously resolved\nby type inference and the types sometimes have to be explicitly annotated.\n\nThe existing consumers of `tendermint-abci` who wish to remain on 0.34\nwill be effectively stranded on the previous semver break release of the crate\n(0.29.x as of this writing).\n\n## References\n\n* Implementation: [#1193](https://github.com/informalsystems/tendermint-rs/pull/1193)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#1193",
+     "kind": "hash",
+     "url": "",
+     "number": "1193"
+    },
+    {
+     "key": "informalsystems/tendermint-rs#1193",
+     "kind": "pull",
+     "url": "https://github.com/informalsystems/tendermint-rs/pull/1193",
+     "number": "1193"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-003-light-client-core-verification.md",
+   "identity": "docs/architecture/adr-003-light-client-core-verification.md",
+   "adr_id": "3",
+   "title": "ADR 003: Light Client Core Verification",
+   "first_commit": "2020-02-09T23:50:11-05:00",
+   "first_sha": "f9287e04ee84e6659ea209529a1bb700ab53e45b",
+   "last_commit": "2023-11-06T22:40:49+08:00",
+   "author": "Ethan Buchman",
+   "email": "ethan@coinculture.info",
+   "status": "accepted",
+   "status_raw": "Approved. Implemented.",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# ADR 003: Light Client Core Verification\n\n## Changelog\n\nThis used to be part of ADR-002 but was factored out.\n\n- 2020-02-09: Realignment with latest code and finalize.\n- 2020-01-22: Factor this new ADR out of ADR-002 and reduce to just the core\nverification component.\n\n## Status\n\nApproved. Implemented.\n\n## Context\n\nThe high level context for the light client is described in\n[ADR-002](adr-002-light-client-adr-index.md).\n\nFor reference, a schematic of the light node is below:\n\n![Light Node Diagram](assets/light-node.png).\n\nHere we focus on the core verification library, which is reflected in the\ndiagram as the \"Light Client Verifier\" and \"Bisector\".\n\nThe light node is subjectively initialized, and then attempts to sync to a most\nrecent height by skipping straight to it. The verifier is the core logic\nto check if a header can be trusted and if we can skip to it.\nIf the validator set has changed too much, the header can't be trusted,\nand we'll have to request intermediate headers as necessary to sync through the validator set changes.\n\nNote the verifier should also work for IBC, though in IBC bisection can't be performed directly\nsince blockchains can't make HTTP requests. There, bisection is expected to be done by an external relayer\nprocess that can make requests to full nodes and submit the results to an IBC enabled chain.\n\nThe library should lend itself smoothly to both use cases and should be difficult to use incorrectly.\n\nThe core verification operates primarily on data types that are already implemented\nin tendermint-rs (headers, public keys, signatures, votes, etc.). The crux of it\nis verifying validator sets by computing their merkle root, and verifying\ncommits by checking validator signatures. The particular data structures used by\nTendermint have considerably more features/functionality than needed for this,\nhence the core verification library should abstract over it.\n\nHere we describe the core verification library, including:\n\n- traits\n- public functions for IBC and light nodes\n- implementations of traits for the existing Tendermint data-structures\n\n## Decision\n\nThe implementation of the core verification involves two components:\n\n- a new `light` crate, containing traits and functions defining the core verification\n  logic\n- a `light-impl` module within the `tendermint` crate, containing implementations of\n  the traits for the tendermint specific data structures\n\nThe `light` crate should have minimal dependencies and not depend on\n`tendermint`. This way it will be kept clean, easy to test, and easily used for\nvariations on tendermint with different header and vote data types.\n\nThe light crate exposes traits for the block header, validator set, and commit\nwith the minimum information necessary to support general light client logic.\n\nAccording to the specification, the key functionality the light client\nverification requires is to determine the set of signers in a commit, and\nto determine the voting power of those signers in another validator set.\nHence we can abstract over the lower-level detail of how signatures are\nvalidated.\n\n### Header\n\nA Header must contain a height, time, and the hashes of the current and next validator sets.\nIt can be uniquely identified by its hash:\n\n```rust\npub trait Header {\n    fn height(&self) -> Height;\n    fn bft_time(&self) -> Time;\n    fn validators_hash(&self) -> Hash;\n    fn next_validators_hash(&self) -> Hash;\n\n    fn hash(&self) -> Hash;\n}\n```\n\n### Commit\n\nA commit in the blockchain contains the underlying signatures from validators, typically in\nthe form of votes. From the perspective of the light client,\nwe don't care about the signatures themselves.\nWe're only interested in knowing the total voting power from a given validator\nset that signed for the given block. Hence we can abstract over underlying votes and\nsignatures and just expose a `voting_power_in`, as per the spec:\n\n```rust\npub trait Commit {\n    type ValidatorSet: ValidatorSet;\n\n    fn header_hash(&self) -> Hash;\n    fn validate(&self, &Self::ValidatorSet) -> Result<(), Error>;\n    fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, Error>;\n}\n```\nThe `header_hash` is the header being committed to,\nand `validate` performs Commit-structure-specific validations,\nfor instance checking the number of votes is correct, or that they are\nall for the right block ID.\n\nComputing `voting_power_in` require access to a validator set\nto get the public keys to verify signatures. But this specific relationship\nbetween validators and commit structure isn't the business of the `light` crate;\nit's rather how a kind of Tendermint Commit structure implements the `light` traits.\nBy making ValidatorSet an associated type of Commit, the light crate doesn't\nhave to know much about validators or how they relate to commits, so the ValidatorSet\ntrait can be much smaller, and we never even define the concept of an individual\nvalidator.\n\nNote this means `Commit` is expected to have access to the ids of the validators that\nsigned, which can then be used to look them up in their ValidatorSet implementation.\nThis is presently true, since Commit's contain the validator addresses\nalong with the signatures. But if the addresses were removed, for instance to\nsave space, the Commit trait would need access to the relevant validator set to\nget the Ids, and this validator set may be different than the one being passed\nin `voting_power_in`.\n\nBy abstracting over the underlying vote type, this trait can support\noptimizations like batch verification of signatures, and the use of\naggregate signatures instead of individual votes.\nSo long as it can be determined what voting power of a given validator set\nsigned correctly for the commit.\n\nThe method `voting_power_in` performs the underlying signature verifications.\nIt should return an error if any of them fail or are for the wrong header hash.\n\nNote the specification introduces a `signers(commit) -> validators` method that\nreturns the list of validators that signed a commit. However, such a method\nwould require access to the underlying validator set in order to verify the\ncommits, and it is only ever used in computing `voting_power_in`. Hence, we\ndispense with it here in favour of a `voting_power_in` that operates on a\n`Commit` and `ValidatorSet`. However, this also means that ValidatorSet will\nneed to expose facilities for determining whether a validator signed correctly in\norder for implementations to make use of it to compute `voting_power_in`.\n\nNote also that in Tendermint, commits are for a particular block ID, which\nincludes both a header hash and a \"parts set hash\". The latter is completely\nirrelevant to the light client, and can only be verified by downloading the full\nblock. Hence it is effectively ignored here. It would be great if Tendermint\ncould disentangle commits to the proposal block parts for gossip (ie. the parts\nset hash) from commits to the header itself (ie. the header hash), but that's\nleft for the future.\n\nFor more background on implementation of Tendermint commits and votes, see:\n- [ADR-025](https://github.com/tendermint/tendermint/blob/main/docs/architecture/adr-025-commit.md)\n- [Validator Signing Spec](https://github.com/tendermint/tendermint/blob/main/docs/spec/consensus/signing.md)\n- [Tendermint consensus specification](https://arxiv.org/abs/1807.04938)\n\n### Validator Set\n\nA validator set has a unique hash which must match what's in the header.\nIt also has a total power used for determining if the result of `voting_power_in` is greater\nthan a fraction of the total power. \n\nValidatorSet is implemented as an associated type of Commit, where it's\nnecessary to compute `voting_power_in`, so the underlying implementation must\nhave some way to determine the voting power of the validators that signed,\nsince voting power is not found in the commit itself.\n\nNote we don't need to define individual validators since all the details of how validators relates to commits\nis encapsulated in the Commit.\n\n```rust\npub trait ValidatorSet {\n    fn hash(&self) -> Hash;\n    fn total_power(&self) -> u64;\n}\n```\n\n### State\n\nAccording to the spec, the light client is expected to have a store that it can\npersist trusted headers and validators to. This is necessary to fetch the last trusted\nvalidators to be used in verifying a new header, but it's also needed in case\nany conflicting commits are discovered and they need to be published to the\nblockchain. That said, it's not needed for the core verification, so we don't\ninclude it here. Users of the `light` crate like a light node decide how to\nmanage the state. We do include some convenience structs:\n\n```rust\npub struct SignedHeader<C, H> \nwhere \n    C: Commit, \n    H: Header,\n{\n    commit: C,\n    header: H,\n}\n\npub struct TrustedState<C, H>{\nwhere \n    C: Commit, \n    H: Header,\n{\n    last_header: SignedHeader<C, H>,\n    validators: C::ValidatorSet,\n}\n```\n\nHere the trusted state combines both the signed header and the validator set,\nready to be persisted to some external store.\n\n### TrustThreshold\n\nThe amount of validator set change that occur when skipping to a higher height depends on the\ntrust threshold, as per the spec. Here we define it as a trait that encapsulated the math of what percent\nof validators need to sign:\n\n```rust\npub trait TrustThreshold: Copy + Clone {\n    fn is_enough_power(&self, signed_voting_power: u64, total_voting_power: u64) -> bool;\n}\n```\n\nWe provide a conenvient implementation that takes a numerator and a denominator. The default is of course 1/3.\n\n### Requester\n\nThe light node needs to make requests to full nodes during bisection for intermediate signed headers and validator sets:\n\n```rust\npub trait Requester<C, H>\nwhere\n    C: Commit,\n    H: Header,\n{\n    fn signed_header(&self, h: Height) -> Result<SignedHeader<C, H>, Error>;\n    fn validator_set(&self, h: Height) -> Result<C::ValidatorSet, Error>;\n}\n```\n\nIn practice, this can be implemented as a Tendermint RPC client making requests\nto the `/commit` and `/validators` endpoints of full nodes.\nFor testing, the Requester can be implemented by JSON files.\n\n### Verification\n\nBoth IBC and full node syncing have to perform a common set of checks:\n\n- validate the hashes\n- if the header is sequential, validate the next validator set\n- if the header is not sequential, check if the trust threshold is reached\n\t- this uses `voting_power_in` with a validator set that may be different from\nthe one that actually created the commit.\n- check that +2/3 of the validators signed\n\t- this uses `voting_power_in` with the actual validator set\n\nThese are implemented in a common function, `verify_single_inner`:\n\n```rust\nfn verify_single_inner<H, C, L>(\n    trusted_state: &TrustedState<C, H>,\n    untrusted_sh: &SignedHeader<C, H>,\n    untrusted_vals: &C::ValidatorSet,\n    untrusted_next_vals: &C::ValidatorSet,\n    trust_threshold: L,\n) -> Result<(), Error>\n```\n\nNote however that light client security model is highly sensitive to time, so the public functions\nexposed for IBC and bisection, which will call `verify_single_inner`, must take a current time\nand check we haven't expired.\n\nFor IBC, since it can't make its own requests, the public function just takes the untrusted state\nin full, and return it as a TrustedState if it verifies:\n\n```rust\npub fn verify_single<H, C, T>(\n    trusted_state: TrustedState<C, H>,\n    untrusted_sh: &SignedHeader<C, H>,\n    untrusted_vals: &C::ValidatorSet,\n    untrusted_next_vals: &C::ValidatorSet,\n    trust_threshold: T,\n    trusting_period: &Duration,\n    now: &SystemTime,\n) -> Result<TrustedState<C, H>, Error>\n```\n\nFor the light node, we pass in a Requester, and specify a height we want to sync to.\nIt will fetch that header and try to verify it using the skipping method,\nand will run a bisection algorithm to recursively request headers of lower height\nas needed. It returns a list of headers it verified along the way:\n\n```rust\npub fn verify_bisection<C, H, L, R>(\n    trusted_state: TrustedState<C, H>,\n    untruste",
+   "truncated_text": true,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "assets/light-node.png",
+    "github.com/tendermint/tendermint/blob/main/docs/spec/consensus/signing.md",
+    "arxiv.org/abs/1807.04938",
+    "/commit",
+    "/validators",
+    "github.com/interchainio/verification/blob/develop/spec/light-client/Blockchain.tla"
+   ],
+   "implementation": {
+    "sha": "f9287e04ee84e6659ea209529a1bb700ab53e45b",
+    "date": "2020-02-09T23:50:11-05:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "docs/architecture/assets/light-node.png"
+    ]
+   }
+  },
+  {
+   "path": "docs/architecture/adr-004-light-client-cli.md",
+   "identity": "docs/architecture/adr-004-light-client-cli.md",
+   "adr_id": "4",
+   "title": "ADR 004: Light Client CLI",
+   "first_commit": "2020-02-09T23:50:11-05:00",
+   "first_sha": "f9287e04ee84e6659ea209529a1bb700ab53e45b",
+   "last_commit": "2023-03-03T12:33:09+02:00",
+   "author": "Ethan Buchman",
+   "email": "ethan@coinculture.info",
+   "status": "unknown",
+   "status_raw": "WIP.",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# ADR 004: Light Client CLI\n\n## Changelog\n\n- 2020-02-09: Update about Abscissa\n- 2020-01-22: Some content copied from old ADR-002\n\n## Status\n\nWIP.\n\n## Context\n\nThe high level context for the light client is described in\n[ADR-002](adr-002-light-client-adr-index.md).\n\nFor reference, a schematic of the light node is below:\n\n![Light Node Diagram](assets/light-node.png).\n\nHere we focus on how the Light Node process itself is composed.\nThe light node process must consider the following features:\n\n- command line UX and flags\n- config file\n- logging\n- error handling\n- state management\n- exposing RPC servers\n\nIdeally, it can support all of this with a minimum of dependencies.\n\nWe'd like to be able to start a light node process and have it sync to the\nlatest height and stay synced while it runs.\n\n## Decision\n\n### Abscissa\n\n[Abscissa](https://github.com/iqlusioninc/abscissa) is a framework for building CLI\ntools in Rust by Tony Arcieri of Iqlusion.\nIt's focus is on security and minimizing dependencies.\nThe full list of dependencies can be found [here](https://github.com/iqlusioninc/abscissa#dependencies).\n\nFor instance, while it includes functionality for command-line option parsing like that\nprovided by `structopt` + `clap`, it does so with far less dependencies.\n\n[Users](https://github.com/iqlusioninc/abscissa#projects-using-abscissa)\nof note include the [Tendermint KMS](https://github.com/tendermint/kms)\nfor validators and the new\n[Zebra ZCash full node](https://github.com/ZcashFoundation/zebra).\n\nSee the [introductory blog\npost](https://iqlusion.blog/introducing-abscissa-rust-application-framework)\nfor more details.\n\n### Config\n\nConfig includes:\n\n- trusting period\n- initial list of full nodes\n- method (sequential or skipping)\n- trust level (if method==skipping)\n\nThe configuration contains an initial list of full nodes (peers).\nFor the sake of simplicity, one of the peers is selected as the \"primary\", while the\nrest are considered \"backups\". Most of the data is downloaded from the primary,\nand double checked against the backups.\n\nThe state is considered \"expired\" if the difference between the current time and\nthe time from the trusted header is greater than a configurable \"trusting\nperiod\". If at any point the state is expired, the node should log an error and\nexit - it's needs to be manually reset.\n\n\n### Initialization\n\nThe node is initialized with a trusted header for some height and a validator set for the next height.\n\nThe node may be initialized by the user with only a height and header hash, and\nproceed to request the full header and validator set from a full node. This\nreduces the initialization burden on the user, and simplifies passing this\ninformation into the process, but for the state to be properly initialized it\nwill need to get the correct header and validator set before starting the light\nclient syncing protocol.\n\n### State\n\nThe light node will need to maintain state including the current height, the\nlast verified and trusted header, and the current set of trusted validators.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "assets/light-node.png"
+   ],
+   "implementation": {
+    "sha": "f9287e04ee84e6659ea209529a1bb700ab53e45b",
+    "date": "2020-02-09T23:50:11-05:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "docs/architecture/assets/light-node.png"
+    ]
+   }
+  },
+  {
+   "path": "docs/architecture/adr-005-light-client-fork-detection.md",
+   "identity": "docs/architecture/adr-005-light-client-fork-detection.md",
+   "adr_id": "5",
+   "title": "ADR 005: Light Client Fork Detection",
+   "first_commit": "2020-02-09T23:50:11-05:00",
+   "first_sha": "f9287e04ee84e6659ea209529a1bb700ab53e45b",
+   "last_commit": "2023-03-03T12:33:09+02:00",
+   "author": "Ethan Buchman",
+   "email": "ethan@coinculture.info",
+   "status": "unknown",
+   "status_raw": "WIP. Just copied over from old ADR. Needs rework",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# ADR 005: Light Client Fork Detection\n\n## Changelog\n\n2020-01-22: Some content copied from old ADR-002\n\n## Status\n\nWIP. Just copied over from old ADR. Needs rework\n\n## Context\n\nIn addition to the core verification logic, the light node needs a way to\nreceive data from full nodes, to detect conflicting information, and to report\non conflicts. While there are many ways for a full node to provide bad\ninformation, what we're really looking for is misbehaviour by the validators,\nwhich is reflected in conflicting commits (ie. commits for different blocks at\nthe same height).\n\n### Detect\n\nThe detection module is for checking if any of the backup nodes\nare reporting conflicting information. It requests headers from each backup node\nand compares them with a verified header from the primary. If there is a\nconflict, it attempts to verify the conflicting header via the verifier. If it\ncan be verified, it indicates an attack on the light clients that should be\npunishable. The relevant information (ie. the two conflicting commits) are\npassed to the publisher.\n\n### Publisher\n\nFor now, the publisher just logs an error, writes the conflicting commits to a\nfile, and exits. We leave it to a future document to describe how this\ninformation can actually be published to the blockchain so the validators can be\npunished. Tendermint may need to expose a new RPC endpoint to facilitate this.\n\nSee related [Tendermint issue #3244](https://github.com/tendermint/tendermint/issues/3244).\n\n### Address Book\n\nFor now this is a simple list of HTTPS addresses corresponding to full nodes\nthat the node connects to. One is randomly selected to be the primary, while\nothers serve as backups. It's essential that the light node connect to at least\none correct full node in order to detect conflicts in a timely fashion. We keep\nthis mechanism simple for now, but in the future a more advanced peer discovery\nmechanism may be utilized.\n\n\n#### Sequential Sync\n\nInitial state:\n\n    - time T\n    - height H \n    - header[H-1]\n    - vals[H]\n\nHere we describe the happy path:\n\n1) Request header[H], commit[H], and vals[H+1] from the primary, and check that they are well formed and from the correct height\n2) Pass header[H], commit[H], vals[H], and vals[H+1] to the verification library, which will:\n\n    - check that vals[H] and vals[H+1] are correctly reflected in header[H]\n    - check that commit[H] is for header[H]\n    - check that +2/3 of the validators correctly signed the hash of header[H]\n\n3) Request header[H] from each of the backups and check that they match header[H] received from the primary\n4) Update the state with header[H] and vals[H+1], and increment H\n5) return to (1)\n\nIf (1) or (2) fails, mark the primary as bad and select a new peer to be the\nprimary.\n\nIf (3) returns a conflicting header, verify the header by requesting the\ncorresponding commit and running the verification of (2). If the verification\npasses, there is a fork, and evidence should be published so the validators get\nslashed. We leave the mechanics of evidence to a future document. For now, the\nlight client will just log an error and exit. If the verification fails, it\nmeans the backup that provided the conflict is bad and should be removed.\n\n#### Skipping Sync\n\nSkipping sync is essentially the same as sequential, except for a few points:\n\n- instead of verifying sequential headers, we attempt to \"skip\" ahead to the\n  full node's most recent height\n- skipping is only permitted if the validator set has not changed too much - ie.\n  if +1/3 of the last trusted validator set has signed the commit for the height we're attempting to skip to\n- if the validator set changes too much, we \"bisect\" the height space,\n  attempting to skip to a lower height, recursively.\n- in the worst case, the bisection takes us to a sequential height\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#3244",
+     "kind": "hash",
+     "url": "",
+     "number": "3244"
+    },
+    {
+     "key": "tendermint/tendermint#3244",
+     "kind": "issue",
+     "url": "https://github.com/tendermint/tendermint/issues/3244",
+     "number": "3244"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-006-light-client-refactor.md",
+   "identity": "docs/architecture/adr-006-light-client-refactor.md",
+   "adr_id": "6",
+   "title": "ADR 006: Light Client Refactor",
+   "first_commit": "2020-06-30T14:40:32+02:00",
+   "first_sha": "87857e7d2a4848079c25ad4d266bf5f473d623fa",
+   "last_commit": "2023-03-03T12:33:09+02:00",
+   "author": "Sean Braithwaite",
+   "email": "brapse@gmail.com",
+   "status": "accepted",
+   "status_raw": "Implemented: * [Verification Predicates](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/predicates.rs) * [Verifier Component](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/components/verifier.rs) * [IO Component](https://github.com/inf",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# ADR 006: Light Client Refactor\n\n## Changelog\n- 2020-03-15: Initial draft\n- 2020-03-23: New decomposition\n- 2020-05-18: Concurrency\n- 2020-06-26: Handle Abstraction\n\n## Context\n\nThe light client protocol provides a method for verifying application\nstate without the execution of all preceding transactions. The\nprotocol for the light client is described in\n[English](https://github.com/tendermint/spec/tree/bucky/light-reorg/spec/consensus/light)\nwhile the rust implementation is described in\n[ADR-002](adr-002-light-client-adr-index.md). This ADR outlines the\nnext iteration of the light client implementation in rust in which\noutlines the runtime and concurrency concerns.\n\nThe basis for this work comes from the learnings of the [Reactor\nExperiments](https://github.com/informalsystems/reactor-experiments) as\nwell as the [Blockchain Reactor\nRefactor](https://github.com/tendermint/tendermint/blob/main/docs/architecture/adr-043-blockchain-riri-org.md). The key take always from that work are:\n\n1. Separate concerns into independently verifiable (by humans as well as\n   computers) components.\n2. Deterministic functions wherever possible\n3. Use events to index parameters of component function executions to\n   maintain alignment between specs and implementations.\n\n## Decision\n\nThe LightClient will be refactored to coordinate interactions with\nmultiple peers. Two abstractions will be introduced; Instance\nrepresenting API for interacting with a single Peer and Supervisor,\nwhich provides an API for interacting with a set of peers known as a\nPeerList. The PeerList will have a single peer as the Primary and\nmultiple Peers available as Secondaries.\n\nEach LightClient Instance will be configured to perform the light client\nprotocol against a single peer. The Instance will be decomposed into\nindependently verifiable components for:\n\n    * IO: Fetching LightBlocks from the peer\n    * Verifier: Verifying a LightBlock based on a TrustedState\n    * Scheduler: Schedule the next block based on the last TrustedState\n    * Clock: Provide the current time\n\nIn addition, cryptographic operations are also decomposed into three \"sub-components\":\n\n    * Hasher: For hashing headers\n    * CommitValidator: For validating commit integrity\n    * VotingPowerCalculator: For tallying the voting power of a validator set in a commit and verifying signatures\n\nEach component and operation will be represented as a trait allowing mock replacements\nto be used during integration testing.\n\nThe Supervisor will:\n\n* Manage the lifecycle of Instances\n* Coordinate the execution of the fork detection protocol\n* Publishing evidence to peers\n\n## Integration\n\nThe goal is to allow the light client to be accessible from multiple\ncomponents running in different threads. One component will be the RPC server which will allow\nexternal parties to interact with an internal light client. Another\nimmediate need is for the relayer to be able to fetch the latest trusted\nstate verified by the light client in order to relay IBC messages.\n\nWhat we need is a component facade which exposes an interface that\nprovides synchronous interactions and can be mocked out during testing.\n That interface should be free of\nserialization concerns for the user. Under the hood, that facade should\nbe facilitating interactions boundaries allowing components to operate\nfreely and safely in distinct threads or runtime.\n\n```rust\nfn main() {\n    let mut light_client = Supervisor::new();\n\n    // Get a handle specifically for the relayer\n    let relayer_light_client = light_client.handle();\n\n    let relayer = Relayer::new(light_client);\n    ...\n\n    // Run (consume Supervisor)\n    light_client.run();\n}\n```\n\nFor lack of better naming we call this abstraction \"Handle\". The\nSupervisor outlined above is executed by running in it's own thread. But\nbefore doing so, it spawns a `Handle`. The Handle is clonable and can\nbe given to any component who wants safe, serialized access to the\nSupervisor.\n\nThe implementation is a simple abstraction which facilitates\ncommunication over channels. Events send across a channel include a\ncallback. This callback abstraction allows the outer handle to expose a\nsynchronous operation event if the delegation is inherently\nasynchronous. Delegating at this level opens the door to exposing\nsynchronous interaction to thread pools and allowing components to\nhandle their concurrency optimization internally without burdening the\ncomponent user.\n\n```rust\npub struct Handle {\n    sender: channel::Sender<Event>,\n}\n...\nimpl Handle {\n    pub fn verify_to_target(&mut self, height: Height) -> Result<Header, &'static str> {\n        let (sender, receiver) = channel::bounded::<Event>(1);\n        let callback = Callback::new(move |result| {\n            let event = match result {\n                Ok(header) => {\n                    Event::Verified(header)\n                },\n                Err(err) => {\n                    Event::FailedVerification()\n                }\n            };\n            sender.send(event).unwrap();\n        });\n\n        self.sender.send(Event::VerifyToTarget(height, callback)).unwrap();\n\n        match receiver.recv().unwrap() {\n            Event::Verified(header) => {\n                return Ok(header);\n            },\n            Event::FailedVerification() => {\n                return Err(\"too bar\");\n            },\n            _ => {\n                return Err(\"that was unexpected\");\n            }\n\n        }\n    }\n}\n\n...\n// Supervisor\npub struct Supervisor {\n    ...\n    sender: channel::Sender<Event>,\n    receiver: channel::Receiver<Event>,\n}\n\nimpl Supervisor {\n    ...\n    pub fn handle(&mut self) -> Handle {\n        let sender = self.sender.clone();\n\n        return Handle::new(sender);\n    }\n    ...\n    pub fn run(mut self) {\n        thread::spawn(move || {\n            loop {\n                let event = self.receiver.recv().unwrap();\n                match event {\n                    Event::Terminate(sender) => {\n                        println!(\"Terminating light client\");\n                        sender.send(()).unwrap();\n                        return\n                    },\n                    Event::VerifyToTarget(height, callback) => {\n                        let outcome = self.verify_to_target(height);\n                        callback.call(outcome);\n                    },\n                    _ => {\n                        // NoOp?\n                    },\n                }\n            }\n        });\n    }\n}\n\n```\n## Status\n\nImplemented:\n\n* [Verification Predicates](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/predicates.rs)\n* [Verifier Component](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/components/verifier.rs)\n* [IO Component](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/components/io.rs)\n* [Scheduler Component](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/components/scheduler.rs)\n* [Supervisor](https://github.com/informalsystems/tendermint-rs/blob/e2335c40b1c5e1f7d47ee28ae5f9cc679730b7a2/light-client/src/supervisor.rs)\n* [Example](https://github.com/informalsystems/tendermint-rs/blob/e2335c40b1c5e1f7d47ee28ae5f9cc679730b7a2/light-client/examples/light_client.rs)\n\n## Consequences\n\n### Positive\n- Better Isolation of Concerns\n- Deterministic Testing of the composition of components.\n- Clear and easy to specify/verify concurrency model\n- Components control their concurrency and can be locally optimized for\n  bottlenecks while still exposing synchronous interfaces.\n\n### Negative\n\n### Neutral\n\n## References\n\n* [Light Client Spec](https://github.com/tendermint/spec/tree/bucky/light-reorg/spec/consensus/light)\n* [Blockchain Reactor Refactor](https://github.com/tendermint/tendermint/blob/main/docs/architecture/adr-043-blockchain-riri-org.md)\n* [Reactor Experiments](https://github.com/informalsystems/reactor-experiments)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/predicates.rs",
+    "github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/components/verifier.rs",
+    "github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/components/io.rs",
+    "github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/components/scheduler.rs",
+    "github.com/informalsystems/tendermint-rs/blob/e2335c40b1c5e1f7d47ee28ae5f9cc679730b7a2/light-client/src/supervisor.rs",
+    "github.com/informalsystems/tendermint-rs/blob/e2335c40b1c5e1f7d47ee28ae5f9cc679730b7a2/light-client/examples/light_client.rs"
+   ],
+   "implementation": {
+    "sha": "c017fe1c35486d8dfc9da3d2b5e37306a1385b5d",
+    "date": "2023-03-02T23:25:35+02:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "light-client/src/supervisor.rs"
+    ]
+   }
+  },
+  {
+   "path": "docs/architecture/adr-007-light-client-supervisor-ergonomics.md",
+   "identity": "docs/architecture/adr-007-light-client-supervisor-ergonomics.md",
+   "adr_id": "7",
+   "title": "ADR 007: Light Client Supervisor Ergonomics",
+   "first_commit": "2020-07-02T20:56:33+02:00",
+   "first_sha": "d6e4de11eb1791eef3b08a89d491f105b81b4f8c",
+   "last_commit": "2023-03-03T12:33:09+02:00",
+   "author": "Alexander Simmerl",
+   "email": "a.simmerl@gmail.com",
+   "status": "accepted",
+   "status_raw": "Approved",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# ADR 007: Light Client Supervisor Ergonomics\n\n## Changelog\n\n* 2020-06-30: Initial draft\n* 2020-07-02: approved with corrections\n\n## Context\n\nThe initial approach to use callbacks in order to capture async responses\nfrom requests issued by the `Handle` to its `Supervisor` introduces a couple of\ndrawbacks, i.e. try semantics, scope and borrow complexities. As the\ngeneral pattern seems to be that a bounded channel is constructed to transport\nthe response it could be reworked to be the actual value send with the event to\nthe Supervisor. Which in turn send back the response on the typed channel to the\nHandle. As an added side-effect this could remove the need for the Callback\nabstraction all together and fully embraces CSP style concurrency.\n\nFurthermore we have async versions of most `Handle` methods, but no real\nuse-case driving it. At this point we can't anticipate the limitations of the\ncurrent design with regards to concurrent access.\n\n## Decision\n\nRemove the callback abstraction in favour of passing channels in the events\nexchanged directly as the pattern is present already in the current concrete\nimplementation of the `supervisor::Handle` anyway.\n\nRemove async versions of the public methods until a use-case drives their\nimplementation. We will leave concurrency to be informed by emerging use-cases\nand field reports. With the first real integration likely happen in the RPC\nserver and ibc relayer.\n\n## Status\n\nApproved\n\n## Consequences\n\n### Positive\n\n* Smaller public surface of the Handle abstraction\n* Removal of Callback type\n* Easier to reason code\n\n### Negative\n\n### Neutral\n\n* No explicit async version of Supervisor methods\n\n## References\n\n* [Feedback on preceding ADR](https://github.com/informalsystems/tendermint-rs/pull/185#pullrequestreview-439830876)\n* [Tracking issue](https://github.com/informalsystems/tendermint-rs/issues/398)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "informalsystems/tendermint-rs#185",
+     "kind": "pull",
+     "url": "https://github.com/informalsystems/tendermint-rs/pull/185",
+     "number": "185"
+    },
+    {
+     "key": "informalsystems/tendermint-rs#398",
+     "kind": "issue",
+     "url": "https://github.com/informalsystems/tendermint-rs/issues/398",
+     "number": "398"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-009-transport-agnostic-peer-abstraction.md",
+   "identity": "docs/architecture/adr-009-transport-agnostic-peer-abstraction.md",
+   "adr_id": "9",
+   "title": "ADR 009: Transport agnostic Peer abstraction",
+   "first_commit": "2021-06-15T13:29:27+02:00",
+   "first_sha": "05da904806d0523e7b26e437da841bb56123ec38",
+   "last_commit": "2023-03-03T12:33:09+02:00",
+   "author": "Alexander Simmerl",
+   "email": "a.simmerl@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# ADR 009: Transport agnostic Peer abstraction\n\n## Changelog\n* 2021-02-05: drafted\n* 2022-04-08: revised\n\n## Context\n\nWith the opportunity to design and implement the peer-to-peer stack from\nscratch in the context of the Tendermint implementation in Rust, a lot of the\nlearnings of the shortcomings of the original Go implementation can be used to\nprevent certain mistakes. Namely two:\n\n* Leakage of physical concerns into the core domain\n* Flexibility to adopt different wire protocols for transport of messages\n\nFor that, the first set of newly introduced concepts will attempt to be generic\nover which transport is used to connect and converse with other peers. Given\nstrongly tailored abstract interfaces, concrete implementations will be easy to\nspin up and plug into the machinery which lifts bytes from the wire into the\ncore domain and transports messages into the rest of the system.\n\n## Decision\n\n### Transport\n\nWrapping the design is the `Transport`. Modelled with the properties of\na physical network endpoint in mind, which can be bound and stopped. It should\nstrongly correspond to the acquisition and lifecycle management of network\nresources on the system.\n\n``` rust\npub trait Transport {\n    type Connection: Connection;\n    type Endpoint: Endpoint<Connection = <Self as Transport>::Connection>;\n    type Incoming: Stream<Item = Result<<Self as Transport>::Connection>> + Send + Sync;\n\n    async fn bind(self, bind_info: BindInfo) -> Result<(Self::Endpoint, Self::Incoming)>;\n}\n```\n\nAfter the successful bind the caller holds an `Endpoint` as well as a stream of\nincoming `Connection`s. Which is a standardised way to connect to new peers and\nreact to newly connected ones respectively.\n\n``` rust\npub trait Endpoint: Send + Sync {\n    type Connection;\n\n    async fn connect(&self, info: ConnectInfo) -> Result<Self::Connection>;\n    fn listen_addrs(&self) -> Vec<SocketAddr>;\n}\n```\n\nCenterpiece of the whole shebang is the `Connection`. It represents a connected\npeer and provides the primitives to get data and send data from a peer. It is\ndesigned with the outlook to support stream based transports down the road.\nWhile being open to enable feature parity with current production installations\nbased on tendermint-go's `MConn`.\n\n``` rust\npub trait StreamSend: Send + Sync {\n    async fn send<B: AsRef<[u8]>>(msg: B) -> Result<()>;\n}\n\npub trait Connection: Send + Sync {\n    type Error: std::error::Error + Send + Sync + 'static;\n    type StreamRead: Stream<Item = Result<Vec<u8>>> + Send;\n    type StreamSend: StreamSend;\n\n    fn advertised_addrs(&self) -> Vec<SocketAddr>;\n    async fn close(&self) -> Result<()>;\n    fn local_addr(&self) -> SocketAddr;\n    async fn open_bidirectional(\n        &self,\n        stream_id: StreamId,\n    ) -> Result<(Self::StreamRead, Self::StreamSend), Self::Error>;\n    fn public_key(&self) -> PublicKey;\n    fn remote_addr(&self) -> SocketAddr;\n}\n```\n\n### Peer\n\nGiven a correct implementation of a `Transport` and its `Connection` newly\nestablished ones will be wrapped with a `Peer`. Which is in charge of setting\nup the correct streams on the `Connection` and multiplex messages - incoming\nand outgoing alike - efficiently. It's also an attempt to enforce\ncorrect-by-construction constraints on the state machine of the peer. To avoid\nmisuse or unexpected transitions. The only way to construct is, is from an\nexisting connection which gives the caller a connected peer. When invoking run\non that one a fully function peer is \"returned\". Therefore the states look\nlike: `Connected -> Running -> Stopped`.\n\n``` rust\nimpl<Conn> Peer<Connected<Conn>>\nwhere\n    Conn: Connection,\n{\n    pub async fn run(self, stream_ids: Vec<StreamId>) -> Result<Peer<Running<Conn>>> {\n        // ...\n    }\n\n    async fn stop(self) -> Result<Peer<Stopped>> {\n        // ...\n    }\n}\n\nimpl<Conn> Peer<Running<Conn>>\nwhere\n    Conn: Connection,\n{\n    pub async fn send(&self, message: message::Send) -> Result<()> {\n        // ...\n    }\n\n    pub async fn stop(self) -> Result<Peer<Stopped>> {\n        // ...\n    }\n}\n```\n\nWhile sending messages is done through a method on a running peer, getting hold\nof incoming messages can be achieved by draining the `Receiver` part of the\nrunning state.\n\n### Supervisor\n\nThe `Supervisor` is the main entry point to the p2p package giving higher-level\ncomponents access to a unified stream of peer events and messages as well as\nthe ability to control peer lifecycle (connect, disconnect, etc.).\n\n``` rust\npub enum Command {\n    Accept,\n    Connect(SocketAddr),\n    Disconnect(node::Id),\n    Msg(node::Id, message::Send),\n}\n\npub enum Event {\n    Connected(node::Id, Direction),\n    Disconnected(node::Id, Report),\n    Message(node::Id, message::Receive),\n    Upgraded(node::Id),\n    UpgradeFailed(node::Id, Report),\n}\n\nstruct CommandHandle;\n\nimpl CommandHandle {\n  fn instruct(command: Command) -> Result<()> {\n    // ..\n  }\n}\n\nimpl Supervisor {\n    pub fn new<T>(transport: T) -> Self\n    where\n        T: transport::Transport + Send + 'static,\n    {\n      // ..\n    }\n\n    pub handle(&self) -> CommandHandle {\n      // ..\n    }\n\n    pub subscribe(&self) -> Receiver<Event> {\n      // ..\n    }\n\n    pub async fn run<T>(self) -> Result<()> {\n        // ...\n    }\n}\n```\n\n## Status\n\nAccepted\n\n## Consequences\n\n### Positive\n\n* Unified way to bootstrap and integrate transports\n* Potential for connecting different wire transports in the same process\n* Rest of the domain is simply concerned with `node::Id`s as identity\n\n### Negative\n\n* Significant set of abstractions need to be satisfied for a new transport\n  implementation\n* Non-stream based transports need to be fitted into this model\n\n### Neutral\n\n## Open Questions\n\n## References\n\n* [rfc: add P2P stream proposal](https://github.com/tendermint/spec/pull/227)\n* [P2P Refactor](https://github.com/tendermint/tendermint/issues/2067)\n* [p2p: support multiple transports](https://github.com/tendermint/tendermint/issues/5587)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "tendermint/spec#227",
+     "kind": "pull",
+     "url": "https://github.com/tendermint/spec/pull/227",
+     "number": "227"
+    },
+    {
+     "key": "tendermint/tendermint#2067",
+     "kind": "issue",
+     "url": "https://github.com/tendermint/tendermint/issues/2067",
+     "number": "2067"
+    },
+    {
+     "key": "tendermint/tendermint#5587",
+     "kind": "issue",
+     "url": "https://github.com/tendermint/tendermint/issues/5587",
+     "number": "5587"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-001-repo.md",
+   "identity": "docs/architecture/adr-001-repo.md",
+   "adr_id": "1",
+   "title": "ADR 001: Repository Structure",
+   "first_commit": "2019-10-02T21:33:43-04:00",
+   "first_sha": "cdf734cc1113bdabbd1a0cec9aa4c561ffa1b4ad",
+   "last_commit": "2022-09-06T20:24:45-04:00",
+   "author": "Ethan Buchman",
+   "email": "ethan@coinculture.info",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# ADR 001: Repository Structure\n\n## Context\n\nThis crate began its life in the\n[tendermint/kms](http://github.com/tendermint/kms) \nas a library of components necessary to build the Tendermint KMS. \nOther features were added to support additional tooling, like a Tendermint config parser and RPC client. \n\nWe would now like to develop it further to support lite clients and eventually\nfull nodes. It has thus been split into its own repo to evolve independently of\nthe KMS. Here we propose an initial plan for the evolution of the repo towards\nthese goals.\n\n## Decision\n\nAt this stage, the repository must address three concerns:\n\n1) Maintain existing tendermint-rs roughly as is for the KMS and rpc client\nusers\n2) Establish a Lite Client\n3) Establish a Reactor Framework and initial implementations of Tendermint\nreactor components\n\nFor now, we can consider that each of these will proceed as their own crate.\n`tendermint-rs` already exists as the repo namesake, while `lite` and `reactor`\ncrates can be created in the root.\n\n\n### Maintaining Tendermint-RS\n\nWe should support the current tendermint-rs as necessary, and not hasten to make\nany sweeping changes to the structure until we better understand consumers.\nAny changes must be well co-ordinated with at least the KMS. Also, the\n`secret_connection` code should be \n[moved back to the KMS](https://github.com/interchainio/tendermint-rs/pull/21#issuecomment-529061992)\n\nWe may ultimately want to consider further breaking it up into crates. At\npresent, that might consist of the following:\n\n- crypto\n- tendermint-rs (depends on crypto) \n- config (depends on tendermint-rs)\n- rpc (depends on tendermint-rs)\n\nSee some prior discussion about this\n[here](https://github.com/interchainio/tendermint-rs/issues/7).\n\n### Lite Client\n\nMost of the necessary data types already exist (pubkey/signature, blockid,\nvote), with support for serialization/deserialization. The crux of the lite\nclient is verifying validator sets by computing their merkle root, and verifying\ncommits by checking validator signatures. We have recently completed first\npasses at these verifications - they need to be further reviewed, better\nstructured, and better tested.\n\nIdeally, as much of the lite client code as possible is independent of the\nparticulars of pubkey/signature/blockid/vote/etc. The lite client should be\nwritten generically, with its own traits, and the existing types made to\nimplement them. \n\nWe should follow the [lite client spec closely](https://github.com/tendermint/tendermint/blob/main/docs/spec/consensus/light-client.md), and we should work in parallel on a TLA+ implementation.\n\nNote the spec assumes a function `signers(commit)`, which returns the validators\nfor a given commit. In practice, the validator set itself is not in the commit,\nso this requires fetching the validator set from a full node, computing the merkle root, \nand comparing it against the ValidatorsHash in the header. We must also ensure \nthe hash of the header is included in the BlockID. This kind of stuff can be\nabstracted from the core lite client code (ie. `signers(commit)`), but needs to\nbe supported in the actual implementation.\n\nNote the \n[structure of commits is about to change in\nTendermint](https://github.com/tendermint/tendermint/issues/1648),\na big breaking change that will make blocks much smaller by eliminating\nredundant information from the included votes (ie. just including the\nsignatures). The generic lite client should be able to abstract over such a\nchange just fine, but we'd of course have to update how the commit types\nimplement the lite client traits.\n\nWe should try to surface the validity of data as much as possible in the type\nsystem, so we can clarify the levels of validity of our data. For instance, the\ndifference between a random validator set that's just been loaded and a\nvalidator set that has been verified against some commits should have different\ntypes.\n\nWe should also get started with a `lite` binary that reads from the rpc and performs a lite client sync.\nMost of the RPC client is fleshed out, but we'll have to add support for a few\nmore fields and write tests.\n    \n### Reactors\n\nThe primary goals of the new reactor design are [deterministic simulation](https://www.youtube.com/watch?v=4fFDFbi3toc)\nand a tight mapping between code and formal specification.\n\nDeterministic simulation should allow us to simulate networks with hundreds (thousands?!) \nof nodes in a single process, and to deterministically replay simulations, allowing complex\nexecutions to be studied and debugged. The framework will require further\ninvestigations of Rust's concurrency model and existing frameworks.\n\nTight mapping between code and formal specification will allow us to more easily reason\nabout the correctness of the code, and, with some R&D work, automatically generate tests \nfrom the formal specification. It believes this will be helped via ideas like session types,\nwhere as much as possible about the system's state and transitions is expressed\nin the type system.\n\nWork on both of these goals can begin independently. On the one hand, we should\nbe exploring Rust frameworks for deterministic simulation, and on the other we\nshould be writing the core reactor state machines, eventually to be plugged into\nthe simulation framework.\n\n## Status\n\nProposed\n\n## Consequences\n\n### Positive\n\n- Minimal changes to existing tendermint-rs\n- Parallel execution paths\n- Separation of concerns\n\n### Negative\n\n### Neutral\n\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "interchainio/tendermint-rs#21",
+     "kind": "pull",
+     "url": "https://github.com/interchainio/tendermint-rs/pull/21",
+     "number": "21"
+    },
+    {
+     "key": "interchainio/tendermint-rs#7",
+     "kind": "issue",
+     "url": "https://github.com/interchainio/tendermint-rs/issues/7",
+     "number": "7"
+    },
+    {
+     "key": "tendermint/tendermint#1648",
+     "kind": "issue",
+     "url": "https://github.com/tendermint/tendermint/issues/1648",
+     "number": "1648"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/tendermint/tendermint/blob/main/docs/spec/consensus/light-client.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture/adr-008-event-subscription.md",
+   "identity": "docs/architecture/adr-008-event-subscription.md",
+   "adr_id": "8",
+   "title": "ADR 008: RPC Client Event Subscription Mechanism",
+   "first_commit": "2020-08-28T16:01:06-04:00",
+   "first_sha": "a6187fc75e92ea9210ff379d12980654a0e3e4d7",
+   "last_commit": "2022-09-06T20:24:45-04:00",
+   "author": "Thane Thomson",
+   "email": "thane@informal.systems",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# ADR 008: RPC Client Event Subscription Mechanism\n\n## Changelog\n\n* 2020-07-23: Initial draft\n\n## Context\n\nThe [Tendermint Light Client](../../light-client/) is one of many important\napplications that will make use of the [RPC client](../../rpc/) to query\nTendermint full nodes for information relating to the blockchain.\n\nTendermint servers (e.g. full nodes) provide an [event\nsubscription][tm-event-subs] RPC endpoint to allow clients to receive\nnotifications of specific events as they happen (currently via a WebSockets\nconnection). We need to expose this subscription mechanism through the RPC client.\n\nIn order to achieve this, we need:\n\n1. An ergonomic interface for the RPC client that allows developers to subscribe\n   to events produced by specific queries. Specifically, this interface must:\n   1. Offer **subscription** functionality, where:\n      1. A single **subscription** takes place to the **events** produced by a\n         **query** (the [PEG] for which, at the time of this writing, is located\n         [here][query-peg]).\n      2. Callers must be able to create multiple distinct subscriptions.\n      3. A subscription must offer an interface to allow for iteration over\n         incoming events only relevant to that subscription (i.e. it should\n         produce an **event stream**).\n      4. It must be possible to, from outside of the RPC client, receive events\n         from multiple subscriptions' event streams concurrently without\n         interfering with/blocking each other.\n      5. It must be possible to, from outside of the RPC client, handle\n         subscriptions' event streams without blocking other RPC operations.\n   2. Offer the ability to **unsubscribe** from specific queries (i.e. to\n      terminate specific subscriptions).\n2. An appropriate concurrency model for drivers of the transport layer that\n   allows the transport layer to operate independently of consumers of\n   subscriptions. This is so that consumers don't block transport layer\n   activities and vice-versa.\n\n## Decision\n\n### Assumptions\n\n* All blocking operations that deal with I/O must be `async`.\n* We will not be [\"de-asyncifying\" the RPC][issue-318] and will rather, in a\n  future ADR, propose a synchronous architecture as well should we need one.\n\n### Proposed Entities and Relationships\n\nThe entities in the diagram below are described in the following subsections.\n\n![RPC client ERD](assets/rpc-client-erd.png)\n\n### `Event`\n\nIn terms of the subscription interface, this is ultimately what the end user is\nmost interested in obtaining. The `Event` type's structure is dictated by the\nTendermint RPC:\n\n```rust\npub struct Event {\n    /// The query that produced the event.\n    pub query: String,\n    /// The data associated with the event (determines its `EventType`).\n    pub data: EventData,\n    /// Event type and attributes map.\n    pub events: Option<HashMap<String, Vec<String>>>,\n}\n\npub enum EventData {\n    NewBlock {\n        block: Option<Block>,\n        result_begin_block: Option<BeginBlock>,\n        result_end_block: Option<EndBlock>,\n    },\n    Tx {\n        tx_result: TxResult,\n    },\n    // ...\n}\n```\n\n### `Subscription`\n\nA `Subscription` here is envisaged as an entity that implements the\n[Stream][futures-stream] trait, allowing its owner to asynchronously iterate\nthrough all of the relevant incoming events. Use of such a subscription should\nbe as simple as:\n\n```rust\nwhile let Some(result_event) = subscription.next().await {\n   match result_event {\n      Ok(event) => { /* handle event */ },\n      Err(e) => { /* terminate subscription and report error */ },\n   }\n}\n\n// Terminate the subscription (i.e. unsubscribe and consume it).\n// Since a `Subscription` could be moved to and consumed in any asynchronous\n// context (and a distinct context to the original client entity that created\n// it), it would make sense that **unsubscribing** should be accessible from\n// that same context.\nsubscription.terminate().await.unwrap();\n```\n\nOnce [asynchronous destructors][async-drop] are available in Rust, the\n`terminate` method should no longer be necessary.\n\nFor efficient routing of events to `Subscription`s, each `Subscription` should\nhave some kind of unique identifier associated with it (a `SubscriptionId`).\nEach `Subscription` relates only to a single [`Query`](#query). Therefore, its\npublicly accessible fields may resemble the following:\n\n```rust\npub struct Subscription {\n    pub id: SubscriptionId,\n    pub query: Query,\n    // ... other fields to help facilitate inter-task comms ...\n}\n```\n\n#### Buffering of Events\n\nSince the rate at which events could be produced by the remote RPC endpoint may\ndiffer from the rate at which the client process them, we need to buffer\nincoming events in a `Subscription`.\n\nUnder the hood, a `Subscription` is envisaged to make use of some kind of\n**unbounded channel** to buffer incoming `Event`s, such as that provided by\n[Tokio's `mpsc`][tokio-mpsc]. We don't propose the use of bounded channels yet\nsince they complicate the concurrency model significantly: we would need to\ncater for cases where we encounter full channels and provide for conventional or\napplication-specific ways of dealing with those full channels (e.g. back-off, or\nback-pressure).\n\n#### Managing Multiple Simultaneous Subscriptions\n\nThere may come instances where clients would want to initiate multiple\nsubscriptions to different event types and consume them all from the same\ncontext. Since the `Subscription` struct implements the\n[`Stream`][futures-stream] trait, all of the [stream-related\nfunctionality][futures-stream-mod] should enhance the ergonomics of working with\n`Subscription`s.\n\nFor example, if you wanted to iterate through two subscriptions at the same\ntime, processing events in the order in which they are received by the client:\n\n```rust\nuse futures::stream::select_all;\n\n// `subs1` and `subs2` are `Subscription`s:\nwhile let Some(res) = select_all(vec![subs1, subs2]).next().await {\n    match res {\n        Ok(event) => { /* handle event */ },\n        Err(e) => { /* handle error */ },\n    }\n}\n```\n\n### Client Model\n\nUsers of the Tendermint RPC library may or may not want access to subscription\nfunctionality. Since such functionality comes with additional overhead in terms\nof resource usage and asynchronous task management, it would be optimal to\nprovide two separate client traits: one that only implements non-subscription\nfunctionality, and one that only implements subscription functionality (where\nclients could either implement one or both traits).\n\nThe interfaces of the two types of clients are envisaged as follows.\n\n#### `Client`\n\nThis type of client would allow for interaction with all RPC endpoints except\nthose pertaining to subscription management. In our current implementation, this\nclient would only interact via the HTTP RPC endpoints (the `HttpClient` in the\nentity diagram above).\n\n**Note**: All `async` traits are facilitated by the use of [async-trait].\n\n```rust\npub type Result<R> = std::result::Result<R, Error>;\n\n#[async_trait]\npub trait Client {\n    /// `/abci_info`: get information about the ABCI application.\n    async fn abci_info(&self) -> Result<abci_info::AbciInfo>;\n\n    /// `/abci_query`: query the ABCI application\n    async fn abci_query<V>(\n        &self,\n        path: Option<abci::Path>,\n        data: V,\n        height: Option<Height>,\n        prove: bool,\n    ) -> Result<abci_query::AbciQuery>\n    where\n        V: Into<Vec<u8>> + Send;\n\n    /// ...\n\n    /// Perform a general request against the RPC endpoint\n    async fn perform<R>(&self, request: R) -> Result<R::Response>\n    where\n        R: Request;\n}\n```\n\n#### `SubscriptionClient`\n\nA `SubscriptionClient` would be one that only provides access to subscription\nfunctionality. In our current implementation, this client would interact with a\nWebSocket connection to provide subscription functionality (the\n`WebSocketClient` in the entity diagram above).\n\n```rust\n#[async_trait]\npub trait SubscriptionClient {\n    /// `/subscribe`: subscribe to receive events produced by the given query.\n    async fn subscribe(&mut self, query: Query) -> Result<Subscription>;\n}\n```\n\n### Client Implementations\n\nWe envisage 2 distinct client implementations at this point:\n\n* `HttpClient`, which only implements [`Client`](#client) (over HTTP).\n* `WebSocketClient`, which will implement [`Client`](#client) and\n  [`SubscriptionClient`](#subscriptionclient) (over a WebSocket connection).\n\n#### Handle-Driver Concurrency Model\n\nDepending on the underlying transport, a client may need a **transport driver**\nrunning in an asynchronous context. As in the example of a WebSocket connection,\nthe rate at which one interacts with the WebSocket connection may differ to the\nrate at which one interacts with `Event`s being produced by a `Subscription`, so\nthey necessarily need to run concurrently in different contexts.\n\nImplementation of such a transport driver is transport-specific. Short-lived\nrequest/response interactions (such as HTTP) would not require such a transport\ndriver, whereas a WebSocket connection would.\n\nIn cases where a driver is necessary, the client implementation would have to\nbecome a **handle** to the driver, facilitating communication with it across\nasynchronous tasks.\n\nA rough sketch of the interaction model between the different components\nenvisaged to make up the subscription subsystem is shown in the following\nsequence diagram.\n\n![RPC client concurrency model](./assets/rpc-client-concurrency.png)\n\n### `Query`\n\nIt is proposed that, using a *builder pattern*, we implement a subscription\n`Query` interface that implements the full [query PEG][query-peg] provided by\nthe Go implementation of the RPC client. This would allow for compile-time\nvalidation of queries.\n\nThe desired interface for constructing a query would look as follows:\n\n```rust\n// tm.event='NewBlock'\nlet query = Query::from(EventType::NewBlock);\n\n// tm.event='Tx' AND tx.hash='XYZ'\nlet query = Query::from(EventType::Tx).and_eq(\"tx.hash\", \"XYZ\");\n\n// tm.event='Tx' AND tx.height=5\nlet query = Query::from(EventType::Tx).and_eq(\"tx.height\", 5);\n```\n\nThis interface could be implemented along the following lines.\n\n```rust\n// Query would only have constructors that either specified an event type\n// (corresponding to a `tm.event='eventtype'` query) or a condition. There must\n// be no constructor that allows for construction of an empty query.\npub struct Query {\n    // A query can only match zero or one type of event.\n    event_type: Option<EventType>,\n    // A query can contain zero or more conditions.\n    conditions: Vec<Condition>,\n}\n\nimpl From<EventType> for Query {\n    fn from(event_type: EventType) -> Self {\n        Self {\n            event_type: Some(event_type),\n            conditions: Vec::new(),\n        }\n    }\n}\n\nimpl Query {\n    // An example of a constructor for `Operation::Eq`.\n    pub fn eq(key: &str, value: impl Into<Operand>) -> Self {\n        Self {\n            event_type: None,\n            conditions: vec![Condition::new(key, Operation::Eq(value.into()))],\n        }\n    }\n\n    // ...\n\n    // Allows for a simple builder pattern.\n    pub fn and_eq(mut self, key: &str, value: impl Into<Operand>) -> Self {\n        self.conditions.push(Condition::new(key, Operation::Eq(value.into())));\n        self\n    }\n\n    // ...\n}\n\n// Derived from https://github.com/tendermint/tendermint/blob/main/types/events.go\npub enum EventType {\n    NewBlock,\n    NewBlockHeader,\n    NewEvidence,\n    Tx,\n    ValidatorSetUpdates,\n}\n\n// A condition specifies a key (first parameter) and, depending on the\n// operation, an value which is an operand of some kind.\npub enum Condition {\n    // Equals\n    Eq(String, Operand),\n    // Less than\n    Lt(String, Operand),\n    // Less than or equal to\n    Lte(String, Operand),\n    // Greater than\n    Gt(String, Operand),\n    // Greater than or equal to\n    Gte(String, Operand),\n    // Contains (to check if a key contains a certain sub-string)\n    Contains(String, String),\n    //",
+   "truncated_text": true,
+   "discussion_refs": [
+    {
+     "key": "#313",
+     "kind": "hash",
+     "url": "",
+     "number": "313"
+    },
+    {
+     "key": "informalsystems/tendermint-rs#313",
+     "kind": "issue",
+     "url": "https://github.com/informalsystems/tendermint-rs/issues/313",
+     "number": "313"
+    },
+    {
+     "key": "#311",
+     "kind": "hash",
+     "url": "",
+     "number": "311"
+    },
+    {
+     "key": "informalsystems/tendermint-rs#311",
+     "kind": "issue",
+     "url": "https://github.com/informalsystems/tendermint-rs/issues/311",
+     "number": "311"
+    },
+    {
+     "key": "#458",
+     "kind": "hash",
+     "url": "",
+     "number": "458"
+    },
+    {
+     "key": "informalsystems/tendermint-rs#458",
+     "kind": "pull",
+     "url": "https://github.com/informalsystems/tendermint-rs/pull/458",
+     "number": "458"
+    },
+    {
+     "key": "informalsystems/tendermint-rs#318",
+     "kind": "issue",
+     "url": "https://github.com/informalsystems/tendermint-rs/issues/318",
+     "number": "318"
+    },
+    {
+     "key": "tendermint/tendermint#2949",
+     "kind": "issue",
+     "url": "https://github.com/tendermint/tendermint/issues/2949",
+     "number": "2949"
+    }
+   ],
+   "mentioned_paths": [
+    "assets/rpc-client-erd.png",
+    "/abci_info",
+    "/abci_query",
+    "/subscribe",
+    "/assets/rpc-client-concurrency.png",
+    "github.com/tendermint/tendermint/blob/main/types/events.go",
+    "docs.tendermint.com/v0.34",
+    "github.com/informalsystems/tendermint-rs/blob/06ed36eaf7a74c0357b86d1d7450a2fec52ed6a0/rpc/src/client.rs",
+    "github.com/tendermint/tendermint/blob/98c595312af02037843b8fe74f0ee0625665448e/libs/pubsub/query/query.peg",
+    "github.com/tendermint/tendermint/blob/98c595312af02037843b8fe74f0ee0625665448e/libs/pubsub/pubsub.go",
+    "futures/stream/trait.Stream.html",
+    "tokio/sync/index.html",
+    "async_trait/index.html",
+    "tokio/sync/mpsc/index.html",
+    "futures/stream/index.html"
+   ],
+   "implementation": {
+    "sha": "a6187fc75e92ea9210ff379d12980654a0e3e4d7",
+    "date": "2020-08-28T16:01:06-04:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "docs/architecture/assets/rpc-client-erd.png"
+    ]
+   }
+  },
+  {
+   "path": "docs/architecture/adr-011-validator-crate.md",
+   "identity": "docs/architecture/adr-011-validator-crate.md",
+   "adr_id": "11",
+   "title": "ADR 011: Validator Crate",
+   "first_commit": "2022-08-05T14:21:09-04:00",
+   "first_sha": "dda924504332f3fad45a984b3201ef4d5ed350c9",
+   "last_commit": "2022-08-05T14:21:09-04:00",
+   "author": "Thane Thomson",
+   "email": "thane@informal.systems",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR 011: Validator Crate\n\n## Changelog\n\n* 2022-06-10: Created the ADR.\n\n## Context\n\nTendermint provides an interface (\"privval\") for external processes\nthat validators deploy with different signing backends (e.g. YubiHSM).\nIn Tendermint 0.35 and beyond, the signer process is expected to be a gRPC server/service\nthat Tendermint connects to. Using `tonic-build`, the gRPC server interface\ncode can be generated as an extension to the existing `tendermint-proto` crate definitions.\nThe signing backend implementor could then possibly implement this interface \nfrom `tendermint-proto` as follows:\n\n```rust\n#[tonic::async_trait]\nimpl PrivValidatorApi for ValidatorSigningBackend\n{\n    async fn get_pub_key(\n        &self,\n        request: Request<RawPubKeyRequest>,\n    ) -> Result<Response<RawPubKeyResponse>, Status> {\n        /// ...\n    }\n    async fn sign_vote(\n        &self,\n        request: Request<RawSignVoteRequest>,\n    ) -> Result<Response<RawSignedVoteResponse>, Status> {\n        // ...\n    }\n    async fn sign_proposal(\n        &self,\n        request: Request<RawSignProposalRequest>,\n    ) -> Result<Response<RawSignedProposalResponse>, Status> {\n        // ...\n    }\n}\n```\n\nThis implementation, however, needs to use the raw protobuf types,\nso each implementor would need to duplicate the same common validation code.\n\n## Decision\n\nThe `tendermint-validator` crate can be added to the tendermint-rs repository\nthat will help the developers with implementing Tendermint validator signing backends.\nIt will provide basic [tonic's Server](https://docs.rs/tonic/0.7.2/tonic/transport/struct.Server.html)\noptions (e.g. TLS) and the implementation of `PrivValidatorApi`. This implementation\ncan accept different signing backends that are implemented via two traits:\n\n1. the signing one (that e.g. communicates with HSM):\n```rust\n#[tonic::async_trait]\npub trait SignerProvider {\n    type E: std::error::Error;\n    async fn sign(&self, signable_bytes: &[u8]) -> Result<Signature, Self::E>;\n    async fn load_pubkey(&self) -> Result<PublicKey, Self::E>;\n}\n```\n\n2. the state storage one that persists the validator state (in a file or whatever\nmakes sense in the signing context, e.g. write to CPU monotonic counters):\n\n```rust\n#[tonic::async_trait]\npub trait ValidatorStateProvider {\n    type E: std::error::Error;\n    async fn load_state(&self) -> Result<consensus::State, Self::E>;\n    async fn persist_state(&mut self, new_state: &consensus::State) -> Result<(), Self::E>;\n}\n```\n\nBesides checking the chain ids from requests and calling corresponding providers,\nthe implementation can also do the following common validation steps:\n\n- use the existing domain types from the `tendermint` crate to validate the incoming requests;\n- check the signing requests' heights against the optional maximum;\n- check the signing requests against the last validator state and persist the new states after successful signing operations.\n\nFor the validator state checking, the existing consensus `State` can be extended to have\nconversions from the signing requests as well as \n[`PartialOrd` implementation](https://github.com/iqlusioninc/tmkms/blob/main/src/chain/state.rs#L70).\n\nThe crate can also contain an example \"software signer\" backend implementation of the provider traits\nthat stores the signing key in-memory and uses text files for the validator state persistence.\n\n## Status\n\nAccepted\n\n## Consequences\n\n### Positive\n\n* Reduced code duplication\n* Easier implementation of new signing backends\n\n### Negative\n\n* The need to use async functions due to `tonic`'s gRPC implementation\n\n### Neutral\n\n* One more crate\n\n## References\n\n* https://github.com/informalsystems/tendermint-rs/issues/1134\n* https://github.com/informalsystems/tendermint-rs/pull/1137\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "informalsystems/tendermint-rs#1134",
+     "kind": "issue",
+     "url": "https://github.com/informalsystems/tendermint-rs/issues/1134",
+     "number": "1134"
+    },
+    {
+     "key": "informalsystems/tendermint-rs#1137",
+     "kind": "pull",
+     "url": "https://github.com/informalsystems/tendermint-rs/pull/1137",
+     "number": "1137"
+    }
+   ],
+   "mentioned_paths": [
+    "docs.rs/tonic/0.7.2/tonic/transport/struct.Server.html",
+    "github.com/iqlusioninc/tmkms/blob/main/src/chain/state.rs"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/architecture/adr-007-light-client-supervisor-ergonomics.md",
+   "identity": "docs/architecture/adr-007-light-client-supervisor-ergonomics.md",
+   "commit": "78ff0c3c65f3fdcdef073c582755103741153b16",
+   "date": "2020-07-03T09:55:59+02:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Approved",
+   "replacement": null,
+   "message": "light-client: improve supervisor ergonomics (#403)",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Alexander Simmerl",
+   "email": "a.simmerl@gmail.com"
+  },
+  {
+   "path": "docs/architecture/adr-009-transport-agnostic-peer-abstraction.md",
+   "identity": "docs/architecture/adr-009-transport-agnostic-peer-abstraction.md",
+   "commit": "dda924504332f3fad45a984b3201ef4d5ed350c9",
+   "date": "2022-08-05T14:21:09-04:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "Initialize the `main` branch (#1172)",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Thane Thomson",
+   "email": "thane@informal.systems"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 12,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "10"
+}

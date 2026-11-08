@@ -1,0 +1,195 @@
+{
+ "repo": "guardian/dotcom-rendering",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2017-10-16T11:13:33+01:00",
+ "last_commit": "2026-11-06T16:04:13+00:00",
+ "n_commits": 36736,
+ "n_authors": 297,
+ "n_files": 2227,
+ "n_code_files": 1808,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 0,
+ "adrs": [],
+ "status_changes": [],
+ "ai_signals": [
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+   "date": "2026-05-16T15:30:41+01:00",
+   "commit": "c8e634fda4f3826295e9a372e4c1072e4c3d97a5",
+   "evidence": "pnpm catalog all common dependencies",
+   "official": true,
+   "author": "Ravi",
+   "email": "7014230+arelra@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-07-15T16:07:37+01:00",
+   "commit": "5f85626588ac97ab48f0b80d3eaa6bc8fc0fc424",
+   "evidence": "Add A/B test for in-article newsletter signup with no preview variant (#16380)",
+   "official": true,
+   "author": "George Richmond",
+   "email": "george.richmond@guardian.co.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: GPT-5.4 via GitHub Copilot <github-copilot[bot]@users.noreply.github.com>",
+   "date": "2026-07-17T12:18:11+01:00",
+   "commit": "574b0c6cdcef7b8b7556608dbdb615417b40b789",
+   "evidence": "check-islands.mts script to ensure islands are placed in the right location of `src/components`",
+   "official": true,
+   "author": "Ravi",
+   "email": "7014230+arelra@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <copilot@github.com>",
+   "date": "2026-07-31T10:01:21+01:00",
+   "commit": "8e270b1585de383c22d43f0ca2728ccef9618a38",
+   "evidence": "Deduplicate merge queue/main CI attempt 2 (#16478)",
+   "official": true,
+   "author": "Jake",
+   "email": "1731150+Jakeii@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-08-14T13:19:14+00:00",
+   "commit": "28375a8feb224e1310206374899c4a66c29effdc",
+   "evidence": "Apply new Labs immersive grid layouts (#16506)",
+   "official": true,
+   "author": "Daniel Clifton",
+   "email": "110032454+DanielCliftonGuardian@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-08-27T09:57:55+00:00",
+   "commit": "9370061e00535d4e280c573ea27cc3095d7e2b8a",
+   "evidence": "Feast \"Saved from web\" recipe state (#16412)",
+   "official": true,
+   "author": "andresilva-guardian",
+   "email": "andre.silva.mindera@guardian.co.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-09-11T08:32:34+00:00",
+   "commit": "409c7acdc957a37c798ed7f774b3911763c7bc78",
+   "evidence": "Mobile above nav (puzzles ad test) (#16691)",
+   "official": true,
+   "author": "Oliver Abrahams",
+   "email": "ollie.abrahams@guardian.co.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-09-14T09:55:01+00:00",
+   "commit": "9262ef12a3578406bea7d155e805c1d5c5bf1992",
+   "evidence": "Update NewsletterSignupCard styling for better responsiveness on small devices (#16702)",
+   "official": true,
+   "author": "George Richmond",
+   "email": "george.richmond@guardian.co.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-09-16T09:11:22+00:00",
+   "commit": "3c177d323644b9060335fccd684f7b4a5fe370aa",
+   "evidence": "Add Puzzle Page: generic template for iframe-based puzzles, print scoped to Sudoku (#16700)",
+   "official": true,
+   "author": "andresilva-guardian",
+   "email": "andre.silva.mindera@guardian.co.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>",
+   "date": "2026-09-21T09:17:13+00:00",
+   "commit": "f3283cd718097bd72037803e401fbac30f310297",
+   "evidence": "Add Puzzle Page: DCR layout for iframe-based puzzles (V0) (#16754)",
+   "official": true,
+   "author": "andresilva-guardian",
+   "email": "andre.silva.mindera@guardian.co.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Copilot <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-09-30T09:47:57+00:00",
+   "commit": "e727bbb2088cfd0b959b2f41100e6b71205be268",
+   "evidence": "Use latest/live price in product card (The Filter) (#16801)",
+   "official": true,
+   "author": "Andrew Howe-Ely",
+   "email": "114918544+andrewHEguardian@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-10-20T07:18:44+00:00",
+   "commit": "229190bc9d38a78910aa19837bb0be81a994a804",
+   "evidence": "Show the Filter dateline in the immersive layout (#16920)",
+   "official": true,
+   "author": "Peran Osborn",
+   "email": "peranosborn@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-10-20T13:57:11+00:00",
+   "commit": "673184a8877118d666e1a2de3a49f015cda7c84d",
+   "evidence": "Add currency symbol handling to product price functions (#16976)",
+   "official": true,
+   "author": "Peran Osborn",
+   "email": "peranosborn@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-10-23T07:37:04+00:00",
+   "commit": "4cadb4f3d9d68d259d384f2fa232b46479722896",
+   "evidence": "Filter added updated label to dateline (#16946)",
+   "official": true,
+   "author": "Peran Osborn",
+   "email": "peranosborn@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-10-26T12:32:57+00:00",
+   "commit": "9f53cf6c2cdd63280bcdc6d0d6682783427b0b1f",
+   "evidence": "Add horizontal table of contents for The Filter in the revamped immersive layout (#16919)",
+   "official": true,
+   "author": "Peran Osborn",
+   "email": "peranosborn@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-10-26T15:49:11+00:00",
+   "commit": "be069f521c82b6a56b4b0cbf666978376208d89b",
+   "evidence": "chore(deps-dev): bump @sveltejs/kit from 2.70.3 to 3.0.0 in /ab-testing/frontend (#17026)",
+   "official": true,
+   "author": "dependabot[bot]",
+   "email": "49699333+dependabot[bot]@users.noreply.github.com"
+  }
+ ],
+ "signal_date": "2026-05-16T14:30:41+00:00",
+ "signal_kind": "coauthor",
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 5,
+  "capped": false
+ },
+ "group": "ai-native",
+ "adr_count_before_signal": 0,
+ "superseded_in_window": 0,
+ "eligibility_reason": "ai-native",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "34"
+}

@@ -1,0 +1,371 @@
+{
+ "repo": "thoth-station/core",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2018-01-22T06:36:41+01:00",
+ "last_commit": "2023-05-29T23:45:51+02:00",
+ "n_commits": 903,
+ "n_authors": 34,
+ "n_files": 102,
+ "n_code_files": 2,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 10,
+ "adrs": [
+  {
+   "path": "docs/adr/0007-scorecard-metrics.md",
+   "identity": "docs/adr/0007-scorecard-metrics.md",
+   "adr_id": "7",
+   "title": "Aggregating OpenSSF Scorecard metrics to compute software stack quality scores",
+   "first_commit": "2022-08-01T19:21:46+02:00",
+   "first_sha": "1b1477de1165c241d063de347d4d5511e6d988a9",
+   "last_commit": "2022-08-01T19:21:46+02:00",
+   "author": "Maya Costantini",
+   "email": "mcostant@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Aggregating OpenSSF Scorecard metrics to compute software stack quality scores\n\n* Status: proposed\n* Date: 2022-August-1\n\nTechnical Story: Aggregate OpenSSF Scorecard metrics on a package release update to compute software stack quality scores.\n\n## Context and Problem Statement\n\nAs part of advise output improvements mentioned in [](https://github.com/thoth-station/core/issues/434), we would like to aggregate Security Scorecards data on a new package release to provide software stack quality metrics with regards to the global quality of packages that can be found in Thoth's Database. These metrics would inform the user about the health of a project dependencies and provide a software stack score (on a 0-100 scale or A,B,C...) based on Scorecard data.\n\n**Note:** The architecture diagram below supposes that the OSSF Scorecards dataset available on BigQuery will expose metrics by package release instead of repository head commit SHA as it is currently the case. However if this feature is not going to be implemented on the Scorecards project side, we will need to handle the head commit SHA to release association logic by ourselves and thus revisit the diagram to include appropriate calls to the GitHub API and additional computations.\n\nThe data aggregation and score computation logic would be implemented as follows:\n\n* With each `package-releases-job` run, aggregate data about the latest package release and corresponding Scorecards data retrieved from BigQuery\n* Update a new database table `package_scorecard_metrics` with columns for the package name and version and Scorecards Check (1 if the check passed, 0 otherwise). Eventually add a column for a global confidence computed from all Scorecards confidence for a project\n* Schedule a job to compute a global package quality score from the previously aggregated data and store this score in the database\n* Make this data available in prescriptions: update existing Scorecard prescriptions with the package version and create new prescriptions for other packages via `prescriptions-refresh-job`\n* Implement the scoring logic available for relevant Thoth endpoints\n* When a request is made to the relevant endpoint or a parameter is passed to ask for software stack scoring when computing an advise, output the computed metrics about the user's software stack quality\n\n## Architectural diagram\n\n![Scorecard metrics aggregation logic diagram](/images/Scorecards_metrics_ADR.png)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "thoth-station/core#434",
+     "kind": "issue",
+     "url": "https://github.com/thoth-station/core/issues/434",
+     "number": "434"
+    }
+   ],
+   "mentioned_paths": [
+    "images/Scorecards_metrics_ADR.png"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0006-thoth-github-action.md",
+   "identity": "docs/adr/0006-thoth-github-action.md",
+   "adr_id": "6",
+   "title": "Thoth GitHub Action ADR",
+   "first_commit": "2022-05-16T12:27:58+02:00",
+   "first_sha": "03fa3c9437f808ddce97102f076ab48bd5b150d9",
+   "last_commit": "2022-05-16T14:48:35+02:00",
+   "author": "mayaCostantini",
+   "email": "mcostant@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Thoth GitHub Action ADR\n\n* Status: proposed\n* Date: 2022-May-16\n\nTechnical Story: we would like to create a new Thoth integration via a GitHub Acttion to advise users on the dependencies used in their repositories.\n\n## Context and Problem Statement\n\nThe Thoth GitHub Action was originally supposed to be implemented to advise on the dependencies present in the [Packit repository](https://github.com/packit/packit), but should be extendable to other repositories as well with different requirement formats (`pip`, `pipenv`...).\n\nThe primary goal of this Action would be to advise on the **security** aspects of dependencies of a project by providing a mean to:\n\n* Identify CVE present in the versions of the packages used in the project, so that users can eventually block Pull Requests introducing vulnerable dependencies\n    * Comment on the Pull Requests with a list of CVE found for the current package versions\n    * Log all stack info in the action workflow\n    * Provide a link to Thoth Search UI to browse the advise results\n    * Fail the workflow to eventually block the Pull Request\n* Get security insights on the dependency stack introduced by a Pull Request by returning the content of the stack info (Security Scorecards data, warnings, info, etc)\n    * Log stack info in the action workflow\n    * Provide a link to Thoth Search UI to browse the advise results\n* Score the current dependency stack and allow repository maintainers to display this score as a badge in the landing page of their repository as an indicator of application dependencies health\n    * Get the software stack score provided in the advise result and normalize it if needed\n    * Create a [status badge](https://docs.github.com/en/actions/monitoring-and-troubleshooting-workflows/adding-a-workflow-status-badge) for the workflow running the Thoth GitHub Action indicating the score of the software stack on the merge of a Pull Request modifying the requirements file.\n\n## Considered Options\n\n### Setting up the Action on a repository\n\n```\nname: User CI workflow\non:\n  push:\n    paths:\n      - 'requirements.txt'\n      - 'Pipfile'\njobs:\n  validate-dependencies:\n    runs-on: ubuntu-latest\n    name: Get Thoth recommenations on your dependencies\n    steps:\n      - uses: actions/checkout@v3\n      - uses: actions/setup-python@v2\n        with:\n          python-version: 3.8\n      - name: Get Thoth security advisories\n        id: thoth-advise\n        uses: thoth-station/thoth-github-action@v1\n        with:\n          path: './requirements.txt'\n```\n\nThe Thoth GitHub Action requires prior actions already available on the GitHub Marketplace to work on a repository Pull Request workflow, such as [`actions/checkout`](https://github.com/actions/checkout) to checkout the current repository or [`actions/setup-python`](https://github.com/actions/setup-python) to set up a Python environment where the Python parts of the Action can be run:\n\n```\nsteps:\n  - uses: actions/checkout@v3\n  - uses: actions/setup-python@v2\n    with:\n      python-version: 3.8\n\n```\n\nTo trigger the workflow only when necessary, it can be configured to trigger the Action on a `push` event which modifies the dependency requirements file of the project (`Pipfile`, `requirements.txt`, etc):\n\n```\non:\n  push:\n    paths:\n      - 'requirements.txt'\n      - 'Pipfile'\n```\n\n### Thoth GitHub Action architecture\n\n![Thoth GitHub Action diagram](./images/Thoth-GitHub-Action-ADR.drawio.png, \"Thoth GitHub Action architecture diagram using Thamos CLI to generate advise\")\n\nPossible alternatives would be to:\n\n* Make a call directly to the User API via a bash script to avoid issues linked to the creation of a `.thoth.yaml` configuration file and to use a Python script to process the advise result only\n* Use Thamos as a library to get the advise result\n\nHowever, those options would not be as easily maintainable.\n\n## Decision Outcome\n\nTo be done.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/requirements.txt",
+    "actions/checkout",
+    "actions/setup-python",
+    "/images/Thoth-GitHub-Action-ADR.drawio.png",
+    "thoth.yaml"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0005-obtimizing-keb-runs.md",
+   "identity": "docs/adr/0005-obtimizing-keb-runs.md",
+   "adr_id": "5",
+   "title": "{short title of solved problem and solution}",
+   "first_commit": "2022-03-15T18:04:24-04:00",
+   "first_sha": "db57401ee006a5bc605f22913359a5194707f635",
+   "last_commit": "2022-03-15T18:04:24-04:00",
+   "author": "Kevin Postlethwait",
+   "email": "k.postlethwait24@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# {short title of solved problem and solution}\n\n* Status: proposed\n* Deciders: @KPostOffice @fridex @cgoern <!-- optional -->\n* Date: 2022-3-15 when the decision was last updated} <!-- optional -->\n\nTechnical Story: [Kebechet#873](https://github.com/thoth-station/kebechet/issues/873)\n\n## Context and Problem Statement\n\nKebechet is being run too often and is eagerly eating resources in cluster. We need to pare down how often we spin up\npods to do repository management.\n\n## Decision Drivers <!-- optional -->\n\n* Less pods being spun up.\n* Reduce frequency of reaching GitHub API quota limit\n\n## Considered Options\n\n* Option 1: Filter web-hooks in thoth-user-api\n* Option 2: Create Kebechet deployment receives web-hooks and only runs specific manager(s) depending on contents\n* Option 3: Create individual repositories and GitHub applications for each manager\n* Option 4: create GitHub app for each repo and choose auth at run time\n\n## Decision Outcome\n\nChosen option: \"option 3\", because we can use existing bot frameworks and github event handlers such as\n`gidgethub`(Python) and `probot`(JavaScript). This should help reduce cluster load as pods will be shorter lived and\nless frequent, however, it does require multiple small deployments for handling web-hooks.\n\nImplementing option 2 and option 4 might be another good solution.\n\n<!-- Please feel free to comment with your own opinions -->\n\n### Positive Consequences <!-- optional -->\n\n* Reduced resource consumption\n* More apps means more quota\n* Each app's behavior is well defined. It's at times unclear what \"Kebechet\" is\n\n### Negative Consequences <!-- optional -->\n\n* Follow up decisions required: \"What technologies do we use?\", \"How do we manage configuration?\"\n* Transition from maintaining list of managers to installing individual managers\n\n## Pros and Cons of the Options <!-- optional -->\n\n### Option 1: Filter web-hooks in thoth-user-api\n\n* Good, because it requires minimal upfront work\n* Bad, because it introduces tight coupling between Kebechet and user-api\n* Bad, because GitHub already only sends a subset of events and it is likely that we would not see a major decrease in\nresource consumption.\n\n### Option 2: Create Kebechet deployment receives web-hooks and only runs specific manager(s) depending on contents\n\n* Good, because it allows for thorough processing of events prior to pod being spun up\n* Good, it can still run multiple bots in the same pod (depends on implementation)\n* ?, Preserves Kebechet name recognition (may obfuscate functionality)\n* Bad, does not help with reducing GitHub API quota consumption\n\n### Option 3: Create individual repositories and GitHub applications for each manager\n\n* Good, because it creates more apps which effectively increases the total API limit\n* Good, segregating functionality helps users understand what they are installing\n* Good, workloads can be very selectively run through thorough web-hook processing\n* Bad, many small deployments\n\n### Option 2&4: Create Keb deployment and Individual apps\n\n* Good, because it creates more apps which effectively increases the total API limit\n* Good?, single deployment\n* Good, workloads can be very selectively run through thorough web-hook processing\n* Bad, installation story becomes unclear\n\n<!-- markdownlint-disable-file MD013 -->\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "thoth-station/kebechet#873",
+     "kind": "issue",
+     "url": "https://github.com/thoth-station/kebechet/issues/873",
+     "number": "873"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0005-automatically-bump-container-image-versions.md",
+   "identity": "docs/adr/0005-automatically-bump-container-image-versions.md",
+   "adr_id": "5",
+   "title": "Automatically bump the version of base images used to generate container images",
+   "first_commit": "2022-02-15T11:36:26+01:00",
+   "first_sha": "d3772d925b5322073cc448b97e60c841ee8a94a8",
+   "last_commit": "2022-03-15T11:35:08+01:00",
+   "author": "mayaCostantini",
+   "email": "mcostant@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Automatically bump the version of base images used to generate container images\n\n* Status: proposed\n* Date: 2022-02-15\n\nTechnical Story: As a maintainer of Thoth, I would like to automatically update the version of the base images used to generate new container images of some components (see: https://github.com/thoth-station/kebechet/issues/991)\n\n## Context and Problem Statement\n\nWhen new base image versions used to genereate container images for Thoth components are released on Quay, it would be practical to update them automatically instead of manually opening `Bump <component name> to vx.y.z in <environment>` pull requests in the concerned repositories (Example: https://github.com/thoth-station/thoth-application/pull/2314).\n\n## Considered Options\n\n* Implement a simple Python script to bump the base image versions used to deliver container images in `.aicoe-ci.yaml`, `.thoth.yaml` or similar files for eventual uses outside of the project.\n    * 1) Integrate this script in the AICoE-CI pipeline logic\n    * 2) Integrate this script in Kebechet\n\n## Decision Outcome\n\nChosen option: 1). For the moment, this script has been integrated in the AICoE-CI pipeline logic, but it could eventually be reused in Kebechet if needed.\n\n### Positive Consequences <!-- optional -->\n\n* Keeping the base image versions we use up-to-date for active repositories.\n* Base image version updates are made automatically, which is less error-prone and time-consuming for developers compared to making the update manually.\n\n## Links <!-- optional -->\n\n* Current action items and building blocks proposal: https://github.com/thoth-station/kebechet/issues/991#issuecomment-1039220686\n* Script implementation in `pipeline-helpers`: https://github.com/thoth-station/pipeline-helpers/pull/45\n* Script integration in the `aicoe-ci` pipeline logic: https://github.com/AICoE/aicoe-ci/pull/170\n* Demo: https://www.youtube.com/watch?v=Uwc7WS4SnL4&t=2s&ab_channel=ThothStation\n<!-- markdownlint-disable-file MD013 -->\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "thoth-station/kebechet#991",
+     "kind": "issue",
+     "url": "https://github.com/thoth-station/kebechet/issues/991",
+     "number": "991"
+    },
+    {
+     "key": "thoth-station/thoth-application#2314",
+     "kind": "pull",
+     "url": "https://github.com/thoth-station/thoth-application/pull/2314",
+     "number": "2314"
+    },
+    {
+     "key": "thoth-station/pipeline-helpers#45",
+     "kind": "pull",
+     "url": "https://github.com/thoth-station/pipeline-helpers/pull/45",
+     "number": "45"
+    },
+    {
+     "key": "AICoE/aicoe-ci#170",
+     "kind": "pull",
+     "url": "https://github.com/AICoE/aicoe-ci/pull/170",
+     "number": "170"
+    }
+   ],
+   "mentioned_paths": [
+    "aicoe-ci.yaml",
+    "thoth.yaml"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0004-naming-convention-images.md",
+   "identity": "docs/adr/0004-naming-convention-images.md",
+   "adr_id": "4",
+   "title": "Project Thoth Naming Convention Schema for Images",
+   "first_commit": "2021-06-17T10:17:40+02:00",
+   "first_sha": "611e751e10ed52b58183a9da5a72f12686d89e16",
+   "last_commit": "2021-06-21T16:28:51+02:00",
+   "author": "Francesco Murdaca",
+   "email": "fmurdaca@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 8,
+   "text": "# Project Thoth Naming Convention Schema for Images\n\n* Status: proposed\n* Date: 2021-Jun-17\n\nTechnical Story: As Thoth goal to provide curated stack and images, it would be nice to have a convention for naming of the images.\n\n## Context and Problem Statement\n\nImage names are important for branding and let others identify easily a specific image they need. For example \"I want to work on computer vision project with Tensorflow, what stack and image should I use?\" Having a trusted well maintained source of images with clean naming convention can help on that.\n\n## Considered Options\n\n* `s2i-{application}` standard name currently, but not everyone knows what S2I is.\n* `odh-{application}` for branding/marketing having ODH in front seems to be the best solution, in this way the name will be shorter as well.\n* `ps-{application}` as it shows what our intention is: we want to provide a curated/predictable software stack, it might be used by ODH or RHODS or others, it might use S2I or other technology. Moreover helps from pipeline creation point of view, because the length of repo name on quay can crate issues.\n\nThese names are for the core repository name, then `overlays` will allow for combinations of libraries based on other criteria, for example `ml_framework` and/or `hardware`:\n\n    `ps-nlp`\n    \u251c\u2500\u2500 overlays                    # Overlays structure for builds\n    \u2502   \u251c\u2500\u2500 ps-nlp-tensorflow          # NLP image with TensorFlow ML framework\n    \u2502   \u251c\u2500\u2500 ps-nlp-tensorflow-gpu      # NLP image with TensorFlow ML framework for GPU\n    \u2502   \u251c\u2500\u2500 ps-nlp-pytorch             # NLP image with Pytorch ML framework\n    \u2502   \u251c\u2500\u2500 ps-nlp-pytorch-gpu         # NLP image with Pytorch ML framework for GPU\n    \u2502   \u2514\u2500\u2500 ps-nlp-scikit-learn        # NLP image with Scikit-learn ML framework\n    \u2514\u2500\u2500 ...\n\n## Decision Outcome\n\nSelected option: `ps-{application}` as it shows what our intention is: we want to provide a curated/predictable software stack, it might be used by ODH or RHODS or others, it might use S2I or other technology. Moreover helps from pipeline creation point of view, because the length of repo name on quay can crate issues.\n\n### Positive Consequences <!-- optional -->\n\n* users can immediately select an image based on the application they want.\n* using overlays we can have a variety of combination, not just for ml_framework\n\n### Negative Consequences <!-- optional -->\n\n* N/A\n\n<!-- markdownlint-disable-file MD013 -->\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0003-decommision-qeb-hwt.md",
+   "identity": "docs/adr/0003-decommision-qeb-hwt.md",
+   "adr_id": "3",
+   "title": "Decommission Qeb-Hwt GitHub App",
+   "first_commit": "2021-05-06T09:40:36+02:00",
+   "first_sha": "ed5e640f6c840d55b415721e8d3579bf866b4269",
+   "last_commit": "2021-05-06T09:40:36+02:00",
+   "author": "Christoph G\u00f6rn",
+   "email": "goern@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Decommission Qeb-Hwt GitHub App\n\n* Status: proposed\n* Deciders: https://github.com/orgs/thoth-station/teams/devs\n* Date: 2021-05-04\n\nTechnical Story: Decommision Qeb-Hwt GitHub App\n\n## Context and Problem Statement\n\n[Qeb-Hwt](https://github.com/marketplace/qeb-hwt) is a GitHub Application which adds `thamos advise` based output to\nPull Requests as a check. This functionality could be integrated into https://github.com/marketplace/khebhut and\ncomplexity and maintain costs.\n\n## Decision Drivers <!-- optional -->\n\n* cost of maintaining Qeb-Hwt code and app\n* redundancy of infrastructure\n\n## Considered Options\n\n* keep and maintain Qeb-Hwt\n* merge function into Khebhut\n\n## Decision Outcome\n\nChosen option: \"merge function into Khebhut\", because we can reduce the cost of maintaining our software infrastructure\nby reducing redundancy.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0001-use-gpl3-as-license.md",
+   "identity": "docs/adr/0001-use-gpl3-as-license.md",
+   "adr_id": "1",
+   "title": "Use GNU GPL as license",
+   "first_commit": "2020-10-30T12:31:19+01:00",
+   "first_sha": "de2ad9f4587d76fb2de6de0da0992f36a0a5c71f",
+   "last_commit": "2021-04-16T13:21:43-04:00",
+   "author": "Christoph G\u00f6rn",
+   "email": "goern@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Use GNU GPL as license\n\nEverything needs to be licensed, otherwise the default copyright laws apply.\nFor instance, in Germany that means users may not alter anything without explicitly asking for permission.\nFor more information see <https://help.github.com/articles/licensing-a-repository/>.\n\nWe want to have all source code related to Project Thoth to be used without any hassle and as free as possible, so that\nusers can just [execute and enjoy the four freedoms](https://fsfe.org/freesoftware/freesoftware.en.html).\n\n## Considered Options\n\n* No license\n* [CC0](https://creativecommons.org/share-your-work/public-domain/cc0/)\n* [GNU GPL](http://www.gnu.org/licenses/gpl-3.0.en.html)\n\n## Decision Outcome\n\nChosen option: \"GNU GPL\", because this license supports a strong copyleft model.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "fsfe.org/freesoftware/freesoftware.en.html",
+    "www.gnu.org/licenses/gpl-3.0.en.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0002-release-policy.md",
+   "identity": "docs/adr/0002-release-policy.md",
+   "adr_id": "2",
+   "title": "Project Thoth Release Policy",
+   "first_commit": "2020-11-05T13:33:37+01:00",
+   "first_sha": "88ef4cb23d5d020b60968a35789146d2dd078d7d",
+   "last_commit": "2021-04-16T13:21:43-04:00",
+   "author": "Christoph G\u00f6rn",
+   "email": "goern@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Project Thoth Release Policy\n\n* Status: proposed\n* Date: 2020-Nov-04\n\nTechnical Story: As an Open Source project, we want to document the policies and guideline on how we create a new\nrelease.\n\n## Context and Problem Statement\n\nProject Thoth itself consists of many components all having their own release cycles and delivery artifacts such as\ncontainer image or Python libraries.\n\n## Considered Options\n\n* a monolithic, coordinated release of all components by creating a tag within the thoth-application repository\n* have a rolling release, and no tags on any repository\n\n## Decision Outcome\n\nChosen option: we do a monolithic, coordinated release, because it will enable us to have a release at the\nproject/product level while maintianing freedom of others to update.\n\n### Positive Consequences <!-- optional -->\n\n* users have a clear base line of versions, these versions have been tested with each other and have\n  undergone integration testing.\n* a release can be referenced from documents, so that operational procedures have a clear relationship with component\n  versions being used\n* we can maintain sets of different versions for different deployment environments\n* we can provide a version string with each API provided by the project\n\n### Negative Consequences <!-- optional -->\n\n* A release might not contain the latest versions of components\n\n<!-- markdownlint-disable-file MD013 -->\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0003-gitops-repo-url-in-thoth-yaml.md",
+   "identity": "docs/adr/0003-gitops-repo-url-in-thoth-yaml.md",
+   "adr_id": "3",
+   "title": "GitOps repository url should be part of `.thoth.yaml`",
+   "first_commit": "2020-11-11T11:24:57+01:00",
+   "first_sha": "913c5d56e3d38dba8520ff0447d65df52c36d08b",
+   "last_commit": "2020-11-20T16:14:15+01:00",
+   "author": "Christoph G\u00f6rn",
+   "email": "goern@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# GitOps repository url should be part of `.thoth.yaml`\n\n* Status: proposed\n* Date: 2020-Nov-11\n\nTechnical Story: As a Reproducible Deployment Pipeline, I want to take thamos advises from the build process, so that\nI can apply recommendations within the deployment process.\n\n## Context and Problem Statement\n\n[Describe the context and problem statement, e.g., in free form using two to three sentences. You may want to articulate the problem in form of a question.]\n\nLooking at the [Reproducible Deployment Pipeline](https://github.com/thoth-station/core/blob/master/docs/ROADMAP.md#reproducible-deployment-pipeline)\nwe need to reconfigure deployment configurations based on the software stack advises, eg intel-tensorflow uses MKL, therefore we\nneed to set certain environment variables. Advises on the software stack will be used/processed during the build process,\nadvises on the deploment configuration during deployment process, both are decoupled. To enable the information transfer,\none task of the build pipeline could open a pull request to change the deployment configuration, therefore it needs to\nknow where the GitOps repository is located.\n\n## Decision Drivers\n\n* respect GitOps practice, at the same time support Cyborg practice\n* Tekton is our pipeline driver/controller, ArgoCD is a sub-component\n\n## Considered Options\n\n* GitOps repository url is not part of `.thoth.yaml`, write out the advise so that it can be stored within the build container image, this information can be used by the\ndeployment pipeline to change configuration during deployment. how?\n* GitOps repository url is part of `.thoth.yaml`, it can be used by said part of a build pipeline\n* DeploymentConfig file is part of the application source code repository, and can be modified by s2i-thoth\n\n## Decision Outcome\n\nChosen option: \"[option 1]\", because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)].\n\n### Positive Consequences <!-- optional -->\n\n* [e.g., improvement of quality attribute satisfaction, follow-up decisions required, \u2026]\n* \u2026\n\n### Negative Consequences <!-- optional -->\n\n* [e.g., compromising quality attribute, follow-up decisions required, \u2026]\n* \u2026\n\n## Pros and Cons of the Options <!-- optional -->\n\n### [option 1]\n\n[example | description | pointer to more information | \u2026] <!-- optional -->\n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n* \u2026 <!-- numbers of pros and cons can vary -->\n\n### [option 2]\n\n[example | description | pointer to more information | \u2026] <!-- optional -->\n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n* \u2026 <!-- numbers of pros and cons can vary -->\n\n### [option 3]\n\n[example | description | pointer to more information | \u2026] <!-- optional -->\n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n* \u2026 <!-- numbers of pros and cons can vary -->\n\n## Links <!-- optional -->\n\n* [Link type] [Link to ADR] <!-- example: Refined by [ADR-0005](0005-example.md) -->\n* \u2026 <!-- numbers of links can vary -->\n\n<!-- markdownlint-disable-file MD013 -->",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "thoth.yaml",
+    "github.com/thoth-station/core/blob/master/docs/ROADMAP.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0000-use-markdown-architectural-decision-records.md",
+   "identity": "docs/adr/0000-use-markdown-architectural-decision-records.md",
+   "adr_id": "0",
+   "title": "Use Markdown Architectural Decision Records",
+   "first_commit": "2020-10-30T12:31:19+01:00",
+   "first_sha": "de2ad9f4587d76fb2de6de0da0992f36a0a5c71f",
+   "last_commit": "2020-10-30T12:31:19+01:00",
+   "author": "Christoph G\u00f6rn",
+   "email": "goern@redhat.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use Markdown Architectural Decision Records\n\n## Context and Problem Statement\n\nWe want to record architectural decisions made in Project Thoth. Which format and structure should these records follow?\n\n## Considered Options\n\n* [MADR](https://adr.github.io/madr/) 2.1.2 \u2013 The Markdown Architectural Decision Records\n* [Michael Nygard's template](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions) \u2013 The first incarnation of the term \"ADR\"\n* [Sustainable Architectural Decisions](https://www.infoq.com/articles/sustainable-architectural-design-decisions) \u2013 The Y-Statements\n* Other templates listed at [https://github.com/joelparkerhenderson/architecture\\_decision\\_record](https://github.com/joelparkerhenderson/architecture_decision_record)\n* Formless \u2013 No conventions for file format and structure\n\n## Decision Outcome\n\nChosen option: \"MADR 2.1.2\", because\n\n* Implicit assumptions should be made explicit.\n\n  Design documentation is important to enable people understanding the decisions later on.\n\n  See also [A rational design process: How and why to fake it](https://doi.org/10.1109/TSE.1986.6312940).\n\n* The MADR format is lean and fits our development style.\n* The MADR structure is comprehensible and facilitates usage & maintenance.\n* The MADR project is vivid.\n* Version 2.1.2 is the latest one available when starting to document ADRs.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "doi.org/10.1109/TSE.1986.6312940"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/adr/0003-gitops-repo-url-in-thoth-yaml.md",
+   "identity": "docs/adr/0003-gitops-repo-url-in-thoth-yaml.md",
+   "commit": "bac45d885e8bfcafa06394583a4ed3fb4db99a00",
+   "date": "2020-11-20T16:14:15+01:00",
+   "old_state": "unknown",
+   "new_state": "deleted",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Revert \":sparkles: add ADR on changing .thoth.yaml\"",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "deleted-without-replacement-pointer",
+   "author": "Christoph G\u00f6rn",
+   "email": "goern@redhat.com"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 10,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "5"
+}

@@ -1,0 +1,557 @@
+{
+ "repo": "mozilla/uniffi-rs",
+ "clone_ok": true,
+ "error": null,
+ "description": "a multi-language bindings generator for rust",
+ "first_commit": "2020-06-10T17:37:58+10:00",
+ "last_commit": "2026-10-23T09:51:32-04:00",
+ "n_commits": 2289,
+ "n_authors": 180,
+ "n_files": 1361,
+ "n_code_files": 872,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 10,
+ "adrs": [
+  {
+   "path": "docs/adr/0003-threadsafe-interfaces.md",
+   "identity": "docs/adr/0003-threadsafe-interfaces.md",
+   "adr_id": "3",
+   "title": "Let consumers opt out of HandleMap locking if their interface is threadsafe",
+   "first_commit": "2021-01-13T22:56:34+11:00",
+   "first_sha": "180c7c4bd48ae440b1530b3a616ef4f4d495871c",
+   "last_commit": "2025-02-24T10:50:54+01:00",
+   "author": "Ryan Kelly",
+   "email": "ryan@rfk.id.au",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Let consumers opt out of HandleMap locking if their interface is threadsafe\n\n* Status: accepted\n* Deciders: rfkelly, jhugman, mhammond, dmosedale\n* Date:  2021-01-13\n\n## Context and Problem Statement\n\nUniffi currently uses a very coarse locking strategy for managing concurrent access to object instances,\nwhich has caused us to accidentally ship code in a product that [blocked the main thread on network I/O](https://jira.mozilla.com/browse/SDK-157).\nWe need to enable finer-grained concurrency control in order to provide the desired API for a key consumer.\n\nCurrently, every interface has a corresponding [ffi_support::ConcurrentHandleMap](https://docs.rs/ffi-support/0.4.0/ffi_support/handle_map/struct.ConcurrentHandleMap.html) that is responsible for owning all instances of\nthat interface and for handing out references to them in a mutability-safe and threadsafe manner. This\nensures that the generated code is safe in the face of concurrent operations, but has a substantial\nruntime cost: only one method call can be executed on an instance at any time. Any attempt to call an\nobject method while a concurrent method is already executing, will block until the previous call has completed.\n\nThe desired API for Project Nimbus includes methods that will be called synchronously from the main thread,\nand hence must not block on network or disk I/O. Such an API cannot be built with uniffi as currently\nimplemented.\n\n## Decision Drivers <!-- optional -->\n\n* Enabling consumers to control the potential blocking behaviour of their generated APIs.\n* Ensure safety of the generated code.\n* Ship a solution in a timely manner to unblock Project Nimbus.\n\n## Considered Options\n\n* Option A: Do nothing, require consumers to assume that all method calls might block.\n* Option B: Let consumers mark interface definitions as threadsafe to opt in to a less-locking handlemap.\n* Option C: Insist that all interfaces be threadsafe and replace the handlemap with raw pointers.\n* Option D: Use a less-locking handlemap and rely on calling code to behave safely.\n\n## Decision Outcome\n\nChosen option:\n * **Option B: Let consumers mark interface definitions as threadsafe to opt in to a less-locking handlemap.**\n\nThe choice here comes down to safety and simplicity. By making a more-concurrency-friendly handlemap\nwe can maintain the current strict enforcement of Rust's mutability-safety and thread-safety guarantees,\neven in the face of errors in the generated bindings. It seems to be a relatively small change, and\nby making it opt-in we avoid creating busywork for other consumers who are not urgently facing this\nproblem.\n\nOne downside is that consumers need to opt-in to the fix, meaning that the default behavior may still\nbe surprising to new consumers. We'll mitigate this with docs and will consider revisiting the default\nbehaviour if the majority of consumers adopt the new approach.\n\nThis choice does also punt some potential performance improvements to future work, but that seems in keeping\nwith where we are in the project's lifecycle.\n\n## Pros and Cons of the Options\n\n### Option A: Do nothing, require consumers to assume that all method calls might block.\n\nMake no changes to uniffi, and instead accept the fact that method calls are executed serially.\nDocument this limitation and work with consumers to update their API definitions to account for it.\n\n* Good, because we can ship this quickly.\n* Good, because we don't give up any of the safety guarantees of the current approach.\n* Bad, because it makes it basically impossible to meet the needs of one of our key early consumers,\n  and would force us into awkward compromises around a suboptimal API.\n* Bad, because it makes uniffi less attractive to potential future consumers.\n* Bad, because it keeps all the run-time overhead of the handlemap.\n* Bad, because the default behaviour still has a hidden mutex, which might be a nasty surprise\n  for future consumers in the same way that it was for Nimbus.\n\nUltimately, we want uniffi to be a tool that helps consumers deliver value, not something that\nfoist limitations upon them, which makes this option unattractive.\n\n### Option B: Let consumers mark interface definitions as threadsafe to opt in to a less-locking handlemap.\n\nImplement a variant of `ConcurrentHandleMap` that does not protect its members with a Mutex, which\nis the main source of constraints on concurrent execution in the current setup. Instead, this handlemap\nwould only give out immutable references to its members, and would insist that its members are `Send`\nand `Sync` so they can be safely accessed from multiple threads.\n\nIntroduce a new annotation to the UDL so that `interface` definitions can be declared as threadsafe.\nIn the generated Rust scaffolding, use the new handlemap for threadsafe interfaces but keep using the\nexisting `ConcurrentHandleMap` by default.\n\n* Good, because this is a relatively small change from the current behaviour, which should be fairly\n  quick to ship.\n* Good, because this is a non-breaking change for consumers who don't opt in to it.\n* Good, because the `Sync` and `Send` bounds on the underlying struct will help consumers\n  to implement their own fine-grained concurrency control while being supported by Rust's\n  compile-time guarantees.\n* Good, because consumers don't have to care about this until they discover that they need\n  fine-grained locking.\n* Good, because it leaves the door open to further improvements (like \"Option C\") in the\n  future if we decide that makes sense later.\n* Bad, because it keeps all the run-time overhead of the handlemap.\n* Bad, because now we need to maintain two handlemap variants.\n* Bad, because the default behaviour still has a hidden mutex, which might be a nasty surprise\n  for future consumers in the same way that it was for Nimbus.\n\nThis is the solution we have ultimately selected.\n\n### Option C: Insist that all interfaces be threadsafe and replace the handlemap with raw pointers.\n\nStop using `ConcurrentHandleMap` to intermediate object access. Instead, put each object instance\nin a `Box` and use `Box::into_raw` to transfer ownership of the box to the foreign language code\nas a raw pointer.\n\nMaintain safety by insisting that any struct implementing a UDL `interface` must be `Sync` and `Send`,\nand by refusing to hand out mutable references to the boxed instance.\n\n* Good, because it removes the issue as a potential footgun for all consumers.\n* Good, because the `Sync` and `Send` bounds on the underlying struct will help consumers\n  to implement their own fine-grained concurrency control while being supported by Rust's\n  compile-time guarantees.\n* Good, because it likely reduces runtime overhead and gives a small performance boost.\n* Bad, because it's a breaking change for all consumers, even if they don't care about this issue.\n* Bad, because it increases the amount of unsafe rust that we need to emit in the generated scaffolding.\n* Bad, because we lose some additional runtime checks provided by the handlemap, such as guarding\n  against passing a handle that belongs to a different datatype.\n* Bad, because it's a non-trivial departure from the current approach which will take more time to QA.\n\nThis seems like a promising longer-term option, especially if we find that the majority of consumers\nare opting in to the fix proposed in this ADR. But the additional complexity weights heavily against\ntrying to ship this as an initial fix for Project Nimbus.\n\n### Option D: Use a less-locking handlemap and rely on calling code to behave safely.\n\nImplement a variant of `ConcurrentHandleMap` that does not protect its members with a Mutex, which\nis the main source of constraints on concurrent execution in the current setup. Instead, this handlemap\nwould hand out references without any runtime checks, on the assumption that the calling code is\nbehaving in a safe manner. Replace all currently uses of `ConcurrentHandleMap` with this new less-locking variant.\n\n* Good, because this is a relatively small change from the current behaviour, which should be fairly\n  quick to ship.\n* Bad, because we lost Rust's compile-time safety guarantees.\n* Bad, because it's hard to communicate to consumers what \"behave safely\" really means (and we might not\n  even understand it ourselves).\n\nThis seems to throw away some of the key safety benefits of using Rust, which makes it a very\nunattractive option.\n\n## Implementation Sketch\n\n### Add a `[Threadsafe]` attribute to UDL `interface` definitions.\n\nWe would advise Nimbus SDK to update their UDL definition for `NimbusClient` like so:\n\n```idl\n[Threadsafe]\ninterface NimbusClient {\n  // existing method definitions remain unchanged\n};\n```\n\nThe [`uniffi_bindgen::interface::Object`](https://github.com/mozilla/uniffi-rs/blob/803bb3d79daa8ea088fb2d8f05c08ada09821986/uniffi_bindgen/src/interface/mod.rs#L722) struct\nwould grow a corresponding boolean `threadsafe` field and corresponding public accessor.\nWhen [building an instance of this struct from the UDL](https://github.com/mozilla/uniffi-rs/blob/803bb3d79daa8ea088fb2d8f05c08ada09821986/uniffi_bindgen/src/interface/mod.rs#L786),\nwe would inspect the list of attributes to look for one named \"Threadsafe\" and set the field\nif present. The way that we [handle the `[ByRef]` annotation on method arguments](https://github.com/mozilla/uniffi-rs/blob/803bb3d79daa8ea088fb2d8f05c08ada09821986/uniffi_bindgen/src/interface/mod.rs#L658)\nwill likely serve as a good example to follow.\n\n### Implement a less-locking HandleMap variant\n\nThe `ffi_support` crate provides a basic non-locking [`HandleMap<T>`](https://docs.rs/ffi-support/0.4.0/ffi_support/handle_map/struct.HandleMap.html) struct,\nand it implements `ConcurrentHandleMap` as a thin wrapper around a `RwLock<HandleMap<Mutex<T>>>`. We can make our own variant that removes the inner mutex, as a thin wrapper around a`RwLock<HandleMap<Arc<T>>>`. (The outer `RwLock` is still needed in order to guard mutations of the handlemap itself, while the `Arc` is needed so that we can quickly clone a reference and\nrelease the lock before calling potentially-long-running methods on that reference).\n\nBikeshed name: `LessLockingHandleMap`, implemented under the [`uniffi::ffi` module](https://github.com/mozilla/uniffi-rs/tree/main/uniffi/src/ffi). It needs to live in the `uniffi` crate so that it can be used by the generated Rust scaffolding at runtime.\n\nWe don't need to support the entire `ConcurrentHandleMap` interface, only:\n* `insert_with_output`\n* `insert_with_result`\n* `call_with_output`\n* `call_with_result`\n* `delete_u64`\n\nThe `LessLockingHandleMap<T>` struct should be capable of handing out `&T` references but should never hand\nout a `&mut T`. It should also require that `T: Send + Sync`.\n\n### Use `LessLockingHandleMap` in the Rust scaffolding for `[Threadsafe]` instances\n\nIn [ObjectTemplate.rs](https://github.com/mozilla/uniffi-rs/blob/main/uniffi_bindgen/src/templates/ObjectTemplate.rs), check the `threadsafe` property of the object definition. If it's true, use `LessLockingHandleMap` instead of `ConcurrentHandleMap` in the [lazy static that declares the handlemap for that interface](https://github.com/mozilla/uniffi-rs/blob/803bb3d79daa8ea088fb2d8f05c08ada09821986/uniffi_bindgen/src/templates/ObjectTemplate.rs#L11).\n\nBy ensuring that `LessLockingHandleMap` and `ConcurrentHandleMap` expose a similar API, this will hopefully\nbe a fairly minimal if-then-else that just chooses the correct name of the struct to use.\n\n### ~~Optional: Add a `[Blocking]` annotation to methods and functions~~\n\n(This was moved into a follow-up issue, ref [#378](https://github.com/mozilla/uniffi-rs/issues/378)).\n\n## Links\n\n* [Fenix Bug: Large regression in MAIN/VIEW start up](https://jira.mozilla.com/browse/SDK-157).\n* [An proof-of-concept experiment in using raw pointers rather than a handlemap](https://github.com/mozilla/uniffi-rs/pull/366).\n* [The final implementation of this ADR: #372](https://github.com/mozilla/uniffi-rs/pull/372)",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#378",
+     "kind": "hash",
+     "url": "",
+     "number": "378"
+    },
+    {
+     "key": "mozilla/uniffi-rs#378",
+     "kind": "issue",
+     "url": "https://github.com/mozilla/uniffi-rs/issues/378",
+     "number": "378"
+    },
+    {
+     "key": "mozilla/uniffi-rs#366",
+     "kind": "pull",
+     "url": "https://github.com/mozilla/uniffi-rs/pull/366",
+     "number": "366"
+    },
+    {
+     "key": "#372",
+     "kind": "hash",
+     "url": "",
+     "number": "372"
+    },
+    {
+     "key": "mozilla/uniffi-rs#372",
+     "kind": "pull",
+     "url": "https://github.com/mozilla/uniffi-rs/pull/372",
+     "number": "372"
+    }
+   ],
+   "mentioned_paths": [
+    "docs.rs/ffi-support/0.4.0/ffi_support/handle_map/struct.ConcurrentHandleMap.html",
+    "github.com/mozilla/uniffi-rs/blob/803bb3d79daa8ea088fb2d8f05c08ada09821986/uniffi_bindgen/src/interface/mod.rs",
+    "docs.rs/ffi-support/0.4.0/ffi_support/handle_map/struct.HandleMap.html",
+    "github.com/mozilla/uniffi-rs/blob/main/uniffi_bindgen/src/templates/ObjectTemplate.rs",
+    "github.com/mozilla/uniffi-rs/blob/803bb3d79daa8ea088fb2d8f05c08ada09821986/uniffi_bindgen/src/templates/ObjectTemplate.rs"
+   ],
+   "implementation": {
+    "sha": "118c1cd94ef6b6ceb41ffcdf9a17c2cbef1deed3",
+    "date": "2021-05-19T11:39:07+10:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "uniffi_bindgen/src/templates/ObjectTemplate.rs"
+    ]
+   }
+  },
+  {
+   "path": "docs/adr/0009-remote-types-interfaces-and-proc-macros.md",
+   "identity": "docs/adr/0009-remote-types-interfaces-and-proc-macros.md",
+   "adr_id": "9",
+   "title": "Remote types: proc-macros and interfaces",
+   "first_commit": "2024-05-24T19:39:36-04:00",
+   "first_sha": "a62f937e72de9d9b3a4811d1d0d855a55a595572",
+   "last_commit": "2024-06-11T16:32:16-04:00",
+   "author": "Ben Dean-Kawamura",
+   "email": "bdk@mozilla.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Remote types: proc-macros and interfaces\n\n* Status: proposed\n* Deciders: Ben Dean-Kawamura, Mark Hammond, Jonas Platte, Alexander Cyon\n* Date: 2024-05-24\n\nDiscussion and approval: [PR 2130](https://github.com/mozilla/uniffi-rs/pull/2130)\n\n## Context and Problem Statement\n\nWe want to expose APIs which are described naturally in our Rust implementation. For example,\n\n```rust\nfn set_level(level: log::Level) -> Result<(), anyhow::Error> { ... }\n```\n\n(or maybe `serde::Value` etc) - things naturally expressed by our implementation.\n\nThese `Error/Level/Value`s are \"remote types\" -- types defined in 3rd-party crates -- and so require special handling from UniFFI.\n\nOne reason, discussed in ADR-0006, is the Rust orphan rule, but the more fundamental reason\nis that UniFFI needs to know about the enough about the type to generate the FFI.\nAs we will discuss, UDL helps with metadata collection, but that still leaves proc-macros.\n\nThis ADR will explore:\n  - Adding support for collecting this metadata for proc-macro-based generation\n  - Adding interface type support to both UDL and proc-macros.\n\n## The current state\n\nUniFFI currently supports re-declaring remote records/enums in UDL files using the normal syntax.\nFor example, users can use `Log::Level` in their interface by creating a type alias `type LogLevel = log::Level`, then adding this definition to the UDL:\n\n\n```idl\nenum LogLevel {\n    \"Error\",\n    \"Warn\",\n    \"Info\",\n    \"Debug\",\n    \"Trace\",\n}\n```\n\nUniFFI exposed functions/structs/etc could then use `log::Level` as a param/struct member/etc directly in the API.\n\nProc-macros obviously can't arrange for a `#[derive(uniffi::Enum)]]` around `log::Level`,\nor a `#[uniffi::export]` around `anyhow::Error`, but we want some way of making that work.\n\n## Considered Options\n\n### [Option 1] expose remote types directly\n\nWe could continue to expose remote types directly, similar to how it currently works in UDL.\nOne issue here is that proc-macro generation is based attributes that wrap an item, however there's no way for a user to add an attribute to a remote type.\nHowever, macros can work around this issue.\n\n```rust\ntype LogLevel = log::Level;\n\n#[uniffi::remote]\npub enum LogLevel {\n    Error = 1,\n    Warn = 2,\n    Info = 3,\n    Debug = 4,\n    Trace = 5,\n}\n```\n\nThe `remote` macro would generate all scaffolding code needed to handle `LogLevel`.\nThe `enum LogLevel` item would not end up in the expanded code.\n\nThis could also work for interfaces:\n\n```rust\ntype AnyhowError = anyhow::Error;\n\n#[uniffi::remote]\nimpl AnyhowError {\n    // Expose the `to_string` method (technically, `to_string` comes from the `Display` trait, but that\n    // doesn't matter for foreign consumers.  Since the item definition is not used for the\n    // scaffolding code and will not be present in the expanded code, it can be left empty.\n    pub fn to_string(&self) -> String;\n}\n```\n\nOne issue with this approach is that most methods defined by the source crate will not be compatible with UniFFI.\nTo get around this, UniFFI will allow defining extra methods for the FFI:\n\n```rust\ntype AnyhowError = anyhow::Error;\n\n#[uniffi::remote]\nimpl AnyhowError {\n    // [anyhow::Error::is] is a generic method, which can't be exported by UniFFI.\n    // Instead, define extra FFI methods which forward to the original method.\n    // This code will result in extra scaffolding methods being generated that can be called from foreign languages.\n    // These methods will not be callable from Rust.\n\n    fn is_foo_error(&self) -> bool {\n        self.is::<foo::Error>()\n    }\n\n    fn is_bar_error(&self) -> bool {\n        self.is::<foo::Error>()\n    }\n}\n```\n\n### [Option 1a] use a function-style macro\n\nThe same idea could also be spelled out using a function-style macro rather than an attribute macro:\n\n```rust\ntype LogLevel = log::Level;\n\nuniffi::remote!(\n    pub enum LogLevel {\n        Error = 1,\n        Warn = 2,\n        Info = 3,\n        Debug = 4,\n        Trace = 5,\n    }\n);\n\ntype AnyhowError = anyhow::Error;\n\nuniffi::remote!(\n    impl AnyhowError {\n        pub fn to_string(&self) -> String;\n\n        fn is_foo_error(&self) -> bool {\n            self.is::<foo::Error>()\n        }\n\n        fn is_bar_error(&self) -> bool {\n            self.is::<foo::Error>()\n        }\n    }\n);\n```\n\n### [Option 2] use custom-type conversion to expose the type\n\nAn alternate strategy would be to use a custom-type conversion from that type into a local type that does implement the UniFFI traits.\nThese examples will use the custom type syntax from #2087, since I think it looks nicer than the current `UniffiCustomTypeConverter` based code.\n\n```rust\n/// Define a type that mirrors `Log::Level`\n#[derive(uniffi::Enum)]\npub enum LogLevel {\n    Error = 1,\n    Warn = 2,\n    Info = 3,\n    Debug = 4,\n    Trace = 5,\n}\n\n/// Define a type conversion from `log::Level` to the custom [`LogLevel`] enum.\nuniffi::custom_type!(log::Level, LogLevel, {\n  lower: |l| match l {\n    log::Level::Error => LogLevel::Error,\n    log::Level::Warn => LogLevel::Warn,\n    log::Level::Info => LogLevel::Info,\n    log::Level::Debug => LogLevel::Debug,\n    log::Level::Trace => LogLevel::Trace,\n  },\n  try_lift: |l| Ok(match l ({\n    LogLevel::Error => log::Level::Error,\n    LogLevel::Warn => log::Level::Warn,\n    LogLevel::Info => log::Level::Info,\n    LogLevel::Debug => log::Level::Debug,\n    LogLevel::Trace => log::Level::Trace,\n  })\n})\n\n/// Interfaces can use the newtype pattern\n#[derive(uniffi::Object)]\npub struct AnyhowError(anyhow::Error);\n\nuniffi::custom_newtype!(anyhow::Error, AnyhowError).\n\n// We can define methods directly with this approach, no need for extension traits.\n#[uniffi::export]\nimpl AnyhowError {\n    fn is_foo_error(&self) -> bool {\n        self.0.is::<foo::Error>()\n    }\n\n    fn is_bar_error(&self) -> bool {\n        self.0.is::<bar::Error>()\n    }\n\n    fn message(&self) -> String {\n        self.0.to_string()\n    }\n}\n```\n\n#### Two types\n\nOne drawback of this approach is that we have to equivalent, but different types.\nRust code would need to use `anyhow::Error` in their signatures, while foreign code would use `AnyhowError`.\nSince the types are almost exactly the same, but named slightly different and with slightly different methods, it can be awkward to document this distinction -- both by UniFFI for library authors and by library authors for their consumers.\n\n### [Option 3] hybrid approach\n\nWe could try to combine the best of both worlds by using option 2 for records/structs and option 1 for interfaces.\n\n## Pros and Cons of the Options\n\n### [Option 1] expose remote types directly\n\n* Good, because both the foreign code and Rust code can use the same type names.\n* Good, because it has a low amount of boilerplate code (assuming we provide the `remote_extend!` macro).\n* Bad, because we need to define extension traits for remote interfaces types.\n* Bad, because it can be confusing to see a type declaration that the `uniffi::remote!` macro will eventually throw away.\n\n### [Option 1a] use an function-like macro\n\n(compared to option 1)\n\n* Bad, because the item declaration looks less natural.\n* Good, since it makes it a bit more obvious that the item declaration will be thrown away.\n\n### [Option 2] use custom-type conversion to expose the type\n\n* Good, because adding methods to remote interface types is natural.\n* Bad, because having two equivalent but different types could cause confusion.\n* Bad, because users have to write out the trivial struct/enum conversions.\n\n### [Option 3] hybrid approach\n\n* Good, because adding methods to remote interface types is natural.\n* Good, because both the foreign code and Rust code can use the same type names for struct/record types.\n* Bad, because there will be two types for interface types.\n* Good, because it has a low amount of boilerplate code.\n* Bad, because mixing the two systems increases the overall complexity and risk of confusion.\n\n## Decision Outcome\n\nOption 1\n\n## Discussion: how to extend remote interfaces\n\nOption 1 proposes extending remote interfaces by adding FFI methods.\nAn alternative would be to use extension traits, for example:\n\n```rust\npub trait AnyhowErrorExt {\n    fn is_foo_error(&self) -> bool;\n    fn is_bar_error(&self) -> bool;\n}\n\nimpl AnyhowErrorExt for anyhow::Error {\n    fn is_foo_error(&self) -> bool {\n        self.is::<foo::Error>()\n    }\n\n    fn is_bar_error(&self) -> bool {\n        self.is::<bar::Error>()\n    }\n}\n```\n\nThis extension trait code could be generated by UniFFI using the same macro syntax. The main\ndifference between the two approaches is that the extension trait methods could be called from Rust\n(though users might have to jump through some hoops to import the trait), while FFI methods could\nonly be called from the foreign language.\n\nWe decided to propose FFI method solution, since in most cases there's no reason to call these\nmethods from Rust.  Users can always define extension traits by hand, which is the recommended\nsolution for traits that are intended to be used by other Rust code.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "mozilla/uniffi-rs#2130",
+     "kind": "pull",
+     "url": "https://github.com/mozilla/uniffi-rs/pull/2130",
+     "number": "2130"
+    },
+    {
+     "key": "#2087",
+     "kind": "hash",
+     "url": "",
+     "number": "2087"
+    }
+   ],
+   "mentioned_paths": [
+    "Error/Level/Value"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0002-serialize-complex-datatypes.md",
+   "identity": "docs/adr/0002-serialize-complex-datatypes.md",
+   "adr_id": "2",
+   "title": "The MVP will pass complex datatypes over the FFI using simple, explicit serialization",
+   "first_commit": "2020-08-14T16:29:45+10:00",
+   "first_sha": "58f75029b7cb18a5298bfa14583464d77c5b7ebd",
+   "last_commit": "2023-12-22T11:45:03+01:00",
+   "author": "Ryan Kelly",
+   "email": "ryan@rfk.id.au",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# The MVP will pass complex datatypes over the FFI using simple, explicit serialization\n\n* Status: accepted\n* Deciders: rfkelly\n* Date: 2020-07-01 (or thereabouts)\n\n## Context and Problem Statement\n\nPassing complex data-types from Rust to foreign-language code and back again can be, well, *complex*.\nGiven a Rust struct with named fields, and a corresponding autogenerated data class in the foreign language\nbindings, how does one turn into the other?\n\n## Decision Drivers\n\n* Ensuring safety of the generated code.\n* Fitting with our [MVP goal](./0001-mvp-webidl.md) of favouring initial-time-to-ship over performance.\n\n## Considered Options\n\n* Option A: Declare complex datatypes using Protocol Buffers, pass them as serialized bytes.\n* Option B: Declare complex datatypes `[#repr(C)]` structs and pass them directly.\n* Option C: Implement a simple direct serialization scheme, pass them as serialized bytes.\n\n## Decision Outcome\n\nChosen option:\n  * **Option C: Implement a simple direct serialization scheme, pass them as serialized bytes.**\n\nThe choice here comes down to simplicity and safety for the MVP.\n\nSerializing complex datatypes into a bytebuffer makes it easier for us to pass the data safely across the FFI,\nbecause it strictly controls shared access to memory on each side of the boundary. Using our own simple\nserialization scheme reducing the number of moving parts relative to third-party serialization libraries.\n\nThis choice comes with non-trivial performance costs, but that's acceptable for MVP.\nWe are likely to ***revisit this choice*** if the MVP of the tool proves successful\nand expect that we can do so incrementally without changing the consumer-facing experience.\n\n## Pros and Cons of the Options\n\n### Option A: Declare complex datatypes using Protocol Buffers, pass them as serialized bytes.\n\nFollowing the approach currently taken by hand-written component bindings in application-services,\nwe could generate a Protocol Buffers schema for each complex data type, and use generated serialization\ncode to send it across the FFI as a bytebuffer.\n\n* Good, because we're familiar with this approach from our existing components.\n* Good, because Protocol Buffers exist and have decent tooling for generating serialization code\n  in our various target languages.\n* Good, because it's hard to mishandle the data in a way that introduces memory-safety issues.\n* Bad, because we'd be calling the protobuf code-generator from inside our own code-generator,\n  which seems like a very complex setup.\n* Bad, because there's likely to be a noticeable serialization-related performance overhead.\n* Bad, because Protocol Buffers contain some complexity that isn't useful for our use-case, such\n  as affordances for backwards-compatibility.\n\nA similar set of considerations apply to other third-party serialization schemes such as flatbuffers,\nwith the added disadvantage of unfamiliarity.\n\nUltimately, the additional build complexity of integrating a code-generator inside our own code generator\nmakes this option unattractive.\n\n### Option B: Declare complex datatypes `[#repr(C)]` structs and pass them directly.\n\nFollowing the approach currently taken by hand-written component bindings in the glean project,\nwe could generate a `#[repr(C)]` struct for each complex data type and a corresponding struct\nin the foreign language bindings, then pass structs directly across the FFI boundary either\nby value or as pointers.\n\n* Good, it has minimal serialization overhead.\n* Good, because it can avoid copying data from rust-memory to foreign-language-memory.\n* Bad, because using raw pointers gives more opportunities for memory-safety issues.\n* Bad, because it's not obvious how to handle nested values without using raw pointers.\n* Bad, because the codegen seems likely to be more complex than other options.\n\nUltimately, given that our MVP explicitly prioritizes features over performance, this option\nis not a good choice for the MVP. It seems worthwhile revisiting as an option for post-MVP\nwhen performance becomes more important.\n\n### Option C: Implement a simple direct serialization scheme, pass them as serialized bytes.\n\nWe could invent a very simple serialization scheme without all the bells-and-whistles of Protocol Buffers,\nand serialize complex data types to send them across the FFI as a bytebuffer.\n\n* Good, because this is similar to the familiar protocol-buffers approach.\n* Good, because we can directly codegen the serialization logic as part of generating other code for\n  the data structure.\n* Good, because it's hard to mishandle the data in a way that introduces memory-safety issues.\n* Bad, because we might introduce bugs in a new codebase that have already been shaken out in\n  a more mature third-party serialization library.\n* Bad, because there's likely to be a noticeable serialization-related performance overhead.\n\nUltimately, the simplicity and safety of this approach make it the best choice for our MVP.\n\n## Links\n\n* [Crossing the Rust FFI frontier with Protocol Buffers](https://hacks.mozilla.org/2019/04/crossing-the-rust-ffi-frontier-with-protocol-buffers/);\n  a discussion of how Application Services components pass complex data types by serializing them with\n  protocol buffers, and deserializing on the other side.\n* [This Week in Glean: Bytes in Memory (on Android)](https://fnordig.de/2020/05/04/this-week-in-glean/);\n  a discussion of how the Glean library passes complex data types by mapping them into `repr(c)` structs.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/0001-mvp-webidl.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0005-arc-pointers.md",
+   "identity": "docs/adr/0005-arc-pointers.md",
+   "adr_id": "5",
+   "title": "Use raw `Arc<T>` pointers to pass objects across the FFI",
+   "first_commit": "2021-04-20T14:30:37+10:00",
+   "first_sha": "35a705f26606a293d0af873acb010c1c15797a1f",
+   "last_commit": "2023-12-22T11:45:03+01:00",
+   "author": "Mark Hammond",
+   "email": "mhammond@skippinet.com.au",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 9,
+   "text": "# Use raw `Arc<T>` pointers to pass objects across the FFI\n\n* Status: proposed\n* Deciders: mhammond, rfkelly\n* Consulted: travis, jhugman, dmose\n* Date: 2021-04-19\n\nDiscussion and approval: [PR 430](https://github.com/mozilla/uniffi-rs/pull/430).\n\nTechnical Story: [Issue 419](https://github.com/mozilla/uniffi-rs/issues/419).\n\nPrototype: [PR 420](https://github.com/mozilla/uniffi-rs/pull/420).\n\n## Context and Problem Statement\n\nUniFFI currently manages object instances using the `HandleMap` struct in the ffi-support crate.\nThis means that external consumers of UniFFI-wrapped interfaces never see\nany pointers to structs - instead, they get what is (roughly) an index into\nan array, with the struct being stored in (and owned by) that array.\n\nThis has a number of safety characteristics which are particularly important for\nhand-written FFI interfaces, but it does cause some issues in evolving UniFFI in\ndirections we consider important. In addition to the slight performance overhead,\nthe use of `HandleMap`s makes it difficult to support:\n\n* Passing object instances as arguments ([#40](https://github.com/mozilla/uniffi-rs/issues/40)).\n  Getting objects out of a `HandleMap` involves a closure, so accepting multiple\n  object-typed arguments would involve code-generating nested closures.\n* Returning object instances from functions ([#197](https://github.com/mozilla/uniffi-rs/issues/197)).\n  Does the returned object already exist in the handlemap? If so, what is its handle?\n  How will we manage the lifetime of multiple references to the object?\n\nThese restrictions mean that UniFFI's `Object` type is currently only suitable\nas the `self` argument for method calls, and is forbidden in argument position,\nas record fields, etc.\n\nThis ADR considers ways to evolve the handling of object instances and their\nlifetimes, so that references to structs can be used more widely than currently allowed.\n\n## Decision Drivers\n\n* We desire the ability to have more flexible lifetimes for object interfaces, so\n  they can be stored in dictionaries or other interfaces, and be returned by\n  functions or methods other than constructors.\n\n* We would like to keep the UniFFI implementation as simple as possible while\n  providing a suitable degree of safety - in particular, a promise that it\n  should be impossible to misuse the generated bindings in a way that triggers\n  Rust's \"undefined behavior\" or otherwise defeats Rust's safety\n  characteristics and ownership model (and in particular, avoiding things like\n  use-after-free issues).\n\n* We would like to keep the overhead of UniFFI as small as possible so that it\n  is a viable solution to more use-cases.\n\n## Considered Options\n\n* **[Option 1] We extend the `HandleMap` abstraction to track lifetimes and support easier codegen**\n\n  This would involve deciding  on how we want to track lifetimes (eg, via a reference counting or garbage\n  collection) and actually building it.\n\n* **[Option 2] We replace `HandleMap<T>` with raw pointers to Rust's builtin `Arc<T>`**\n\n  We replace the use of HandleMaps with Rust `Arc<>`, using `Arc::into_raw` to pass\n  values to the foreign-language code and `Arc::from_raw` to receive them back in Rust.\n\n* **[Option 3] We replace `HandleMap<T>` with raw pointers to a special-purpose reference container**\n\n  We replace the use of HandleMaps with something like [triomphe::Arc](https://docs.rs/triomphe/0.1.2/triomphe/),\n  that is specifically intended for use in FFI code, using `Arc::into_raw` to pass values to the foreign-language\n  code and `Arc::from_raw` to receive them back in Rust.\n\n## Decision Outcome\n\nChosen option:\n\n* **[Option 2] We replace `HandleMap<T>` with raw pointers to Rust's builtin `Arc<T>`**\n\nThis decision is taken because:\n\n* We believe the additional safety offered by `HandleMap`s is far less\n  important for this use-case, because the code using these pointers is\n  generated instead of hand-written.\n\n* Correctly implementing better lifetime management in a thread-safe way is not\n  trivial and subtle errors there would defeat all the safety mechanisms the\n  `HandleMap`s offer. Ultimately we'd just end up reimplementing `Arc<>` anyway,\n  and the one in the stdlib is far more likely to be correct.\n\n* There are usability and familiarity benefits to using the stdlib `Arc<>` rather\n  than a special-purpose container like `triomphe::Arc`, and the way we currently\n  do codegen means we're unlikely to notice any potential performance improvements\n  from using a more specialized type.\n\n### Positive Consequences\n\n* There will be less overhead in our generated code - both performance overhead\n  and cognitive overload - it will be much easier to rationalize about how\n  the generated code actually works and performs.\n\n### Negative Consequences\n\n* Errors in our generated code might cause pointer misuse and lead to \"use\n  after free\" type issues.\n\n* Misuse of generated APIs may be able to create reference cycles between Rust\n  objects that cannot be deallocated, and consumers coming from a garbage-collected\n  language may assume that such cycles will be collected.\n\n## Pros and Cons of the Options\n\n### [Option 1] We extend the `HandleMap` abstraction to track lifetimes and support easier codegen.\n\n* Good, because raw pointers aren't handed out anywhere.\n\n* Bad, because we need to reimplement safe reference counting or garbage\n  collection.\n\n* Bad, because code generation is likely to remain somewhat complex.\n\nOverall, this option is dispreferred because it will involve writing significant new and complex code,\nthe safety benefits of which will be quite marginal in practice.\n\n### [Option 2] We replace `HandleMap<T>` with raw pointers to Rust's builtin `Arc<T>`\n\n* Good, because the code generated by UniFFI is clearer and easier to understand.\n\n* Good, because we can reuse the Rust standard library and have confidence in\n  its implementation.\n\n* Bad, because handing raw pointers around means bugs in the generated code or\n  intentional misuse of the bindings might cause vulnerabilities.\n\nOverall, this option is preferred because it achieves the goals while reducing both the\nperformance overheads of the generated code, and the cognitive overheads of maintaining\nthe tool.\n\n### [Option 3] We replace `HandleMap<T>` with raw pointers to a special-purpose reference container\n\n* Good, because the code generated by UniFFI is clearer and easier to understand.\n\n* Good, because we can reuse an existing well-tested container type like `triomphe:Arc`.\n\n* Good, because the special-purpose container type may be more performant than the\n  default implementation in the Rust stdlib.\n\n* Bad, because handing raw pointers around means bugs in the generated code or\n  intentional misuse of the bindings might cause vulnerabilities.\n\n* Bad, because the special-purpose container may \"leak\" into the implementation of the UniFFI-wrapped\n  Rust code, adding cognitive overhead for consumers.\n\nOverall, this option is dispreferred due to additional cognitive overhead for consumers.\nThe potential performance improvements seem likely to be lost in amongst the many other\nsources of overhead in our current generated code.\n\nWe may reconsider this decision if future profiling shows the use of stdlib `Arc` to be a bottleneck.\n\n## Links\n\n* Thom discusses this a bit in [this issue](https://github.com/mozilla/uniffi-rs/issues/244)\n  and agrees with the assertion that raw pointer make sense when all\n  the relevant code is generated.\n\n* Ryan discusses his general approval for this approach in [this issue](https://github.com/mozilla/uniffi-rs/issues/419)\n  and the [PR for this ADR](https://github.com/mozilla/uniffi-rs/pull/430)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "mozilla/uniffi-rs#430",
+     "kind": "pull",
+     "url": "https://github.com/mozilla/uniffi-rs/pull/430",
+     "number": "430"
+    },
+    {
+     "key": "mozilla/uniffi-rs#419",
+     "kind": "issue",
+     "url": "https://github.com/mozilla/uniffi-rs/issues/419",
+     "number": "419"
+    },
+    {
+     "key": "mozilla/uniffi-rs#420",
+     "kind": "pull",
+     "url": "https://github.com/mozilla/uniffi-rs/pull/420",
+     "number": "420"
+    },
+    {
+     "key": "#40",
+     "kind": "hash",
+     "url": "",
+     "number": "40"
+    },
+    {
+     "key": "mozilla/uniffi-rs#40",
+     "kind": "issue",
+     "url": "https://github.com/mozilla/uniffi-rs/issues/40",
+     "number": "40"
+    },
+    {
+     "key": "#197",
+     "kind": "hash",
+     "url": "",
+     "number": "197"
+    },
+    {
+     "key": "mozilla/uniffi-rs#197",
+     "kind": "issue",
+     "url": "https://github.com/mozilla/uniffi-rs/issues/197",
+     "number": "197"
+    },
+    {
+     "key": "mozilla/uniffi-rs#244",
+     "kind": "issue",
+     "url": "https://github.com/mozilla/uniffi-rs/issues/244",
+     "number": "244"
+    }
+   ],
+   "mentioned_paths": [
+    "docs.rs/triomphe/0.1.2"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0008-freeing-objects-and-resources.md",
+   "identity": "docs/adr/0008-freeing-objects-and-resources.md",
+   "adr_id": "8",
+   "title": "Freeing objects and resources",
+   "first_commit": "2023-10-10T17:55:31-04:00",
+   "first_sha": "24db38ce673cfc5a7d4e83c8f756656aec4c4ff1",
+   "last_commit": "2023-12-22T11:38:18+01:00",
+   "author": "Ben Dean-Kawamura",
+   "email": "bdk@mozilla.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Freeing objects and resources\n\n* Status: Accepted\n* Deciders: Uniffi developers, as approved in PR-1787\n* Date: 2023-10-18\n\nPrevious discussion: [PR 1394](https://github.com/mozilla/uniffi-rs/issues/1394), [Issue 8](https://github.com/mozilla/uniffi-rs/issues/8)\n\n## Context and Problem Statement\n\nUniFFI objects always hold a reference that needs to be released and sometimes hold a resource that needs to be closed.\nThe current design conflates the two issues.\nWe can address both concerns better and improve ergonomics by dealing with the two separately.\n\nThis ADR is written in language-neutral terms so that the issue can be discussed in general.\nHowever it's most clear in the Kotlin implementation and this ADR will affect that code the most, see Appendix 1 for the proposed changes.\n\n## Releasing References\nWhen a Rust object is passed to the foreign side, the foreign code stores a reference to a Rust `Arc<>`.\nConversely, foreign objects passed into Rust (eg, callbacks or trait implementations) cause Rust to hold a reference to the foreign object.\n\nUniFFI needs to ensure that when the generated objects are destroyed, the reference on the other side of the FFI is released.\nIt is acceptable for this release to be delayed and/or non-deterministic as long as it eventually happens.\nIn particular, it is acceptable for it to be handled by garbage collection.\n\n## Closing Resources\n\nWhen an object holds a significant resource (eg, some scarce operating-system owned resource), it may not be acceptable to couple the resource to the lifetime of the foreign object.\nIn this case, it MUST be to possible close the resource while the foreign object is still alive and before its reference is released.\n\nThese same considerations apply in both directions across the FFI.\nIf a garbage-collected foreign object stores a resource, then there MUST be a way to close the resource before the garbage collection happens.\nIf a Rust object holds a resource, there MUST be a way to close that resource even if there may be other `Arc<>` references.\n\n## Object containers\n\nThe discussion above has focused on individual objects, but in any non-trivial application many objects interact.\nFor example, consider a simple `Enum` or `dictionary` - in the usual case, these objects hold references to a non-resource holding objects.\nGiven the discussion above, it's acceptable for these references to be released using the standard memory management of the foreign language.\n\nHowever, the `Enum`, `dictionary`, `Vec`, `HashMap`, etc. may contain an object that itself contains a resource.\nWhile the component author is able to offer methods to close the resource on the objects themselves, they are not able to introduce methods to all the container objects which might hold the object.\nSo the question here is whether UniFFI itself should try and offer such capabilities.\n\n## Foreign \"sugar\" for closing resources.\n\nObjects which hold significant resources offer the capability to closing those resources even while the object remains alive.\nFor example, most foreign languages which expose a \"file\" object tend to provide a `close()` method that ensures the handle is released to the operating system.\n\nFor almost all languages it is possible use something like a `try/finally` pattern to ensure the object is closed as soon as practical.\nThis pattern is so common that some languages offer syntactic sugar for this express purpose.\nFor example, Python offers a \"context manager\", Kotlin offers the `use` extension for objects that implement `Closable`, etc.\n\nIdeally, UniFFI would offer a way so consumers can opt-in to implementing this capability.\nThis must be opt-in because that opt-in process must tell UniFFI exactly how the resource should be closed - while it will be very common for this to be via a `close()` method, UniFFI can't assume this (eg, a Python context manager doesn't insist on any particular technique)\n\n## Decision Drivers\n\n* UniFFI should present simple and clear abstractions to users.\n\n* UniFFI should let users explicitly decide how they want to deal with resources.\n  There is no way UniFFI can automatically differentiate between objects that hold significant resources versus those that do not.\n  Thus, components must \"opt in\" somehow to this facility, where the opt-in could be anywhere from fully manual closing (eg, by supplying a close method and documenting it must be called ASAP) or something more formal (ie, telling UniFFI this is such an object and UniFFI supplying some builtin support for this concept)\n\n* There is nothing UniFFI can do by itself to ensure that Rust references are released when foreign objects are destroyed.\n  This responsibility must fall on the foreign language in one way or another.\n\n* It seems unreasonable for UniFFI to be expected to track object containers and propagate any close operations as this would quickly become an ergonomic and technical quagmire (eg, would be give it to all objects just in-case such an object might be added in the future?\n  If not, how would the user (or even UniFFI itself) know whether the container actually held such an object? etc)\n\n## Considered Options\n\n### [Option 1] UniFFI handles releasing references, closing resources is largely left up to the user\n\n* Rely on all languages having *some* strategy for automatically closing resources as they are no longer reachable.\n  For most languages this will be something like a destructor, or some other facility with destructor-like semantics.\n  If a language has no such capability, then the bindings will be forced to implement some special facility for each and every object to be explicitly freed, but this strategy is unlikely to be useful in practice.\n\n* Don't automatically implement any methods to close a resource; if an object has resources that should be closed while the object remains alive, the component author should supply a mechanism to do that.\n\n* Investigate providing a facility for objects to opt-in to \"foreign sugar\" for closing the resources.\n  The exact mechanics for this are beyond the scope of the ADR.\n\n* Offer some general advice summarizing this in the documents, like \"define a close() method and document it\", but otherwise leave this problem for users to solve.\n\n* Don't do anything special for object containers.\n  If the field of a record contains a resource, then it's the user's responsibility to properly close that field.\n\n### [Option 2] Resource and Object as separate types\n\n* Require UDL users to label their interfaces as either a `Resource` or `Object` and proc-macro users to derive either `Resource` or `Object`.\n* `Object` instances are assumed to not contain significant resources and we rely on the foreign memory management for releasing the reference.\n* `Resource` instances would have a formal mechanism for closing their resource and releasing their reference at the same time.\n  Optionally, we may also use the foreign memory management as a fallback to close the resource and release the reference if the user did not do so explicitly.\n\n### [Option 3] Make Object do both (ie, assume all objects should get close methods)\n\n* Like option 2, but treat all objects as though they have significant resources to be freed.\n\n## Pros and Cons of the Options\n\n### [Option 1] UniFFI handles releasing references, closing resources is largely left up to the user\n\n* Good, because gives the user control over their object namespace.  UniFFI doesn't define any methods or assume any methods exist, etc\n* Bad, because it relies on a contractual agreement to ensure resource leaks are avoided and doesn't help if those obligations aren't met.\n* Bad, because it requires the \"closeable\" object to deal with some extra state - for example, if an object provides a `close()` method\n  which may be called before the object is destroyed, the object must deal with (a) the possibility that the object continues to be used\n  in some capacity after this close and (b) that as the object is destroyed `close()` may or may not have been called.\n* Good, because the same general solution works for when Rust is holding a foreign reference.\n* Bad, because generating \"foreign sugar\" means each object must opt-in to this behaviour instead of getting it for free.\n* Good, because making resource closing the user's responsibility extends to object containers as well.\n  If a library authors decides that it makes sense to define an enum variant that contains some resource-holding object, then it's the library consumer's responsibility to ensure that resource is properly closed.\n\n### [Option 2] Resource and Object as separate types\n\n* Good, because users explicitly decide on their interface behavior.\n* Good, because it means we could infer the \"foreign sugar\" situation and automatically implement special interfaces like `AutoCloseable`\n  in Kotlin for a Context Manager in Python.\n* Bad, because it means all objects must use the same signature for closing objects, whereas, eg, a connection to a database\n  object might prefer the method to be called `close_connection` and might even allow parameters.\n* Bad, because it implicitly defines some methods (eg, `close()`), preventing users from defining methods with those names that have different semantics.\n* Bad, because it doesn't offer a reasonable solution for when Rust is holding a foreign reference.\n* Good, because the distinction makes deciding how to handle object containers easier.\n  For example, enums can contain `Object` fields, but not `Resource` fields.\n\n### [Option 3] Make Object do both (ie, assume all objects should get close methods)\n\n* Good, because it's the easiest to implement.\n* Good, because we can easily continue to implement special traits like `AutoCloseable`.\n* Bad, for all the reasons Option 1 is bad.\n* Bad, because it's not clear how to handle object containers in all cases.  Should enums be allowed to contain objects?\n\n## Decision Outcome\n\nChosen option: **[Option 1] UniFFI handles releasing references, closing resources is largely left up to the user**\n\n# Appendix 1 - what does this mean for our foreign bindings?\n\nThe above is all quite abstract - what does this mean in practice for our language bindings:\n\n## Python\n\n* Python bindings are already hooked up to `__del__` so nothing changes here.\n* Once we have the \"Foreign Sugar\" opt-in mechanism in place we will generate context managers for such objects.\n\n## Swift\n\n* Existing `deinit` implementation is suitable so nothing changes here.\n\n## Kotlin\n\n* UniFFI will implement a mechanism that automatically frees Rust references when the corresponding foreign object is destroyed.\n  [Effective Java, 3rd edition](https://www.oreilly.com/library/view/effective-java-3rd/9780134686097/) recommends never using destructors.\n  It recommends avoiding the [Cleaner API](https://docs.oracle.com/javase%2F9%2Fdocs%2Fapi%2F%2F/java/lang/ref/Cleaner.html), but does say that it may be appropriate for freeing a \"native peer\", like the UniFFI reference.\n  The Android docs recommend using the [ReferenceQueue](https://www.android-doc.com/reference/java/lang/ref/ReferenceQueue.html) API, which is the low-level class that `Cleaner` uses (https://www.android-doc.com/reference/java/lang/Object.html#finalize())\n\n* We will no longer generate the `Closable` or `AutoClosable` interface for objects.\n* Once we have the \"Foreign Sugar\" opt-in mechanism in place we will generate the `Closable` interface for all such objects (maybe `AutoClosable` as well although that is mostly only useful for Java interoperability).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "mozilla/uniffi-rs#1394",
+     "kind": "issue",
+     "url": "https://github.com/mozilla/uniffi-rs/issues/1394",
+     "number": "1394"
+    },
+    {
+     "key": "mozilla/uniffi-rs#8",
+     "kind": "issue",
+     "url": "https://github.com/mozilla/uniffi-rs/issues/8",
+     "number": "8"
+    }
+   ],
+   "mentioned_paths": [
+    "try/finally",
+    "2F/java/lang/ref/Cleaner.html",
+    "www.android-doc.com/reference/java/lang/ref/ReferenceQueue.html",
+    "www.android-doc.com/reference/java/lang/Object.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0000-whats-the-big-idea.md",
+   "identity": "docs/adr/0000-whats-the-big-idea.md",
+   "adr_id": "0",
+   "title": "Write and maintain a custom tool for generating foreign-language bindings to rust code.",
+   "first_commit": "2020-08-14T16:29:45+10:00",
+   "first_sha": "58f75029b7cb18a5298bfa14583464d77c5b7ebd",
+   "last_commit": "2022-12-20T04:45:16+09:00",
+   "author": "Ryan Kelly",
+   "email": "ryan@rfk.id.au",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Write and maintain a custom tool for generating foreign-language bindings to rust code.\n\n* Status: accepted\n* Deciders: rfkelly, linacambridge, eoger, thomcc\n* Date: 2020-07-01 (or thereabouts)\n\n## Context and Problem Statement\n\nOn the Application Services team, we have successfully built several re-useable components for sync- and storage-related browser\nfunctionality by following what we've dubbed the \"rust-components\" approach: write the bulk of the code in rust\nso we can cross-compile it for different target platforms, have it expose a C-compatible FFI layer, then write a small amount\nof FFI bindings code to expose the functionality to each of several different target languages (e.g. Swift and Kotlin).\n\nThe FFI layer and foreign-language bindings code is currently written by hand, a tedious and potentially error-prone\nprocess.\n\nGiven that we expect to build additional components in this style in the future, and expect more teams at Mozilla to\ndo the same, can we increase the efficiency and reliability of this work by auto-generating some of this code?\n\n## Decision Drivers\n\n* Reduce time taken to launch a new rust component.\n* Improve maintainability of existing rust components.\n* Reduce possibility of errors in hand-written foreign language bindings code.\n* Continue shipping components on a regular cadence.\n\n## Considered Options\n\n* Option A: Continue writing the FFI and foreign-language parts of rust components by hand\n* Option B: Move to using WebAssembly and wasm-bindgen\n* Option C: Use SWIG, Djinni, or another existing bindings-generator tool\n* Option D: Write and maintain a custom tool that automates our current best practices\n\n## Decision Outcome\n\nChosen option:\n  * **Option D: Write and maintain a custom tool that automates our current best practices**\n\nOn balance, this option provides us with the best tradeoff of potential upside and the ability to limit downside.\nIf the approach succeeds then we expect to realize significant improvement in maintenance costs of rust-components\ncode by reducing boilerplate and human error. Building our own will involve the least up-front investment before\nwe can start to show results, because we did not identify any existing tools that were a close-enough fit for our needs.\nThe first versions of the tool don't have to be perfect, or even particularly *good* - they just have to have a\nbetter value-proposition than writing the generated code by hand.\n\nWe accept the risk that writing our own tool for this may turn out to be much more complex than expected, and\nwill mitigate it by aggressively time-boxing initial prototypes, by developing it in parallel with a real shipping\nconsumer with real deadlines, and by regularly asking the hard questions about whether the approach is working out.\n\n## Pros and Cons of the Options\n\n### Option A: Continue writing the FFI and foreign-language parts of rust components by hand\n\nWe could decide that hand-writing some `pub extern \"C\"` function wrappers and a bit of custom Swift,\nKotlin, etc isn't all that bad, and that the cost of doing so is unlikely to be offset by an investment\nin more automated tooling.\n\n* Good, because we can dedicate more people to building new component functionality, rather than working on tooling.\n* Good, because each component can use whatever bespoke FFI details work best for its use-case, rather than\n  taking a one-size-fits-all approach.\n* Good, because we don't have to learn a new tool or maintain an existing one.\n\n* Bad, because the time commitment for maintaining bindings will only grow as we build more components.\n* Bad, because it's easy to make mistakes when writing the bindings by hand, and it has proven hard to avoid\n  making similar mistakes multiple times.\n* Bad, because hand-writing bindings is low-engagement work that risks feeling like a chore, and we have plenty\n  of other chores already.\n\nUltimately, it feels like the potential long-term cost savings of automation will be significant,\nbut we are glad to continue having this option as a Plan B.\n\n### Option B: Move to using WebAssembly and wasm-bindgen\n\nThe approach we've taken with rust components has many similarities to WebAssembly, particularly the\n[WebAssembly Interface Types](https://hacks.mozilla.org/2019/08/webassembly-interface-types/) proposal.\nWe could try to use [`wasm-bindgen`](https://github.com/rustwasm/wasm-bindgen) to automatically generating\nbindings to our rust code, and rely on the portable nature of WebAssembly to run on multiple platforms.\n\n* Good, because the tooling around `wasm-bindgen` seems quite sophisticated and mature.\n* Good, because this toolchain is maintained by folks for whom it is a full-time job.\n* Good, because it meshes well with technical projects that are strategically important for Mozilla.\n\n* Bad, because `wasm-bindgen` currently only supports JavaScript as a target language.\n* Bad, because we have not been able to identify a mature solution for running WebAssembly on Android or iOS,\n  which are important target platforms.\n* Bad, because this is a significant departure from how we've written components in the past, which adds\n  timeline risk to shipping this solution.\n\nUltimately, we can imagine a world in which the WebAssembly ecosystem is sufficiently advanced to\nmake this the most compelling option, but that world seems far enough away that it doesn't make\nsense for us to pursue this right now.\n\n### Option C: Use SWIG, Djinni, or another existing bindings-generator tool\n\nWriting code in a systems language and generating bindings for high-level languages is not a new idea.\nAmong existing tools in this general space are [SWIG](http://www.swig.org/) and\n[Djinni](https://github.com/dropbox/djinni). We could adopt one of these existing tools instead\nof inventing our own thing.\n\n* Good, because these tools already exist and are mature, saving us development and maintenance effort.\n* Good, because it would realize the goal of avoiding hand-written boilerplate.\n* SWIG:\n  * Bad, because it doesn't appear to have support for generating Kotlin or Swift bindings, which\n    are key languages for our use-case.\n  * Bad, because it is designed for C/C++ rather than Rust, meaning an unknown amount of exploratory\n    work required to integrate it with our approach before we can ship anything.\n* Djinni:\n  * Good, because it targets several of our key languages/platforms.\n  * Bad, because it is designed using C++ as the implementation language rather than Rust, meaning\n    an unknown amount of exploratory work required to integrate it with our approach before we can\n    ship anything.\n  * Bad, because it has explicitly been put into \"maintenance mode\" by its authors.\n\nUltimately, while we could probably make one of these tools work, we could not find one that was\na close enough fit for our needs to avoid the \"unknown amount of exploratory integration work\" problem.\nWe're not willing to put off shipping incremental progress for long enough to be confident of\nmaking the integration work.\n\n### Option D: Write and maintain a custom tool that automates our current best practices\n\nWe can take the patterns we've established for writing the FFI layer and foreign language bindings\nby hand, and encapsulate them in a custom tool to automatically generate similar code.\n\n* Good, because it would realize the goal of avoiding hand-written boilerplate.\n* Good, because the first version of the tool only has to be good enough for our limited needs,\n  meaning we can defer some complexity until after we've proven out the idea.\n* Good, because it can be designed up-front to meet some of our unusual needs (integrating with\n  Firefox Desktop code, being built as part of a larger shared library, etc).\n* Good, because we should be able to determine whether the approach is working within a fairly\n  strict timebox, and fall back to hand-written bindings if required.\n* Bad, because we take on all the development and maintenance burden of the tool, reducing time\n  that can be spent on product features.\n* Bad, because we risk isolating knowledge of how to tool works in a small number of people.\n* Bad, because we might spend more time on developing and maintaining the tool than we'd ever hope\n  to save from the generated code.\n* Bad, because the bindings will be limited to a one-size-fits-all, lowest-common-denominator\n  feature set.\n* Bad, because the generated code risks being much harder to debug than hand-written bindings,\n  especially while the tool itself is under heavy development.\n\nUltimately, while there are risks with this approach, they seem sufficiently well-understood and\nwell-bounded that we can try out the approach, and fall back to hand-written bindings if it doesn't\nseem to be working out.\n\n## Links\n\n* [Engineering Program Review: Sync & Storage Components](https://docs.google.com/document/d/10I8MD_narf3D7w1F0rciye-cRpwKO6ItE_UdCtFKTmA);\n  an earlier technical review of the \"rust components\" approach, including some discussion of the\n  pain-points around manually writing FFI bindings.\n* [The (not so) hidden cost of sharing code between iOS and Android](https://dropbox.tech/mobile/the-not-so-hidden-cost-of-sharing-code-between-ios-and-android);\n  a kind of technical post-mortem from Dropbox exploring why they abandoned a code-sharing approach\n  that is similarly shaped to the one we're pursuing with rust components. Many of the risks highlighted\n  in this post also apply to our chosen solution.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0001-mvp-webidl.md",
+   "identity": "docs/adr/0001-mvp-webidl.md",
+   "adr_id": "1",
+   "title": "Build an MVP based on WebIDL and a manual workflow",
+   "first_commit": "2020-08-14T16:29:45+10:00",
+   "first_sha": "58f75029b7cb18a5298bfa14583464d77c5b7ebd",
+   "last_commit": "2022-12-20T04:45:16+09:00",
+   "author": "Ryan Kelly",
+   "email": "ryan@rfk.id.au",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Build an MVP based on WebIDL and a manual workflow\n\n* Status: accepted\n* Deciders: rfkelly, linacambridge, eoger, jhugman, tarikeshaq\n* Date: 2020-07-01 (or thereabouts)\n\n## Context and Problem Statement\n\nWhen [deciding to build this tool](./0000-whats-the-big-idea.md), the main risk identified was that we'd spend too\nmuch time on an ultimately unworkable or unmaintainable idea. What early design decisions can we make to mitigate\nthis risk? What things are an existential risk to the success of this project that must be included in the first\nversion, and what things can we safely defer to future work?\n\nIn other words: how do we build an MVP of this tool that is both *minimal* and *viable*?\n\n## Decision Drivers\n\n* Strictly timebox our efforts to \"prove out\" the approach.\n* Establish whether we can effectively maintain this kind of tool as a team.\n* Support initial development of a new rust component with externally-imposed, near-term deadlines.\n\n## Considered Options\n\nThis ADR encompasses several several related design questions, all of which feed together into an\noverall approach to building the MVP of the tool:\n\n* How will developers specify the API of their component?\n  * Option A: Use an external interface definition file based on WebIDL.\n  * Option B: Use an external interface definition file based on a custom language.\n  * Option C: Infer the API directly from the rust code using annotations and macros.\n\n* How will developers integrate the tool into their workflow?\n  * Option D: Use build-scripts and macros to deeply integrate with the rust crate's build system.\n  * Option E: Provide a tool that developers need to run by hand.\n\n* How will we prioritize work on the capabilities offered by the tool itself?\n  * Option F: Go broad, implementing many data types and API capabilities, even if they're slow or incomplete.\n  * Option G: Go deep, implementing a few core data types and API capabilities, and make sure they're done well.\n\n## Decision Outcome\n\nChosen options:\n  * **Option A: Use an external interface definition file based on WebIDL.**\n  * **Option E: Provide a tool that developers need to run by hand.**\n  * **Option F: Go broad, implementing many data types and API capabilities, even if they're slow or incomplete.**\n\nThe set of options chosen here makes an explicit tradeoff, preferring to get something up and running quickly\nand accepting a certain amount of jank in the developer experience. We don't have to build the perfect tool\nright away, we only have to build something that's better than doing this work by hand. If we like the result\nwe can polish it from there.\n\nThe MVP tool will read API definitions from an external WebIDL file. This will be a bit weird and inconvenient\nfor consumers because WebIDL is not a precise fit for our needs, but it avoids us bikeshedding the perfect\nAPI-definition experience during this first phase.\n\nThe MVP developer experience will involve `cargo install`ing the tool onto your system and manually running it\nor integrating it into your build process. This risks being mildly inconvenient for consumers, but gives us\nlots of flexibility while we learn about what a better workflow might look like.\n\nThe MVP tool may support more features than turn out to be strictly necessary, in the interests of ensuring\nmultiple team members can be involved in its development at this early stage. As a tradeoff, the MVP generated\ncode will be allowed to contain inefficiencies and limitations that hand-written code might not,\non the premise that our first consumers are not very performance-sensitive, and that there is a lot of scope for\nimproving these implementation details over time.\n\nWe are likely to ***revisit every single one of these choices*** if the MVP of the tool proves successful,\nand will attempt to build it in such a what that they're easy to revisit.\n\n## Pros and Cons of the Options\n\n### Option A: Use an external interface definition file based on WebIDL.\n\nWe can require developers to specify their component API in an external definition file,\nusing the syntax of WebIDL to provide something that's familiar and has an existing spec.\n\n* Good, because WebIDL exists and has the features we need for our first consumer.\n* Good, because the `weedle` crate provides a ready-made parser for WebIDL.\n* Good, because WebIDL has some base level of familiarity around Mozilla.\n* Bad, because developers will need to duplicate their API, once in the Rust code and once in the IDL.\n* Bad, because WebIDL is designed for a different use-case, so it's likely to be an awkward fit.\n* Bad, because `weedle` doesn't generate particularly helpful error messages (it seems designed for\n  parsing known-good WebIDL definitions rather than helping you develop new ones).\n\nUltimately, this seems like the lowest-cost way to get started, while deferring the\nimportant-but-not-existentially-risky work of making an IDL experience that fits really\nwell with Rust code.\n\n### Option B: Use an external interface definition file based on a custom language.\n\nWe can require developers to specify their component API in an external definition file,\nusing our own custom variant of an IDL syntax.\n\n* Good, because the syntax can be custom designed to fit well with the developer's mental\n  model of the generated code.\n* Good, because we already have several different IDL variants in use at Mozilla (WebIDL, XPIDL),\n  so our chances of building something that feels familiar are high.\n* Bad, because developers will need to duplicate their API, once in the Rust code and once in the IDL.\n* Bad, because we have to make up and document a whole syntax.\n* Bad, because rust parsing crates such as `nom` do not seem to generate particularly helpful error messages\n  by default, adding friction for the developer.\n\nUltimately, while a custom syntax would probably \"feel\" better from the consumer's perspective\nthan WebIDL, the costs involved are not worth that tradeoff for the MVP. Beyond the MVP we expect\nthat direct annotation of the Rust code will provide a better developer experience, leaving this\noption as an unnecessary middle-ground.\n\n### Option C: Infer the API directly from the rust code using annotations and macros.\n\nWe can allow developers to sprinkle some macro annotations directly on their rust code\nin order to declare the component API, similar to the approach taken by `wasm-bindgen`.\n\n* Good, the Rust code is a single source of truth for the API definition.\n* Good, because developers are familiar with this approach from other tools.\n* Bad, because our team doesn't have much experience working with macros at scale.\n* Bad, because from a poke around in the `wasm-bindgen` code, they seem to need to do\n  some pretty scary things in order to make the macros Just Work in various edge-cases.\n\nUltimately, this feels like a good approach longer-term, but risks being too much of a time-sink\nfor the MVP.\n\n### Option D: Use build-scripts and macros to deeply integrate with the rust crate's build system.\n\nWe can encourage consumers to structure their rust component as a crate, take a build-time dependency\non our tool, and magic things into existence as part of `cargo build`.\n\n* Good, because it's a slick developer experience if we can make it work.\n* Bad, because it assumes many details of how the consuming component is being built and deployed,\n  and we don't know exactly how that will work yet.\n* Bad, because it could be hard to integrate with e.g. a gradle-based build system for android packages.\n* Bad, because build scripts aren't supposed to create files outside of the rust target directory,\n  but it doesn't really make sense to generate foreign language bindings into that directory.\n\nUltimately, this approach does not provide enough flexibility for initial consumers, risking them\ndeclaring it a bad fit based on non-essential details of the tool itself.\n\n### Option E: Provide a tool that developers need to run by hand.\n\nWe can provide consumers with a `uniffi-bindgen` command-line tool that they manually run on their\ncomponent code in order to generate foreign language bindings.\n\n* Good, because gives the consumer lots of flexibility and when and where to generate the different\n  bits of code.\n* Bad, because consumers have to install an external tool.\n\nUltimately, this approach wins based on flexibility. We may also provide a light wrapper around the\ntool that integrates it with `cargo build` for convenience.\n\n### Option F: Go broad, implementing many data types and API capabilities, even if they're slow or incomplete.\n\nWe can focus our initial efforts on fleshing out a broad suite of data types and API capabilities,\nspending less time focused on performance or edge-cases in the generated code.\n\n* Good, because consumers can iterate their API with less chance of being limited by the tool.\n* Good, because it makes more opportunities for team members to get involved in implementing features\n  of the tool itself, helping us understand what it will be like to maintain it over time.\n* Bad, because sub-optimal performance may be offputting for consumers.\n* Bad, because we might accidentally entrench design decisions that limit our ability to improve\n  the generated code in future.\n\nUltimately, this option wins based on the known needs of our first target consumer (which favours\niteration over performance) and the of team itself (which wants to ensure multiple developers are\nfamiliar with the tool's codebase as it gets off the ground).\n\n### Option G: Go deep, implementing a few core data types and API capabilities, and make sure they're done well.\n\nWe can focus our initial efforts on identifying just the data types and API capabilities required by our\nfirst target consumer and implementing them really well, spending less time on features that are unlikely\nto be required by the consumer.\n\n* Good, because it shows the resulting generated code in the best possible light.\n* Bad, because we might not identify the correct set of features.\n* Bad, because it's harder to parallelize this kind of work among multiple team members.\n\nUltimately, the needs of our first target consumer make the \"performance\" argument fairly weak,\nso this option was not selected.\n\n## Links\n\n* [The WebIDL specification](https://heycam.github.io/webidl/), for reference.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/0000-whats-the-big-idea.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0007-enable-implementing-bindings-separately.md",
+   "identity": "docs/adr/0007-enable-implementing-bindings-seperately.md",
+   "adr_id": "7",
+   "title": "Enable implementing bindings in separate crates.",
+   "first_commit": "2022-04-07T12:17:47-07:00",
+   "first_sha": "2408156a4aaab6c9c1d7f3e629cdb2c454cc1791",
+   "last_commit": "2022-12-20T04:45:16+09:00",
+   "author": "Tarik Eshaq",
+   "email": "teshaq@mozilla.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Enable implementing bindings in separate crates.\n\n* Status: Accepted\n* Deciders: teshaq, bdk, mhammond\n* Date: 2022-04-7\n\nTechnical Story: [Issue 299](https://github.com/mozilla/uniffi-rs/issues/299)\n\nImplementation: [PR 1201](https://github.com/mozilla/uniffi-rs/pull/1201)\n\nTesting Implementation: [PR 1206](https://github.com/mozilla/uniffi-rs/pull/1206)\n\n## Context and Problem Statement\nAll the binding generators currently live in the [`uniffi_bindgen`](../../uniffi_bindgen/src/bindings) crate. This creates the following difficulties:\n\n- All the bindings live in the `uniffi` repository, so the `uniffi` team has to maintain them (or at the very least review changes to them). This makes it difficult to support third-party developers writing bindings for languages the core team does not wish to maintain.\n- Any change to a specific binding generator requires a new `uniffi_bindgen` release for it to be accessible by consumers. Even if it doesn't impact any of the other bindings.\n- Some bindings require complex build systems to test. Including those build systems in `uniffi` would require developers to install those build systems, and CI to do the same. For example, any type of `gecko-js` bindings would require the mozilla-central build system to build and test.\n- We currently run all the tests for the bindings in our CI and through `cargo test`. This means that if one binding target gets outdated and fails, or if a developer doesn't have the needed libraries installed for one of the targets, the tests would fail.\n\nBefore [PR 1201](https://github.com/mozilla/uniffi-rs/pull/1201), it was also impossible to write new bindings that did not live in the [`uniffi_bindgen`](../../uniffi_bindgen/src/bindings) crate.\n\nThis ADR proposes enabling third-party crates to implement binding generators, and describes the necessary uniffi changes to enable this.\n## Decision Drivers\n\n* Support Firefox Desktop JavaScript binding generation\n* Testability, it should be easy for developers to test the bindings they care about. Without having to navigate and install unfamiliar libraries and build systems.\n* Developer experience, it should be easier to write and maintain a new binding generator than it currently is.\n* Releases, cutting releases for changes in one binding generator shouldn't harm another.\n\n**NOTE**: Version compatibility is handled in a [separate ADR](https://github.com/mozilla/uniffi-rs/pull/1203)\n\n## Considered Options\n\n* **[Option 1] Do nothing**\n\n    This means keeping everything as-is, and deciding that all binding generators (at least for now) should live under the `uniffi_bindgen` crate.\n\n* **[Option 2] Create a public API for external crates to implement their own bindings.**\n\n    Developers would have traits exposed they can leverage to implement binding generators that do not live in `uniffi_bindgen`. `uniffi_bindgen` would still handle generic tasks related to binding generation.\n## Pros and Cons of the Options\n\n### **[Option 1] Do nothing**\n\n* Good, because it makes it harder for users to accidentally use different versions of `uniffi` for scaffolding and bindings since they are all implemented together in the same crate.\n* Good, it makes it easier to make changes to multiple bindings at a time (in the case of a breaking change in `uniffi`, etc).\n* Bad, because maintainability can grow to be difficult - especially if more bindings are added which the core `uniffi` team is not familiar with.\n* Bad, because testability can also grow to be difficult - as more bindings are added the requirement to test all the bindings together in one repository is difficult to maintain.\n* Bad, because releases of all the binding generators are tied to the release of `uniffi_bindgen`.\n\n### **[Option 2] Create a public API for external crates to implement their own bindings.**\n\n* Good, because ownership will be clear, and members of the community can opt to maintain their own binding generators.\n* Good, because our CI would only need to test the core bindings we maintain, and others can be tested by their own maintainers (for example, a `gecko-js` binding generator should be tested in `mozilla-central` and not here).\n* Good, because a release in external bindings wouldn't have an impact on any internal ones unless it changes internal `uniffi` behavior.\n* Bad, because it's easier to accidentally have a version mismatch. (see [this ADR](https://github.com/mozilla/uniffi-rs/pull/1203))\n* Bad, because testability increases in complexity. We are required to publish fixtures and examples we have. (see [PR 1206](https://github.com/mozilla/uniffi-rs/pull/1206))\n\nOverall this option is preferred because:\n\n- It's a requirement to implement bindings for gecko-js, which can't be tested end-to-end without a complex build system.\n- It creates the possibility of community contributors writing and maintaining their own binding generators in their own repositories.\n- The increased risk of version mismatch can be dealt with. (see [this ADR](https://github.com/mozilla/uniffi-rs/pull/1203))\n\n\n## Decision Outcome\n\nChosen option:\n### **[Option 2] Create a public API for external crates to implement their own bindings.**\n\n## Changes\n### Expose a trait `BindingGenerator`\nThe trait would have the following:\n1. An associated type that implements `BindingGeneratorConfig`\n    - `BindingGeneratorConfig` would be another trait, that binding generators can implement on their own configuration types. The purpose of this type is to carry any binding specific configuration parsed from the `uniffi.toml`\n1. A function `write_bindings` that takes in the ComponentInterface and Config and writes the bindings into directory `out_dir`\n\n### Expose a generic function as entry point\n1. The binding generator should call a generic function when generating bindings exposed by `uniffi_bindgen`. The generic function will:\n    - Parse the UDL.\n    - Parse the configuration from `uniffi.toml`, using the `BindingGeneratorConfig` trait the consumer implements.\n    - Initialize a `BindingGenerator`, with the type a consumer provides.\n    - Call `write_bindings` on the generic type.\n\nSee [PR 1201](https://github.com/mozilla/uniffi-rs/pull/1201) for implementation of the above changes.\n\n### Expose fixtures for testing\nTo enable external binding generators to implement tests, we would publish our fixtures and a new `uniffi_testing` crate that is a helper for consumers to build and consume the fixture crates.\n\nSee [PR 1206](https://github.com/mozilla/uniffi-rs/pull/1206) for implementation of the testing changes.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "mozilla/uniffi-rs#299",
+     "kind": "issue",
+     "url": "https://github.com/mozilla/uniffi-rs/issues/299",
+     "number": "299"
+    },
+    {
+     "key": "mozilla/uniffi-rs#1201",
+     "kind": "pull",
+     "url": "https://github.com/mozilla/uniffi-rs/pull/1201",
+     "number": "1201"
+    },
+    {
+     "key": "mozilla/uniffi-rs#1206",
+     "kind": "pull",
+     "url": "https://github.com/mozilla/uniffi-rs/pull/1206",
+     "number": "1206"
+    },
+    {
+     "key": "mozilla/uniffi-rs#1203",
+     "kind": "pull",
+     "url": "https://github.com/mozilla/uniffi-rs/pull/1203",
+     "number": "1203"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0006-wrapping-types.md",
+   "identity": "docs/adr/0006-external-types.md",
+   "adr_id": "6",
+   "title": "Update the code or update the template wrappers?",
+   "first_commit": "2021-08-06T09:42:48-04:00",
+   "first_sha": "1d5a63da5fc8cd68a10c1ddba8c5500c04a9ce7a",
+   "last_commit": "2022-10-26T13:35:35+02:00",
+   "author": "Ben Dean-Kawamura",
+   "email": "ben@mozilla.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Update the code or update the template wrappers?\n\n* Status: proposed\n* Deciders: bendk, rfkelly, mhammond\n* Consulted: jhugman, jan-erik, travis\n* Date: 2021-08-06\n\nDiscussion : [PR 1001](https://github.com/mozilla/uniffi-rs/pull/1001).\n\n## Context and Problem Statement\n\nUniFFI was not able to support types from external crates because Rust's orphan\nrule prevents implementing the `ViaFfi` trait.  In order to add support we\nneeded to choose between updating the `uniffi` traits or updating the\n`lift_py` and `lower_py` scaffolding functions.\n\nThe same general question comes up often.  When adding new features we often\nneed to choose between two paths:\n\n  * Updating the code in the target language\n  * Updating the template wrapping code\n\nThis ADR discusses this particular decision and also the general pros and cons of each\npath.\n\n## Decision Drivers\n\n* We wanted to support external crates that define new types by wrapping an\n  UniFFI primitive type.  For example supporting `serde_json::Value` that wraps\n  `string` or a `Handle` that wraps `int32`.  We wanted this kind of wrapping\n  code to exist outside of `uniffi` to allow for more experimentation with\n  wrapped types and to support types that were specific to particular libraries\n  (for example the application-services `Guid` type).\n\n## Considered Options\n\n* **[Option 1] Extend the template code to wrap the type**\n\n  * In the Record/Enum/Object/Error code, we would use the newtype pattern to\n    wrap the external type (`struct WrapperType(ExternalType)`)\n\n  * In the filters functions we generate code to wrap lift/lower/read/write.\n    For example the lower_rs filter could output `WrapperType(x).lower()` to\n    lower `WrapperType`.\n\n* **[Option 2] Update the `uniffi` code and generalize the `ViaFfi` trait**\n\n  * We define `FfiConverter` which works almost the same as `ViaFfi` except\n    instead of always converting between `Self` and `FfiType`, we define a\n    second associated type `RustType`.  `FfiConverter` converts between\n    any `RustType` and `FfiType`.\n\n  * For each user-defined type (Record, Error, Object, and Enum), we create a\n    new unit struct and set `RustType` to the type.  This handles external types\n    without issues since we're implementing `FfiConverter` on our on struct.\n    The orphan rule doesn't apply to associated types.\n\n   * This eliminated the `lower_rs`, `lift_rs`, `read_rs`, and `write_rs`\n     filter functions.  All FFI conversions were now handled by Rust code\n     directly.\n\n## Decision Outcome\n\nChosen option:\n\n* **[Option 2] Update the `uniffi` code and generalize the `ViaFfi` trait**\n\nThis decision is taken because:\n\n* It was relatively easy to implement wrapper types by allowing the external\n  crates to add custom scaffolding code.  This code could wrap primitive types\n  because all lifting/lowering/reading/writing was handled by Rust code.  If we\n  had gone with option 1, then the wrapping code would need to hook into the\n  template functions (`lift_rs`, `lower_rs`, etc.).  We couldn't see a simple\n  way to implement this.\n\n* Updating the code in the target language results in more readable generated\n  code.  The newtype pattern makes the generated code more difficult to read,\n  especially when types are wrapped in `Option<>`, `Vec<>`, etc.\n\n* The same pattern could be used to implement wrapping on the bindings side.\n\n### Positive Consequences\n\n* Paved the way for wrapper types.\n* Simplified the template code.\n\n### Negative Consequences\n\n* Implementing wrapping with template functions can lead to more direct code.\n  For example, lifting a integer value is a no-op, but we still generate a\n  function call to do it.  This is not an issue with Rust, since the compiler\n  will optimize the call away, but it could be an issue for the bindings code.\n  If we decide that it is an issue, we could go with a hybrid solution:\n  generate the lifting/lowering code in the target language, but also have\n  lift/lower filter functions that exist solely to optimize lifting/lowering\n  simple types.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "mozilla/uniffi-rs#1001",
+     "kind": "pull",
+     "url": "https://github.com/mozilla/uniffi-rs/pull/1001",
+     "number": "1001"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0004-only-threadsafe-interfaces.md",
+   "identity": "docs/adr/0004-only-threadsafe-interfaces.md",
+   "adr_id": "4",
+   "title": "Remove support for non-`Send+Sync` interfaces",
+   "first_commit": "2021-04-19T15:28:23+10:00",
+   "first_sha": "a7ddeed2ab555f684d521dded9d049145901dcee",
+   "last_commit": "2022-10-26T13:04:35+02:00",
+   "author": "Mark Hammond",
+   "email": "mhammond@skippinet.com.au",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# Remove support for non-`Send+Sync` interfaces\n\n* Status: accepted\n* Deciders: mhammond, rfkelly, travis, jhugman, dmose\n* Date: 2021-04-19\n\nDiscussion and approval: [PR 421](https://github.com/mozilla/uniffi-rs/pull/421)\nTechnical Story: [Issue 419](https://github.com/mozilla/uniffi-rs/issues/419)\n\n## Context and Problem Statement\n\n[ADR-0003](0003-threadsafe-interfaces.md) introduced support for \"thread-safe\ninterfaces\" - possibly leading to the impression that there is such a thing as\nnon-threadsafe interfaces and confusion about exactly what the attribute means.\n\nHowever, the entire concept of non-threadsafe interfaces is a misconception -\nthe Rust compiler insists that everything wrapped by uniffi is thread-safe -\nthe only question is who manages this thread-safety. Interfaces which are not\nmarked as thread-safe cause uniffi to wrap the interface in a mutex which is\nhidden in the generated code and therefore not obvious to the casual reader.\n\nThe `[Threadsafe]` marker acts as a way for the component author to opt out of\nthe overhead and blocking behaviour of this mutex, at the cost of opting in to\nmanaging their own locking internally. This ADR proposes that uniffi forces\ncomponent authors to explicitly manage that locking in all cases - or to put\nthis in Rust terms, that all structs supported by uniffi must already be\n`Send+Sync`\n\nNote that this ADR will hence-forth use the term `Send+Sync` instead of\n\"Threadsafe\" because it more accurately describes the actual intent and avoids\nany misunderstandings that might be caused by using the somewhat broad and\ngeneric \"Threadsafe\".\n\n## Decision Drivers\n\n* Supporting non-`Send+Sync` structs means uniffi must add hidden locking to make\n  them `Send+Sync`. We consider this a \"foot-gun\" as it may lead to accidentally\n  having method calls unexpectedly block for long periods, such as\n  [this Fenix bug](https://github.com/mozilla-mobile/fenix/issues/17086)\n  (with more details available in [this JIRA ticket](https://jira.mozilla.com/browse/SDK-157)).\n\n* Supporting such structs will hinder uniffi growing in directions that we've\n  found are desired in practice, such as allowing structs to use [alternative\n  method receivers](https://github.com/mozilla/uniffi-rs/issues/417) or to\n  [pass interface references over the FFI](https://github.com/mozilla/uniffi-rs/issues/419).\n\n## Considered Options\n\n* [Option 1] Continue supporting non-`Send+Sync` interfaces while also working\n  on the enhancements listed above, but exclude non-`Send+Sync` interfaces from\n  such enhancements.\n\n* [Option 2] Immediately deprecate, then remove entirely, support for\n  non-`Send+Sync` interfaces.\n\n## Decision Outcome\n\nChosen option:\n\n* **[Option 2] Immediately deprecate, then remove entirely, support for\n  non-`Send+Sync` interfaces.**\n\nThis decision was taken because our real world experience tells us that\nnon-`Send+Sync` interfaces are only useful in toy or example applications (eg,\nthe nimbus and autofill projects didn't get very far before needing these\ncapabilities), so the extra ongoing work in supporting these interfaces cannot\nbe justified.\n\n### Positive Consequences\n\n* The locking in all uniffi supported components will be more easily\n  discoverable - it will be in hand-written rust code and not hidden inside\n  generated code. This is a benefit to the developers of the uniffi supported\n  component rather than to the consumers of it; while we are considering other\n  features to help communicate the lock semantics to such consumers, that is\n  beyond the scope of this ADR.\n\n* Opens the door to enhancements that would be impossible for non-`Send+Sync`\n  interfaces, and simpler to implement for `Send+Sync` interfaces if support\n  for non-`Send+Sync` interfaces did not exist.\n\n* Simpler implementation and documentation.\n\n### Negative Consequences\n\n* All consumers (both inside Mozilla and external) will need to change their\n  interfaces to be `Send+Sync`. As an example of what this entails,\n  see [this commit](https://github.com/mozilla/uniffi-rs/commit/454dfff6aa560dffad980a9258853108a44d5985)\n  which converts the `todolist` example.\n\n* Simple, toy applications may be more difficult to wrap - consumers will not\n  be able to defer decisions about `Send+Sync` support and will instead need to\n  implement simple locking as demonstrated in [this commit](\n  https://github.com/mozilla/uniffi-rs/commit/454dfff6aa560dffad980a9258853108a44d5985).\n\n* Existing applications that are yet to consider how to make their\n  implementations `Send+Sync` cannot be wrapped until they have.\n\n* The examples which aren't currently marked with the `[Threadsafe]` attribute\n  will become more complex as they will all need to implement and explain how\n  they achieve being `Send+Sync`.\n\n* The perception that its more difficult to wrap interfaces will lead to less\n  adoption of the tool.\n\n## Pros and Cons of the Options\n\n### [Option 1]\n\n* Good, because we don't break anyone.\n* Bad, because we believe non-`Send+Sync` interfaces aren't useful in the\n  real-world, but we would pay the maintenance cost as though they were.\n* Bad, because locking remains hidden and leaves the door open to the same\n  gun we have already shot ourselves in the foot with.\n\n### [Option 2]\n\n* Good, because it makes the implementation of desired features easier.\n* Good, because it removes a foot-gun and makes locking both explicit and\n  visible to the developers of the uniffi-wrapped component.\n* Bad, because it breaks existing external consumers - it also breaks a couple\n  of internal consumers (for example, [fxa-client](\n  https://github.com/mozilla/application-services/blob/f3f0cf6e3386bf3036b074dad3950389cbd05746/components/fxa-client/src/fxa_client.udl#L97)),\n  but we believe fixing them is easy and low cost.\n\n## Implications\n\nWe know there are external consumers and we know that this will break them.\nTherefore, we will commit to the following actions:\n\n* Communicating both this decision and how consumers can work around it as soon\n  as possible.\n\n* Noisily deprecate non-`Send+Sync` interfaces in at least 1 release, so\n  existing consumers are likely to see warnings and a link to our documentation\n  when they upgrade.\n\n* Upgrade all internal mozilla consumers as soon as possible so they do not\n  issue deprecation warnings. As an example of what this entails,\n  see [this PR](https://github.com/mozilla/uniffi-rs/commit/454dfff6aa560dffad980a9258853108a44d5985)\n  which converts the `todolist` example to be `Send+Sync`.\n\n* Perform the actual removal as late as possible (ie, until support for non\n  `Send+Sync` interfaces actually inhibits our ability to add new features).\n  Concretely, the actual removal involves:\n\n  * Making `[Threadsafe]` the default. The attribute will not be immediately\n    removed as that would break existing `Send+Sync` components, although we\n    will mark it as deprecated and remove it on an aggressive timeline as the\n    attribute may be confusing given `Send+Sync` would now be the default.\n\n  * Remove support for generating the `Send+Sync` support in generated rust.\n    This will cause rust objects that don't support `Send + Sync` to fail to\n    compile.\n\n## Links\n\n* Logical extension of [ADR-0003](0003-threadsafe-interfaces.md)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "mozilla/uniffi-rs#421",
+     "kind": "pull",
+     "url": "https://github.com/mozilla/uniffi-rs/pull/421",
+     "number": "421"
+    },
+    {
+     "key": "mozilla/uniffi-rs#419",
+     "kind": "issue",
+     "url": "https://github.com/mozilla/uniffi-rs/issues/419",
+     "number": "419"
+    },
+    {
+     "key": "mozilla-mobile/fenix#17086",
+     "kind": "issue",
+     "url": "https://github.com/mozilla-mobile/fenix/issues/17086",
+     "number": "17086"
+    },
+    {
+     "key": "mozilla/uniffi-rs#417",
+     "kind": "issue",
+     "url": "https://github.com/mozilla/uniffi-rs/issues/417",
+     "number": "417"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/mozilla/application-services/blob/f3f0cf6e3386bf3036b074dad3950389cbd05746/components/fxa-client/src/fxa_client.udl"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/adr/0007-enable-implementing-bindings-separately.md",
+   "identity": "docs/adr/0007-enable-implementing-bindings-seperately.md",
+   "commit": "2cba55e8c543b278d95ae17080c741f3ae3a7ec6",
+   "date": "2022-12-20T04:45:16+09:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Correct minor typos (#1432)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Chris Ohk",
+   "email": "utilForever@gmail.com"
+  },
+  {
+   "path": "docs/adr/0006-wrapping-types.md",
+   "identity": "docs/adr/0006-external-types.md",
+   "commit": "d00a38ea24f52e151c1c7245fa2170113d3ed57d",
+   "date": "2021-08-18T11:06:21-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Updating ADR-0006",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Ben Dean-Kawamura",
+   "email": "ben@mozilla.com"
+  }
+ ],
+ "ai_signals": [
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+   "date": "2026-05-09T07:28:10-04:00",
+   "commit": "beac2f850a80284ef9f50fbbe228ac7da1e9da66",
+   "evidence": "swift: apply nonisolated(unsafe) on vtablePtr unconditionally",
+   "official": true,
+   "author": "Dmitry Minkovsky",
+   "email": "dminkovsky@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>",
+   "date": "2026-08-26T17:24:18+08:00",
+   "commit": "db35f877c8c12cb0d79a7f3b5a107014ff761319",
+   "evidence": "kotlin-jni: support Bytes fields inside FFI buffers",
+   "official": true,
+   "author": "Yin Jifeng",
+   "email": "jifeng.yin@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>",
+   "date": "2026-08-26T17:29:25+08:00",
+   "commit": "a1a95da11d4538e7a13e0ccd3ad109ac6f1d6e92",
+   "evidence": "kotlin-jni: FFI buffer layout for Timestamp and Duration",
+   "official": true,
+   "author": "Yin Jifeng",
+   "email": "jifeng.yin@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>",
+   "date": "2026-08-26T17:29:25+08:00",
+   "commit": "71dd036a2bc4e541f4f6181d747b2b6d4ae07782",
+   "evidence": "uniffi_parse_rs: use the trait's own path for trait object references",
+   "official": true,
+   "author": "Yin Jifeng",
+   "email": "jifeng.yin@gmail.com"
+  }
+ ],
+ "signal_date": "2026-05-09T11:28:10+00:00",
+ "signal_kind": "coauthor",
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-eligible",
+ "adr_count_before_signal": 10,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-before-signal",
+ "sources": "sourcegraph:docs_adr;buchgeher-2022",
+ "stars": "5102",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "7"
+}

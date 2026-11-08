@@ -1,0 +1,779 @@
+{
+ "repo": "alphagov/search-api",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2011-11-01T10:13:31+00:00",
+ "last_commit": "2026-11-06T10:41:16+00:00",
+ "n_commits": 9389,
+ "n_authors": 299,
+ "n_files": 452,
+ "n_code_files": 288,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 14,
+ "adrs": [
+  {
+   "path": "docs/arch/adr-014-opensearch3.7-upgrade.md",
+   "identity": "docs/arch/adr-014-opensearch3.7-upgrade.md",
+   "adr_id": "14",
+   "title": "Decision record: Upgrading Elasticsearch 6.8 to OpenSearch 3.7",
+   "first_commit": "2026-09-04T10:03:21+01:00",
+   "first_sha": "898dabba3366239e5efc6d46108998627b89dae0",
+   "last_commit": "2026-09-04T10:03:21+01:00",
+   "author": "Jos Koetsier",
+   "email": "Jos.Koetsier@digital.cabinet-office.gov.uk",
+   "status": "accepted",
+   "status_raw": "**Accepted** [ES-RESULTS]: https://beisgov.sharepoint.com/:w:/r/sites/GOVUKWeb/Shared%20Documents/General/Search/2025%20-%202026_%20Search/25_26%20Technical/Upgrading_Elasticsearch.docx?d=wd6bc70ac5a1c4096940f845e6a5cfc61&csf=1&web=1&e=ZkngCC",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Decision record: Upgrading Elasticsearch 6.8 to OpenSearch 3.7\n\n**Date:** 2026-09-03\n\n## Context\n\nOur current search infrastructure runs on AWS Managed Elasticsearch 6.8. We want to move to a newer search platform to keep the infrastructure current and benefit from improvements in newer releases.\n\nContinuing to run an older version also increases operational risk, as support may eventually be discontinued and newly identified bugs or security issues may no longer receive fixes or patches.\n\nFurthermore, Elasticsearch moved from the permissive Apache 2.0 license to the less permissive Elastic License and SSPL. As a result, OpenSearch was created as a fork of Elasticsearch 7.10.2, allowing us to continue using an Apache 2.0-licensed search platform.\n\n## Possible Upgrade Paths\n\nFrom the existing AWS Managed Elasticsearch 6.8 deployment, we considered three upgrade paths.\n\n### 1. Upgrade to Elasticsearch 7.10\n\nThe most conservative option would be to upgrade from Elasticsearch 6.8 to Elasticsearch 7.10 first. This would minimise the version gap and reduce the immediate compatibility risk, as OpenSearch was forked from Elasticsearch 7.10.2.\n\n### 2. Migrate to an Earlier OpenSearch Version\n\nWe could migrate to an earlier OpenSearch release, such as OpenSearch 1.x or 2.x. This would allow us to move away from Elasticsearch while reducing the version gap compared with OpenSearch 3.7.\n\n### 3. Migrate Directly to OpenSearch 3.7\n\nWe could migrate directly from Elasticsearch 6.8 to OpenSearch 3.7. This has the largest version and platform gap, and therefore carries greater compatibility risk, but avoids an intermediate migration and provides a more current target platform. OpenSearch 3.7 is also the latest supported OpenSearch version available on AWS, making it the preferred long-term target.\n\n## Decision\n\nWe will migrate directly from AWS Managed Elasticsearch 6.8 to OpenSearch 3.7, skipping Elasticsearch 7.10 and intermediate OpenSearch versions.\n\nWe accept the additional short-term risk of the larger migration in order to avoid multiple migrations and reach a more current platform in a single step.\n\n## Evaluation\n\nOpenSearch 3.7 was evaluated against Elasticsearch 6.8 using:\n\n- **Traffic replay** to validate behaviour and performance under representative workloads.\n\n- **Expanded integration tests** to validate application compatibility.\n\n- **Example queries** to identify differences in query behaviour and results.\n\n- **Relevance testing** to compare search result quality.\n\nThe testing [confirmed][ES-RESULTS] that the Search API's functionality, search results, relevance, and performance remained as expected when running against OpenSearch 3.7.\n\n## Consequences\n\n### Positive\n\n- Avoids an intermediate Elasticsearch or OpenSearch upgrade.\n\n- Provides a more current OpenSearch baseline for future upgrades.\n\n- Reduces the operational risk of remaining on Elasticsearch 6.8.\n\n- Reduces the likelihood of requiring another major migration in the near future with all the associated risks.\n\n### Negative\n\n- The larger version and platform change carries greater migration risk.\n\n- Some queries, APIs, or configuration may require adjustment where OpenSearch differs from Elasticsearch.\n\n- As with any production migration, there is some residual risk that issues may only become apparent over longer-term production use.\n\n## Risks and Mitigations\n\n| Risk | Mitigation                                                                                        |\n| --- |---------------------------------------------------------------------------------------------------|\n| Application incompatibility | Expanded integration and example query testing.                                                   |\n| Search relevance changes | Relevance testing against Elasticsearch 6.8.                                                      |\n| Performance issues | Representative traffic replay.                                                                    |\n| Unexpected production behaviour | Monitor closely after migration and maintain a rollback strategy using our blue-green deployment. |\n\n## Status\n\n**Accepted**\n\n[ES-RESULTS]: https://beisgov.sharepoint.com/:w:/r/sites/GOVUKWeb/Shared%20Documents/General/Search/2025%20-%202026_%20Search/25_26%20Technical/Upgrading_Elasticsearch.docx?d=wd6bc70ac5a1c4096940f845e6a5cfc61&csf=1&web=1&e=ZkngCC\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "20Technical/Upgrading_Elasticsearch.docx"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/arch/adr-001-use-of-both-rabbitmq-and-sidekiq-queues.md",
+   "identity": "doc/arch/adr-001-use-of-both-rabbitmq-and-sidekiq-queues.md",
+   "adr_id": "1",
+   "title": "Decision record: use of both RabbitMQ (bunny) and Redis (Sidekiq) queuing systems",
+   "first_commit": "2017-07-24T17:21:29+01:00",
+   "first_sha": "03dedda588d2bd255c78a9306bc59bf7727dffb0",
+   "last_commit": "2025-04-07T16:24:10+01:00",
+   "author": "David Henry",
+   "email": "david@decoybecoy.com",
+   "status": "accepted",
+   "status_raw": "Accepted.",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Decision record: use of both RabbitMQ (bunny) and Redis (Sidekiq) queuing systems\n\n## Context\n\n**Note: This has been superseded by [ADR-013](adr-013-rabbitmq-sidekiq-removal.md).**\n\nIn order to simplify the search infrastructure we are moving to using the publishing API\nas the source of data. This allows us to reduce the amount of code duplication across\nprojects, as currently each publishing app has to implement a write interface into rummager.\n\nWe expect this will give us a number of improvements, including:\n\n* rebuild the search index more easily\n* reduce the load on the publishing API - rummager currently needs to retrieve tagging data\n  from the publishing API when it indexes documents\n\nThe publishing API currently uses rabbit MQ to tell downstream apps that a new publishing\nevent has occurred, with the key specifying the publishing app and the publishing event\ntype.\n\nRummager currently processes `link` events from the rabbit MQ stream, this works by reading\nthe message off the rabbitMQ stream, doing a small amount of manipulation and then creating\na Sidekiq worker task to perform the data update.\n\nWhen processing messages off the queue it is important that the process can provide the following features:\n\n* Concurrency\n* Failure/Queue side tracking\n* Retry logic\n\n\n## Decision\n\nWe initially looked at two options, either reading the data from the rabbit MQ stream and\nprocessing inplace, or writing the message to a Sidekiq worker and then have it perform\nthe required processing.\n\nWhile it is possible to implement all the above features using just the rabbit MQ system\nthere is currently no simple way to do this and all the logic would need to be manually coded.\n\nFor this reason we have opted to use the Sidekiq queue library alongside rabbit MQ as it provides\nall the functionality that we require out of the box in a fully tested and mantained system.\n\nThis also means we are not locked into rabbit MQ as the distribution system of publishing API\nmessages, this is esspecially import as Tijmen suggested this may be changed in the future.\n\n## Status\n\nAccepted.\n\n## Consequences\n\nThis means we have additional points of failure in the system, as we are reading from one queue\nand writing to second one. This is especially important when debugging and we have a clear\ndiagram for the data flow through the system as well as a documented way to determine the status\nof a message within the system.\n\nIn addition to this it is important to differentiate the different components and ensure that\nnew developers are clear which gems/libraries are associated with which queuing system.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/arch/adr-013-rabbitmq-sidekiq-removal.md",
+   "identity": "docs/arch/adr-013-rabbitmq-sidekiq-removal.md",
+   "adr_id": "13",
+   "title": "Decision record: Removing Sidekiq from RabbitMQ queue consumers",
+   "first_commit": "2025-04-07T16:24:10+01:00",
+   "first_sha": "8f9679a4f54d305f398f3a922053a287cbcd995d",
+   "last_commit": "2025-04-07T16:24:10+01:00",
+   "author": "Jack Weeden",
+   "email": "jack@ajack.org",
+   "status": "accepted",
+   "status_raw": "Approved",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Decision record: Removing Sidekiq from RabbitMQ queue consumers\n\n**Date:** 2025-04-07\n\nThis supersedes [ADR-001][].\n\n## Context\nIn [ADR-001] a decision was recorded that queue messages from RabbitMQ would be then pushed onto a Sidekiq queue for handling. We have decided to revisit this decision in light of a number of problems:\n\n- The data in an individual queue message is often large and bulk pushing of data by Publishing API is relatively common; this had made it hard to establish the appropriate size for Redis as it needs substantial memory to handle a bulk republishing. This has contributed to two incidents.\n- At the time of the initial decision the message queue was processed by a single thread so had very low concurrency. There are now concurrency features provided by govuk_message_queue_consumer so this can be scaled in a similar way to Sidekiq.\n- A confusing architecture that is inconsistent with other GOV.UK apps. Other GOV.UK apps that listen to queues process them directly, which reduces what you need to understand to monitor queue statuses. By combining RabbitMQ and Sidekiq it is much harder to understand the actual processing of messages from the message queue, with data in multiple places interlinked with other Sidekiq processing.\n\n\n## Decision\nWe have decided to remove Sidekiq from the RabbitMQ queue consumer code, and instead leverage the concurrency features of the [govuk_message_queue_consumer][] gem.\n\n## Status\nApproved\n\n## Consequences\nOne useful feature of Sidekiq is that it automatically handles retries. When a job fails, Sidekiq will catch the error and try again multiple times with exponential backoff. The tradeoff we've made here is that we've now had to write code to do this ourselves in the queue consumers, which involves a bit of extra complexity both with regards to the code in this repo and the setup of RabbitMQ. RabbitMQ provides no other retry system than a basic automatic retry straight away without extra queue configuration.\n\nThe flow is as follows:\n\n* We catch an exception within the consumer code\n* We call `discard` on the message which tells RabbitMQ to send the message to a configured dead letter exchange (DLX)\n* Messages on that DLX have a TTL (time to live) set. After this time they'll be routed back to the original queue and picked up again by the consumer\n* The consumer monitors the retry count and if it exceeds a certain threshold, we discard the message without retrying and notify Sentry\n\nWe've now spread the complexity of retries over multiple places (this app and the RabbitMQ infrastructure). But messages are now only processed as fast as they can be consumed, rather than moving them from RabbitMQ to Sidekiq.\n\n[ADR-001]: /docs/arch/adr-001-use-of-both-rabbitmq-and-sidekiq-queues.md\n[govuk_message_queue_consumer]: https://github.com/alphagov/govuk_message_queue_consumer\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/arch/adr-012-learn-to-rank.md",
+   "identity": "docs/arch/adr-012-learn-to-rank.md",
+   "adr_id": "12",
+   "title": "Decision record: Decommissioning Learning to Rank",
+   "first_commit": "2024-05-14T14:44:14+01:00",
+   "first_sha": "8e142a99ce94853b188714cc0dab288eee5f0d39",
+   "last_commit": "2024-05-14T14:44:14+01:00",
+   "author": "Simon Hughesdon",
+   "email": "simon.hughesdon@digital.cabinet-office.gov.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Decision record: Decommissioning Learning to Rank\n\n**Date:** 2024-05-14\n\nThe search team have decided to retire [Learning to Rank][] (LTR).\n\n## Rationale\n\n[Site search][] now uses Google's Vertex AI search instead of our ElasticSearch + Learning to Rank service. The other finders still use ElasticSearch and LTR. Site Search receives more requests than all the other finders combined.\n\nRunning our own relevance tuning service on top of ElasticSearch is not something we are equipped to do at this time, particularly when it's in support of a vastly reduced demand.\n\nIt's expensive to do well, both in terms of money spent on infrastructure and the time that the appropriate people would need to devote to it. Unfortunately, we just don't have that available.\n\n### Limited upside to retaining it\n\nLearning to Rank was configured primarily for Site Search and the general features of documents on GOV.UK. Other finders are often set up for small sets of specific document types. These documents have many features for which Learning to Rank has not been trained.\n\nThe model is poorly suited to differentiating between different Employment Tribunal decisions, for example.\n\n### Limited impact to removing it\n\nOur implementation of Learning to Rank always had a limited \"blast radius\" in that if would only be able to affect the rankings of a single page of results at a time. The biggest impact it could have on a result would be to promote the 20th result to be 1st (and vice versa).\n\nThis also means that there is limited downside to removing the reranking feature. All the results for each query still appear on the same page as before, but potentially in a different order.\n\n### Unaffected use cases\n\nLearning to Rank only affected queries which included keywords and were ordered by relevance. Other queries, such as those that power organisation, taxon and topical event pages are unaffected.\n\n\n[Site search]: https://www.gov.uk/search/all\n[Learning to Rank]: https://github.com/alphagov/search-api/blob/1524da75f055f144392facb460bd95ef62b67bbb/docs/arch/adr-010-learn-to-rank.md\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/arch/adr-005-incremental-popularity-updates.md",
+   "identity": "doc/arch/adr-005-incremental-popularity-updates.md",
+   "adr_id": "5",
+   "title": "Decision record: Incremental popularity updates",
+   "first_commit": "2017-09-15T15:40:41+00:00",
+   "first_sha": "4e63cdc18bd196e5ea8f3e973c843aefe93dfbc6",
+   "last_commit": "2020-06-09T16:21:51+01:00",
+   "author": "Mat Moore",
+   "email": "mat.moore@digital.cabinet-office.gov.uk",
+   "status": "rejected",
+   "status_raw": "Rejected.",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Decision record: Incremental popularity updates\n\nDate: 2017-09-15\n\n## Status\n\nRejected.\n\n## Context\n\nIn [ADR 003 - perform popularity updating without using an index lock](docs/arch/adr-003-popularity-updating-without-index-locks.md) we changed the process\nfor bulk loading data into Rummager's search indexes to update the existing index in place, rather than creating a separate index, which had required locking the existing index until the new one was ready. The main reason we bulk load\ndata is to update the popularity field every night, which affects every document in the search index.\n\n## Problem\n\nAfter switching to the new index, we observed regular spikes in 503 errors from the search API, that coincide with when the nightly task runs. The elasticsearch queries were taking longer than normal and timing out.\n\nWe want reads from the index to be unaffected by bulk indexing, because the user's ability to search is more important than the content being up to date.\n\n![Spike in slow requests](images/popularity-errors.png)\n\nAs part of the investigation, we looked at ways we could change the\nimplementation of the nightly popularity update to improve performance. We\nconsidered limiting the popularity update task so that it only changed a small\nnumber of documents every night.\n\n## Decision\n\nWe decided against making any technical changes to the popularity update process\nnow. Instead we reduced the number of sidekiq processes that index into\nelasticsearch at the same time, which reduced the impact on search performance,\nwithout making any noticeable difference to the indexing time.\n\n## What we learned\n\nThe `page-traffic` index contains today's analytics data, and is updated nightly. The number of page views a link has over a 14 day period is stored in its `vc_14` field, and the rank relative to other pages on GOV.UK is stored in the `rank_14` field.\n\nWe compared the `vc_14` field in the page traffic\nover two successive days to work out how much page popularity shifts in practice.\n\nA very small number number of pages actually have significant changes day to day\n(i.e, a change of at least +/- 10 page views). This means that we shouldn't need\nto update the entire search index every day - we could get away with 10% of the current update workload.\n\n![Changes in VC-14 field day to day](images/changes-in-vc-14-metric.png)\n\nDespite this, we don't think that incremental popularity updates would work\nwithout significant changes.\n\nRummager doesn't use the `vc_14` values directly to order search results; it uses `rank_14` (the relative ranking compared to all pages in the index).\n\nThe `rank_14` value changes a lot more day to day than `vc_14`, since small differences in page views of a single document can shift a lot of other documents up and down. We're not confident that if we only update the 10% of content whose rank has changed the most, we could keep rummager's data reflecting the actual distribution of pageviews.\n\nWhen we update the popularity field in the search indexes, we derive it from the `rank_14` value in `page-traffic`. This means that at update time, the data we actually have available to compare is the previous day's popularity and the current popularity (derived from rank).\n\nWe considered also storing `vc_14` in the search index, but retaining `popularity` as well. We could then see if the change in `vc_14` meets a threshold before updating popularity. We rejected this too, because it means that when a document becomes more popular, we would still neglect to update the rank of documents it overtakes. Also, for documents that aren't viewed often, we would introduce a bias towards older content, because the the rank a new document starts with when it has no pageviews is equal to the current size of the index, and the popularity is derived from this.\n\nIt may be better to change rummager to use `vc_14` directly for its popularity boost, which would let us do partial popularity updates. This is a bigger change than we want to make right now, as it would need careful measurement to ensure we don't break queries.\n\n## Consequences\nRunning the popularity update still has some impact on the search response time.\n\nWe still have the ability to bulk load into an empty index if we need to (using the `migrate_schema` rake task).\n\nOur cluster isn't tuned optimally for [bulk-indexing performance](https://www.elastic.co/guide/en/elasticsearch/guide/current/indexing-performance.html). We experimented with some of the settings that affect indexing performance to see if it helped reduce the impact on search performance, but since none of the changes affected this we left the configuration as it was.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "images/popularity-errors.png",
+    "images/changes-in-vc-14-metric.png",
+    "www.elastic.co/guide/en/elasticsearch/guide/current/indexing-performance.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/arch/adr-006-transition-whitehall-to-publishing-api-index.md",
+   "identity": "doc/arch/adr-006-transition-whitehall-to-publishing-api-index.md",
+   "adr_id": "6",
+   "title": "Decision record: Transition whitehall documents to a Publishing API derived search index",
+   "first_commit": "2017-12-21T17:14:37+00:00",
+   "first_sha": "80166a8ef23ae6a8cb4d1f881819ae993e16d0c9",
+   "last_commit": "2020-06-09T16:21:51+01:00",
+   "author": "Mat Moore",
+   "email": "matmoore@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Decision record: Transition whitehall documents to a Publishing API derived search index\n\nDate: 2017-12-21\n\n## Definitions\n\nThroughout this document, `format` refers to the Rummager field `format`, not the document type provided by Publishing API (`content_store_document_type`).\n\nEvery `content_store_document_type` is mapped to a single `format`.\n\n## Context\nPublishing applications used to directly communicate with rummager to index\ndocuments, using the `/documents` HTTP API.\n\nWe've removed this integration for all publishing apps except for whitehall publisher.\nThe publishing API now notifies rummager of every update, using a RabbitMQ\nmessage queue. Rummager responds to these messages by updating the `govuk`\nindex. This has allowed us to remove the old `mainstream` index, which contained\nall sorts of documents beyond what we normally think of as \"mainstream\" content.\nThe `govuk` index can be rebuilt from scratch by resending the content\nfrom publishing API.\n\nSee [ADR 006](adr-004-transition-mainstream-to-publishing-api-index.md) for more\ndetails about moving mainstream content to the govuk index.\n\nThis leaves two indexes that are populated the old way: `government` and `detailed`.\n\n`detailed` contains detailed guides and `government` contains everything else\npublished by Whitehall publisher.\n\nWe also have a separate worker (`publishing-queue-listener`) that listens to\n`*.links` notifications from publishing API, and *updates* the old indexes\n(but doesn't add any new content).\n\n## Decision\n\nWe intend to get rid of the `government` and `detailed` indexes. Rummager\nshould index Whitehall Publisher documents into the `govuk` index.\n\nAll search indexing code should be removed from Whitehall Publisher.\n\nThe old indexing code should be removed from Rummager:\n\n- Anything in `lib/indexer`\n- The `publishing-queue-listener` worker\n\nThe [infrastructure to log indexing requests to disk](https://docs.publishing.service.gov.uk/manual/rummager-traffic-replay.html) can also be removed,\nsince data from the publishing API can be resent at any time.\n\n## Consequences\n\nThere are over 200,000 documents published by Whitehall Publisher.\n\nThere is also a lot of information about content that isn't currently available to rummager. For example:\n\n- The **state** of a document, based on archiving policy and content audits\n- **Publishing history** details besides the `public_updated_at` value\n- **Who** the content is applicable to or **where** it is relevant\n- What **services** or **task lists** the content belongs to\n- Entities mentioned in the text of the page (or its attachments), like **people**, **organisations**, **places**, **deadlines** and **forms**.\n\nWhen all documents are indexed from the publishing API, we will be able to make better use of the available data to improve search,\nbecause there will be a single indexing process that we can change easily.\n\nThis work is also a dependency for [running Rummager in the draft stack](https://github.com/alphagov/govuk-rfcs/pull/86), to support preview behaviour and draft taxonomies.\n\nCombining all of the indexes into a single index will change the document frequency statistics, which affects how search results are scored.\n\n\n\n## Action plan\n\n### Copy over documents as-is and test\nBefore making any changes to Whitehall Publisher, we should copy all documents from the `government` and `detailed` indexes to the `govuk` index.\n\nThese documents will be filtered out of search results, but will have an indirect impact on scoring of other documents.\n\nWe can then run the search healthcheck to understand the impact of this. At this stage we may want to reevaluate how much each format gets boosted in the search query.\n\nOnce this is done, the `govuk` indexing process can be extended to Whitehall Publisher formats.\n\n### Follow the process to move a document type to the new indexing process\nSee [new indexing process](https://github.com/alphagov/rummager/blob/master/docs/new-indexing-process.md)\n\n This process needs to be repeated for each document type or group of related document types.\n\n### Delete the old indexes\nOnce every document type is done, check for missing documents and then remove the old indexes and indexing code.\n\nSee [example script for checking all documents are indexed correctly](https://github.com/alphagov/rummager/pull/1120).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "alphagov/govuk-rfcs#86",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/govuk-rfcs/pull/86",
+     "number": "86"
+    },
+    {
+     "key": "alphagov/rummager#1120",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/rummager/pull/1120",
+     "number": "1120"
+    }
+   ],
+   "mentioned_paths": [
+    "/documents",
+    "lib/indexer",
+    "docs.publishing.service.gov.uk/manual/rummager-traffic-replay.html",
+    "github.com/alphagov/rummager/blob/master/docs/new-indexing-process.md"
+   ],
+   "implementation": {
+    "sha": "eca9f4634161c06fa13a4c053db011fbbef11626",
+    "date": "2022-07-27T16:23:10+01:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "lib/indexer/links_lookup.rb"
+    ]
+   }
+  },
+  {
+   "path": "docs/arch/adr-009-elasticsearch6-upgrade.md",
+   "identity": "doc/arch/adr-009-elasticsearch6-upgrade.md",
+   "adr_id": "9",
+   "title": "Decision record: Upgrade to Elasticsearch 6",
+   "first_commit": "2019-06-27T11:10:20+01:00",
+   "first_sha": "d210e509c1d8f485cc1de0bb7dccc9e40c99788c",
+   "last_commit": "2020-06-09T16:21:51+01:00",
+   "author": "Michael Walker",
+   "email": "mike@barrucadu.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Decision record: Upgrade to Elasticsearch 6\n\n**Date:** 2019-10-03\n\n1. [High-level migration plan](#high-level-migration-plan)\n1. [New cluster architecture](#new-cluster-architecture)\n1. [Elasticsearch 6 compatibility](#elasticsearch-6-compatibility)\n1. [Connecting to multiple Elasticsearch clusters](#connecting-to-multiple-elasticsearch-clusters)\n1. [Synchronising the state](#synchronising-the-state)\n1. [Data sync for production -> staging -> integration](#data-sync-for-production---staging---integration)\n1. [A/B testing Elasticsearch 6](#ab-testing-elasticsearch-6)\n1. [Decomissioning Elasticsearch 5](#decomissioning-elasticsearch-5)\n\nThis work was done over 2019/20 Q1 and Q2.  Most of the changes were\nmade in this repository.  There were also significant changes in\n[govuk-aws][], [govuk-aws-data][], and [govuk-puppet][].\n\n[govuk-aws]: https://github.com/alphagov/govuk-aws\n[govuk-aws-data]: https://github.com/alphagov/govuk-aws-data\n[govuk-puppet]: https://github.com/alphagov/govuk-puppet\n\n\n## High-level migration plan\n\nBased on our experiences [migrating to Elasticsearch 5][] we decided\nthat this time we wanted to isolate the complexity of having two\nElasticsearch clusters to search-api:\n\n1. Make search-api work with both Elasticsearch 5 and Elasticsearch 6.\n2. Give search-api support for multiple Elasticsearch clusters:\n   - Index changes into all clusters.\n   - Add a URL parameter to select the cluster to use for a query.\n3. Perform a one-time import of data from Elasticsearch 5 to\n   Elasticsearch 6, and synchronise any updates missed while this\n   import was running.\n4. Confirm that the Elasticsearch 5 and Elasticsearch 6 clusters are\n   consistent.\n5. Set up an A/B test for finder-frontend (etc) to select which\n   Elasticsearch cluster to use.\n6. Gradually phase from 100% Elasticsearch 5 to 100% Elasticsearch 6.\n7. Retire Elasticsearch 5.\n\nThe approach we took last time of having both rummager and search-api\nrunning in parallel, necessitated by one being in Carrenza and one in\nAWS, led to a lot of changes to govuk-puppet, and didn't really give\nus anything reusable.  By adding multi-cluster support to search-api\ndirectly, we do get something reusable.\n\n[migrating to Elasticsearch 5]: https://github.com/alphagov/search-api/blob/master/docs/arch/adr-008-elasticsearch5-upgrade.md\n\n\n## New cluster architecture\n\nBased on our experience of running Elasticsearch 5 for a quarter, we\nat first opted for:\n\n- Three dedicated master nodes, of type `c4.large.elasticsearch`.\n- Six data nodes, of type `r4.large.elasticsearch`.\n\nWe found the data nodes were not powerful enough, and switched to\n`r4.xlarge.elasticsearch`.  After talking to an AWS Solutions\nArchitect, we changed again to `r5.xlarge.elasticsearch`.  Due to\nwider GOV.UK scaling concerns caused by political activity, we\nincreased the data nodes to `r5.2xlarge.elasticsearch`.\n\nWe also shrunk the cluster in staging (to below production size), as\nit does not need to cope with the indexing load.  The final cluster\nsizes are:\n\n| Environment | Master                       | Data                          |\n| ----------- | ---------------------------- | ----------------------------- |\n| Production  | 3x `c4.large.elasticsearch`  | 6x `r5.2xlarge.elasticsearch` |\n| Staging     | 3x `c4.large.elasticsearch`  | 3x `r5.2xlarge.elasticsearch` |\n| Integration | 3x `t2.medium.elasticsearch` | 3x `r5.large.elasticsearch`   |\n\n\nThe cluster is configured in the [app-elasticsearch6][] Terraform\nproject.\n\n[app-elasticsearch6]: https://github.com/alphagov/govuk-aws/tree/master/terraform/projects/app-elasticsearch6\n\n\n## Elasticsearch 6 compatibility\n\nWe used deprecation messages from Elasticsearch 5 and error messages\nfrom Elasticsearch 6 to figure out what needed to change.  There were\nsome changes needed to the indices and some to the queries.\n\nIndex changes were:\n\n- Switching from `string` fields to `text` and `keyword` fields ([PR #1553](https://github.com/alphagov/search-api/pull/1553)).\n- Removing the use of the `_all` field and `include_in_all` ([PR #1557](https://github.com/alphagov/search-api/pull/1557)).\n\nQuery changes were:\n\n- Using `like` instead of `docs` in the `more_like_this` query ([PR #1561](https://github.com/alphagov/search-api/pull/1561)).\n- Replacing `match: { type: phrase }` with `match_phrase` queries ([PR #1564](https://github.com/alphagov/search-api/pull/1564)).\n- Replacing `indices` query with a `should` query ([PR #1568](https://github.com/alphagov/search-api/pull/1568)).\n\nThe `indices`/`should` change introduced an inefficiency where query\ngeneration now needs to ask Elasticsearch for the real name of an\nalias.  We added a new `build_query` metric to keep track of this.\n[Elasticsearch issue #23306][], opened in February 2017, is about a\nsolution to this problem.\n\nWe also changed the text similarity metric from [classic similarity][]\nto the new [BM25 similarity][].\n\n[Elasticsearch issue #23306]: https://github.com/elastic/elasticsearch/issues/23306\n[classic similarity]: https://www.elastic.co/guide/en/elasticsearch/reference/6.0/index-modules-similarity.html#classic-similarity\n[BM25 similarity]: https://www.elastic.co/guide/en/elasticsearch/reference/6.0/index-modules-similarity.html#bm25\n\n\n## Connecting to multiple Elasticsearch clusters\n\nThe `elasticsearch.yml` file contains a list of clusters.  These\nclusters can specify their own schema configuration file, which means\nwe can try out different index-level settings in a new cluster (for\nexample, changing the text similarity metric only for Elasticsearch\n6).\n\nIn the code, the multi-cluster support is implemented in the\n`SearchConfig` and `Index::Client` classes.  Cluster selection is\nimplemented in the `SearchParameterParser` class.\n\nThis involved some significant refactoring ([PR #1569][] and [PR\n#1604][]).\n\nThe main architectural decisions made here were:\n\n- To index writes to all clusters, ensuring cluster consistency.\n- To perform queries against the default cluster unless a URL\n  parameter is given, so we can A/B test clusters.\n- To have one `SearchConfig` singleton per cluster.\n\nThis change did result in details of clusters leaking throughout\nsearch-api, which is unfortunate, but that can be addressed in future\nrefactoring work (for example, passing around `SearchConfig` instances\nrather than asking for cluster singletons).\n\n[PR #1569]: https://github.com/alphagov/search-api/pull/1569\n[PR #1604]: https://github.com/alphagov/search-api/pull/1604\n\n\n## Synchronising the state\n\nWe planned to either take a snapshot from Elasticsearch 5 and restore\nit to Elasticsearch 6, or to use the same approach as the last upgrade\n(a script to copy the data across), but these turned out to be\nunnecessary.\n\nWe had search-api running with both clusters for a couple of weeks\nbefore we started to think about synchronising the data, and by that\ntime everything had been republished (either directly or as a result\nof dependency resolution) and so the `govuk`, `government`, and\n`detailed` indices were consistent with Elasticsearch 5.\n\nThe `page-traffic` index was also handled in the multi-cluster work,\nwith traffic data being saved to all clusters.\n\nThe only index which needed some manual work was `metasearch`, which\nholds best bets.  Attempting to republish these from [search-admin][]\nkept failing due to transient network issues, and getting all of the\nbest bets seemed impossible.  So for the `metasearch` index we used\nthis script:\n\n```python\nfrom elasticsearch5 import Elasticsearch as Elasticsearch5, TransportError as TransportError5\nfrom elasticsearch6 import Elasticsearch as Elasticsearch6, TransportError as TransportError6\nfrom elasticsearch6.helpers import bulk\nfrom datetime import datetime\nimport os\n\nINDEX = 'metasearch'\nGENERIC_DOC_TYPE = 'generic-document'\n\nES5_HOST_PORT = os.getenv('ES5_ORIGIN_HOST', 'http://elasticsearch5:80')\nES6_TARGET_PORT = os.getenv('ES6_TARGET_HOST', 'http://elasticsearch6:80')\n\nes_client5 = Elasticsearch5([ES5_HOST_PORT])\nes_client6 = Elasticsearch6([ES6_TARGET_PORT])\n\n\ndef _prepare_docs_for_bulk_insert(docs):\n    for doc in docs:\n        yield {\n            \"_id\": doc['_id'],\n            \"_source\": doc['_source'],\n        }\n\ndef bulk_index_documents_to_es6(documents):\n    try:\n        bulk(\n            es_client6,\n            _prepare_docs_for_bulk_insert(documents),\n            index=INDEX,\n            doc_type=GENERIC_DOC_TYPE,\n            chunk_size=100\n        )\n    except TransportError6 as e:\n        print(\"Failed to index documents: %s\", str(e))\n\n\ndef fetch_documents(from_=0, page_size=100, scroll_id=None):\n    try:\n        if scroll_id is None:\n            results = es_client5.search(INDEX, GENERIC_DOC_TYPE, from_=from_, size=page_size, scroll='2m')\n            scroll_id = results['_scroll_id']\n        else:\n            results = es_client5.scroll(scroll_id=scroll_id, scroll='2m')\n        docs = results['hits']['hits']\n        return (scroll_id, docs)\n    except TransportError5 as e:\n        print(\"Failed to fetch documents: %s\", str(e))\n        return str(e), e.status_code\n\n\nif __name__ == '__main__':\n    start = datetime.now()\n\n    dcount = es_client5.count(index=INDEX, doc_type=GENERIC_DOC_TYPE)['count']\n\n    print('Preparing to index {} document(s) from ES5'.format(dcount))\n\n    offset = 0\n    page_size = 250\n    scroll_id = None\n    while offset <= dcount:\n        scroll_id, docs = fetch_documents(from_=offset, page_size=page_size, scroll_id=scroll_id)\n\n        print('Indexing documents {} to {} into ES6'.format(offset, offset+page_size))\n        bulk_index_documents_to_es6(docs)\n\n        offset += page_size\n\n    print('Finished in {} seconds'.format(datetime.now() - start))\n```\n\n[search-admin]: https://github.com/alphagov/search-admin\n\n\n## Data sync for production -> staging -> integration\n\nThis was done in the same way [as for Elasticsearch 5][].\n\nThe data sync script needed to be modified to allow for a different\nhost to be used (`http://elasticsearch6` vs `http://elasticsearch5`)\nbut otherwise this was just a matter of writing some more\nconfiguration.\n\n[as for Elasticsearch 5]: https://github.com/alphagov/search-api/blob/master/docs/arch/adr-008-elasticsearch5-upgrade.md\n\n\n## A/B testing Elasticsearch 6\n\nThe A/B test was set up like so:\n\n1. Configuration in govuk-cdn-config.\n2. Logic in finder-frontend to pass one of two URL parameters to\n   search-api, based on the CDN-level A/B test.\n3. Logic in search-api to choose a cluster based on the parameter from\n   finder-frontend.\n\nThe general A/B test process [is covered in the dev docs][].\n\nFor the A/B test we monitored click-through rate, proportion of search\nrefinements, and proportion of search exits.  The test revealed a\nsignificant degradation in our metrics compared with Elasticsearch 5,\nand we were unable to proceed with the switch without doing work to\nimprove the search results.\n\nThe two main changes in Elasticsearch 6 which impacted search result\nquality were:\n\n- Switching from classic similarity to [BM25 similarity][].  This\n  issue arose with Elasticsearch 5, but we decided to go ahead with\n  the new similarity when moving to Elasticsearch 6.\n\n- The removal of query coordination factors, affecting the scoring of\n  multi-clause `should` and `must` queries.  This meant that even if\n  we switched back to classic similarity, we wouldn't get the same\n  results we had with Elasticsearch 5.\n\nWith query coordination factors, multi-clause `should` and `must`\nqueries are scored as:\n\n```\nsum(clause scores) * num(matching clauses) / num(clauses)\n```\n\nSo if a query has 7 clauses and 2 of them match, the overall score is\nmultipled by 2/7.  The effect of this is to make documents which match\nmultiple clauses tend to rank higher than documents which match fewer\nclauses, even if those fewer clauses are matched really well.  The\nassumption is that the number of matching clauses is an important\npredictor of relevance.\n\nWithout query coordination factors, the query is scored as:\n\n```\nsum(cla",
+   "truncated_text": true,
+   "discussion_refs": [
+    {
+     "key": "#1553",
+     "kind": "pull",
+     "url": "",
+     "number": "1553"
+    },
+    {
+     "key": "alphagov/search-api#1553",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/search-api/pull/1553",
+     "number": "1553"
+    },
+    {
+     "key": "#1557",
+     "kind": "pull",
+     "url": "",
+     "number": "1557"
+    },
+    {
+     "key": "alphagov/search-api#1557",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/search-api/pull/1557",
+     "number": "1557"
+    },
+    {
+     "key": "#1561",
+     "kind": "pull",
+     "url": "",
+     "number": "1561"
+    },
+    {
+     "key": "alphagov/search-api#1561",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/search-api/pull/1561",
+     "number": "1561"
+    },
+    {
+     "key": "#1564",
+     "kind": "pull",
+     "url": "",
+     "number": "1564"
+    },
+    {
+     "key": "alphagov/search-api#1564",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/search-api/pull/1564",
+     "number": "1564"
+    },
+    {
+     "key": "#1568",
+     "kind": "pull",
+     "url": "",
+     "number": "1568"
+    },
+    {
+     "key": "alphagov/search-api#1568",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/search-api/pull/1568",
+     "number": "1568"
+    },
+    {
+     "key": "#23306",
+     "kind": "hash",
+     "url": "",
+     "number": "23306"
+    },
+    {
+     "key": "elastic/elasticsearch#23306",
+     "kind": "issue",
+     "url": "https://github.com/elastic/elasticsearch/issues/23306",
+     "number": "23306"
+    },
+    {
+     "key": "#1569",
+     "kind": "pull",
+     "url": "",
+     "number": "1569"
+    },
+    {
+     "key": "#1604",
+     "kind": "pull",
+     "url": "",
+     "number": "1604"
+    },
+    {
+     "key": "alphagov/search-api#1569",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/search-api/pull/1569",
+     "number": "1569"
+    },
+    {
+     "key": "alphagov/search-api#1604",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/search-api/pull/1604",
+     "number": "1604"
+    },
+    {
+     "key": "#1713",
+     "kind": "pull",
+     "url": "",
+     "number": "1713"
+    },
+    {
+     "key": "alphagov/search-api#1713",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/search-api/pull/1713",
+     "number": "1713"
+    },
+    {
+     "key": "#203",
+     "kind": "pull",
+     "url": "",
+     "number": "203"
+    },
+    {
+     "key": "alphagov/govuk-cdn-config#203",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/govuk-cdn-config/pull/203",
+     "number": "203"
+    }
+   ],
+   "mentioned_paths": [
+    "www.elastic.co/guide/en/elasticsearch/reference/6.0/index-modules-similarity.html",
+    "elasticsearch.yml",
+    "docs.publishing.service.gov.uk/manual/run-ab-test.html",
+    "github.com/alphagov/search-api/blob/df38c7ecc2af5e2c21d12096d10aca79ce900310/lib/search/query_helpers.rb",
+    "www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-function-score-query.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/arch/adr-011-sagemaker.md",
+   "identity": "doc/arch/adr-011-sagemaker.md",
+   "adr_id": "11",
+   "title": "Decision record: Sagemaker",
+   "first_commit": "2020-03-18T17:37:58+00:00",
+   "first_sha": "a07084a0a959619e7af3332e2e95b8317f37da12",
+   "last_commit": "2020-06-09T16:21:51+01:00",
+   "author": "Bill Franklin",
+   "email": "william.franklin@digital.cabinet-office.gov.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Decision record: Sagemaker\n\n**Date:** 2020-03-18\n\nThe search team have decided to use [AWS Sagemaker][] for training\nand serving models for [Learning to Rank][].\n\n## Before Sagemaker\n\nOur initial infrastructure for Learning to Rank looked like this:\n\n- Models were trained ad-hoc on local machines.\n- To serve the models each search machine hosted a TensorFlow Serving docker\ncontainer, which search-api would call.\n\nIt looked like this:\n\n```\n                                 +-------------------+\n                                 |                   |\n                                 |  Locally-trained  |\n                                 |       model       |\n                                 |                   |\n                                 +-------------------+\n                                           |\n+----------------------------------------------------------+\n| Search machine                           |               |\n|                                          |               |\n|    +-----------------+       +-----------v----------+    |\n|    |                 |       |                      |    |\n|    |    Search API   +------->   Docker container   |    |\n|    |                 <-------+ (TensorFlow Serving) |    |\n|    |                 |       |                      |    |\n|    +-----------------+       +----------------------+    |\n|                                                          |\n|                                                          |\n+----------------------------------------------------------+\n```\n\n## After Sagemaker\n\nAfter introducing Sagemaker, our infrastructure for training\nand serving models does not use Docker and all training and\nserving is done in AWS.\n\n- Both models training and serving is done by AWS Sagemaker\n  instances\n- Search API reranks search results by making requests to a\n  Sagemaker endpoint\n- To create new models, we trigger changes to Sagemaker from\n  a [Concourse][] pipeline.\n- New models are trained in AWS Sagemaker spot instances.\n\n```\n                               +------------------------------+\n    +----------------+         | AWS Sagemaker                |\n    | External model |         |                              |\n    | build trigger  +----+    |   +----------------------+   |\n    |  (Concourse)   |    |    |   |                      |   |\n    +----------------+    +-------->  Sagemaker training  |   |\n                               |   |                      |   |\n+---------------------------+  |   +---------+------------+   |\n| Search machine            |  |             |                |\n|                           |  |             |                |\n|    +------------------+   |  |   +---------v----------+     |\n|    |                  |   |  |   |                    |     |\n|    |    Search API    +----------> Sagemaker endpoint |     |\n|    |                  <----------+    (TF serving)    |     |\n|    |                  |   |  |   |                    |     |\n|    +------------------+   |  |   +--------------------+     |\n|                           |  |                              |\n|                           |  |                              |\n+---------------------------+  +------------------------------+\n```\n\nFrom Search API's perspective, nothing has changed. It still\nmakes a call to an endpoint which then re-ranks results.\n\nHowever, externally, Docker is no longer running on search machines,\nand the reranking is performed on a different machine.\n\nRather than orchestrating model changes on search machines,\na Concourse pipeline handles the process of creating training data,\nand training and serving models.\n\n## Downsides\n\nThis new architecture has some downsides:\n\n- the search architecture is more complicated, involving more machines\n- we now have a bigger AWS bill, since we have to pay for Sagemaker\ninstances\n- Search API requests to Sagemaker instances are considerably slower\nthan request to local docker containers, and potentially less reliable\n- We are further locked into AWS infrastructure\n\nHowever, we didn't feel these were too bad.\n\nThe architecture is not sufficiently complicated that we couldn't\nmanage it. Running docker on search machines was potentially going\nto be trickier to manage than running these on separate machines.\n\nFor example, scaling up is much easier with SageMaker than docker.\n\nThe cost was not very high. We get greater control over our costs,\nbecause training is done on spot instances which cost very little.\n\nSagemaker requests were not prohibitively slow. Requests to the docker\ncontainer took about 4ms, whereas to Sagemaker they take ~25ms.\nThere are slower parts of search requests that we can optimise first.\n\n## Benefits\n\nUsing Sagemaker made it easier to train and serve new models.\n\nSpecifically:\n\n- It's possible to serve many models at the same time for AB testing.\n- We can scale sagemaker instances separately from Search API\ninstances.\n- We can train and deploy new models on a schedule\n- It's easier to train and experiment with models, as there is no need for a locally running TensorFlow / Search API / Elasticsearch.\n- Deploying is simpler.\n\nOther more general benefits:\n\n- We get the benefits of AWS monitoring and alerts out of the box.\n- We are using Sagemaker elsewhere (Data Labs team) so this will help\nto ensure that our usage of ML is consistent.\n- Sagemaker is a large suite of products, most of which we don't use,\nbut may want to in the future.\n- Likewise, we may move from Jenkins to Concourse in future so this is\na nice step towards that.\n\n## Still to do\n\n- Add more documentation.\n- Performing data jobs on spot instances. Training data is still generated on search machines.\n\n[AWS Sagemaker]: https://aws.amazon.com/sagemaker/\n[Learning to Rank]: https://github.com/alphagov/search-api/blob/1524da75f055f144392facb460bd95ef62b67bbb/docs/arch/adr-010-learn-to-rank.md\n[Concourse]: https://concourse-ci.org/\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/arch/adr-002-handle-race-conditions-in-govuk-index.md",
+   "identity": "doc/arch/adr-002-handle-race-conditions-in-govuk-index.md",
+   "adr_id": "2",
+   "title": "Decision record: use versioning to handle race conditions when updating the govuk index",
+   "first_commit": "2017-08-08T16:25:12+01:00",
+   "first_sha": "5f7f5d692727011ad2eb24d74d7418b89f295380",
+   "last_commit": "2020-06-09T16:13:55+01:00",
+   "author": "Suzanne Hamilton",
+   "email": "suzanne.hamilton@digital.cabinet-office.gov.uk",
+   "status": "accepted",
+   "status_raw": "Accepted.",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Decision record: use versioning to handle race conditions when updating the govuk index\n\n## Context\n\nWe are in the process of creating a new 'govuk' index to replace the existing\nmainstream, government and detailed indexes. The new index will be populated by\nrummager using publishing and unpublishing event messages pulled from a queue\ncontrolled by the publishing API.\n\nRummager cannot rely on messages from the queue being processed in the order\nthat they were generated. This means that either rummager should handle edge\ncases such as these or we will need to accept the consequences:\n\n- A document is published twice in quick succession. The second publishing event\n  arrives in rummager first. The later, stale message should not overwrite the\n  more recent data in the index.\n- A document is unpublished and then immediately republished. The republishing\n  message is processed first. The later, stale unpublishing message should be\n  ignored and the published document should remain in the search index.\n- A document is published and then immediately unpublished. The unpublishing\n  event is processed first. The later, stale publishing message should not\n  re-add the document to the search index. It should remain unpublished.\n\n## Decision\n\n### Use Elasticsearch's external versioning\n\nElasticsearch supports [external versioning][es-versioning] for documents. This\nmeans that each document includes a version number from an external system,\nwhich in our case is the publishing event number from the publishing API.\n\nWhen the version number is set, Elasticsearch uses optimistic locking to ensure\nthat a document is never updated or deleted if the new version number is less\nthan or equal to the existing version number.\n\nThis will take care of some of the edge cases:\n\n- If two publishing events arrive out of order, the second stale event will be\n  ignored because the version number is lower. Result: the document in the index\n  ends up in the expected state, which is the most recent version.\n- If a republishing message arrives before an earlier unpublishing message, the\n  unpublishing will be ignored because its version number is lower. Result: the\n  document remains in the index as expected.\n\n[es-versioning]: https://www.elastic.co/blog/elasticsearch-versioning-support\n\n### Delete unpublished documents\n\nThe simplest way to handle an unpublishing event is to delete the document from\nthe index. Unfortunately, this could lead to a race condition which will leave\nthe index in a bad state:\n\n- If a document is published and then immediately unpublished but the\n  unpublished message arrives first, it will initially be deleted from the\n  index. But when the stale republishing message arrives, it will incorrectly\n  recreate the document. Result: the document remains in the search index\n  despite being unpublished.\n\nWe considered handling this by storing unpublished documents as tombstone\nrecords. These would be temporary: they would be cleaned up by reindexing tasks,\nbut would be present for long enough to prevent this race condition:\n\n- The unpublishing message arrives first and saves the document with an\n  'unpublished' flag. The stale republishing message then arrives, but the\n  message is ignored because its version is lower than the unpublishing message.\n  Result: the tombstone record remains in the search index as expected.\n\nWe have decided to postpone the [implementation of\ntombstone records][tombstone-records-card] until we have time to work on it. In\nthe meantime, this race condition may occur, but the sequence of events leading\nto it are expected to be rare.\n\n[tombstone-records-card]: https://trello.com/c/ap5pQF5R/190-add-tombstone-records-for-deleted-documents\n\n### Rely on reindexing to fix inconsistencies\n\nWe intend to schedule a regular reindexing job which will create a new index\nfrom scratch using the latest version of the data from the publishing API.\n\nThis will fix any inconsistent documents caused by unhandled race conditions.\n\n## Status\n\nAccepted.\n\n## Consequences\n\nAs described above, most race conditions should be handled correctly by the\nversioning system, but race conditions in unpublishing may lead to occasional\nunpublished documents appearing in the search index until the next time the\nwhole index is recreated.\n\nThis means that users might see the name and description of the unpublished page\nin GOV.UK site search and in any relevant finders. If they were to click on the\nlink to the unpublished page they would see a 404 Not Found page or be\nredirected to a different page, depending on how the page was unpublished.\n\nIf this did occur, the support team would have several options to remove the\npage from the search index:\n- Remove the document using a rake task in the publishing API which resends the\n  unpublishing message\n- Remove the document using the [search admin][search-admin] tool\n- In non-urgent cases, wait for reindexing\n\n[search-admin]: https://github.com/alphagov/search-admin\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/arch/adr-003-popularity-updating-without-index-locks.md",
+   "identity": "doc/arch/adr-003-popularity-updating-without-index-locks.md",
+   "adr_id": "3",
+   "title": "Decision record: perform popularity updating without using an index lock",
+   "first_commit": "2017-08-18T17:16:25+01:00",
+   "first_sha": "045e63d9a0fe4c2ada3dc2cf2ea2ed9db3898d3d",
+   "last_commit": "2020-06-09T16:13:55+01:00",
+   "author": "David Henry",
+   "email": "david@decoybecoy.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Decision record: perform popularity updating without using an index lock\n\n## Context\n\nThe current nightly job works by:\n \n1. locking the current index\n1. queuing all records from the index\n1. starting threaded works to insert the records into the new index with the updated popularity\n1. waiting for the works to finish\n1. switch to the new index\n1. release the index lock\n\nThe fact that this process requires the index to be locked while the process \nruns means that we prefer to run it out of hours so that it doesn't block\nthe insertion of new content.\n\nThe index locking is required so that document edits during the reindex process \nare blocked from writing to the old index, as they would then be discarded. The\nlock blocks the write until the process has completed and switched to the new index.\n\nThis in turn means we need to create a new index to write the updated popularity\ndata to, as the old index is currently locked. \n\nThe code is quite complicated as it has to manage a threaded workload, which\nis difficult to test and reason about.\n\nAs part of building the new `govuk` index, we want to simplify this process and \nideally avoid the index locking. This means we can use sidekiq's concurrency\nimplementation instead of having our own, as we no longer need to be able to \nunlock the index at the end of the process.\n\n## Options\n\n#### Using external versioning\n\nIf we don't use index locking and switching and instead just overwrite the existing\ndocument with a copy of itself with the updated popularity figure, the following \nscenario outlines the different outcome. \n\n> Given we have a piece of content called `DocumentA` which is currently in\nthe index with a version of `5`. The popularity update process will create a job \nto update this content, let's call this `job-A` with the popularity figure for \ntoday, let's call this `pop-today`.\n>\n> If we get an update on `DocumentA` while the popularity update process is running,\n> let's call this `update-A`, `update-A` will be generated with a popularity figure\n> equal to `pop-today`, the same as what is in `job-A`.\n> \n> This can result in one of two things occurring:\n>\n> * `update-A` occurs before `job-A` - in this case `job-A` will be ignored as it\n> is for an earlier version of `DocumentA`, leaving the values from `update-A` in\n> the search index\n> * `job-A` occurs before `update-A` - in this case both updates will occur, \n> leaving the values from `update-A` in the search index\n\nThis process would fail with version_type set to `external` but would succeed with\nversion_type set to `external_gte`. The elasticsearch documentation does state that\nwhen using `external_gte`:\n \n> \"If used incorrectly, it can result in loss of data.\"\n\n#### External versioning with multiplier\n\nBy multiplying the external version fields by a multiplier when it is inserted into\nelasticsearch, it is then possible to increment the version field each time you\ndo a transient data update. This can then be used as normal with the version_type\nof `external`, and would skip the transient data update if the content had been \nupdated. \n\nThis would mean that with a multiplier of 10,000 we could do a daily update for approx \n27 years and with a multiplier of 100,000 we could do a daily update for approx 273 years.\n\n## Decision\n\nThe two options have similar implementation with only minor differences, as a result we\nwill be going with the easier of the two (using `external_gte`), as we will only be\nupdating a single field (popularity) the risk of data loss is quite low.\n\nAn additional advantage of choosing this approach is that we can use it with indices\nthat aren't currently using `external` versioning, as the inplace edit with the current\nversion - taken at the start of the reindex process - will be ignored if the content \nhas changed and the version has been automatically incremented.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/arch/adr-004-transition-mainstream-to-publishing-api-index.md",
+   "identity": "doc/arch/adr-004-transition-mainstream-to-publishing-api-index.md",
+   "adr_id": "4",
+   "title": "Decision record: Transition mainstream formats to a Publishing API derived search index",
+   "first_commit": "2017-08-23T17:15:15+01:00",
+   "first_sha": "934aa2ed4a56873fffa247378f2f4a93a15be2c2",
+   "last_commit": "2020-06-09T16:13:55+01:00",
+   "author": "Mat Moore",
+   "email": "mat.moore@digital.cabinet-office.gov.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Decision record: Transition mainstream formats to a Publishing API derived search index\n\nDate: 2017-08-24\n\n## Definitions\n\nThroughout this document, `format` refers to the Rummager field `format`, not the document type provided by Publishing API (`content_store_document_type`).\n\nEvery `content_store_document_type` is mapped to a single `format`.\n\n`mainstream` is used as an example of a search index we want to retire. This document should also apply to the `government` and `detailed` indexes.\n\n## Context\n### We're building a new search index using publishing API data\nWe're currently replacing the existing search indexes (`mainstream`, `government`, `detailed`) with a single index (`govuk`), which is derived from Publishing API.\n\nThe existing indexes are populated from [at least 10 different applications](https://docs.publishing.service.gov.uk/apps.html).\n\nThis change should improve the quality of the data our search system relies on:\n\n- all formats are handled in a consistent manner\n- we can update documents after any publishing event (publishing, withdrawing, unpublishing, tagging)\n- it should be easier to rebuild if we need to revert to an old backup\n\n### Lifecycle of our search indexes\nRumamger's search indexes are long lived, but content is regularly\nupdated to derive the `popularity` field from recent pageviews.\nAs of [ADR 003: Popularity updating without index locks](adr-003-popularity-updating-without-index-locks.md),\nthis uses updates, rather than rebuilding the search index every time.\n\nThere is a separate task in place to reindex the content currently in the search indexes with [zero downtime](https://www.elastic.co/guide/en/elasticsearch/guide/current/index-aliases.html).\nThis is something we need to do after adding new fields or otherwise changing\nthe Elasticsearch mappings, for those fields to work properly.\n\n### Problems we're not addressing now\n\nNeither of the above mechanisms add or remove documents from the search index, which means that:\n\n- if an edition is ever published, and the search index doesn't get updated, it stays out of date until the next time the document is updated\n\n- if an edition is unpublished without Rummager being notified, it stays in the search index forever\n\nLong term, we'd like to be able to easily rebuild the whole `govuk` index from scratch, to avoid these kind of problems, but we aren't aiming to do this right now.\n\n### Immediate needs\n\nWe need to be able to populate the `govuk` index with all the documents that\nalready exist, so we can start using this index in the Search API.\n\nWe also want to be able to reindex everything that has been published within a\nshort period of time (1 or 2 days), so that we can easily recover the index\nfrom backups.\n\n### Moving formats one at a time\nWe're intending to switch on the new index format-by-format, by querying both old\nand new indexes, and using filters to select which index gets used for each\nformat.\n\nThis means we can retire old search indexing code in publishing apps, and search indexes that are no longer needed, without having to populate *everything* all at once.\n\nWe can also revert back to the old index with a simple configuration change if something goes wrong.\n\nA problem we've discovered with this approach is that the relevancy of a document within an index depends on the other documents in that index. If an index is only partially populated, the [TF-IDF statistics](https://www.elastic.co/guide/en/elasticsearch/guide/current/scoring-theory.html#tfidf) are less representative, and this affects search results.\n\n## Decision\nFirstly, we'll implement a task to bulk-reindex chunks of content from publishing API. Rummager will process this content in the same way as regular publishing updates.\n\n- Reindexing by format lets us initially populate the new index.\n\n- Reindexing by date range lets us bring the `govuk` index up to date when restoring from a backup.\n\nSecondly, when we change the indexing process for a format to use the new index, the format will go through the following phases:\n\n### Phase 1: Untransitioned\nAt search time, Rummager reads untransitioned formats from the old indexes. Documents belonging to untransitioned formats that are stored in the `govuk` index will be filtered out.\n\nAt index time, Rummager will ignore publishing API messages affecting untransitioned formats.\n\nThe nightly update job will update the popularity field of untransitioned formats in the `mainstream` index. It will also copy untransitioned format documents from the `mainstream` index into the `govuk` index (it doesn't matter which order these two things happen).\n\nNet effect: untransitioned formats are considered in the TF-IDF statistics of transitioned formats, but are not ready to be returned from the `govuk` index themselves.\n\n### Phase 2: Indexed\nAt search time, the behaviour is the same as an untransitioned format.\n\nAt index time, Rummager will insert documents into the `govuk` index.\n\nThe nightly update will update the `popularity` field in the `govuk` index.\n\nAs a one off task, we'll delete all existing data for the format from the `govuk` index, and reindex it.\n\nNet effect: the data in the `govuk` index comes from Publishing API data for indexed formats.\n\n### Phase 3: Transitioned\nAt search time, Rummager reads transitioned formats from the `govuk` index. Documents belonging to transitioned formats that are stored in the `mainstream` index will be filtered out.\n\nAt index time, Rummager will insert documents into the `govuk` index.\n\nThe nightly update will update the `popularity` field in the `govuk` index.\n\nNet effect: the search API uses Publishing API-derived data for transitioned formats.\n\n## Consequences\nCopying `mainstream` data into `govuk` adds a layer of complexity to the nightly popularity updater, that we won't be able to get rid of until we've retired that index.\n\nSince we've decided not implement the ability to generate indexes from scratch now, any content not removed from search when it is unpublished will stay that way forever.\n\nWe will continue to address this by [manually removing content in search admin](https://docs.publishing.service.gov.uk/manual/incorrect-content-in-search-or-navigation.html).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "docs.publishing.service.gov.uk/apps.html",
+    "www.elastic.co/guide/en/elasticsearch/guide/current/index-aliases.html",
+    "www.elastic.co/guide/en/elasticsearch/guide/current/scoring-theory.html",
+    "docs.publishing.service.gov.uk/manual/incorrect-content-in-search-or-navigation.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/arch/adr-007-batch-processing-of-rabbit-mq-messages.md",
+   "identity": "doc/arch/adr-007-batch-processing-of-rabbit-mq-messages.md",
+   "adr_id": "7",
+   "title": "Decision record: Batch processing of rabbit MQ messages",
+   "first_commit": "2018-01-12T16:30:26+00:00",
+   "first_sha": "7c3083f256b46f7f1dadf30ef63abbe21bac9877",
+   "last_commit": "2020-06-09T16:13:55+01:00",
+   "author": "David Henry",
+   "email": "david@decoybecoy.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Decision record: Batch processing of rabbit MQ messages\n\nDate: 2018-01-05\n\n## Definitions\n\nES refers to elasticsearch\n\n## Context\nAs a result of [ADR 004](adr-004-transition-mainstream-to-publishing-api-index.md)\nwe now process data from rabbit MQ and insert them into our search index. While the \nprocess itself works as expected we have had scaling issues when large volumes \nof messages arrive from the publishing API and sit in our sidekiq queue waiting to be\nprocessed.\n\nThere are two scenarios that result in large queue sizes:\n\n1. Republishing from the publishing API - this is something we want to support moving \nforward as ultimately we would like the ability to rebuild the search index from scratch.\n2. Changes to reference material (i.e. department name, taxons) which require all associated \ndocuments to be updated.\n\nCurrently, both of the above processes sends a message to rabbitMQ which is then sent \nto sidekiq before being processed into the ES index. The message currently \nconsists of a single document to be updated in the search index.\n\nWe know that this causes a bottleneck with ES, as it performs balancing work \nafter each insert, it is for this reason that the [ES documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html) recommends doing bulk\ninsertion of data rather than individual documents. \n\nWe have have already implemented the following items to support batch processing:\n\n* Handling of batches of messages in the Rummager processor. This requeues all messages if \nany of them fail during the ES update.\n* Batching of messages as they are read off rabbit MQ by the [govuk_message_queue_consumer](https://github.com/alphagov/govuk_message_queue_consumer)\n\nWe have done some initial testing using the new batch processor and have the following results:\n\n### Current process \n\nProcessing 1 message at a time for approx 10000 documents (employment_tribunal_decision format)\n\n![Queue Size](images/1-queue.png)\n![Free CPU](images/1-free-cpu.png)\n\n### New process \n\nProcessing 100 messages at a time with a 5 second timeout for approx 10000 documents (employment_tribunal_decision format)\n\n![Queue Size](images/100-queue.png)\n![Free CPU](images/100-free-cpu.png)\n\n### New process in bulk\n\nProcessing 100 messages at a time with a 5 second timeout for the top 4 formats - approx 125000 documents.\n\n![Queue Size](images/100-bulk-queue.png)\n![Free CPU](images/100-bulk-free-cpu.png)\n![Sidekiq Errors](images/100-bulk-errors.png)\n\nWe don't see an increase in 500 error on dependant apps which means we aren't blocking\nconsumer applications as a result of increasing our throughput.\n\nWe do observed a number of SigTerm exceptions from the worker processes in Sentry\nwhich was unexpected.\n \n## Action plan\n\nThe following items need to be completed before this can be rolled out:\n\n* Investigate the cause of the sentry SigTerm errors\n* Test that documents are correctly republished - ideally by renaming the index, republishing and then comparing\n\n## Consequences\n- Processing in bulk will reduce the processing time to index documents\n- This moves us step closer to being able to rebuild the search index on a regular basis, which would insure that it does\n  not drift out of sync with the publishing api over time\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html",
+    "images/1-queue.png",
+    "images/1-free-cpu.png",
+    "images/100-queue.png",
+    "images/100-free-cpu.png",
+    "images/100-bulk-queue.png",
+    "images/100-bulk-free-cpu.png",
+    "images/100-bulk-errors.png"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/arch/adr-008-elasticsearch5-upgrade.md",
+   "identity": "doc/arch/adr-008-elasticsearch5-upgrade.md",
+   "adr_id": "8",
+   "title": "Decision record: Upgrade to Elasticsearch 5",
+   "first_commit": "2019-04-30T14:41:50+01:00",
+   "first_sha": "973a827ae31ec64ba0a614df325569d1eea4f956",
+   "last_commit": "2020-06-09T16:13:55+01:00",
+   "author": "Michael Walker",
+   "email": "mike@barrucadu.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Decision record: Upgrade to Elasticsearch 5\n\n**Date:** 2019-04-30\n\n1. [High-level migration plan](#high-level-migration-plan)\n1. [Running search-api and rummager in parallel](#running-search-api-and-rummager-in-parallel)\n1. [Elasticsearch 5 compatibility](#elasticsearch-5-compatibility)\n1. [Looking to the future: Elasticsearch 6 compatibility](#looking-to-the-future-elasticsearch-6-compatibility)\n1. [New cluster architecture](#new-cluster-architecture)\n1. [Synchronising the state](#synchronising-the-state)\n1. [Switching over the applications](#switching-over-the-applications)\n1. [Staging teething problems](#staging-teething-problems)\n1. [Production teething problems](#production-teething-problems)\n1. [Data sync for production -> staging -> integration](#data-sync-for-production---staging---integration)\n1. [Dockerising the development VM](#dockerising-the-development-vm)\n\nThis work was done over 2018/19 Q4.  All of the changes to rummager /\nsearch-api are contained in [PR #1439][].  There were also significant\nchanges in [govuk-aws][], [govuk-aws-data][], and [govuk-puppet][],\nwith various other repositories having small changes as well.\n\nTerminology:\n\n- **rummager** is the Elasticsearch 2 search service, and is deployed\n  to Carrenza (in staging and production).\n\n- **search-api** is the Elasticsearch 5 search service, and is\n  deployed to AWS.\n\n\n## High-level migration plan\n\nWe decided on two high-level objectives before any further planning:\n\n- This should be a close-to-zero-downtime switch.\n\n- We don't want to set up new infrastructure in Carrenza.\n\nA consequence of those is that we needed to have, at least\ntemporarily, two Elasticsearch clusters (Elasticsearch 2 in Carrenza\nand Elasticsearch 5 in AWS).  The rest of the plan came out of that\ndecision:\n\n1. Create a fork of rummager called \"search-api\", which will run on a\n   different port and be deployed to AWS.\n1. Make search-api work with Elasticsearch 5.\n1. Arrange for updates sent to rummager to also be sent to search-api.\n1. Set up a new Elasticsearch 5 cluster.\n1. Perform a one-time import of data from Elasticsearch 2 to\n   Elasticsearch 5, and synchronise any updates missed while this\n   import was running.\n1. Confirm that the Elasticsearch 2 and Elasticsearch 5 clusters are\n   consistent.\n1. Use Plek to make applications which only read from search use\n   search-api.\n1. Use Plek to make applications which write to search use search-api.\n1. Retire rummager, Elasticsearch 2, and anything related.\n\n[licence-finder][] also uses Elasticsearch.  It only stores a small\namount of data, and can reindex in under a minute, so we decided not\nto go through the complication of running a second licence-finder.  As\nsoon as the new Elasticsearch cluster existed in production, we\nswitched over licence-finder.\n\n\n## Running search-api and rummager in parallel\n\nThis was largely a matter of following the \"[Set up a new Rails\napplication][]\" documentation, with the main difference being that we\nwere basing the configuration for the search-api on the existing\nPuppet (etc) code for rummager.\n\nThe changes needed to the rummager configuration were:\n\n- Changing the port from 3009 to 3233 (the first available free port).\n- Changing the redis namespace from \"rummager\" to \"search-api\".\n- Changing the rabbitmq namespace from \"rummager\" to \"search-api\".\n\nAdditionally, the \"search-api\" hostname needed adding to the Terraform\nconfiguration.\n\n\n## Elasticsearch 5 compatibility\n\nThe Elasticsearch 5 release notes includes [a large section on\nbreaking changes][].  Neither of the developers on the team knew\nElasticsearch at the start of the quarter, so this section served to\nguide us into the necessary documentation.\n\nThe main changes which we had to address were structural changes to\nthe query language, which were generally straightforward to resolve.\n\nThere were two more complex issues which will need to be revisited\nwhen moving to Elasticsearch 6:\n\n- The default text similarity metric changed from the \"classic\"\n  algorithm to BM25.  We encountered problems with result ordering,\n  possibly due to this, and switched back to the classic algorithm.\n\n- The Elasticsearch 2 `string` type has been split into two new types,\n  `keywords` and `text`, with different behaviours.  Elasticsearch 5\n  internally transforms a single `string` field into two fields of the\n  new types, transparently handling indexing and querying.  We did not\n  update our schemas to use `text`/`keywords`.\n\n\n## Looking to the future: Elasticsearch 6 compatibility\n\nElasticsearch 2 and 5 allow having multiple document types in the same\nindex.  Elasticsearch 6 does not allow this.\n\nThere are two ways to solve the problem:\n\n- Combine all the types into one large type, and add a \"type\" field\n  which the application uses.\n- Add a separate index for each type.\n\nWe decided to combine all the types in each index into one big type,\nand added a `document_type` field to distinguish them.  As this is\nwhat Elasticsearch 2 did anyway (all documents in the same Lucene\nindex must be of the same type), we do not think this imposes any\nadditional overhead.\n\nsearch-api still validates documents against schemas, it just uses a\ndifferent field to hold the type.  The external API has not been\nchanged.\n\n\n## New cluster architecture\n\nWe decided to use an AWS managed Elasticsearch cluster.  Self-managing\nElasticsearch is undesirable because:\n\n- Nobody knows how to manage Elasticsearch.\n- Our version of Puppet is so old we can't use a version of\n  [puppet-elasticsearch][] which supports Elasticsearch 6.\n- It's much harder to scale.\n\nWe designed a new cluster architecture based on the resources\nallocated to the current Elasticsearch 2 cluster, but it proved to not\nbe sufficient.  At the time of writing, the cluster has:\n\n- Three dedicated master nodes, of type `c4.large.elasticsearch`.\n- Six data nodes, of type `r4.large.elasticsearch`.\n\nThe cluster is configured by the [app-elasticsearch5][] Terraform\nproject.\n\n\n## Synchronising the state\n\nThere are two steps to this:\n\n- Ensuring search updates sent to rummager are also sent to search-api.\n- Import the current Elasticsearch 2 data.\n\nFirst we ensured that updates were sent to search-api, as there\nwouldn't be any point in importing data which would immediately become\nout of date.\n\nThere are three ways in which data gets into rummager:\n\n- From the publishing-api via rabbitmq.\n- From search-admin over HTTP.\n- From whitehall over HTTP.\n\nThe publishing-api updates were already handled by us setting up\nsearch-api in a similar way to rummager.  We handled the HTTP updates\nby using traffic replay: all traffic sent to rummager was also sent to\nsearch-api.  This was not 100% reliable, and occasionally dropped\ndocuments, but in such cases re-sending the document from whitehall to\nrummager made it also appear in search-api.\n\nFor the data import, we have a script to fetch the documents from\nElasticsearch 2, transform them into the new single-type format, and\ninsert them into Elasticsearch 5: [elasticsearch-migration-helpers][].\n\nWe created fresh search indices, ran the import script, and replayed\nany updates that had been missed due to that running.\n\n\n## Switching over the applications\n\nWe handled the application switch-over with Plek.  We gave each\nsearch-using application a new parameter in Puppet, to specify a URL\nwhich should be set for the `PLEK_SERVICE_RUMMAGER_URI` and\n`PLEK_SERVICE_SEARCH_URI` environment variables.  We could configure\nthis through the hieradata, allowing applications to be switched over\nindependently of other applications or how they were configured in\nother environments.\n\nWe switched over each environment independently.  The only constraint\non the order of changes is that applications which update search\nshould be done after applications which query search, to avoid an\ninconsistent state where some things are querying rummager but other\nthings are only updating search-api.\n\nFor the production switch-over we divided the applications by\nriskiness:\n\n1. collections and licence-finder\n1. finder-frontend\n1. content-tagger and hmrc-manuals-api\n1. search-admin and whitehall (frontend and backend)\n\nWe then set the rummager [X-Ray][] recording to 100%, to verify that\nonly monitoring was still talking to it.\n\n\n## Staging teething problems\n\nWe discovered some significant problems during manual testing in\nstaging which delayed the production roll-out by a few weeks.  These\nwere:\n\n- **Very strange result ordering.** We resolved this by switching back\n  to the classic text similarity and back to using `string` fields.\n  These are mentioned in more detail further up.\n\n- **Every query returned every best bet.** This was due to a mistake\n  made when combining all the types.\n\n- **Indices would automatically unlock.** This was due to an AWS\n  process which runs every four minutes: locking the indices if the\n  cluster is unhealthy and unlocking them if it is healthy.  We\n  changed to using `read_only_allow_delete`, which introduced some\n  benign (but potentially confusing) race conditions in importing page\n  traffic data and reindexing with a new schema.\n\n  These issues are commented on in the code:\n\n  > We need to switch the aliases without a lock, since\n  > `read_only_allow_delete` prevents aliases being changed.\n  >\n  > The page traffic loader is is a daily process, so there won't be a\n  > race condition.\n\n  > We need to switch the aliases without a lock, since\n  > `read_only_allow_delete` prevents aliases being changed.\n  >\n  > After running the schema migration, traffic must be represented\n  > anyway, so the race condition is irrelevant.\n\n- **Equivalent synonyms were not expanded.** We didn't figure out why\n  this was happening, as the default configuration is to expand\n  equivalent synonyms, and this configuration is not overrided.  The\n  problem was fixed by turning all equivalent synonyms into explicit\n  mappings.\n\n- **Some queries would throw a bad request error during best bet\n  analysis.** We also didn't figure out why this was happening.  It is\n  possibly a problem with the Elasticsearch ruby library, as we were\n  unsuccessful in replicating the problem when `curl`ing the cluster\n  directly.  The problem was solved by handling the exception.\n\n\n## Production teething problems\n\nWe encountered some issues after switching over production.  We\nsuspect that these had not been caught in staging because staging\ndoesn't have publishing activity, and also there is a possibility that\nthe traffic replay to staging had not been set to 100%.\n\nElasticsearch performance issues:\n\n- **Queries queueing up in Elasticsearch.** We didn't realise that\n  this was a problem at first, due to unfamiliarity with the new\n  metrics.  We ended up doubling the size of the cluster and also\n  switching to faster data nodes.\n\n- **Long, slow, queries.** The slow query logs revealed that we were\n  sometimes getting 3,000+ character queries which would take over a\n  second each to execute.  We changed search-api to reject queries\n  over 512 characters in length, and finder-frontend to truncate such\n  queries.\n\n  This was probably also a problem with Elasticsearch 2.\n\nElasticsearch errors:\n\n- **Errors due to unmapped types being used for sorting.** Most\n  queries are over multiple indices, but not all fields exist in all\n  indices.  We saw many errors trying to sort by a field which was\n  only present in the `govuk` index.  This was fine, as all the\n  results were in the `govuk` index, but the errors were so frequent\n  that they obscured any actual problems.  We changed the query\n  search-api generates to include a default sort behaviour for missing\n  fields, sorting them to the end.\n\n  This was probably also a problem with Elasticsearch 2.\n\nsearch-api performance issues:\n\n- **Only two search machines (rather than three) had been\n  provisioned.** The Terraform configuration for the AWS search\n  machines only created two machines, whreas we had three in Carrenza.\n  So search-api could only handl",
+   "truncated_text": true,
+   "discussion_refs": [
+    {
+     "key": "#1439",
+     "kind": "pull",
+     "url": "",
+     "number": "1439"
+    },
+    {
+     "key": "alphagov/search-api#1439",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/search-api/pull/1439",
+     "number": "1439"
+    }
+   ],
+   "mentioned_paths": [
+    "docs.publishing.service.gov.uk/manual/setting-up-new-rails-app.html",
+    "www.elastic.co/guide/en/elasticsearch/reference/5.0/breaking-changes-5.0.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/arch/adr-010-learn-to-rank.md",
+   "identity": "doc/arch/adr-010-learn-to-rank.md",
+   "adr_id": "10",
+   "title": "Decision record: Learning To Rank",
+   "first_commit": "2019-11-07T17:15:15+00:00",
+   "first_sha": "14a07df5f246864aedfe9e0b018a293779ca8482",
+   "last_commit": "2020-06-09T16:13:55+01:00",
+   "author": "Bill Franklin",
+   "email": "william.franklin@digital.cabinet-office.gov.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Decision record: Learning To Rank\n\n**Date:** 2019-11-07\n\nThe search team have decided to implement [Learning To Rank][].\n\n1. What is Learning To Rank?\n1. Motivation\n1. Implementation\n1. What success will look like\n\n[Learning To Rank]: https://en.wikipedia.org/wiki/Learning_to_rank\n\n## What is Learning To Rank?\n\nLearning To Rank (LTR) is the application of machine learning to create a\nranking model that can be used to improve search relevance.\n\nThis is a common approach for advanced search applications.\n\nThe ranking of search results on websites is frequently determined by\nmachine learning models. For example, Airbnb, Yelp, Wikipedia, Bloomberg,\nand commercial search engines.\n\nThere is a good explanation on what LTR is here:\n\n- https://elasticsearch-learning-to-rank.readthedocs.io/en/latest/core-concepts.html\n- https://opensourceconnections.com/blog/2017/02/24/what-is-learning-to-rank/\n\n### How does Learning To Rank work?\n\nIt's easiest to explain with an example:\n\nSay you searched for 'Harry Potter'. Search API might return the following results:\n\n1. HMRC Sign in\n2. Harry Potter World\n3. Pottery barn\n4. Harry Potter\n\nThese are not good results.\n\nTo assess search quality, we can assign relevancy judgements to the\nresults of a query in the range 0-3, with 0 being irrelevant and 3\nbeing perfect. For example, for these results:\n\n```\nquery         rating    document\nharry potter  0         HMRC Sign in\nharry potter  2         Harry Potter World\nharry potter  0         Pottery barn\nharry potter  3         Harry Potter\n```\n\nWe can then use a ranking quality metric, such as [normalised\ndiscounted cumulative gain (nDCG)](https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG) to assign a score to\nthis list of results.\n\nWe can then use nDCG to tell us how good the results are.\nWe might get a score of 0.3 for this result set (from 0 to 1).\n\nWe could then investigate why the results are bad. Perhaps there is a\nbest bet. Or popularity might be pushing HMRC docs up. We can fix these\nthings, then check the new nDCG score, and we might get 0.7 for this query.\n\nIn contrast, with Learning To Rank, search result ranks would be\ndetermined by a machine learning model without manually changing\nthe boost of a field.\n\nWith Learning To Rank we would go through the same process of\nrating the search results.\n\n```\nharry potter  0         Pottery barn\nharry potter  3         Harry Potter\n...\n```\n\nHowever, after doing this, we would train a model with this data\nto rank the results better. The model optimises for nDCG.\n\nWe train the model using a combination of relevancy judgements\nand features: numeric measures which indicate how well we think the\nresult matches the query.\n\nThe text similarity scores Elasticsearch assigns to fields in the\ndocument are examples of features. The model tries to find correlations\nbetween document features and relevancy judgements, which allows it to\npredict how to order documents we don't have relevancy judgements for.\n\n```\nquery         rating    document      title_score view_count  recency  pagerank ...\nharry potter  0         Pottery barn  0.2         9876        0.12     9876     ...\nharry potter  3         Harry Potter  0.2         1234        1234     1234     ...\n...\n```\n\nFor example, take the training dataset below for the query 'harry potter' (qid:1)\n\n```\n0 qid:1 popularity:0.3 title_score:0.2 description_score:0.3 recency:0.9 pagerank:5 ...\n3 qid:1 popularity:0.1 title_score:0.6 description_score:0.7 recency:0.5 pagerank:2 ...\n```\n\n> **Note**: This format is frequently used for Learning To Rank training\n> datasets, including the TensorFlow ranking library.\n> [Details on the format](https://sourceforge.net/p/lemur/wiki/RankLib%20File%20Format).\n\nThese graded query:document pairs and their features can be used\nto train a model.\n\nThe model might learn that title and description scores are slightly\nmore useful that popularity and recency, and how much, in certain\ncircumstances.\n\nRather than manually tuning boosts, a model learns from relevancy\njudgements the role that features should play when providing relevant results.\n\nThis is a high level overview of what Learning To Rank is for our use case.\nThere has been a lot of research in this area, and within the fields of\ninformation retrieval & machine learning which Learning To Rank intersects.\nThere is a lot more out there to learn!\n\nFor more details about how we plan to implement Learning To Rank, see\nthe implementation section below.\n\n## Motivation\n\nWe have decided to try Learning To Rank because it has the potential\nto greatly improve search relevance in a way that is:\n\n- automatable\n- scalable\n- more maintainable\n- more successful\n\n**Automatable** because the model won't require human involvement to\ntune field boosts on the latest user data\n\n**Scalable** because automation; but also because the model should\nprovide better results with more data.\n\n**Maintainable** because relevancy tuning can be automated to not become\nstale.\n\n**Successful** because results should achieve higher nDCG scores and\nclick-through rates than we can achieve through manual tuning alone.\n\n### The problem\n\nManual relevancy tuning can work, but doesn't scale well. Eventually\nthe process becomes a game of whack-a-mole. If we downgrade popularity\nboosting, then this query might have better results, but other queries\nmight have worse results.\n\nHand-tuning relevance doesn't work very well because field boosts\nare complex, and difficult to maintain.\n\nMoreover field boosts might have dependencies: some document types might\nbenefit from a stronger title boost than other document types, for\ninstance. Expressing that just with Elasticsearch would be prohibitively\ncomplex, and be almost impossible to maintain.\n\n### Validating Learning To Rank\n\nWe assumed that we would be able to get better results using Learning\nTo Rank. To validate this assumption, we worked on a spike.\n\nIn a [validation spike][] we found that we could build a model that provided\na better nDCG score than our current search algorithm for the queries we\nhave manually gathered relevancy judgements for.\n\nThis validated for us that Learning To Rank is feasible and could\nlead to more relevant results for users.\n\nThough Learning To Rank won't make relevance tuning easier, it could\nmake search results more relevant.\n\n### Final decision\n\nWe feel confident about implementing Learning To Rank (LTR) for the\nfollowing reasons:\n\n- We think that it will improve search relevancy for citizens, enabling\n  them to find what they need on GOV.UK\n- We have validated our assumptions with a spike\n- LTR is a well trodden path, and other organisations have written about\n  their implementations with varying levels of openness (e.g. Wikimedia)\n- GOV.UK has implemented other machine learning projects with success\n  (related links, topic taxonomy), and we have a data science team which\n  the search team has already worked with\n- TensorFlow provides an off-the-shelf ranking module, which solves\n  some of the machine learning problems of LTR for us\n- Manual relevancy tuning is not scalable, and won't get us to the same\n  level of relevancy as LTR\n\n## Implementation plan\n\nWe have decided to implement Learning To Rank by following on from\nthe work started in the [validation spike][].\n\nAs we are at the beginning of the project, this section may not\naccurately reflect the final implementation.\n\n[validation spike]: https://github.com/alphagov/search-api/pull/1768\n\n### Machine learning library\n\nWe have decided to use [TensorFlow's ranking library][] for our\nimplementation of Learning To Rank.\n\nTensorFlow is well supported, and the ranking library is under active development.\n\nWe considered using the [elasticsearch-learning-to-rank][] plugin.\nHowever, AWS Elasticsearch does not permit us to install custom plugins.\n\nWe also considered PyTorch. However, this would require writing much more\ncustom machine learning code, as PyTorch don't currently have a ranking library.\n\n[TensorFlow's ranking library]: https://github.com/tensorflow/ranking\n[elasticsearch-learning-to-rank]: https://github.com/o19s/elasticsearch-learning-to-rank\n\n### Further decisions\n\nWe have further decisions to make around the following areas, which may\nbe the subject of further ADRs:\n\n- language: divide between ruby and python\n- hosting the trained model (dockerised?)\n- training data pipeline architecture\n- where does compute-intensive training happen?\n- failure resilience (what happens when reranker process fails? should we backup datasets, models?)\n- monitoring and alerts\n- testing/validating the model\n- how would LTR change local development?\n\n## What success will look like\n\nSuccess will look like:\n\n- Click-through rate on the top 3 and top 5 results will go up\n- nDCG will go up\n- Search latency will not increase much\n\nBefore we can deploy the model it must provide a better CTR and nDCG.\n\nA further hope for this project is that we will be able to remove\nsome complexity by deleting the boosting code in Search API.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "alphagov/search-api#1768",
+     "kind": "pull",
+     "url": "https://github.com/alphagov/search-api/pull/1768",
+     "number": "1768"
+    }
+   ],
+   "mentioned_paths": [
+    "elasticsearch-learning-to-rank.readthedocs.io/en/latest/core-concepts.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/arch/adr-001-use-of-both-rabbitmq-and-sidekiq-queues.md",
+   "identity": "doc/arch/adr-001-use-of-both-rabbitmq-and-sidekiq-queues.md",
+   "commit": "2675a59c7c82a1000f9ac0baf9fa3f97fc68fa26",
+   "date": "2020-06-09T16:13:55+01:00",
+   "old_state": "accepted",
+   "new_state": "accepted",
+   "old_raw": "Accepted.",
+   "new_raw": "Accepted.",
+   "replacement": null,
+   "message": "Rename 'doc' to 'docs'",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "ChrisBAshton",
+   "email": "christopher.ashton@digital.cabinet-office.gov.uk"
+  },
+  {
+   "path": "docs/arch/adr-005-incremental-popularity-updates.md",
+   "identity": "doc/arch/adr-005-incremental-popularity-updates.md",
+   "commit": "2675a59c7c82a1000f9ac0baf9fa3f97fc68fa26",
+   "date": "2020-06-09T16:13:55+01:00",
+   "old_state": "rejected",
+   "new_state": "rejected",
+   "old_raw": "Rejected.",
+   "new_raw": "Rejected.",
+   "replacement": null,
+   "message": "Rename 'doc' to 'docs'",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "ChrisBAshton",
+   "email": "christopher.ashton@digital.cabinet-office.gov.uk"
+  },
+  {
+   "path": "docs/arch/adr-006-transition-whitehall-to-publishing-api-index.md",
+   "identity": "doc/arch/adr-006-transition-whitehall-to-publishing-api-index.md",
+   "commit": "2675a59c7c82a1000f9ac0baf9fa3f97fc68fa26",
+   "date": "2020-06-09T16:13:55+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename 'doc' to 'docs'",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "ChrisBAshton",
+   "email": "christopher.ashton@digital.cabinet-office.gov.uk"
+  },
+  {
+   "path": "docs/arch/adr-009-elasticsearch6-upgrade.md",
+   "identity": "doc/arch/adr-009-elasticsearch6-upgrade.md",
+   "commit": "2675a59c7c82a1000f9ac0baf9fa3f97fc68fa26",
+   "date": "2020-06-09T16:13:55+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename 'doc' to 'docs'",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "ChrisBAshton",
+   "email": "christopher.ashton@digital.cabinet-office.gov.uk"
+  },
+  {
+   "path": "docs/arch/adr-011-sagemaker.md",
+   "identity": "doc/arch/adr-011-sagemaker.md",
+   "commit": "2675a59c7c82a1000f9ac0baf9fa3f97fc68fa26",
+   "date": "2020-06-09T16:13:55+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename 'doc' to 'docs'",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "ChrisBAshton",
+   "email": "christopher.ashton@digital.cabinet-office.gov.uk"
+  },
+  {
+   "path": "docs/arch/adr-002-handle-race-conditions-in-govuk-index.md",
+   "identity": "doc/arch/adr-002-handle-race-conditions-in-govuk-index.md",
+   "commit": "2675a59c7c82a1000f9ac0baf9fa3f97fc68fa26",
+   "date": "2020-06-09T16:13:55+01:00",
+   "old_state": "accepted",
+   "new_state": "accepted",
+   "old_raw": "Accepted.",
+   "new_raw": "Accepted.",
+   "replacement": null,
+   "message": "Rename 'doc' to 'docs'",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "ChrisBAshton",
+   "email": "christopher.ashton@digital.cabinet-office.gov.uk"
+  },
+  {
+   "path": "docs/arch/adr-003-popularity-updating-without-index-locks.md",
+   "identity": "doc/arch/adr-003-popularity-updating-without-index-locks.md",
+   "commit": "2675a59c7c82a1000f9ac0baf9fa3f97fc68fa26",
+   "date": "2020-06-09T16:13:55+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename 'doc' to 'docs'",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "ChrisBAshton",
+   "email": "christopher.ashton@digital.cabinet-office.gov.uk"
+  },
+  {
+   "path": "docs/arch/adr-004-transition-mainstream-to-publishing-api-index.md",
+   "identity": "doc/arch/adr-004-transition-mainstream-to-publishing-api-index.md",
+   "commit": "2675a59c7c82a1000f9ac0baf9fa3f97fc68fa26",
+   "date": "2020-06-09T16:13:55+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename 'doc' to 'docs'",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "ChrisBAshton",
+   "email": "christopher.ashton@digital.cabinet-office.gov.uk"
+  },
+  {
+   "path": "docs/arch/adr-007-batch-processing-of-rabbit-mq-messages.md",
+   "identity": "doc/arch/adr-007-batch-processing-of-rabbit-mq-messages.md",
+   "commit": "2675a59c7c82a1000f9ac0baf9fa3f97fc68fa26",
+   "date": "2020-06-09T16:13:55+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename 'doc' to 'docs'",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "ChrisBAshton",
+   "email": "christopher.ashton@digital.cabinet-office.gov.uk"
+  },
+  {
+   "path": "docs/arch/adr-008-elasticsearch5-upgrade.md",
+   "identity": "doc/arch/adr-008-elasticsearch5-upgrade.md",
+   "commit": "2675a59c7c82a1000f9ac0baf9fa3f97fc68fa26",
+   "date": "2020-06-09T16:13:55+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename 'doc' to 'docs'",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "ChrisBAshton",
+   "email": "christopher.ashton@digital.cabinet-office.gov.uk"
+  },
+  {
+   "path": "docs/arch/adr-010-learn-to-rank.md",
+   "identity": "doc/arch/adr-010-learn-to-rank.md",
+   "commit": "2675a59c7c82a1000f9ac0baf9fa3f97fc68fa26",
+   "date": "2020-06-09T16:13:55+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename 'doc' to 'docs'",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "ChrisBAshton",
+   "email": "christopher.ashton@digital.cabinet-office.gov.uk"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 14,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "11"
+}

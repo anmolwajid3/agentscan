@@ -1,0 +1,172 @@
+{
+ "repo": "surpher/PactSwift",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2024-09-23T09:32:37+10:00",
+ "last_commit": "2026-07-16T15:03:36+10:00",
+ "n_commits": 2,
+ "n_authors": 1,
+ "n_files": 187,
+ "n_code_files": 118,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 5,
+ "adrs": [
+  {
+   "path": "Documentation/ADRs/ADR-001-Language_choice.md",
+   "identity": "Documentation/ADRs/ADR-001-Language_choice.md",
+   "adr_id": "1",
+   "title": "Context",
+   "first_commit": "2024-09-23T09:32:37+10:00",
+   "first_sha": "0746420a5ea9198294916e86db3c305cb5c0f169",
+   "last_commit": "2024-09-23T09:32:37+10:00",
+   "author": "Marko Justinek",
+   "email": "1733327+surpher@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Context\n\niOS applications can be written in Objective-C or Swift. Objective-C offers greater interaction with C++ code but is considered a legacy language choice in the iOS developer community. The `pact-consumer-swift` framework was built to support Objective-C as well, but it's proven to become a bigger challenge supporting both with newer Xcode and Swift versions.\n\n# Decision\n\nThe framework is written in Swift.\n\n# Consequences\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "Documentation/ADRs/ADR-002-Coding_standard.md",
+   "identity": "Documentation/ADRs/ADR-002-Coding_standard.md",
+   "adr_id": "2",
+   "title": "Context",
+   "first_commit": "2024-09-23T09:32:37+10:00",
+   "first_sha": "0746420a5ea9198294916e86db3c305cb5c0f169",
+   "last_commit": "2024-09-23T09:32:37+10:00",
+   "author": "Marko Justinek",
+   "email": "1733327+surpher@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Context\n\nWe shouldn't feel bound by any pre-existing coding standards so this project and its code is written according to personal preferences based on practices that yielded good results acquired working in other projects with many collaborators. The code is relatively consistent but that might change once more developers contribute to the project.\n\nIn general, Swift code has a fairly strong styling, relative to C or C++, due to opinionated aspects of the language itself and the styling used by the official language guides. Formatting around brace placement, `if` and `for` styling is fairly clearly set by the language.\n\n# Decision\n\n[Swiftlint configuration](./../../.swiftlint.yml) is used to enforce us adhering to _most_ of code style conventions.\n\n## Project file structure\n\nFile structure follows Swift Package Manager boilerplate. Xcode's _Project Navigator_ displays all folders and files alphabetically for easier skimming and searching through the file structure.\n\n```\n.\n|-- .config.yml\n|-- .github\n|-- CONTRIBUTING.md\n|-- Documentation\n|   |-- ADRs\n|   |   |-- ADR-001-Language_choice.md\n|   |   |-- ...\n|-- EmbeddedProject # follows the same file structure\n|   |-- Resources\n|   |-- Sources\n|   |-- Tests\n|   |-- ...\n|-- Package.swift\n|-- README.md\n|-- Resources\n|   |-- Assets.xcassets\n|   |-- ...\n|-- Sources\n|   |-- Extensions\n|   |-- PACTMockService.swift\n|   |-- ...\n|-- Tests\n|   |-- PACTMockService\n|   |   |-- TestCaseFile.swift\n|   |   |-- ...\n|   |-- PACTXCTestCase.swift\n|   |-- Resources\n|   |   |-- ErrorCapture.swift\n|   |   |-- PACTMockServiceStub.swift\n|   |   |-- ...\n.   .   .\n```\n\n## Indentation\nWe are using **tabs** for indentation. The primary motivation behind using tabs for indentation is not around indentation itself but to deliberately discourage a separate practice: code formatting. \n\nFollowing the rule:\n\n> Code should be indented but never formatted.\n\nWith this rule in place switching between 4-space indents, 2-space indents or tabs is a trivial matter of search and replace and can be changed on a whim. Without this rule, the codebase cannot be trivially searched to verify indenting and cannot be easily converted between indentation styles. Validating formatting requires full code semantic analysis and user-preferences end up overriding any clear, consistent rule. Parsing and validating indentation requires only parsing of braces and parentheses.\n\nLet's look at a coding practice to **\u0010AVOID**:\n\n```swift\nfunc myFunc() {\n    someCall(paramOne: argOne, paramTwo: argTwo, paramThree: argThree,\n             paramFour: argFour, paramFive: argFive)\n}\n```\n\nXcode will automatically generate this style of formatting if you've selected \"Syntax aware indenting\" with \"Automatically indent for ':'\" on the Preferences -> Text Editing -> Indentation panel and you place a newline within a function call statement. We recommend *disabling* this feature in Xcode (and most of the other syntax aware indenting options).\n\nThe following is a **PREFERRED** approach:\n\n```swift\nfunc myFunc() {\n    someCall(paramOne: argOne, paramTwo: argTwo, paramThree: argThree,\n        paramFour: argFour, paramFive: argFive)\n}\n```\n\ni.e. if you need to split a single statement across multiple lines, pick a clean point to insert a newline (preferrably after a comma) and merely increase the indentation width by 1 for the next line.\n\nOR, if a more structured, declarative representation is desired:\n\n```swift\nfunc someCall(\n    paramOne: argOne,\n    paramTwo: argTwo,\n    paramThree: argThree,\n    paramFour: argFour,\n    paramFive: argFive\n) -> Type {...}\n\nfunc myFunc() {\n    let myVar = someCall(\n        paramOne: argOne,\n        paramTwo: argTwo,\n        paramThree: argThree,\n        paramFour: argFour,\n        paramFive: argFive\n    )\n}\n```\n\ni.e. if you want to format the whole line to bring attention to the structure, start the indent at an open parenthesis and place the closing parenthesis on its own line to clearly show the end of the structure.\n\nHow does the use of tabs as indentation support this? Different members of the team can set different tab widths in their editors (Imagine having two developers working on the project where one uses 4-spaces per tab and the other 3-spaces per tab). In this scenario, otherwise invisible indentation violations (mixing tabs and spaces, indentation by non-whole amounts or code formatting) are immediately apparent as merging/rebasing will not affect other develpers indentation preference.\n\n## Type padding\n\nThis project follows a convention where single vertical space padding inside top-level only structures (immediately after the opening brace and immediately before the closing brace). As with all stylistic choices though, once you use it for a while, it gets inside your brain.\n\nExample to follow:\n\n```\nstruct MyStruct {\n\n    var myInt: Int\n    var myString: String\n\n    struct MyNestedStruct {\n        var myNestedInt: Int\n        var myNestedString: String\n    }\n\n}\n\nclass MyClass {\n\n    // MARK: - Types\n\n    enum MyEnum {\n        case one\n        case two\n    }\n\n    // MARK: - Properties\n\n    var myVar: SomeType\n\n    // MARK: - Lifecycle\n\n    init(myVar: SomeType) {\n        self.myVar = myVar\n    }\n\n}\n```\n\n# Consequences\n\nAs this is an open-source project, it will be critical for anyone contributing to the codebase to follow these rules. Hopefully, setting up the project as best as possible for collaborative work will prove PRs will require less effort combing through differences that are not feature related (eg: we want to avoid PRs with changes due to code style/formatting).\n\nFor Type Members organization see [ADR-003-Organization_of_type_members.md](ADR-003-Organization_of_type_members.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/../../.swiftlint.yml"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "Documentation/ADRs/ADR-003-Organization_of_type_members.md",
+   "identity": "Documentation/ADRs/ADR-003-Organization_of_type_members.md",
+   "adr_id": "3",
+   "title": "Context",
+   "first_commit": "2024-09-23T09:32:37+10:00",
+   "first_sha": "0746420a5ea9198294916e86db3c305cb5c0f169",
+   "last_commit": "2024-09-23T09:32:37+10:00",
+   "author": "Marko Justinek",
+   "email": "1733327+surpher@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Context\n\nFor legibility and discoverability, it is helpful to have a clear ordering of members within each type. Criteria which factor into this include:\n\n1. Member kind (property, method, subtype)\n2. Access (public/internal/private)\n3. Nature of member (stored or computed property, override or unique method)\n\nThere are different approaches to how these should be prioritized in C++/Objective-C, whether you're focussing on the needs of the type's consumer or implementer and which slices of behavior you most want to separate.\n\n# Decision\n\nWhere possible, members should be organized as follows:\n\n```\nclass MyClass: BaseClass {\n\n\t// MARK: - Constants\n\t\n\tpublic static let valueA = 1\n\tprivate static let valueB = 2\n\n\t// MARK: - Types\n\t\n\tpublic struct SubTypeA {}\n\tprivate struct SubTypeB {}\n\n\t// MARK: - Stored Properties\n\n\tpublic var propertyA = 1\n\tprivate var propertyB = 2\n\n\t// MARK: - Computed Properties\n\n\tpublic var propertyC: Int { return propertyA * 3 }\n\tprivate var propertyD: Int { return propertyB * 4 }\n\n\t// MARK: - Constructors\n\n\tpublic init() {}\n\tprivate init(param: Int) {}\n\n\t// MARK: - Methods\n\n\tpublic static func k() {}\n\n\tpublic func f() {}\n\tprivate func g() {}\n\n\tprivate static func h() {}\n\n\t// MARK: - BaseClass overrides\n\n\tpublic override var propertyL: Int { return propertyA * 3 }\n\tpublic override func base() {}\n\t\n}\n\nextension MyClass: SomeComformance {\n\n\tpublic var i: Int { return 0 }\n\n\tpublic func j() {}\n\n}\n```\n\nImportant points to note:\n\n1. public before private\n2. static lifetimes before properties before methods\n3. stored properties before computed properties\n4. constructors before other methods\n5. overrides grouped based on the class they override\n6. protocol conformances in separate extensions (unless auto-synthesis is involved)\n\nIn most cases, these sections will not all be present... don't use a heading for a section not included\n\n# Consequences\n\nThere are a couple points that aren't totally decided.\n\nThey do not *need* to have \"mark\" headings and when they do, provided the contents themselves are organized, a simple \"Properties\" or \"Methods\" is sufficient to cover all methods or properties (e.g. doesn't need to be broken into \"Stored\" and \"Computed\").\n\nHowever, overrides sections should have a heading indicating which class' methods they override, otherwise its purpose is difficult to understand.\n\nStatic methods are all in one section with the other methods, with public static first and private static last (after all non-static methods). However:\n\n1. Most public static functions are constructors and should go in the constructor section (probably ahead of init functions)\n2. Many private static functions are called from just one location, lifted out for purely syntactic reasons. Sometimes these might appear alongside the function they're lifted out-of, sometimes they might appear at the end of the file since they're mostly an implementation detail that can be ignored.\n\nThere's a little flexibility here and when reviewing PR's suggestions and requests for improvement may be made prior to approving a PR.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "Documentation/ADRs/ADR-004-Dependencies-management.md",
+   "identity": "Documentation/ADRs/ADR-004-Dependencies-management.md",
+   "adr_id": "4",
+   "title": "Context",
+   "first_commit": "2024-09-23T09:32:37+10:00",
+   "first_sha": "0746420a5ea9198294916e86db3c305cb5c0f169",
+   "last_commit": "2024-09-23T09:32:37+10:00",
+   "author": "Marko Justinek",
+   "email": "1733327+surpher@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Context\n\nAlmost all software we write depends on some other code, library or development tool which allows us to build what we want faster. Although this project attempts to avoid bringing in 3rd party dependencies, there are is functionality already written that is critical to this projects success.\n\n# Decision\n\nThe main dependency is the programmable in-process mock server that can receive network requests and respond with the response we define. This dependency is written in rust and is available at [pact-foundation/pact-reference/rust](https://github.com/pact-foundation/pact-reference/tree/main/rust/pact_mock_server_ffi).\n\nThe binary framework(s) that are built using `cargo lipo --release` command are added into the Xcode project.\n\nUnfortunately SPM doesn't handle the binary dependencies well at the time of this writing. Therefore a SPM package is required\n\nThere will be a separation of responsibilities between PactSwift framework and PactSwiftServices in a separate (yet embedded) project which will provide extra functionality by reaching out to and/or interact with different services (interacting with Pact Mock Server, etc.).\n\nMatt's [CwlPreconditionTesting](https://github.com/mattgallagher/CwlPreconditionTesting) is a dependency this project can't really exist without. To support distributon of PactSwift using both Carthage and SPM, the dependency CwlPreconditionTesting is brougt into the PactSwiftServices project (files `./Carthage/Checkouts/CwlPreconditionTesting/*` added into the project itself). For SPM it is defined as a dependency in `./PactSwiftServices/Package.swift`.\n\n# Consequences\n\nDue to SPM not handling binary dependencies well. When linking and embedding a binary framework while building and running in Xcode everything works fine, `xcodebuild` command in command line builds the project and dependencies just fine.\n\nYet, when running `swift build` in terminal, SPM doesn't know where to find it. That's why a separate SPM package to provide the binary framework as a dependency is required and unfortunately the binary framework is duplicated in the codebase - once in `PactSwiftServices` project and once in `PactMockServer` swift package.\n\n# Follow-up (September 30, 2020)\n\nAll 3rd party dependencies have been successfully removed from this project/framework.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/Carthage/Checkouts/CwlPreconditionTesting/*",
+    "/PactSwiftServices/Package.swift"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "Documentation/ADRs/ADR-005-Project-Structure.md",
+   "identity": "Documentation/ADRs/ADR-005-Project-Structure.md",
+   "adr_id": "5",
+   "title": "Project Structure",
+   "first_commit": "2024-09-23T09:32:37+10:00",
+   "first_sha": "0746420a5ea9198294916e86db3c305cb5c0f169",
+   "last_commit": "2024-09-23T09:32:37+10:00",
+   "author": "Marko Justinek",
+   "email": "1733327+surpher@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Project Structure\n\n## Context\n\n`PactSwift` takes advantage of Mock Server FFI binaries built from shared Rust code. These are generally large binary files when it comes to iOS and macOS platforms and we are limited with hosting them in the GitHub repo. The FFI also follows it's own source and changes are available independently to changes to `PactSwift`'s functionality. Separating the responsibilities would be welcomed.\n\nFurthermore, the pain of managing multiple binaries with the same name but each with its specific architecture slice could be reduced by generating an `XCFramework` using an automated script and kept from the framework user. These can blow up to more than 100Mb each (the fat binary with all slices for iOS platform blew up to more than 300MB). Using `XCFramework` we can shed off a lot of the statically linked code. Mock Server FFI (`MockServer.swift`) is the only part of `PactSwift` package that depends on binaries being built for specific architectures and run platforms. With removal of binaries from the main `PactSwift` project, we should be able to avoid managing them, mixing them up (as they are all named the same), discarding them at `git add` and `commit` steps and rebuilding them at next `PactSwift` build/test cycle.\n\n## Decision\n\n- Mock Server FFI interface and implementation to be split into it's own Swift Package called `PactSwiftMockServer` and distributed as a binary (`XCFramework`) when on Apple platforms and as a source package when used on Linux platforms.\n- Utilities used by both the main `PactSwift` and `PactSwiftMockServer` packages are split into one package called `PactSwiftToolbox`.\n- Where it makes sense the dependencies' versions should be exact. If exact version is not set for a valid reason then `.upToMinor()` must be used to avoid breaking changes when releasing packages in isolation.\n- Scripts to automate the release processes will be provided within the projects' scripts folders.\n\n## Consequences\n\nInstead of one repository there will be **4** repos to maintain. Most of the work and focus will be on main `PactSwift`. The number of repos to maintain in isolation will hopefully outweigh the complexity of maintaining one big one where developer process is hindered due to constant dance of adding and removing huge binaries.\n\n1. `PactSwift` - The main package handling the interactions and is responsible for preparing the Pact's structure.\n2. `PactSwiftMockServer` - Wraps `libpact_ffi` and handles the mock server functionality.\n3. `PactSwiftToolbox` - Is expected to not change much and should avoid implementing breaking changes.\n4. `PactMockServer` - Only vends the header files for `PactSwiftMockServer` when it used from source (Linux platforms).\n\nIs expected to that `PactSwiftMockServer` will only require some attention when `XCFramework` needs to be updated and distributed as a binary only when `libpact_ffi` is updated (be it for bugfixes or updated functionality).\n\n\u26a0\ufe0f `PactSwiftMockServer` and `PactMockServer` must both expose the same `libpact_ffi.h` header file to achieve compatibility across all Apple and Linux platforms.\n\n`PactSwift` depends on packages:\n\n- `PactSwiftMockServer` for Apple platforms\n- `PactSwiftMockServerLinux` for Linux platform\n- `PactSwiftToolbox`\n\n`PactSwiftMockServer` depends on packages:\n\n- `PactSwiftToolbox`\n- `PactMockServer`\n\n`PactSwiftMockServer` is vedning:\n\n- a binary `XCFramework` targed for Apple platforms\n- source target for `Linux` platform\n\n## Follow up\n\n_July 5, 2021_  \nSome pain and mistakes were made when deploying new versions and referencing the correct versions. Suggesting an automated release process that would update version numbers, make checks if things are aligned before creating a new release tag and related release.\n\n_August 17, 2021_  \nUpdated to reflect changes in project and package structure and dependencies. Update for Linux support.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "libpact_ffi.h"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 5,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "5"
+}

@@ -1,0 +1,45 @@
+{
+ "repo": "edx/event-routing-backends",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2020-09-22T16:31:42-04:00",
+ "last_commit": "2026-11-02T09:35:18-05:00",
+ "n_commits": 669,
+ "n_authors": 53,
+ "n_files": 352,
+ "n_code_files": 98,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 0,
+ "adrs": [],
+ "status_changes": [],
+ "ai_signals": [
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-03-10T11:32:03-04:00",
+   "commit": "48b5d090a43dd131449d4b6f6809440764db24f1",
+   "evidence": "chore: drop Python 3.11 support (#539)",
+   "official": true,
+   "author": "Feanil Patel",
+   "email": "feanil@axim.org"
+  }
+ ],
+ "signal_date": "2026-03-10T15:32:03+00:00",
+ "signal_kind": "coauthor",
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-native",
+ "adr_count_before_signal": 0,
+ "superseded_in_window": 0,
+ "eligibility_reason": "ai-native",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "8"
+}

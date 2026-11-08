@@ -1,0 +1,261 @@
+{
+ "repo": "cloudfoundry-attic/copilot",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2017-11-10T00:08:07+00:00",
+ "last_commit": "2019-08-05T14:37:01-07:00",
+ "n_commits": 334,
+ "n_authors": 38,
+ "n_files": 12783,
+ "n_code_files": 8288,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 6,
+ "adrs": [
+  {
+   "path": "docs/decisions/0006-do-something-for-one-way-tls.md",
+   "identity": "docs/decisions/0006-do-something-for-one-way-tls.md",
+   "adr_id": "6",
+   "title": "Enable host + domain specific one way TLS",
+   "first_commit": "2018-11-13T16:29:28-08:00",
+   "first_sha": "48a9c4e073a5a25ceee2184bb058965dfa637d54",
+   "last_commit": "2018-11-13T16:29:28-08:00",
+   "author": "Utako Ueda",
+   "email": "uueda@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 6. Enable host + domain specific one way TLS\n\nDate: 2018-11-13\n\n## Status\n\nAccepted\n\n## Context\n\nEnable one way TLS between front-end and envoy per host+domain that is\nspecified via gateway config.\n\n## Decision\n\n#### Gateway Configuration\n\nThis is achieved by sending the following config from copilot.\n\n```\napiVersion: networking.istio.io/v1alpha3\nkind: Gateway\nmetadata:\n  name: mygateway\nspec:\n  selector:\n    istio: ingressgateway # use istio default ingress gateway\n  servers:\n  - port:\n      number: 443\n      name: https-httpbin\n      protocol: HTTPS\n    tls:\n      mode: SIMPLE\n      serverCertificate: /etc/istio/ingressgateway-certs/tls.crt\n      privateKey: /etc/istio/ingressgateway-certs/tls.key\n    hosts:\n    - \"httpbin.example.com\"\n  - port:\n      number: 443\n      name: https-bookinfo\n      protocol: HTTPS\n    tls:\n      mode: SIMPLE\n      serverCertificate: /etc/istio/ingressgateway-bookinfo-certs/tls.crt\n      privateKey: /etc/istio/ingressgateway-bookinfo-certs/tls.key\n    hosts:\n    - \"bookinfo.com\"\n```\n\nIn the config above each cert and key in the array of servers represent a\nhost+domain and the path to each cert and the key is arbitrarily chosen.\n\nCopilot extracts the domain information from the cert chains provided in the bosh spec properties:\n\n```\nfrontend_tls_keypairs:\n  example:\n    - cert_chain: |\n        -----BEGIN CERTIFICATE-----\n        -----END CERTIFICATE-----\n        -----BEGIN CERTIFICATE-----\n        -----END CERTIFICATE-----\n      private_key: |\n        -----BEGIN RSA PRIVATE KEY-----\n        -----END RSA PRIVATE KEY-----\n    - cert_chain: |\n        -----BEGIN CERTIFICATE-----\n        -----END CERTIFICATE-----\n        -----BEGIN CERTIFICATE-----\n        -----END CERTIFICATE-----\n      private_key: |\n        -----BEGIN RSA PRIVATE KEY-----\n        -----END RSA PRIVATE KEY-----\n```\n\n#### Cert Storage\n\nThe placement of the certs and keys on the envoy VM is done using a separate\nprocess specific to this purpose. This process will be in charge of knowing\nwhere the certs are located and placing the certs on the correct paths. It is\nimportant for the envoy VM and copilot to agree on a path where the cert and the keys\nare stored, and having a specific process to manage this will reduce duplication\nand mitigate skew.\n\n## Consequences\n\n* Less skew and duplication\n* Certs are not passed around between components in messages, which could\n  introduce a security concern\n* BOSH may someday introduce a feature that will replace the locator/stower\n  process, but this doesn't seem to be in their immediate future\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "etc/istio/ingressgateway-certs/tls.crt",
+    "etc/istio/ingressgateway-certs/tls.key",
+    "etc/istio/ingressgateway-bookinfo-certs/tls.crt",
+    "etc/istio/ingressgateway-bookinfo-certs/tls.key"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0005-enable-grpc-gzip-compression-between-copilot-and-route-syncer.md",
+   "identity": "docs/decisions/0005-enable-grpc-gzip-compression-between-copilot-and-route-syncer.md",
+   "adr_id": "5",
+   "title": "Record architecture decisions",
+   "first_commit": "2018-11-07T17:13:29-08:00",
+   "first_sha": "7ffcb8ff26bfa5f7d17bd67aa1b6b8c40911df2f",
+   "last_commit": "2018-11-14T11:01:27-08:00",
+   "author": "Teal Stannard",
+   "email": "tstannard@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# 1. Record architecture decisions\n\nDate: 2018-11-07\n\n## Status\n\nAccepted\n\n## Context\n\nThe GRPC default message size of 4 mb currently causing a bottleneck between cc-route-syncer and copilot. As our message sizes increased with scale this prevents us from sending messages to copilot.\n\n## Decision\n\nWe have decided to reduce the message size by enabling GRPC's GZIP compression between cc-route-syncer and copilot.\n\n## Consequences\n\nThis could be pottentially a temporary fix as the message size gets bigger. The GZIP compression message size could still go above the default message size in GRPC in the future.\n\n## Update (2018-11-14)\nAfter implementing the gzip compression, our bottleneck was not resolved. It turns out that the error message we are encountering [captures the length of the message size _after_ it is decompressed](https://github.com/grpc/grpc-go/blob/v1.15.0/server.go#L947-L966). We are keeping the gzip compression in place as we don't expect there to be much of a drawback for it but we can revisit this in the future if issues arise.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/grpc/grpc-go/blob/v1.15.0/server.go"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0004-check-in-copilot-dependencies-that-were-already-vendored.md",
+   "identity": "docs/decisions/0004-check-in-copilot-dependencies-that-were-already-vendored.md",
+   "adr_id": "4",
+   "title": "Check in Copilot Dependencies That Were Already Vendored",
+   "first_commit": "2018-11-07T10:36:51-08:00",
+   "first_sha": "932abc60a1e9c3e87a6d629de05e02d8cbd959b6",
+   "last_commit": "2018-11-07T10:36:51-08:00",
+   "author": "Zachary Gershman",
+   "email": "zgershman@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 4. Check in Copilot Dependencies That Were Already Vendored\n\nDate: 2018-11-07\n\n## Status\n\nAccepted\n\n## Context\n\nPrevious packaging of Copilot in istio release relied on the fact that you would\nbe building copilot on the local machine (bosh pre-packaging).  This meant that\nyou could reliably fetch all of your dependencies using dep (which was included\nas a blob in the release).\n\nWhen we moved to get rid of pre-packaging and instead do all packaging on a bosh\nvm (just known as packaging) we ended up missing one key external dependency for\ndep to work (git). Including git as part of release would have meant adding\nanother blob and packaging step just for git.\n\n## Decision\n\nWe removed the .gitignore of the vendor directory and checked-in all of the\nsource code that dep was placing in that directory at build time.\n\n## Consequences\n\n- No team member should have to fuss with dep when trying to build copilot.\n- Team members will need to remember to check in their vendor dir changes when\n  upgrading / adding / removing dependencies\n- Removal of pre-packaging means that building of copilot got more consistent as\n  it cannot vary depending on the user's external machine that is running the\n  bosh deploy\n- Dep has been removed as a blob for releases going forward since it is no\n  longer required to build copilot\n\nWe may have to reconsider this approach when go.mod becomes an actual thing but\nthat isn't until at least go 1.12.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0003-use-mcp-api-for-pilot-config.md",
+   "identity": "docs/decisions/0003-use-mcp-api-for-pilot-config.md",
+   "adr_id": "3",
+   "title": "Use MCP API for Pilot Config",
+   "first_commit": "2018-09-14T10:44:36-07:00",
+   "first_sha": "a6e7e0cb0fea26cfd5eadce80549c42bd7112c55",
+   "last_commit": "2018-09-14T10:44:36-07:00",
+   "author": "Nancy Hsieh",
+   "email": "nhsieh@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 3. Use MCP API for Pilot Config\n\nDate: 2018-09-11\n\n## Status\n\nAccepted\n\n## Context\n\nMesh Configuration Protocol (MCP) is a [protocol](https://github.com/istio/api/tree/master/mcp) for transferring configuration among Istio components during runtime. MCP is meant to defer all the logics and complexities back to the server (copilot) as oppose to the original design which all the logic was embeded in the client (Pilot). Another goal of MCP is to create a unified contract for all the Custom Resource Definitions and Service Discovery and the way they are communicated with Pilot.\n\n## Decision\n\nCopilot will implement a MCP server to send configuration to Pilot. We will be sending definitions for Gateways, VirtualServices and DestinationRules over bi-directional GRPC. \n\n## Consequences\n\n- All logics around building the configurations will now be in Copilot.\n- Logic in Pilot can be removed and pull requests to Istio/Pilot will no longer be necessary.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0001-record-architecture-decisions.md",
+   "identity": "docs/decisions/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2018-07-25T14:12:32-07:00",
+   "first_sha": "63b63b29ea9a5e9fc55d5548c2c8ae17f83d6cae",
+   "last_commit": "2018-07-25T14:12:32-07:00",
+   "author": "Zachary Gershman",
+   "email": "zgershman@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record architecture decisions\n\nDate: 2018-07-25\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as [described by Michael Nygard](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions).\n\n## Consequences\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's [adr-tools](https://github.com/npryce/adr-tools).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0002-use-event-streaming-model-for-diego-actuallrp-syncing.md",
+   "identity": "docs/decisions/0002-use-event-streaming-model-for-diego-actuallrp-syncing.md",
+   "adr_id": "2",
+   "title": "Use event streaming model for diego ActualLRP syncing",
+   "first_commit": "2018-07-25T14:12:32-07:00",
+   "first_sha": "63b63b29ea9a5e9fc55d5548c2c8ae17f83d6cae",
+   "last_commit": "2018-07-25T14:12:32-07:00",
+   "author": "Zachary Gershman",
+   "email": "zgershman@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 2. Use event streaming model for diego ActualLRP syncing\n\nDate: 2018-07-25\n\n## Status\n\nAccepted\n\n## Context\n\nThe diego ActualLRP syncing model as currently implemented will fetch all LRPs\nacross all diego cells at a specified time interval (at the time of writing 10\nseconds). As the ActualLRP count grows on a cloudfoundry deployment this could\nimpact the performance of the BBS (large response sets coming back).\n\n## Decision\n\nWe want to use the [Event package](https://github.com/cloudfoundry/bbs/blob/master/doc/events.md)\nto get the event stream for each ActualLRP. We will also use a bulk sync every\n60 seconds to catch any events that were missed.\n\n## Consequences\n\n- There should be an immediate reduction in the amount of ActualLRP data coming\n  from diego in each sync event.\n- Functionally, there should be no difference in the amount of time it takes for\n  diego ActualLRP data to make its way into copilot.\n- This means we need to store our diegoProcessGUID to BackendSet mapping\n  in memory so that we can update it each time an event comes in.\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/cloudfoundry/bbs/blob/master/doc/events.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [
+   {
+    "sha": "3805adc9353688438cbeb82a354d44cb3c437f41",
+    "date": "2017-11-10T20:32:17+00:00",
+    "subject": "Copilot serves Route data by pulliing data from BBS"
+   },
+   {
+    "sha": "e449df8c1725e51c9115ac67a7a5adf27d0899a4",
+    "date": "2017-11-10T23:59:14+00:00",
+    "subject": "copilot crashes on start if BBS is not available"
+   },
+   {
+    "sha": "bda07bd61b9e4df54fb841e987f0f4e76df3d4cf",
+    "date": "2017-12-08T10:11:19-08:00",
+    "subject": "Adds an apache license to copilot"
+   },
+   {
+    "sha": "386ebe0f2b3b94056d711218aeb3283c862b7871",
+    "date": "2018-01-04T16:27:48-08:00",
+    "subject": "Add deleteRoute endpoint to copilot [#153189161]"
+   },
+   {
+    "sha": "151b5454d1ee350e1ebd7bc835e34433ab5a05e0",
+    "date": "2018-01-30T16:46:22-08:00",
+    "subject": "wip - integration testing ruby sdk w/ real copilot"
+   },
+   {
+    "sha": "fca8d9975ec0d676246ccdfd970e3b57393b1d2d",
+    "date": "2018-01-31T16:51:09-08:00",
+    "subject": "add ListCfRoutes endpoint to the CC-facing copilot server"
+   },
+   {
+    "sha": "df6f80ef33320391fbdb189e2a5fbcc4c8466fae",
+    "date": "2018-05-02T11:27:25-07:00",
+    "subject": "Remove old copilot client binaries"
+   },
+   {
+    "sha": "df8d99ea82bfbfae969c810a4fa674914c9f5607",
+    "date": "2018-05-10T13:29:00-07:00",
+    "subject": "bump copilot version to 0.0.4"
+   },
+   {
+    "sha": "5434800ad88c11750f860f64102ee0b8c4cb5640",
+    "date": "2018-05-10T14:31:50-07:00",
+    "subject": "Revert \"bump copilot version to 0.0.4\""
+   },
+   {
+    "sha": "d23811b4eddc2346b80d760e6ec20697701a0918",
+    "date": "2018-05-10T14:38:44-07:00",
+    "subject": "bump cf-copilot to 0.0.4"
+   },
+   {
+    "sha": "4e56f9462085621c74a019e8a2ad2f55b3a8e94a",
+    "date": "2018-05-15T15:49:43-07:00",
+    "subject": "copilot now supports a context path"
+   },
+   {
+    "sha": "c951747e65dc9f7b85a44de43440ef53d4444749",
+    "date": "2018-05-18T14:41:41-07:00",
+    "subject": "bump cf-copilot to 0.0.5"
+   }
+  ],
+  "strict_count": 33,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 6,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "6"
+}

@@ -1,0 +1,270 @@
+{
+ "repo": "hamlet-io/architectural-decision-log",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2020-12-18T10:51:31+11:00",
+ "last_commit": "2023-06-11T16:48:23+10:00",
+ "n_commits": 37,
+ "n_authors": 3,
+ "n_files": 15,
+ "n_code_files": 0,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 8,
+ "adrs": [
+  {
+   "path": "adr/0007-placement-support.md",
+   "identity": "adr/0007-placement-support.md",
+   "adr_id": "7",
+   "title": "Placement Support",
+   "first_commit": "2021-06-25T21:59:10+10:00",
+   "first_sha": "bf198c15ca3f795588a3a56cdee1c445139e37da",
+   "last_commit": "2023-06-11T16:48:23+10:00",
+   "author": "Michael Leditschke",
+   "email": "mike@ammd.com.au",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 17,
+   "text": "# Placement Support\n\n* Status: accepted\n* Deciders: roleyfoley, rossMurr4y, ml019\n* Date: 2021-07-03\n\n## Context and Problem Statement\n\nFor some time hamlet has had the idea of a `placement` - a mechanism to dynamically determine where resources should be hosted.\n\nPlacements are currently part of the hierarchy of the state tree, and the resource groups within the occurrence structure were intended to allow groups of resources to be placed into different provider accounts.\n\nHowever to date, a number of limitations and inefficiencies stemming from hamlet's original design has prevented full exploitation of the placement concept;\n- the assembly of the solution before the engine is run\n- the focus of a template run on a single segment\n- the generation of account templates uses different concepts to those of product templates\n- the maintenance of critical configuration information such as environment to account mappings external to the cmdb.\n\nThe introduction of dynamic cmdb loading and the input pipeline processor with full cmdb qualification presents an opportunity to address these long standing issues and complete the implementation of placement support. The question is how.\n\n## Decision Drivers <!-- optional -->\n\n* reuse existing concepts and ways of doing things as much as possible\n* given a cmdb, no other configuration information should be necessary to deploy a product\n\n## Considered Options\n\nThis ADR extends on the decision made in [ADR-0002](./0002-layer-deployments.md) - Layer Level Deployments and provides more design detail, primarily by the enrichment of link semantics.\n\n## Decision Outcome\n\nChosen option: \"Extend link semantics\", because it addresses the decision drivers best (see below) and aligns with the ADR-0002 decision previously made.\n\n### Positive Consequences <!-- optional -->\n\n* reduced configuration complexity - everything in one place\n* better validation of configurations\n* links have proven very flexible so expect the proposed changes to be re-purposed for other things in the future\n* straightforward transition process once infrastructure in place\n\n### Negative Consequences <!-- optional -->\n\n* Expansion of semantics of existing concepts may be harder to document, understand and explain than dedicated new concepts\n\n## Design Detail\n\n### New Link Semantics\n\nCurrently, a link goes from one occurrence in a solution to another _within_ the same solution solution.\n\nThis option builds on existing link processing by adding support for a link to target an occurrence in _another_ solution as follows;\n\n1. A link targets an occurrence within a solution.\n1. A link consists of two parts;\n- those attributes that identify the `District` of a solution\n- those attributes that identify an occurrence within the solution.\n1. Occurrences within a solution are identified by a standard set of link attributes\n     - `Tier`\n     - `Component`\n     - `Subcomponent`\n     - `Instance`\n     - `Version`\n\n   Thus these attributes must be present on a link, or be inherited from the occurrence on which the link is configured.\n1. The `Subcomponent` attribute replaces use of type specific attributes such as `Port`.\n1. An optional `Type` attribute is added to ensure links to same named subcomponents can be resolved. Its value is the desired component type of the link target. A side effect of this is that for any link, the `Type` attribute can be added to document an expectation of the type of the intended target allowing misconfigured links to be identified in some cases.\n3. `District types` will be configured via a `districttypes` plugin directory, with each directory having an `id.ftl` file to define the district type.\n4. Each `DistrictType` has a name and defines an ordered set of layers used to identify the `District` of a solution. In turn, the input filter attribute associated with each layer is used as the attribute in the link used to identify the layer within a district.\n5. In order to resolve a link, the desired district must be known, and a value for each of the layers identifying the district of a solution must be known.\n6. To identify the district, a link must have a `DistrictType` attribute whose value matches the name of one of the known districts. It has a default value of `self` which means the link will use the district type associated with the solution from which the link originates.\n7. As an initial implementation, the following district types will be defined in the shared provider with the indicated layer ordering;\n    - `segment` = `Product`, `Environment`, `Segment`\n    - `account` = `Account`\n    - `tenant` = `Tenant`\n8. In the same way that a link can inherit occurrence identifiers from the source component, it inherits layer identifiers from the source solution.\n9. Link indirection is supported by an optional `LinkRef` attribute within a link object. If present, other link attributes will be merged into the resolved link with the resolved link taking precedence. This permits the user of the `linkRef` to still control attributes such as `IncludeInContext`.\n10. `LinkRef` resolution is recursive so, a `LinkRef` can resolve to a link containing a `LinkRef` attribute.\n11. The value of a LinkRef attribute is used as the attribute name in a `LinkRefs` configuration object, with the attribute value\nbeing the desired link definition.\n1. `LinkRef` definitions can be provided via a `LinkRefs` attribute within a blueprint, or via the `Solution`, `Product` and `Tenant` layer configurations. The effective target link is generated by merging matches in the same order, permitting partial definitions at different layers, with usual precedence order applying.\n1. As with any other blueprint configuration, modules can inject `LinkRef` definitions into the blueprint but not override any layer based definitions.\n1. LinkRef attributes provide a convenient mechanism to centralise qualification of links shared across multiple components, as is commonly the case with placements.\n\n### New Components\n\nThis option also introduces two new components - `Subscription` and `HostingPlatform`.\n\n#### Subscription\n\nA `Subscription` component represents a provider specific mechanism for purchasing hosting capability, such as an `account` with AWS or a `subscription` with Azure. \n\nThe \"external\" namespace is used to flag attributes involved in the importing of any component. The `Subscription` component supports importation of the identifier for the provider, as well as the provider specific identifier for the `Subscription` and the deployment framework to be used by default.\n\n`Subscription` components will typically be used with a `tenant` district type solution. They can also use the component location information (see below) to connect to another `Subscription`. The example of this is a master account in AWS.\n\nThe `Subscription` component supports the importing of externally created subscriptions as well as creation via hamlet. Mixed usage is expected to be common, e.g. a master account for AWS is created externally with all subsequent accounts then being created via `Subscription` components.\n\n#### HostingPlatform\n\nA `HostingPlatform` component represents a place within a subscription where resources can physically be deployed.\n\nThe `Engine` attribute of the `HostingPlatform` determines what type of hosting is provided. Initially, an engine value of `region` will permit placement of resources within a region of a `Subscription`.\n\nHostingPlatform components will typically be used within an `account` district type solution. For an engine type of `region`, a region value must be provided.\n\nThe `HostingPlatform` component relies on the component location information (see below) to provide details of the associated `Subscription`. Thus at least one `Subscription` must be defined in order to use the `HostingPlatform` component.\n\nAs an example of usage, for AWS or Azure it would be normal to see this component in each `account` district type solution, with instances for each region that is active in the account. It is also likely that other components within an `account` district type solution, such as registries, would also link to this component in order to establish where account solution resources should be deployed. So when deploying an S3 based registry, a region would need to be provided as a command line option to select the desired template to generate, with the HostingPlatform then being used to determine if a given registry should be included (see below on ResourceGroup placement).\n\n### Locations Occurrence Attribute\n\nAll component solutions will now support a `deployment:Locations` attribute, the purpose of which is to provide the mechanism for a component to document its requirements for information related to the placement of other components.\n\nEach location is represented as a key within the `deployment:Locations` attribute, with each key having a **mandatory** `Link` attribute.\n\nLocations will be included in the metadata of resourcegroups when defining a component type, and will specify if the location is mandatory or optional, and what component types can be targetted by the link. This will permit Location information to be checked for completeness.\n\nBeing an occurrence attribute, the `deployment:Locations` attribute can be populated directly on a component for maximum granularity, but equally be configured via `DeploymentProfiles`, and enforced via `PolicyProfiles`. These also give the ability for the locations to be varied based on component type, for example to select different registries.\n\nIn general, it is expected that a LinkRef will be used for location links to centralise any qualifications, for example differentiation between non-production and production environment placements.\n\n### ResourceGroup placement\nPlacement of a resource group will be done by way of a location with the same name as the resource group. The target of the location will reflect information needed by the component implementation. A common example will be a link to a region based `HostingPlatform` occurrence. In this case, the occurrence will be expected to offer `PROVIDER`, `ACCOUNT`, `REGION` and `DEPLOYMENT_FRAMEWORK` attributes.\n\n### Other Location Uses\n\nOver time, other uses of locations are expected, such as the selection of registries from which code should be sourced.\n\nThe current baseline and network processing could also be merged into location processing, perhaps with predefined values of `_baseline` and `_network` or with a standard set of `_` based linkRefs being offered by each. A component requiring these would still need to declare them for validation and documentation purposes.\n\n### Assessment\n\n* Good, because it reuses existing concepts (layers, district types, solutions)\n* Good, because it improves documentation of dependency requirements between components\n* Good, because placement information is contained within the CMDB\n* Bad, because a degree of expertise in deployment profiles (a more advanced fature) is required for more advanced use cases.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/0002-layer-deployments.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0002-layer-deployments.md",
+   "identity": "adr/0002-layer-deployments.md",
+   "adr_id": "2",
+   "title": "Layer Level Deployments",
+   "first_commit": "2021-01-05T01:45:35+00:00",
+   "first_sha": "b87267be40775b9ffff46e04681b637c84f80590",
+   "last_commit": "2021-05-20T02:53:11+00:00",
+   "author": "roleyfoley",
+   "email": "roleyfoley@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Layer Level Deployments\n\n* Status: proposed\n* Deciders: roleyfoley\n* Date: 2021-01-04\n\nTechnical Story: Support for deployments of shared resources across layers defined in hamlet\n\n## Context and Problem Statement\n\nWe want a way to define and manage the deployment of resources which are shared across multiple solutions.\nA number of services offered by cloud providers, namely AWS have services which can only be deployed once per AWS Account or enable a service across an entire account\nHow should we manage these resources to scale with our plugin support and to support the features we have introduced for our other deployments\n\n## Decision Drivers\n\n* Support required for multi region deployments to allow global image registry\n* Deprecation of the fragment and case style template processing which is currently used for account level deployments\n\n## Considered Options\n\n* Add support for a layer level component like deployment option\n* Refactor existing services to use a similar approach to extensions and apply extensions to layers\n* Extend occurrence support to work at any layer\n\n## Decision Outcome\n\nChosen option: \"Extend occurrence support to work at any layer\", because this allows for greater flexibility over the resources we can deploy and aligns with our other deployment processes\n\n### Positive Consequences\n\n* Occurrences will be the approach we use for all deployments\n* Opens support for any occurrence features that we have in place already or develop in the future\n* Makes our existing deployment model easier to follow ( our current tiers deployments will belong to the Segment and show that relationship )\n\n### Negative Consequences\n\n* Complexity in extending the occurrence building process\n* May introduce some complexity in managing default and required singleton instances of deployments. We can manage this and could potentially be a useful feature\n\n## Pros and Cons of the Options\n\n### Add support for a layer level component like deployment option\n\nThe idea is to introduce a layer based component structure, at the moment components are only available under tiers and we use the components to in turn create occurrences. This allows for users to define instances of components and to define specific types. This would introduce the idea of Foundations which are singleton types defined in a plugin and assigned to a defined layer. Foundations are configured as part of a layers configuration and would store its state based on the layer that it has been assigned to. This allows for the state of foundations to be used by multiple solutions. In this model the foundations for a layer would be defined by a plugin and remove the need for users to know which foundations create dependencies for other components.\n\nSo instead of a user being able to deploy multiple instances of a given component type each foundation type can only be deployed once, foundations can optionally offer to be disabled or enabled as part of their configuration\n\n* Good, because it aligns with our existing concepts around distinct deployment units which are standalone deployments\n* Good, because it is similar to own component style deployment process\n* Good, because we can use standardised naming and state querying ( resources, attributes etc. )\n* Bad, because it adds complexity in our processing and requires the implementation of a new occurrence structure ( one which supports singleton deployments )\n\n### Refactor existing services to use a similar approach to extensions and apply extensions to layers\n\nIn this approach add extension support to layers, in this approach each layer would have a single deployment unit and the configured extensions on the layer would determine what is created for a given deployment. The state would then be provided in a similar way that we do now. In this approach the user would need to define the layers they require and have knowledge of required and optional deployment resources\n\n* Good, because it is simple and simplifies the management of layer based deployments, i.e. add the layer level extensions you want and deploy\n* Good, because it aligns with the current approach and would require less work to implement\n* Bad, because it wouldn't gain the benefits of state sharing and would require global naming functions to support\n* Bad, because it could create conflicting resources as part of a shared single deployment\n\n### Extend occurrence support to work at any layer\n\nIn this option we would update the existing occurrence structure to support working at any layer. The occurrence structure has proven to be useful and has reached a pretty stable point. The occurrence building process would be extended to support dynamic loading based on the layer a given occurrence belongs to. This would allow each layer to define how naming, settings etc are determined and standardised configuration would be included where appropriate ( mostly component configuration ). Components definitions would then become global definitions which are available on layers they have support for. This approach would make use of all of the functionality included as part of occurrences including, deployment profiles, linking, instances, versions, schema generation and documentation.\n\n* Good, because it reuses a lot of what we already have\n* Good, because it unlocks the occurrence work we have done for use across the whole hamlet tenancy\n* Good, because it standardises all resource deployments into a single conceptual model ( components and occurrences )\n* Bad, because it will require significant redevelopment of our occurrence process and could introduce bugs across the board\n* Bad, because it could potentially create some complexity or \"lowest common denominator\" issues that impact the implementation of the occurrence\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0006-hamlet-docker-layer-release-mgmt.md",
+   "identity": "adr/0006-hamlet-docker-layer-release-mgmt.md",
+   "adr_id": "6",
+   "title": "Hamlet Engine distribution through docker image layers",
+   "first_commit": "2021-04-21T02:28:12+00:00",
+   "first_sha": "edc27486f6e48451a5ffeba2f4481bd4fc3896e5",
+   "last_commit": "2021-04-21T06:18:39+00:00",
+   "author": "roleyfoley",
+   "email": "roleyfoley@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Hamlet Engine distribution through docker image layers\n\n* Status: accepted\n* Deciders: roleyfoley, rossMurr4y, ml019\n* Date: 2020-21-04\n\n## Context and Problem Statement\n\nThe hamlet engine is made up of a collection of software components which are based on a number of different platforms ( bash, freemarker, java ).\nOur current distribution process collects these components into a multipurpose docker image that can handle most build and deploy tasks.\nThe collection process uses git to pull down the code from the software components and includes this in the image\n\nThe problem with this process is that it really only works in a controlled docker environment, making this image multipurpose has resulted in a large docker image and installing other versions of hamlet requires pulling a new image.\n\n## Decision Drivers\n\n* Having a simple installation process for user local installations or integration in existing processes\n* Simple version management support with a focus on handling the usage of features under active development within deployment pipelines\n* A tested and verified release process\n\n## Considered Options\n\n* Docker image layer as component artefacts with support for installing these images\n* Include all software components in the hamlet-cli python package\n\n## Decision Outcome\n\nChosen `Docker image layer as component artefacts with support for installing these images` as this is the most flexible option and provides a foundation for managing the distribution of hamlet code\n\n### Positive Consequences\n\n* Establishes a process for distributing packages which supports the different platforms we use\n* Opens up support for enhancing our release process to be safer and more flexible\n* Doesn't add too much overhead and is reasonably straightforward to understand\n\n### Negative Consequences\n\n* Is essentially implementing our own package manager which a lot of people already have and implement\n* Doesn't necessarily cover off the software platform dependencies but at least makes it get the scripts that can tell us that easily\n\n## Pros and Cons of the Options\n\n### Docker image layer as component artefacts with support for installing these images\n\nIn this process we would create docker images that contain the contents of the repository and would be based on the \"scratch\" image\n\nI.e.\n\n```Dockerfile\nFROM scratch\nCOPY ./ /\n```\n\nThis would essentially create a single layer image that just contains the files in the repository. This docker image would be tagged and pushed to a docker repository\nThe docker manifest lists the layers that are used in the docker image and the layers are tag.gz files when stored by the registry.\n\nPulling this layer down essentially provides an artefact that can be tagged and treated like docker images as required. This process would be based on the Docker registry spec v2 ( https://docs.docker.com/registry/spec/api/ )\n\nWe would add processes to the executors which would pull the appropriate images for the components locally, store them locally based on their version and use a shim based approach for setting the active version of the components\n\nThis could be incorporated into our exiting bootstrap process to enable the bash executor to use the process.\n\nWe could also add a consolidated layer of the components as the primary release artefact, this would be a single fully tested artefact based on all of the components combined at a given point.\n\n* Good, because docker images are agnostic from their software platform and can handle storing the different file types we want\n* Good, because the images can be retrieved without specific dependencies on other package managers\n* Good, because we can have both immutable and mutable releases, dev, nightly, stable and also have tagged releases\n* Good, because the layers can integrate with our existing docker images as required using the `COPY --from` syntax\n* Bad, because it is an uncommon pattern and does require a depth of docker image knowledge to maintain\n* Bad, because it requires executor specific implementation of the pull process\n\n### Include all software components in the hamlet-cli python package\n\nWe currently have a published pypi package for the hamlet-cli which just publishes the hamlet cli and doesn't include the underlying software components that are required for the cli to do actually do anything\nWe could extend the package build process to include the underlying software components inside the package so they are available on installation\n\n* Good, because this would provide a single command to install the cli and all the components\n* Good, because it uses a standard known installation method ( pip ) for installation processes\n* Bad, because it wouldn't allow for different version of the engine components independent from the cli to be used. They could be done through virtual envs but would require publishing packages on each push to a component\n* Bad, because it doesn't accomodate the idea of different executors running the engine. This would need to be implemented in each executor\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0005-convention-based-logging-classes.md",
+   "identity": "adr/0005-convention-based-logging-classes.md",
+   "adr_id": "5",
+   "title": "[Convention-based Logging Classes]",
+   "first_commit": "2021-04-20T15:40:30+10:00",
+   "first_sha": "81754e9d0114b38a26e05588f9087bcf992571e7",
+   "last_commit": "2021-04-20T15:40:30+10:00",
+   "author": "Ross Murray",
+   "email": "ross.murray@protonmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# [Convention-based Logging Classes]\n\n* Status: accepted\n* Deciders: @roleyfoley @ml019 @kshychko @ken9ross @rossmurr4y\n* Date: 2021-04-13\n\nTechnical Story:\nIn accepted [ADR-0004](./0004-provide-error-codes-on-handled-exception.md), the need for error codes was outlined. The agreed on solution was to implement logging classes to group together log messages (of which Errors are one). \n\nIn its [implementation log](https://github.com/hamlet-io/architectural-decision-log/issues/7) the first step was to identify what classes should be implemented and how they should be structured. Subsequent discussion mapped out the classes and structure required, which will are now accepted and documented separately in this ADR.\n\n## Context and Problem Statement\n\nHamlet Deploy as a product is made up from several \"components\". They are not written in the same coding/scripting language and so their outputs - particularly when it comes to log behaviour and error messages - are quite different from each other. When an error or debug message is received, how can the end-user and the Hamlet Deploy developer both gain greater insight from the message that is received?\n\n## Decision Drivers <!-- optional -->\n\n* A solution to this issue must be possible in Bash, Python and Freemarker (Java)\n* It must be simple to maintain\n\n## Considered Options\n\n* Use logging codes that follow a numerical convention\n* Use an inheritance-based class approach\n\nSeparate to the logging code structure, the discussions identified two options as to _where_ log code definitions should be stored:\n\n* Create a centralised definition\n* Assign a range to each Hamlet Framework Component and have each one manage the definitions independantly\n\n### Use Logging Codes Followig a Numerical Convention\n\nA numerical system could be defined where each digit in a given code indicates the message severity (i.e debug, trace, fatal, info etc.) and the Hamlet Deploy Framework Component message origin. Additional digits would then be used to indicate the precise nature of that error.\n\nA 4-digit system should provide sufficient coverage.\n\n> *XXX = Severity\n> X*XX = Hamlet Framework Component\n> XX** = Unique log code\n\nFor the first digit, existing log message severities would be used. Some digits are currently listed as \"spare\" severity levels which should simmilarly be spares under this system.\n\nFor the second digit, the Hamlet Framework Components would be assigned as follows:\n\n> Generic/Unaccounted For Error - 0\n> Freemarker Wrapper (Java) - 1\n> Engine - 2\n> Engine Plugins - 3\n> Executor - bash - 4\n> Executor - python - 5\n\n### Use an Inheritance-based Class Approach\n\nDesign a layered log message system where a log message inherits its severity and origin from parent classes, which themselves contribute greater detail to the message.\n\n> Severity\n>   Origin\n>     Message\n\n### Centralised Code Definitions\n\nAssuming the selection of the numerical convention-based approach, a central definition of the codes is developed. Each Hamlet Framework Component would then be updated with a mechanism to interpret and use them.\n\n### Per-Component Code Range\n\nAssuming the selection of the numerical convention-based approach, digits 3 & 4 would then provide each Framework Component a range of 99 possible unique log messages.\n\nEach Component would create a \"dictionary\" of this range and their associated log messages. When a new message is written, either an existing digit is used again (assuming matching cause of the log message) or the next unallocated number in the 00-99 range is added to the dictionary.\n\nEach Component would then simply append the 2-digit-code to the message's severity & it's own assigned Framework Component digit to form the logging code.\n\n## Decision Outcome\n\nChosen option:  _\"Use Logging Codes Following a Numerical Convention\"_ with _\"Per-Component Code Range\"_\n\nIt was deemed easier to implement and there seemed little benefit and greater complexity to implementing an inheritance-based approach. \n\nA code range allows each component to implement the definitions in the way that most makes sense to it.\n\n## Pros and Cons of the Options\n\n### Use Logging Codes Following a Numerical Convention\n\n* Good, because its easy to maintain\n* Good, because each Hamlet Framework Component has easily understood log message boundaries\n* Good, because a good deal of information can be determined from an log message code on its own\n* Good, because it standardises the approach to log messages across Hamlet Deploy\n* Bad, because there are no rules around how and when an existing code should be reused and when a new one assigned\n\n### Use an Inheritance-based Class Approach\n\n* Good, because inheritance will enable the greatest re-use of log codes\n* Good, because a log message can contain varying scopes of detail - ie. a known limitation of the Engine for instance could be inherited by a child, and a subsequent error will not only indicate the cause but provide background on that limitation\n* Bad, because it's greater work for each of the Hamlet Framework Components to implement up-front (a greater deal of the work is front-loaded)\n\n### Centralised Code Definitions\n\n* Good, because there is a single place to maintain\n* Good, because this is easily understood by users or new developers\n* Bad, because the individual mechanisms for interpreting the definitions provide an unnecessary point of failure in Hamlet Deploy\n* Bad, because these mechanisms will require more overhead than alternative\n* Bad, because it has a higher upfront development cost to alternative\n\n### Per-Component Code Range\n\n* Good, because each Component is entirely responsible for how it defines and maintains the definitions\n* Good, because this allows each Component to implement an minimal-effort approach\n* Good, because the maintenance overhead should be considerably lower than alternative\n* Good, because the range is a clear boundary for the Component, preventing overlap with other Components\n* Good, because choosing to implement an additional digit at a later time should require little effort, and may only be necessary in some of the Framework Components\n* Bad, because it's likely that some Framework Components will require a greater range than others\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "hamlet-io/architectural-decision-log#7",
+     "kind": "issue",
+     "url": "https://github.com/hamlet-io/architectural-decision-log/issues/7",
+     "number": "7"
+    }
+   ],
+   "mentioned_paths": [
+    "/0004-provide-error-codes-on-handled-exception.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0004-provide-error-codes-on-handled-exception.md",
+   "identity": "adr/0004-provide-error-codes-on-handled-exception.md",
+   "adr_id": "4",
+   "title": "[Provide Users an Error Code on Fatal Error]",
+   "first_commit": "2021-03-03T11:12:35+11:00",
+   "first_sha": "99169cc5952e6394ded773d265798fbd5187bddc",
+   "last_commit": "2021-03-03T11:12:35+11:00",
+   "author": "Ross Murray",
+   "email": "ross.murray@protonmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# [Provide Users an Error Code on Fatal Error]\n\n* Status: accepted\n* Deciders: rossmurr4y, roleyfoley, ml019\n* Date: 2021-03-02\n* Implementation Log: https://github.com/hamlet-io/architectural-decision-log/issues/7\n\n## Context and Problem Statement\n\nHamlet Deploy is not a compiled binary file nor is it written in a single programming or scripting language. It is a combination of all of the above; \n * Java for the Freemarker wrapper, \n * Freemarker has its own DSL, \n * the original Hamlet Deploy Executor is presently primarily Bash scripts and \n * the \"Click\" CLI Executor is written in Python. \n \nWhen a handled exception occurs, there is no consistency in the error information provided. A handled error in Freemarker is likely to provide a large JSON object for review, whilst an error in the Bash Executor will provide a brief summary of the problem. Because these summaries are not always unique-per-error, many provide only a generic error message. \n\n\n## Considered Options\n\n* create a manually-maintained library of error codes & assign one to each handled error\n* introduce logging classes, that group together messages of a simmilar kind\n\n## Decision Outcome\n\nChosen option: introduce logging classes, that group together messages of a simmilar kind. Later we will re-evaluate to determine if a more specific approach to error handling (such as individual error codes outlined above) would remain useful / necessary and if so can build upon this framework.\n\n\n### Manually-maintained library of error codes\n\n* Good - will provide a method for providing tailored error messages and possible fixes to the user\n* Good - could be extended to provide an avenue for review of the most-encountered error messages\n* Good - improved reporting / communication around errors experienced\n* Good - consistency across the spectrum of potential error sources\n* Bad - increase in maintenance overhead\n* Bad - may be a challenge to enforce consistently\n* Bad - difficult to make extensible by community content\n\n\n### Logging classes\n\n* Good - provide a method for tailoring messages, whilst allowing for re-usability\n* Good - accessible to community content\n* Good - consistency across the spectrum of potential error sources\n* Good - framework could be extended / upgraded at a later time\n* Good - minor maintenance overhead once established\n* Bad - less specificity is possible when compared to unique error messages\n\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "hamlet-io/architectural-decision-log#7",
+     "kind": "issue",
+     "url": "https://github.com/hamlet-io/architectural-decision-log/issues/7",
+     "number": "7"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0001-executor-engine-separation.md",
+   "identity": "adr/0001-executor-engine-separation.md",
+   "adr_id": "1",
+   "title": "Executor Engine Separation",
+   "first_commit": "2021-02-24T13:49:14+11:00",
+   "first_sha": "73310fd1d419579030101192ea89bc17d4723b0f",
+   "last_commit": "2021-02-24T13:49:14+11:00",
+   "author": "Michael Foley",
+   "email": "roleyfoley@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Executor Engine Separation\n\n* Status: accepted\n* Deciders: roleyfoley, ml019\n* Date: 2020-02-13\n\n## Context and Problem Statement\n\nHamlet is currently built on two application stacks, a set of bash scripts which run deployments and invoke the generation of outputs, and a freemarker wrapper with supporting templates which handles the creation of outputs. There is a tight coupling between these components and it is difficult to determine the authoritative source of context which we share between the these to stacks.\n\n## Decision Drivers\n\n* To improve user experience we have introduced a cli tool which is based on the [click library](https://click.palletsprojects.com) which is built in python. Integrating this cli into the environment has highlighted the need for this cli tool but also exposed the tight coupling between these two application stacks\n\n## Considered Options\n\n* Replicate the cli feel provided by click into our existing bash environment and maintain the existing coupling\n* Migrate the bash processes into a Java based application which can call freemarker ( a java based process )\n* Create a clearly defined abstraction layer between the existing bash scripts and the freemarker wrapper\n\n## Decision Outcome\n\nChosen option: \"Create a clearly defined abstraction layer between the existing bash scripts and the freemarker wrapper\"\nMakes our architecture cleaner and provides a clear way for hamlet to scale in the future\n\n### Positive Consequences\n\n* We have more explicit definitions of what hamlet is made of and how it works\n* We can make choices on appropriate tools for specific services within hamlet\n\n### Negative Consequences\n\n* Defining and building the layer separation will add complexity to hamlet\n\n## Pros and Cons of the Options\n\n### Replicate the cli feel provided by click into our existing bash environment and maintain the existing coupling\n\nRather than looking at introducing a new tool into hamlet we instead update our existing bash based scripts to offer a centralised CLI experience. In this model a central bash script ( called hamlet ) would invoke the other bash scripts that we currently need to know exist and to call.\n\n* Good, because this removes extra dependencies on other tool sets and the education required to introducing these tools\n* Good, because it requires less effort to introduce and migrate to\n* Bad, because the bash testing and tooling services aren't as mature as other languages as bash is mostly intended for scripts rather than applications\n\n### Migrate the bash processes into a Java based application which can call freemarker ( a java based process )\n\nThis would move the bash scripts we currently have into our freemarker wrapper java application. This would require rewriting all of our bash scripts into java equivilents and providing a JAVA based cli\n\n* Good, because this would reduce the number of application stacks involved in the hamlet system\n* Good, because this would be cross platform as java is intended to be cross platform\n* Bad, because this would require significant training and retooling of what we currently have\n\n### Create a clearly defined abstraction layer between the existing bash scripts and the freemarker wrapper\n\nThis would maintain our existing tooling but introduce an abstraction layer between the two services, in this model we would define the freemarker components as the engine, this is responsible for creating outputs from the the contents of the CMDB which outline a list of instructions as contracts and any supporting documents that they require. The bash components would become an executor, they are responsible for actioning the outputs provided from the engine and providing the outputs from these executions back to the CMDB.\n\nIn this model the engine would be invoked with a default set of parameters requesting a generation contract, the engine would create an output which outlines the additional output documents required for a given action. The executor then invokes the engine using the parameters provided in the contract to create the outputs required. This could include other contracts which the executor then runs to perform additional tasks in order to complete a given action. T\n\nThis requires the executor to essentially implement, the contracts would be made up of defined steps and include parameters required to complete the step. The executor is responsible for providing an implementation of all steps defined in the engine\n\n* Good, because this creates a clear line between what the bash tooling performs and what the freemarker tooling performs\n* Good, because this defines functionality within hamlet rather than basing it on tooling\n* Good, because this allows for the functionality implementation change if required with reduced impact and redevelopment\n* Bad, because it introduces a new layer to the way that hamlet works which requires design and implementation in our existing stack. So rather than rewriting existing processes we need to redevelop our existing implementation to incorporate this design\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0003-provide-implementation-tracking-on-records.md",
+   "identity": "adr/0003-provide-implementation-tracking-on-records.md",
+   "adr_id": "3",
+   "title": "Include Implementation Log as part of Decision Records",
+   "first_commit": "2021-01-21T20:56:36+11:00",
+   "first_sha": "01f0d10370eb3ff604839d414343de7d8312c55e",
+   "last_commit": "2021-01-21T20:56:36+11:00",
+   "author": "Michael Foley",
+   "email": "roleyfoley@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Include Implementation Log as part of Decision Records\n\n* Status: accepted\n* Deciders: roleyfoley, rossMurr4y\n* Date: 2021-01-19\n* Implementation Log: https://github.com/hamlet-io/architectural-decision-log/issues/3\n\n## Context and Problem Statement\n\nWhen reviewing outstanding ADR records which haven't been accepted we noticed that there isn't anything in the record which allows you to see the implementation of a given decision. This makes it hard show progress towards in implementing a decision once it has been reached.\n\n## Considered Options\n\n* Use the status of the record and review records regularly\n* Include a implementation log which needs to be created for each ADR\n\n## Decision Outcome\n\nChosen option: \"Include a implementation log which needs to be created for each ADR\", because this allows for recorded ongoing progress of the the decision and maintains conversations around the decision through their implementation\n\n\n### Positive Consequences\n\n* We can clearly define an epic level work item to ensure that the decision is implemented\n* It shows the reality of the records outcomes which is useful during reviews of the process\n* We can reference the decision as part of other pieces of work\n\n### Negative Consequences\n\n* Additional work overhead when creating records\n* Risk of losing the concrete nature of the records where the implementation log starts new conversations that are note reflected in the record or new records\n\n## Pros and Cons of the Options\n\n### Use the status of the record and review records regularly\n\nThis option is to essentially use the records as they are now but with a new status of `Implemented` which would be after the `Accepted` status. This would require someone to update the ADR with the status once they have implemented the record\n\n* Good, because it doesn't require additional work in following a new log\n* Good, because it aligns with the ADR process\n* Bad, because it requires ongoing reviews and requires people to be aware of the records more deeply\n\n### Include a implementation log which needs to be created for each ADR\n\nIn this option we would create an implementation log as a Github Ticket and reference this as part of the ADR. The Log would be created when the record reaches the `Accepted` status. The log would be assigned to a maintainer and any work which implements the record would be recorded in the log, using links from other issues or PR's. Once the log has been closed the record is considered implemented\n\n* Good, because it assigns responsibility to a maintainer for the record\n* Good, because it provides an easy to demonstrate tracking record of the work required to implement the record\n* Good, because it will show real world usage of the record\n* Bad, because it requires additional maintenance and adds a new step to the process\n* Bad, because it may create augmentations to the record which aren't reflected in the record\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "hamlet-io/architectural-decision-log#3",
+     "kind": "issue",
+     "url": "https://github.com/hamlet-io/architectural-decision-log/issues/3",
+     "number": "3"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/0000-use-markdown-architectural-decision-records.md",
+   "identity": "adr/0000-use-markdown-architectural-decision-records.md",
+   "adr_id": "0",
+   "title": "Use Markdown Architectural Decision Records",
+   "first_commit": "2020-12-18T00:08:59+00:00",
+   "first_sha": "9ee131569e5dacd3da17501a208f11beb7c3f767",
+   "last_commit": "2020-12-18T00:08:59+00:00",
+   "author": "roleyfoley",
+   "email": "roleyfoley@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use Markdown Architectural Decision Records\n\n## Context and Problem Statement\n\nWe want to record architectural decisions made in this project.\nWhich format and structure should these records follow?\n\n## Considered Options\n\n* [MADR](https://adr.github.io/madr/) 2.1.2 \u2013 The Markdown Architectural Decision Records\n* [Michael Nygard's template](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions) \u2013 The first incarnation of the term \"ADR\"\n* [Sustainable Architectural Decisions](https://www.infoq.com/articles/sustainable-architectural-design-decisions) \u2013 The Y-Statements\n* Other templates listed at <https://github.com/joelparkerhenderson/architecture_decision_record>\n* Formless \u2013 No conventions for file format and structure\n\n## Decision Outcome\n\nChosen option: \"MADR 2.1.2\", because\n\n* Implicit assumptions should be made explicit.\n  Design documentation is important to enable people understanding the decisions later on.\n  See also [A rational design process: How and why to fake it](https://doi.org/10.1109/TSE.1986.6312940).\n* The MADR format is lean and fits our development style.\n* The MADR structure is comprehensible and facilitates usage & maintenance.\n* The MADR project is vivid.\n* Version 2.1.2 is the latest one available when starting to document ADRs.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "doi.org/10.1109/TSE.1986.6312940"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 8,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "8"
+}

@@ -1,0 +1,577 @@
+{
+ "repo": "Azure-ukgov-paas/paas-team-manual",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2017-02-23T15:02:33+00:00",
+ "last_commit": "2017-02-23T15:02:33+00:00",
+ "n_commits": 1,
+ "n_authors": 1,
+ "n_files": 56,
+ "n_code_files": 1,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 18,
+ "adrs": [
+  {
+   "path": "docs/architecture_decision_records/ADR001-manifest-management.md",
+   "identity": "docs/architecture_decision_records/ADR001-manifest-management.md",
+   "adr_id": "1",
+   "title": "Context",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "Context\n=======\nThe alpha initially took the approach of starting with a vanilla set of cloud\nfoundry manifests, and merging new values into it using spiff. This became\ndifficult to reason about, and cf-release was forked because it was easier than\noverriding necessary values using spiff. However, the confusing spiff hierarchy\nremained.\n\nDecision\n========\n\nWe will create our own set of manifests based on those in cf-release. \n\nWe will modify these as required.\n\nWe will use spruce to merge a series of files into the yml required by cloud\nfoundry\n\nWe will name the files with a numeric prefix and rely on shell globbing to\ndetermine the merge order rather than listing the merge order in the\nbuild-manifest script.\n\nStatus\n======\n\nAccepted\n\nConsequences\n============\n\nWe will need to define an upgrade path for our cloud foundry manifests - making\nsure we pull in the required values from the new release manifests into ours.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR002-concourse-pool-resource.md",
+   "identity": "docs/architecture_decision_records/ADR002-concourse-pool-resource.md",
+   "adr_id": "2",
+   "title": "Context",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "Context\n=======\nWhen building pipelines using concourse, we investigated using the [pool\nresource](https://github.com/concourse/pool-resource) in order to control flow\nthrough jobs. This was an alternative to the use of the \n[semver resource](https://github.com/concourse/semver-resource).\n\nThese 2 resources are both workarounds to solve the problem of triggering jobs\nwhen we haven't made changes to a resource. \n\nThe problem is that the pool resource relies on write access to a github repo,\nwhich means we must pass public keys that allow this access into the pipeline\nand deployed concourse instance - we want to minimise the number of credentials\nwe pass, and the semver resource relies on AWS credentials that are already\npassed.\n\n\n\nDecision\n========\n\nWe will not use the pool resource for flow between jobs - instead we will use\nthe semver resource\n\nStatus\n======\n\nAccepted\n\nConsequences\n============\n\nThis was an investigation into a different approach, so no consequences\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR003-AWS-credentials.md",
+   "identity": "docs/architecture_decision_records/ADR003-AWS-credentials.md",
+   "adr_id": "3",
+   "title": "Context",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "Context\n=======\n\nAmazon Web Services (AWS) are our current Infrastructure as a Service (IaaS)\nprovider. Our deployment tooling (Concourse, Terraform, BOSH, etc.) and\nCloud Foundry components (Cloud Controller, RDS broker, blobstore clients,\netc.) use the APIs to manage or access IaaS resources.\n\nThe most common mechanism for authenticating the API calls is to create an\nIdentify and Access Management (IAM) user with the appropriate permissions,\ngenerate an Access Key ID and Secret Access Key for that user, and export\nthose as environment variables. `AWS_ACCESS_KEY_ID` and\n`AWS_SECRET_ACCESS_KEY` are the standard environment variable names used by\nmost utilities and libraries.\n\nThe problem with this approach is that it's very easy to accidentally leak\nthe plain text keys. They can appear in output from your shell, which you\nmight copy+paste into a gist or email when debugging a problem. You might\nadd them to your shell configuration or include them in a script, which can\nbe pushed to a public code repository.\n\nOur team have leaked keys like this on more than one occasion. It's worth\nnoting that even if you realise that you've done this, delete the commit and\nrevoke the keys, they may have already been used maliciously because\nautomated bots monitor sites like GitHub using the [events firehose][] to\ndetect any credentials.\n\n[events firehose]: https://developer.github.com/v3/activity/events/\n\nAs an alternative to using pre-generated keys, AWS recommends that you use\n[IAM roles and instance profiles][] when accessing the API from EC2\ninstances. You delegate permissions to the EC2 instance and temporary\ncredentials are made available from the instance metadata service. Most\ntools and libraries automatically support this. The credentials are\nregularly rotated and never need to be stored in configuration files.\n\n[IAM roles and instance profiles]: http://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#use-roles-with-ec2\n\nDecision\n========\n\nTo reduce the likelihood of us leaking AWS keys we will use IAM roles and\ninstance profiles for all operations that run from EC2 instances. This\nincludes everything that happens within Concourse and Cloud Foundry.\n\nTo reduce the impact of us leaking AWS keys we will use an IAM policy with\nan [`aws:SourceIp` condition][condition] to\nenforce that IAM accounts for team members are only used from the office IP\naddresses.\n\n[condition]: http://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_examples.html#iam-policy-example-deny-source-ip-address\n\nThe IAM roles, profiles, and policies will be managed by our\n[aws-account-wide-terraform][] repo.\n\n[aws-account-wide-terraform]: https://github.gds/government-paas/aws-account-wide-terraform\n\nStatus\n======\n\nAccepted\n\nConsequences\n============\n\nWe'll still need to use AWS keys for operations that run outside of EC2.\nCare must be taken when storing and handling these credentials. These\noperations include:\n\n- Creation of Bootstrap Concourse instance\n- Running of `aws-account-wide-terraform`\n\nUsing IAM profiles has the drawback that any process running on the VM can\nget the same credentials. This model does not play well when it is required\nto assign the credentials to specific processes running in different containers\n(for example concourse, CF apps), as all the containers will have access to\nthe AWS IAM profile.\n\nWe'll need to maintain our own forks of some standard Concourse resources to\nadd support for IAM roles and instance profiles because the maintainers\ndon't wish to support this feature ([concourse/s3-resource/pull/22][]).\nThese resources include:\n\n[concourse/s3-resource/pull/22]: https://github.com/concourse/s3-resource/pull/22\n\n- [alphagov/paas-s3-resource](https://github.com/alphagov/paas-s3-resource)\n- [alphagov/paas-semver-resource](https://github.com/alphagov/paas-semver-resource)\n\nWe'll need to use the office VPN to administer AWS when outside of the\noffice. This matches what we have to do to administer Concourse or Cloud\nFoundry from outside the office. There are disaster recovery provisions for\nthe VPN if the office has connectivity problems.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "concourse/s3-resource#22",
+     "kind": "pull",
+     "url": "https://github.com/concourse/s3-resource/pull/22",
+     "number": "22"
+    }
+   ],
+   "mentioned_paths": [
+    "docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html",
+    "docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_examples.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR004-domain-naming-scheme.md",
+   "identity": "docs/architecture_decision_records/ADR004-domain-naming-scheme.md",
+   "adr_id": "4",
+   "title": "Naming considerations",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "Context\n=======\nAs part of our deployment we have a pipeline, where changes that are made can move from a development environment through to production illustrated thusly:\n\n![pipeline image](images/pipeline.jpg)\n\nThere are a number of externally available endpoints that are accessed to manage and view information about the platform, as well as issue commands via the Cloud Foundry API. In addition to this, a URL also needs to be available to access Apps hosted on the platform. These need to be accessed via some sort of sensible URL.\n\nThe reason for splitting system domains from app domains was to prevent applications from stealing traffic to CF components (for example, api.<domain>) or masquerading as official things of the platform (for example, signup.<domain>).\n\n### Naming considerations\nA number of aspects were considered as part of the naming process.\n\n* Clear sense of purpose\n* Clear distinction between Production and other Environments\n* No overly technical names (for example, hosting/paas/scalable-elastic-public-government-hosting)\n* Prevent possibility of domains suggesting 'live' service, for example if we allowed [app name].paas.gov.uk it could appear as thought they were live services.\n\n\nDecision\n========\nFor _non_ production environments we will be using the following domains:\n\n* [environment name].cloudpipeline.digital\n* [app name].[environment name].cloudpipelineapps.digital\n\nFor our production environment we will be using the following domains:\n\n* cloud.service.gov.uk\n* [app name].cloudapps.digital\n\nIt is important to note that live services will 'Bring Your Own' domain, apps available at cloudapps.digital are not live 'production' applications.\n\nDomain Overview\n===============\n\n### Development Domains\nPurpose | URL |\n------------ | -------------\nDeployer Concourse | deployer.foo.dev.cloudpipeline.digital\nCloud Foundry API | api.foo.dev.cloudpipeline.digital\nCloud Foundry User Account and Authentication | uaa.foo.dev.cloudpipeline.digital\nApplications | bar.foo.dev.cloudpipelineapps.digital\n\n### Continuous Integration (CI) Domains\nPurpose | URL |\n------------ | -------------\nDeployer Concourse | deployer.master.ci.cloudpipeline.digital\nCloud Foundry API | api.master.ci.cloudpipeline.digital\nCloud Foundry User Account and Authentication | uaa.master.ci.cloudpipeline.digital\nApplications | bar.master.ci.cloudpipelineapps.digital\n\n### Staging Domains\nPurpose | URL |\n------------ | -------------\nDeployer Concourse | deployer.staging.cloudpipeline.digital\nCloud Foundry API | api.staging.cloudpipeline.digital\nCloud Foundry User Account and Authentication | uaa.staging.cloudpipeline.digital\nApplications | bar.staging.cloudpipelineapps.digital\n\n### Production Domains\nPurpose | URL |\n------------ | -------------\nDeployer Concourse | deployer.cloud.service.gov.uk\nCloud Foundry API | api.cloud.service.gov.uk\nCloud Foundry User Account and Authentication | uaa.cloud.service.gov.uk\nApplications | bar.cloudapps.digital\n\nStatus\n======\n\nAccepted\n\nConsequences\n============\nCertificates etc. had to be purchased, domains registered, and our automated deployments configured to allow us to specify the domains for each stage of the pipeline.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "images/pipeline.jpg"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR005-pingdom-healthchecks.md",
+   "identity": "docs/architecture_decision_records/ADR005-pingdom-healthchecks.md",
+   "adr_id": "5",
+   "title": "Positive",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "Context\n=======\n\nWe wanted to open up access to tenant applications in our production environment. \n\nAs part of an earlier story, Pingdom checks were set up for a healthcheck application in CI, Staging, and Production. At this stage applications were not accessible from non-office IP addresses.\n\nThe problem we faced was a need to test the code introduced to make our production environment accessible to the world. Initially, we suggested applying the same change to our staging environment. However, this approach means all applications in staging will be accessible from anywhere.\n\nIf we use Pingdom to assert an application is accessible from the outside world then we need to remove the explicit rules (security groups) allowing Pingdom traffic. This means our CI environment would not be accessible to Pingdom probes.\n\n* [#116104189 - set up Pingdom](https://www.pivotaltracker.com/story/show/116104189)\n* [#115347323 - allow public access to tenant applications](https://www.pivotaltracker.com/story/show/115347323)\n\nDecision\n========\n\nIt was decided we would make the staging environment accessible to the outside world as well as production, and define future work for removing the CI Pingdom check and security groups allowing Pingdom probes, and setting up tests from the pipeline which use the Pingdom API.\n\nGiven that the advantages relate to the availability of our production environment, they outweigh not having an automated healthcheck on an application in our CI environment. However, we remain open to hearing solutions to providing healthchecks for CI in future.\n\nStatus\n======\n\nProposed\n\nConsequences\n============\n\nA story is now required to remove the Pingdom health check for our CI environment, and the security groups allowing Pingdom probes.\n\n### Positive\n* We are now able to test accessibility using the staging environment\n* We are now able to use Pingdom to assert not just application health, but routing as well.\n* We have maintained consistency between staging and production\n\n### Negative\n* Any applications in our staging environment need to be considered for whether they are suitable to be public.\n* We would no longer have healthchecks via Pingdom for our CI environment.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#116104189",
+     "kind": "hash",
+     "url": "",
+     "number": "116104189"
+    },
+    {
+     "key": "#115347323",
+     "kind": "hash",
+     "url": "",
+     "number": "115347323"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR006-rds-broker.md",
+   "identity": "docs/architecture_decision_records/ADR006-rds-broker.md",
+   "adr_id": "6",
+   "title": "Context",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "Context\n=======\n\nWe need to provide tenants with the ability to provision databases for use in\ntheir applications. Our first iteration of this will be using RDS.\nWe investigated some implementations of a service broker which supported RDS\n\n - [cf platform eng](https://github.com/cf-platform-eng/rds-broker)\n - [18F](https://github.com/18F/rds-service-broker)\n\n\nDecision\n========\n\nWe will use the [cf platform eng](https://github.com/cf-platform-eng/rds-broker)\nrds broker. As this is not a supported product, we will fork this and maintain\nthis and implement new features ourselves.\n\nStatus\n======\n\nAccepted\n\nConsequences\n============\n\nWe will be maintaining a new service broker, but have a head start on creating\nit by basing it on an existing service broker.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR007-terminating-tls-at-elbs.md",
+   "identity": "docs/architecture_decision_records/ADR007-terminating-tls-at-elbs.md",
+   "adr_id": "7",
+   "title": "Context",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "\nContext\n=======\n\nWe needed to decide where to terminate TLS connections for public and tenant\nfacing endpoints and how to manage the corresponding private keys.\n\nWe had previously decided to only support HTTPS to both deployed applications\nand Cloud Foundry endpoints.\n\nAt the time of writing there were 4 endpoints to consider:\n\n- Deployed applications (gorouter). Accessed by the public.\n- CF API. Accessed by tenants.\n- UAA. Accessed by tenants.\n- Loggregator. Accessed by tenants.\n- SSH proxy. In theory accessed by tenants, but not working in our environment.\n\nWe had an existing credentials store suitable for storing the private keys at\nrest. Only a small number of engineers within the team can access; the same\nones that can make IAM changes using our account-wide terraform config.\n\nPlacing ELBs in front of public-facing services is an architectural pattern\nadvised by Amazon [in order to reduce attack \nsurface](https://d0.awsstatic.com/whitepapers/DDoS_White_Paper_June2015.pdf).\nSpecifically they advise that it helps withstand volumetric Denial of Service\nattacks; the ELB handles TCP connections and therefore the responsibility for\nhandling DDOS at Layer 4 and below resides with the ELB team.\n\nWe did a spike, where we attempted to place everything public-facing or\ntenant-facing behind ELBs. We found that:\n\n- In HTTP mode the ELBs do not support web sockets. This is known to break\n  loggregator, which relies on them for log streaming. It would also prevent\n  tenants from using web sockets within their applications.\n- When the ELB is in TCP mode, we have no way of communicating the client IP\n  address to the downstream service. Practical consequences of this would be\n  that tenants would be unable to see in their logs who is using their service or\n  do any access control based on client IP address.\n\nIn attempting to solve the second problem, we explored some options:\n\n- ELB has support for the [Proxy\n  Protocol](http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt), but\n  unfortunately none of the downstream services, such as gorouter, support it. It\n  seemed simple to add support to gorouter.\n- We could introduce another intermediary proxy such as HAProxy, which\n  understands the proxy protocol and adds or appends to an `X-Forwarded-For`\n  header with the client IP address as provided via the proxy protocol.\n\nDecision\n========\n\nWe decided to:\n\n- use the ELB to terminate TLS\n- use the ELB in TCP mode\n- submit proxy protocol support to gorouter\n- use S3 logging to ensure we have the IP addresses of clients using the CF\n  endpoint\n\nStatus\n======\n\nAccepted\n\nConsequences\n============\n\n- We played a [spike to investigate setting X-Forwarded-For\n  correctly](https://www.pivotaltracker.com/projects/1275640/stories/116619465)\n  which produced an [upstream PR to add proxy protocol support to\n  gorouter](https://github.com/cloudfoundry/gorouter/pull/126) and [another to introduce\n  X-Forwarded-Proto headers](https://github.com/cloudfoundry/gorouter/pull/127)\n- As an interim measure until gorouter gained support, [we added an\n  intermediate HAProxy to introduce `X-Forwarded-For` and `X-Forwarded-Proto`\n  headers](https://www.pivotaltracker.com/story/show/116309951).\n  \n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "cloudfoundry/gorouter#126",
+     "kind": "pull",
+     "url": "https://github.com/cloudfoundry/gorouter/pull/126",
+     "number": "126"
+    },
+    {
+     "key": "cloudfoundry/gorouter#127",
+     "kind": "pull",
+     "url": "https://github.com/cloudfoundry/gorouter/pull/127",
+     "number": "127"
+    }
+   ],
+   "mentioned_paths": [
+    "d0.awsstatic.com/whitepapers/DDoS_White_Paper_June2015.pdf",
+    "www.haproxy.org/download/1.5/doc/proxy-protocol.txt"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR008-haproxy-for-request-rewriting.md",
+   "identity": "docs/architecture_decision_records/ADR008-haproxy-for-request-rewriting.md",
+   "adr_id": "8",
+   "title": "Positive",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "Context\n=======\n\nWe want to serve [HSTS\nheaders](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security) for all\nHTTPS requests to the apps domains, but it will safeguard existing users from\nbeing MITMed over insecure connections and it will improve the user experience\nwhen they click on a hostname that doesn't have a protocol.\n(Note that without pre-loading in browsers this won't help first time users,\nbut that is out of context)\n\nWe want to leave open the option of able to override these headers from\nthe tenant application if they wish.\n\nThis feature requires conditionally process and modify the request headers.\nThere are several possible implementations:\n\n 1. Implement the logic in the `gorouter` itself: `gorouter` shall process\n   and add the header if required, by:\n    * Supporting the specific HSTS headers, and allowing configure some\n      sort of behaviour and default value.\n    * Allow inject any additional header if they are missing.\n\n   But [current `gorouter` implementation](https://github.com/cloudfoundry/gorouter/commit/0d475e57b1742c42ba6d98d1ed853edc9f709893)\n   does not support any of these features, which require being added.\n\n 2. Add some intermediate proxy (for example nginx, haproxy) in front of\n   the go-routers and after the ELB.\n\n 3. Implement it in a external CDN in front of PaaS origin (PaaS LB entry point):\n   All the commercial CDN have the capacity to add additionally headers\n   conditionally.\n\n 4. AWS ELB: They do not support this logic and will not in the short term.\n   In consequence they cannot be used to solve this problem.\n\n\nDecision\n========\n\nWe do not want to add any additional logic in the CDN, as they will\nbe an optional part of the platform and we will try to keep as simple\nas possible.\n\nWe consider that the optional solution would be implement this logic in\nthe `gorouter`, but that requires some development effort and a PR being merged\nupstream.\n\nBecause that we will implement, in the short term, the second option: a proxy\nin front of the `gorouter`.\n\n * We will implement [HAproxy](http://www.haproxy.org/) in front of the go router.\n   * Ha-proxy is the default LB solution for the official CF distribution.\n   * It is really powerful and has good support.\n   * Enough features to cover our needs.\n\n * It will be setup colocated with the `gorouter`, proxying directly to\n   localhost.\n\n * We will do SSL termination in HAProxy, and plain text to `gorouter`. This\n   is OK as the two services are colocated in the same VM.\n\n * We will reuse the code from [official haproxy job from cf-release](https://github.com/cloudfoundry/cf-release/tree/master/jobs/haproxy),\n   although we will have to fork it to add additional settings in the\n   haproxy configuration.\n\n\nFuture work:\n\n * We will implement and propose a PR to add logic in go-router to allow\n   define additional headers.\n\n\nStatus\n======\n\nAccepted\n\nConsequences\n============\n\n### Positive\n\n * We will be able to easily add more logic to rewrite the HTTP communication\n   to the applications using HAProxy.\n\n * HAProxy SSL termination has better performance than `gorouter`, although\n   this has a low impact because ELB is terminating the end user connections\n   and using keep alive connections to the gorouter/haproxy.\n\n * HAProxy supports web-sockets and does HTTP multiplexing.\n\n * We can implement HTTP => HTTPS redirect in HAProxy.\n\n### Negative\n\n * Adds some additional latency to every request.\n\n * We have to maintain our custom haproxy release.\n\n * Another moving part to monitor and take into account.\n\n### See Also\n\n[ADR012](ADR012-haproxy-healthcheck/)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR009-x-forwarded-headers.md",
+   "identity": "docs/architecture_decision_records/ADR009-x-forwarded-headers.md",
+   "adr_id": "9",
+   "title": "**This has been superceded: the first option is now used to encrypt traffic",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "**This has been superceded: the first option is now used to encrypt traffic\nbetween the ELB and HAProxy (see [ADR016](ADR016-end-to-end-encryption.md))**\n\nContext\n=======\n\nWe need to pass correct client IP and requested protocol to applications deployed to the platform. To achieve this we want to use X-Forwarded-For and X-Forwarded-Proto headers.\nIn the current setup we've got HAProxy behind ELB to allow insert HSTS headers, and ELB is configured in SSL mode (not HTTPS) because it does not support WebSockets. In SSL/TCP mode ELB is not able to set any `X-Forwarded` header.\n\nThe solution is to use ProxyProtocol to pass information about recorded client IP and protocol to HAProxy which can set required headers for us. Unfortunately [ELB sets ProxyProtocol header inside SSL stream and HAProxy expects it outside](http://serverfault.com/questions/775010/aws-elb-with-ssl-backend-adds-proxy-protocol-inside-ssl-stream).\n\nThere are two options to workaround this:\n\n * Use a more complex configuration of HAProxy with two frontends/listeners chained\n * Disable SSL between ELB and HAProxy\n\n\nDecision\n========\n\nWe have decided to disable SSL encryption between internal IP of ELB and HAProxy to allow us to use ProxyProtocol.\nWe don't think this has any significant increase in risk because:\n\n* gorouter to cell traffic is already HTTP (it has to be because we can't do termination in app containers)\n* the inner interface of the ELB is on an internal network in our VPC\n\nStatus\n======\n\nAccepted\n\nConsequences\n============\n\nThe http traffic between ELB and HAProxy will not be encrypted.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR010-postgres-bind-behaviour.md",
+   "identity": "docs/architecture_decision_records/ADR010-postgres-bind-behaviour.md",
+   "adr_id": "10",
+   "title": "Context",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "Context\n=======\n\nWe use RDS for tenant databases. Tenants can bind more than one application to a database instance created via the services console. Database migrations were broken when a binding was removed and re-added, or when another bound application other than the one that created the database tables attempted to modify them.\n\nPreviously the RDS broker PostgreSQL engine copied the MySQL engine and granted all rights on the database to the newly created user. In PostgreSQL this will give the user rights to create tables, but because it has a more finely-grained permission model than MySQL this does not give the user rights on existing tables, or tables newly created by other users.\n\nOnly the owner of a table can alter/drop it, and you cannot grant this permission to other users. Users who are the owners of tables cannot be removed until the table ownership is changed.\n\nWe attempted to work around the PostgreSQL permissions system in the following ways:\n\n* Using [`ALTER DEFAULT PRIVILEGES`](https://www.postgresql.org/docs/9.5/static/sql-alterdefaultprivileges.html) on every newly created user to `GRANT ALL ON PUBLIC` - this means that every user can `SELECT`, `INSERT`, and `DELETE`, but because only the table owner can `ALTER` or `DROP` this will not allow other bound users to run migrations. This is also limited to the `PUBLIC` (default) schema, so would fail to work for any applications that have custom schemas.\n\n* Making the group the owner of the `PUBLIC` schema. This allowed members of the group to `DROP` tables within the schema, but still did not allow them to `ALTER` these tables.\n\n* Creating a \"parent\" group that is given ownership of all tables, sequences, and functions. New users are granted rights on this group and thus can carry out all owner actions on group-owned items. A [DDL event trigger](https://www.postgresql.org/docs/9.5/static/event-trigger-definition.html) using the built-in `REASSIGN OWNED BY` command handed over ownership of all resources owned by the current user to the parent `$DBNAME_owner` group. This worked perfectly on all the PostgreSQL databases we tested with, however RDS does not allow use of event triggers so it was unworkable in production.\n\nDecision\n========\n\nWe decided the simplest solution was to issue the same credentials to all applications bound to the database. This means that the same user will be used by each application, and they will not suffer ownership problems when issuing `DROP` or `ALTER` commands.\n\nRather than deterministically deriving the credentials we decided to store them in the backing database itself meaning they can be changed at any time in case of a breach. To protect against database breaches that may leak stored credentials we also decided to encrypt the credentials using a symmetric key held by the broker.\n\nWe accepted that in the future we may wish to extend this by allowing the broker to issue read-only credentials, or credentials that are suitable for `SELECT`, `INSERT`, and `DELETE` operations, but not schema modifications.\n\nStatus\n======\n\nAccepted\n\nConsequences\n============\n\nWe return the same credentials to all apps bound to the same PostgreSQL database (RDS) instance.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.postgresql.org/docs/9.5/static/sql-alterdefaultprivileges.html",
+    "www.postgresql.org/docs/9.5/static/event-trigger-definition.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR011-security-group-structure.md",
+   "identity": "docs/architecture_decision_records/ADR011-security-group-structure.md",
+   "adr_id": "11",
+   "title": "Context",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Context\n\nIn https://www.pivotaltracker.com/story/show/115252309 we described a pattern\nfor defining security groups between services and the VMs that connect to\nthem. This involved creating a client security group for each service that\nthe service allowed connections from. This client security group was then\napplied to the VMs that needed to be able to connect.\n\nThis has the problem that in some cases we would need to add several client\nsecurity groups to a given VM, and we are at risk of running into the AWS\nlimits (by default it's a max of 5 groups per interface).\n\n# Decision\n\nWe will use an alternative approach where a security group is defined for each\ncomponent (or component group) in the system. Services then define rules\nallowing connections from the components that need access. There are some\ninstances where a component will be both a client of other services and a\nprovider of a service. We will use the same security group for both of these\nroles.\n\nThis approach has a number of advantages:\n\n* The number of security groups applied to a VM is driven by the number of\n  components on that VM, not the number of things that they need to connect to.\n  The number of components is likely to be small, and we're better able to\n  control this that we can control the number of things a  component talks to.\n* It's easier to see what components connect to a given service by looking at\n  the rules for that service's security group.\n* When moving a component between VMs it's much clearer which security groups\n  need to move with it.\n\n# Status\n\nAccepted\n\n# Consequences\n\n* This will enable us to avoid hitting the AWS limits for the number of\n  security groups applied to a given interface.\n* It will make it clearer which components are allowed to connect to a given\n  service.\n* There will be some work to update our existing groups to use this pattern.\n\nThere are some potential issues:\n\n* There's the possibility for cycles in the Terraform dependency graph when we\n  have 2 components that both initiate connections to each other. This can be\n  avoided by using the `aws_security_group_rule` Terraform resource instead of\n  defining the rules inline in the `aws_security_group`.\n\n* When looking at a given VM, it's harder to see what services it connects to.\n  This is not seen as a major problem because it should be possible to create\n  tooling to visualise this without much effort.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR012-haproxy-healthcheck.md",
+   "identity": "docs/architecture_decision_records/ADR012-haproxy-healthcheck.md",
+   "adr_id": "12",
+   "title": "Context",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "\nContext\n=======\n\nStories: [#123490171](https://www.pivotaltracker.com/story/show/123490171) & [#121933113](https://www.pivotaltracker.com/story/show/121933113)\n\nWe were investigating how to avoid downtime to deployed applications when we\nmade changes to the platform. We had discovered that short outages occurred\nwhen the gorouter was taken out of service.\n\ngorouter has drain functionality to allow upstream load balancers to gracefully\ntake instances of the gorouter out of service before any requests start to\nfail.\n\nWhen a USR1 signal is sent to instruct the gorouter to start draining,\nhealthchecking requests, identified by the header `User-Agent: HTTP-Monitor/1.1`\nstart failing with HTTP 503. User requests are allowed to continue.\n\nTwo things prevented us from using drain mode:\n\n- we had the ELB configured to use TCP healthchecks, not HTTP\n- the ELB sends HTTP healthcheck requests with `User-Agent:\n  ELB-HealthChecker/1.0`, which means they were not recognised as healthcheck\n  requests by gorouter, they returned HTTP 200 and the ELB did not take the\n  draining gorouter out of service.\n\nThe result was a very small amount of downtime for deployed apps that received\nrequests during a short window of < 1 second.\n\nDecision\n========\n\nWe decided to:\n\n- submit a change upstream to [allow the gorouter to recognise ELB\n  healthchecks](https://github.com/cloudfoundry/gorouter/pull/138)\n- implement a healhchecking port 82, in the HAProxy we introduced in ADR008,\n  which appends the `User-Agent: HTTP-Monitor/1.1` that gorouter expects\n- enable HTTP healthchecks on the ELB\n\n\nStatus\n======\n\nAccepted\n\nConsequences\n============\n\n- There was less downtime for deployed applications during a deploy.\n- We have an additional reason to keep the intermediate HAProxy we introduced as a temporary measure.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#123490171",
+     "kind": "hash",
+     "url": "",
+     "number": "123490171"
+    },
+    {
+     "key": "#121933113",
+     "kind": "hash",
+     "url": "",
+     "number": "121933113"
+    },
+    {
+     "key": "cloudfoundry/gorouter#138",
+     "kind": "pull",
+     "url": "https://github.com/cloudfoundry/gorouter/pull/138",
+     "number": "138"
+    }
+   ],
+   "mentioned_paths": [
+    "ELB-HealthChecker/1.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR013-building-bosh-releases.md",
+   "identity": "docs/architecture_decision_records/ADR013-building-bosh-releases.md",
+   "adr_id": "13",
+   "title": "Building Bosh Releases",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "Context\n=======\nWe use [Bosh](https://bosh.io/) to create and manage our cloudfoundry deployment on AWS.\nTo deploy software, Bosh needs certain binary dependencies available.\nThese are known as bosh [releases](https://bosh.io/docs/release.html).\n\nBefore this decision, we usually built and uploaded releases to Bosh as part of our [concourse](https://concourse.ci/) pipeline.\nOccasionally, we would manually build a release, store it on GitHub, and point Bosh to it there. \n\n### Building Bosh Releases\n\nWe investigated different approaches to creating bosh releases, in particular\n\n* Multiple pipelines created dynamically using [branch manager](https://github.com/alphagov/paas-concourse-branch-manager)\n* A single pipeline using [pullrequest-resource](https://github.com/jtarchie/pullrequest-resource)\n\nThe work on these spikes was recorded in\nhttps://www.pivotaltracker.com/n/projects/1275640/stories/115142265\nhttps://www.pivotaltracker.com/n/projects/1275640/stories/128937731\n\nDecision\n========\nWe will use the [pullrequest-resource](https://github.com/jtarchie/pullrequest-resource) approach to build all our Bosh releases in a consistent way.\n\nStatus\n======\nAccepted\n\nConsequences\n============\nWe must gradually migrate all our Bosh release builds to their own build pipelines.\nWe will need separate jobs to build from master - this already has a proof of concept in the spike.\nWe may have to add additional config in projects we fork to allow us to create final builds.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "bosh.io/docs/release.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR014-hsts-preload-using-api-gateway.md",
+   "identity": "docs/architecture_decision_records/ADR014-hsts-preload-using-api-gateway.md",
+   "adr_id": "14",
+   "title": "Context",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "Context\n=======\n\nWe will only [serve HTTPS traffic, keeping TCP port 80 (HTTP) closed and use HSTS preload lists](ADR443-ssl-only-for-applications-and-cf-endpoints.md).\n\nTo add our domains to [HSTS preload lists](https://hstspreload.appspot.com/), there are these requirements:\n\n 1. Serve a valid certificate.\n 2. Redirect from HTTP to HTTPS on the same host.\n 3. Serve all subdomains over HTTPS (actually checks for `www.domain.com`)\n 4. Serve an HSTS header on the base domain for HTTPS requests:\n\nWe need an endpoint to provide these requirements.\n\nOur Cloud Foundry app endpoint already [serves the\nright HSTS Security header with HAProxy](ADR008-haproxy-for-request-rewriting.md)\nand could be configured to serve the additional `preload` and `includeSubDomains` flags,\nbut we cannot use it because we keep port 80 (HTTP) closed for this endpoint.\nWe can implement a second ELB to listening on HTTP and HTTPS and use\nHAProxy to do the HTTP to HTTPS redirect and serve the right header.\nBut this increases our dependency on the HAProxy service.\n\nWe must serve from the root domain (or apex domain), but it is not allowed to\nserve [CNAME records in the root/apex domain](http://serverfault.com/questions/613829/why-cant-a-cname-record-be-used-at-the-apex-aka-root-of-a-domain). We must configure A records in this domain. This can be\nan issue when serving the service using ELB or CloudFront.\n\nDecision\n========\n\n * We will implement a basic [AWS API Gateway](https://aws.amazon.com/api-gateway/)\n   with a default [MOCK response](https://aws.amazon.com/about-aws/whats-new/2015/09/introducing-mock-integration-generate-api-responses-from-api-gateway-directly/)\n   that returns the right HTTP header `Strict-Transport-Security`. The actual\n   content of the response is irrelevant, it can be a 302.\n   A [Custom Domain Name](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-custom-domains.html),\n   which creates a [AWS Cloud Front distribution](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-overview.html),\n   will provide public access to this API.\n\n * We will use [AWS Route 53 `ALIAS` resource record](http://docs.aws.amazon.com/Route53/latest/APIReference/CreateAliasRRSAPI.html)\n   to [serve the IPs of the AWS Cloud Front distribution as A records](http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-to-cloudfront-distribution.html).\n\n\nStatus\n======\nAccepted\n\nConsequences\n============\n\nTo setup AWS API Gateway Domain Names, it is required access to the SSL certificates. There is the option of uploading the certificates in a different step and create the AWS Cloud Front distribution manually.\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "docs.aws.amazon.com/apigateway/latest/developerguide/how-to-custom-domains.html",
+    "docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-overview.html",
+    "docs.aws.amazon.com/Route53/latest/APIReference/CreateAliasRRSAPI.html",
+    "docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-to-cloudfront-distribution.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR015-rds-storage-encryption-plans.md",
+   "identity": "docs/architecture_decision_records/ADR015-rds-storage-encryption-plans.md",
+   "adr_id": "15",
+   "title": "Context",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "Context\n=======\n\nWe want to enable, or provide the option to enable,\n[storage encryption (AKA encryption at rest) for the RDS instances](http://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html)\nof the tenants databases created by our [RDS broker](https://github.com/alphagov/paas-rds-broker). The broker has logic to enable this option on creation.\n\nBut there are [some limitations](http://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html#Overview.Encryption.Limitations):\n\n * Storage Encryption can only be enabled on creation of the DB. There is no way to update an instance to enable or disable encryption. The only way is by creating a encrypted (or unencrypted) copy of a snapshot, to then restore it to a DB instance.\n * Storage Encryption is only supported [for some instance types](http://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html#d0e47573). Specifically it is not supported for `db.t2.small` and `db.t2.micro.`, used in our Small and Free plans.\n\nIn consequence:\n\n  * Users **can not** migrate from a plan with encryption (Medium or Large) to a plan without encryption (Small or Free). But this use case is less common.\n  * Users **can** migrate from Free/Small to a plan with encryption (Medium or Large), but the instance will not have encryption enabled.\n  * If we enable encryption in the existing plans, the existing databases will remain without encryption.\n  * Due the API broker limitations, it is not possible to query the attributes of an existing instance.\n\nWe have 3 options to proceed:\n\n 1. Enable Encryption in the Medium and Large plans, and document the restrictions.\n  * Less effort to implement.\n  * We might end having unencrypted database in a plan that is meant to be encrypted, which is confusing for the users and operators.\n  * Existing Instances will remain unencrypted.\n 2. Change the instance type for the Small plan to `db.m3.medium`.\n  * Would allow migrate from Small to Medium or Large.\n  * We will still have the problem for the Free plan.\n  * Increases the costs for the Small plan (double).\n 3. Provide additional explicit plans with Encryption enabled, and keep the old ones. Add logic to prevent updates between plans with or without encryption.\n  * It would be more explicit and clear, and the plan would match the state of the existing database.\n  * Existing instances would still match with the plan description.\n  * We will add more plans, which makes it more confusing for the tenants.\n\n\nDecision\n========\n\nWe decided to provide additional explicit plans with Encryption enabled, and keep the old ones.\n\nWe will add logic in the broker to prevent updates between plans with or without encryption.\n\nWe have decided only add the option of encryption to the HA plans to minimise the number of new plans added. In most of the cases the tenants would choose HA together with encryption and, although adding more plans is easy, removing them is painful once they are being used.\n\nStatus\n======\n\nAccepted.\n\nConsequences\n============\n\n * More plans will be added to the offer, which is more confusing the tenants. Better documentation would be required to help the tenants to pick the right plan.\n * It is not possible to migrate from a Non-Encrypted plan to an Encrypted plan, and vice versa.\n\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR016-end-to-end-encryption.md",
+   "identity": "docs/architecture_decision_records/ADR016-end-to-end-encryption.md",
+   "adr_id": "16",
+   "title": "Context",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "Context\n=======\n\nIn order to ensure the confidentiality of private tenant data processed on the platform we need to ensure that requests and responses for traffic between the user and application instances are encrypted so that it is not possible for a network eavesdropper to access private tenant data.\n\nThere are 3 main network sections between the user and the application:\n\n* User to ELB\n* ELB to router\n* Router to cells\n\nDecision\n========\n\n* The traffic between the user and the ELB is encrypted by using an TLS listener on the ELB. A certificate issued by a certificate authority is set on the ELB and access to the private key is very restricted.\n* The ELB connects to the router VM via TLS. The router VM must, in consequence, serve TLS.\n* The router to application instances traffic is plain HTTP because the Cloud Foundry doesn't support TLS between gorouter and the application instances and the application instances may not talk TLS. We've decided to use IPSec on router and cell so the traffic will be encrypted transparently.\n\nStatus\n======\n\nAccepted\n\nConsequences\n============\n\nThe traffic is encrypted end-to-end between the user and the applications.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR017-cell-capacity-assignment.md",
+   "identity": "docs/architecture_decision_records/ADR017-cell-capacity-assignment.md",
+   "adr_id": "17",
+   "title": "Context",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "Context\n=======\n\nWe want to ensure our platform remains available when a single AZ fails. This means that we need to have enough spare memory capacity left on cells to cover deploying apps from the failed zone. In case of 3 zones, that means each zone should be able to host 50% more apps (memory capacity wise). We can calculate maximum memory usable by all orgs by doing sum of their quotas. However, in practice much less memory is consumed. This is because\n\n1. Org quotas come in T-shirt sizes and have considerable size jumps (e.g. 2, 10, 60 100G). You need to reserve next quota if previous one is too small for your needs, yet it doesn't mean you will be using all the capacity of the larger quota.\n1. App instance memory limits are set as upper memory consumption limit. Because of that, they tend to be set larger for safety. Actual app memory consumption is always lower, many times considerably.\n\nPractical example - this is a snapsot of our prod deployment in Feb 2017:\n\n```\nMemory reserved by orgs: 368640 MB (360 GB)\nMemory reserved by apps: 107108 MB (104 GB)\nMemory actually used by apps: 32868 (32 GB)\n```\n\nThis is not unusual and CF v1 had default overprovisioning factor of 2 (that is, it advertised 2 times more capacity than actual).\n\nDecision\n========\n\nWe will maintain at least 50% of total org reserved capacity available when a zone fails. That is, remaining zones will have to be able to cover 50% of total reserved capacity.\n\nStatus\n======\n\nAccepted\n\nConsequences\n============\n\n* We will check if we have enough capacity available whenever we add a new organisation or increase quota of existing one. We will deploy more cells if we need more capacity. \n* We have implemented `show-cf-memory-usage` makefile target to help us get current org and app reservation and real usage totals.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture_decision_records/ADR443-ssl-only-for-applications-and-cf-endpoints.md",
+   "identity": "docs/architecture_decision_records/ADR443-ssl-only-for-applications-and-cf-endpoints.md",
+   "adr_id": "443",
+   "title": "Context",
+   "first_commit": "2017-02-23T15:02:33+00:00",
+   "first_sha": "848e9498f42bfd31feb99bad104befa72b33f7c5",
+   "last_commit": "2017-02-23T15:02:33+00:00",
+   "author": "Olivier-Subramanian",
+   "email": "olsubram@Microsoft.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "Context\n=======\n\nIt is expected for the government websites to be secure and keep the user\ninteractions private. Because that we want to enforce all communications to\nany application and to the platform endpoints to use only and always HTTPS,\nas [it is described in the Gov Service Manual](https://www.gov.uk/service-manual/technology/using-https).\n\nWhen a user inputs a website name without specifying the\nprotocol in the URL, most browsers will try first the HTTP protocol by default.\nEven if the server always redirect HTTP to HTTPS, an initial\nunprotected request including user information will be transferred\nin clear: full URL with domain, parameter, [cookies without secure flag](https://en.wikipedia.org/wiki/HTTP_cookie#Secure_and_HttpOnly)\nor browser meta-information.\n\n[HTTP Strict Transport Security](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security)\nmitigates this issue by instructing modern browsers that support it to\nalways connect using HTTPS.\nThis is also a [requirement in the service manual](https://www.gov.uk/service-manual/technology/using-https).\n\nThere is still a potential initial unprotected HTTP request that might happen\nbefore retrieve the HSTS headers or after the specified HSTS `max-age`.\nTo solve this issue, the root domain can be added to\n[HSTS preload list](https://hstspreload.appspot.com/) which will be used by most\ncommon browsers.\n\nCurrently the only way to avoid any clear text HTTP interaction is closing or\ndropping any attempt to connect to the port 80 at TCP level.\n\nAlthough not all application deployed on the PaaS will be \"services\"\nas in the service manual meaning, we must not allow HTTP to make\nit easier to service owners to comply with this requirements.\n\nDecision\n========\n\nWe will only open port 443 (HTTPS) and drop/reject any TCP connection to TCP port 80 (HTTP).\n\nWe will implement and maintain HSTS preload lists for our production domains.\n\n\nStatus\n======\n\nAccepted\n\nConsequences\n============\n\nWe must configure and maintain our domain in the HSTS preload lists.\n\nUsers of browsers which do not support HSTS, or HSTS preload lists, will not\nbe able to connect to the sites without specify the protocol `https://` in\nthe URL. This only happens when the user manually inputs the URL in the\nbrowser.\n\n\n\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 18,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "18"
+}

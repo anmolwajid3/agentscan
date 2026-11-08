@@ -1,0 +1,257 @@
+{
+ "repo": "adr/adr-manager",
+ "clone_ok": true,
+ "error": null,
+ "description": "ADR-Manager",
+ "first_commit": "2020-10-14T14:51:18+02:00",
+ "last_commit": "2026-05-18T09:12:14+02:00",
+ "n_commits": 366,
+ "n_authors": 9,
+ "n_files": 112,
+ "n_code_files": 30,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 6,
+ "adrs": [
+  {
+   "path": "docs/adr/0005-arch1.md",
+   "identity": "docs/adr/0005-arch1.md",
+   "adr_id": "5",
+   "title": "Arch1",
+   "first_commit": "2023-11-21T15:58:47+01:00",
+   "first_sha": "6d7131b80969de27ab85b5dfcd0d9fd1d7a45ee8",
+   "last_commit": "2023-12-05T11:38:46+01:00",
+   "author": "Moneeza Syed",
+   "email": "14besemsyed@seecs.edu.pk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Arch1\n\n* Status: proposed\n* Date: 2023-11-30\n\n## Context and Problem Statement\n\nno\n\n## Considered Options\n\n* 1\n\n## Decision Outcome\n\nChosen option: \"1\", because comes out best.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0004-implement-a-global-store.md",
+   "identity": "docs/adr/0004-implement-a-global-store.md",
+   "adr_id": "4",
+   "title": "Implement a global store",
+   "first_commit": "2021-01-07T02:57:53+01:00",
+   "first_sha": "bb93a923fe46137c4f095bd12f1a7b977cb09a7a",
+   "last_commit": "2021-11-09T01:09:45+01:00",
+   "author": "Oliver Kopp",
+   "email": "katrin.bauer123@web.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Implement a global store\n\n* Status: accepted\n\nTechnical Story: Implement a simple global store\n\n## Context and Problem Statement\n\nThe ADR-Manager has a state that needs to be stored.\nData that make sense storing globally:\n\n* Edited ADRs until they're committed (maybe even all ADRs from all added repositories)\n* Added Repositories\n* The current mode (basic, advanced, professional)\n\nHow should the state be stored?\n\n## Decision Drivers\n\n* ADR-Manager should be lightweight and easy to implement.\n* ADR-Manager should be easy to maintain.\n\n## Considered Options\n\n* Don't use any global store\n* Only use local storage in combination with Events/Props\n* Use the Vue-State-Manager Vuex\n* Implement a state manager from scratch.\n\n## Decision Outcome\n\nChosen option: \"Implement a state manager from scratch.\", because comes out best. The data can additionally be stored in Local Storage but this should be managed by the global store as well.\n\n### Positive Consequences\n\n* New functionality will be easier to add.\n\n## Pros and Cons of the Options\n\n### Don't use any global store\n\nJust \"cascade\" updates between Vue-Components via Events and Props. E.g. each editor tab has a prop (v-model) for the displayed ADR. Whenever the ADR is changed the Sup-Component (currently TheEditor.vue) updates the ADR in each tab. When a new ADR is created via a toolbar menu, the event needs to cascade down to each related Editor-Component.\n\n* Good, because it's easy to implement.\n* Bad, because it's hard to debug.\n* Bad, because GUI and functionality is more directly connected. Changes to the GUI often require bigger updates to functionality and vice versa.\n\n### Only use local storage in combination with Events/Props\n\nUse local storage (i.e. persistent storage) to store the state and use events (e. g. a global event bus) to communicate changes to the state.\n\n* Good, because it's easy to implement.\n* Good, because most data should be stored in persistent storage anyway.\n* Bad, because cannot take advantage of Vue's reactivity.\n\n### Use the Vue-State-Manager Vuex\n\nDocs can be found at https://vuex.vuejs.org/.\n\n* Good, because best long-term maintainability.\n* Good, because prepares for extensions like 'Undo-Redo'.\n* Good, because the development team can gather experience with Vuex.\n* Bad, because of more concepts and boilerplate.\n* Bad, because does not fit in our project. We assume that ADR-Manager is a small-to-medium project and not a medium-to-large project\n\n### Implement a state manager from scratch.\n\nImplement a state manager from scratch as described at https://vuejs.org/v2/guide/state-management.html#Simple-State-Management-from-Scratch.\n\n* Good, because GUI and functionality are split better. Debugging is easier.\n* Good, because it's a compromise between using Vuex and using no global state.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "vuejs.org/v2/guide/state-management.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0003-use-pizzly-as-backend.md",
+   "identity": "docs/adr/0003-use-pizzly-as-backend.md",
+   "adr_id": "3",
+   "title": "Use Pizzly as Backend",
+   "first_commit": "2021-01-07T02:57:53+01:00",
+   "first_sha": "bb93a923fe46137c4f095bd12f1a7b977cb09a7a",
+   "last_commit": "2021-03-02T11:38:40+01:00",
+   "author": "Oliver Kopp",
+   "email": "katrin.bauer123@web.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Use Pizzly as Backend\n\n* Status: accepted\n\n## Context and Problem Statement\n\nShould the ADR Manager have a backend? If so, how should it look?\n\n## Considered Options\n\n* Use a Python back end\n* Don't use a back end\n* Use Pizzly as Backend\n\n## Decision Outcome\n\nChosen option: \"Use Pizzly as Backend\", because comes out best (see below).\n\n## Pros and Cons of the Options\n\n### Use a Python back end\n\n* Good, because GitHub interaction can be achieved.\n* Bad, because hard to maintain.\n\n### Don't use a back end\n\n* Bad, because we can't authorize to GitHub without back end.\n\n### Use Pizzly as Backend\n\n[Pizzly](https://github.com/Bearer/Pizzly/) can handle the OAuth dance for us. It can be hosted on Heroku as the back end.\n\n* Good, because less work than writing the back end from scratch.\n* Good, because we don't have to handle the authorization process.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0000-use-markdown-architectural-decision-records.md",
+   "identity": "docs/adr/0000-use-markdown-architectural-decision-records.md",
+   "adr_id": "0",
+   "title": "Use Markdown Architectural Decision Records",
+   "first_commit": "2021-01-07T02:57:53+01:00",
+   "first_sha": "bb93a923fe46137c4f095bd12f1a7b977cb09a7a",
+   "last_commit": "2021-01-07T02:57:53+01:00",
+   "author": "Oliver Kopp",
+   "email": "katrin.bauer123@web.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use Markdown Architectural Decision Records\n\n## Context and Problem Statement\n\nWe want to record architectural decisions made in this project.\nWhich format and structure should these records follow?\n\n## Considered Options\n\n* [MADR](https://adr.github.io/madr/) 2.1.2 \u2013 The Markdown Architectural Decision Records\n* [Michael Nygard's template](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions) \u2013 The first incarnation of the term \"ADR\"\n* [Sustainable Architectural Decisions](https://www.infoq.com/articles/sustainable-architectural-design-decisions) \u2013 The Y-Statements\n* Other templates listed at <https://github.com/joelparkerhenderson/architecture_decision_record>\n* Formless \u2013 No conventions for file format and structure\n\n## Decision Outcome\n\nChosen option: \"MADR 2.1.2\", because\n\n* Implicit assumptions should be made explicit.\n  Design documentation is important to enable people understanding the decisions later on.\n  See also [A rational design process: How and why to fake it](https://doi.org/10.1109/TSE.1986.6312940).\n* The MADR format is lean and fits our development style.\n* The MADR structure is comprehensible and facilitates usage & maintenance.\n* The MADR project is vivid.\n* Version 2.1.2 is the latest one available when starting to document ADRs.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "doi.org/10.1109/TSE.1986.6312940"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0001-use-vue.js.md",
+   "identity": "docs/adr/0001-use-vue.js.md",
+   "adr_id": "1",
+   "title": "Use Vue.js",
+   "first_commit": "2021-01-07T02:57:53+01:00",
+   "first_sha": "bb93a923fe46137c4f095bd12f1a7b977cb09a7a",
+   "last_commit": "2021-01-07T02:57:53+01:00",
+   "author": "Oliver Kopp",
+   "email": "katrin.bauer123@web.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use Vue.js\n\n* Status: accepted\n\n## Context and Problem Statement\n\nA framework makes the creation of a web app significantly easier. Which framework should be used?\n\n## Considered Options\n\n* Vue.js\n* Angular\n\n## Decision Outcome\n\nChosen option: \"Vue.js\", because the team has more experience with Vue.js.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0002-use-antlr-for-parsing-adrs.md",
+   "identity": "docs/adr/0002-use-antlr-for-parsing-adrs.md",
+   "adr_id": "2",
+   "title": "Use ANTLR for parsing ADRs",
+   "first_commit": "2021-01-07T02:57:53+01:00",
+   "first_sha": "bb93a923fe46137c4f095bd12f1a7b977cb09a7a",
+   "last_commit": "2021-01-07T02:57:53+01:00",
+   "author": "Oliver Kopp",
+   "email": "katrin.bauer123@web.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use ANTLR for parsing ADRs\n\n* Status: accepted\n\nTechnical Story: Proposed in the GitHub Issues [#17](https://github.com/koppor/adr-manager/issues/17),  [#19](https://github.com/koppor/adr-manager/issues/19)\n\n## Context and Problem Statement\n\nADR Manager needs to parse existing ADRs. Each ADR is stored in a markdown file. Example: https://github.com/adr/madr/blob/master/docs/adr/0001-use-CC0-as-license.md.\n\n## Considered Options\n\n* Use a generic Markdown Parser\n* Use ANTLR to create an ADR specific parser\n* Write a parser from scratch\n\n## Decision Outcome\n\nChosen option: \"Use ANTLR to create an ADR specific parser\", because comes out best (see below).\n\n### Positive Consequences\n\n* Some existing ADRs are accepted now without changes.\n* Better control over output\n\n### Negative Consequences\n\n* The new parser is worse at parsing \"invalid\" ADRs than the generic one.\n* ANTLR Parser seems to be quite slow.\n\n## Pros and Cons of the Options\n\n### Use a generic Markdown Parser\n\nEnhance generic Markdown parser and use the result of that parser. For that, available options are listed at https://github.com/f43i4n/md-schema/blob/master/docs/related-work.md.\n\nThis option was used in the mock-up with the library [md-to-json](https://github.com/ajithr/md-2-json).\n\n* Good, because easiest solution.\n* Good, because md-to-json can parse the json back to a Markdown.\n* Bad, because md-to-json adds extra line breaks, which are hard to remove.\n\n### Use ANTLR to create an ADR specific parser\n\nUse ANTLR4 to write a parser specifically for ADRs.\n\n* Good, because flexible parser and full control over output.\n* Good, because hopefully maintainable. ANTLR Grammar can be used to specify how ADRs must look.\n* Bad, because extra work.\n\n### Write a parser from scratch\n\n* Bad, because extra work.\n* Bad, because writing stuff from scratch is a bad anti pattern.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#17",
+     "kind": "hash",
+     "url": "",
+     "number": "17"
+    },
+    {
+     "key": "koppor/adr-manager#17",
+     "kind": "issue",
+     "url": "https://github.com/koppor/adr-manager/issues/17",
+     "number": "17"
+    },
+    {
+     "key": "#19",
+     "kind": "hash",
+     "url": "",
+     "number": "19"
+    },
+    {
+     "key": "koppor/adr-manager#19",
+     "kind": "issue",
+     "url": "https://github.com/koppor/adr-manager/issues/19",
+     "number": "19"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/f43i4n/md-schema/blob/master/docs/related-work.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/adr/0005-arch1.md",
+   "identity": "docs/adr/0005-arch1.md",
+   "commit": "2b2a5f17c0e8136697409b8e794c065c24a6e2ce",
+   "date": "2023-11-27T09:40:07+01:00",
+   "old_state": "unknown",
+   "new_state": "deleted",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Removed test ADR",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "deleted-without-replacement-pointer",
+   "author": "Justus Bogner",
+   "email": "justus.bogner@gmail.com"
+  },
+  {
+   "path": "docs/adr/0005-arch1.md",
+   "identity": "docs/adr/0005-arch1.md",
+   "commit": "1e4a2ec21af7dc374f7379fbecb61a508080808b",
+   "date": "2023-12-05T11:38:46+01:00",
+   "old_state": "unknown",
+   "new_state": "deleted",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Removed test adr",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "deleted-without-replacement-pointer",
+   "author": "Justus Bogner",
+   "email": "justus.bogner@gmail.com"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 6,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "sourcegraph:docs_adr;buchgeher-2022",
+ "stars": "166",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "5"
+}

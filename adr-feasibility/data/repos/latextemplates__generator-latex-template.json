@@ -1,0 +1,1514 @@
+{
+ "repo": "latextemplates/generator-latex-template",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2018-03-10T14:12:09+01:00",
+ "last_commit": "2026-11-04T16:58:40+01:00",
+ "n_commits": 562,
+ "n_authors": 5,
+ "n_files": 268,
+ "n_code_files": 8,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 28,
+ "adrs": [
+  {
+   "path": "docs/decisions/0027-number-pages-continuously.md",
+   "identity": "docs/decisions/0027-number-pages-continuously.md",
+   "adr_id": "27",
+   "title": "Number the pages continuously from the title page",
+   "first_commit": "2026-11-03T09:02:06+01:00",
+   "first_sha": "50160585b5a8df6251be8653378455c00d1c1cab",
+   "last_commit": "2026-11-03T09:02:06+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Number the pages continuously from the title page\n\n## Context and Problem Statement\n\nA thesis has a front matter (title page, abstract, table of contents) before the first chapter.\nBook classes number it with roman numerals and restart with arabic 1 at the first chapter, while ISO 7144 numbers all pages consecutively with arabic numerals.\nThe templates did both: the University of Stuttgart variants numbered continuously, the Hamburg and THU variants used `\\frontmatter` ([scientific-thesis-template#69](https://github.com/latextemplates/scientific-thesis-template/issues/69)).\nHow to number the pages of a thesis?\n\nSee the [general ADR on page numbering](https://github.com/latextemplates/gadr-latex-packages/blob/main/page-numbering.md) for the options and their pros and cons.\n\n## Considered Options\n\n* Continuous arabic numbers from the title page on (ISO 7144)\n* Roman numerals for the front matter, arabic from 1 for the main matter (`\\frontmatter`/`\\mainmatter`)\n* Unnumbered front matter, arabic from 1 for the main matter\n\n## Decision Outcome\n\nChosen option: \"Continuous arabic numbers from the title page on\", because ISO 7144 requires it for theses, the doctoral regulations of the University of Stuttgart require it, the page shown by the PDF viewer equals the printed page, and a page reference is unambiguous.\nThe generator option `--pagenumbering=roman` switches a thesis to roman front matter for institutions that want it; it inserts `\\frontmatter` before the title page and `\\mainmatter` before the first chapter.\n\n### Consequences\n\n* Good, because all thesis variants number the same way, and the README explains why.\n* Good, because `--pagenumbering=roman` gives the book convention without editing the main file.\n* Bad, because readers who expect the book convention see the table of contents on page 3, not iii.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "latextemplates/scientific-thesis-template#69",
+     "kind": "issue",
+     "url": "https://github.com/latextemplates/scientific-thesis-template/issues/69",
+     "number": "69"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/page-numbering.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0025-use-gitver-for-the-document-version.md",
+   "identity": "docs/decisions/0025-use-gitver-for-the-document-version.md",
+   "adr_id": "25",
+   "title": "Use gitver for the document version",
+   "first_commit": "2026-11-01T00:24:54+01:00",
+   "first_sha": "da89f16bb83a86c7d4a5bf7ad2684b2706e61843",
+   "last_commit": "2026-11-01T00:24:54+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use gitver for the document version\n\n## Context and Problem Statement\n\nDrafts circulate as PDFs, and a reviewer's remarks have to be matched to the state of the sources they were made on.\nThe templates offered no way to stamp the PDF with its version ([uni-stuttgart-dissertation-template#1](https://github.com/latextemplates/uni-stuttgart-dissertation-template/issues/1)).\nHow to show the git commit the PDF was built from?\n\n## Considered Options\n\n* [gitver](https://ctan.org/pkg/gitver), loaded only when shell escape is enabled\n* [gitinfo2](https://ctan.org/pkg/gitinfo2)\n* [gitinfo-lua](https://ctan.org/pkg/gitinfo-lua)\n* [gitfile-info](https://ctan.org/pkg/gitfile-info)\n* [vc](https://ctan.org/pkg/vc)\n\n## Decision Outcome\n\nChosen option: \"gitver, loaded only when shell escape is enabled\", because it needs no hooks, no scripts and no particular engine: one `git describe` call per build yields `\\gitVer` (the commit, `-dirty` when uncommitted changes exist) and `\\versionBox` (commit and build time).\nIt needs `\\write18`, so the preamble loads it only under `--shell-escape` (`\\sys_if_shell_unrestricted:T`, as for graphicscache) and provides empty `\\gitVer` and `\\versionBox` otherwise; a plain run is unchanged.\nThe option `nopdfinfo` keeps the PDF subject as set by the template, `noheader` keeps gitver from touching the headers (it only knows memoir and fancyhdr anyway).\nThe `ustutt` thesis is generated with `--shell-escape` (`requiresShellEscape` in the generator) and shows `\\versionBox` in the page header (its footer is taken by the chapter and section marks); the other templates carry the block commented out.\n\n### Consequences\n\n* Good, because a `--shell-escape` build stamps every page of the `ustutt` thesis with the commit it was built from, and any template can show `\\gitVer` where it suits.\n* Good, because on Overleaf (shell escape on, no git) gitver prints \"CLSI\" instead of failing.\n* Bad, because a build without shell escape shows no version at all, and the default builds of the templates other than `ustutt` run without it.\n* Bad, because without a git repository (a downloaded zip) gitver reports an error and prints \"unknown\".\n* Bad, because the build time in `\\versionBox` makes two builds of the same commit differ.\n\n## More Information\n\nThe options and their pros and cons in general: [How to show the document version](https://github.com/latextemplates/gadr-latex-packages/blob/main/document-version.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "latextemplates/uni-stuttgart-dissertation-template#1",
+     "kind": "issue",
+     "url": "https://github.com/latextemplates/uni-stuttgart-dissertation-template/issues/1",
+     "number": "1"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/document-version.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0026-use-subfiles-to-compile-single-chapters.md",
+   "identity": "docs/decisions/0026-use-subfiles-to-compile-single-chapters.md",
+   "adr_id": "26",
+   "title": "Use subfiles to compile single chapters",
+   "first_commit": "2026-11-01T00:24:54+01:00",
+   "first_sha": "da89f16bb83a86c7d4a5bf7ad2684b2706e61843",
+   "last_commit": "2026-11-01T00:24:54+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use subfiles to compile single chapters\n\n## Context and Problem Statement\n\nA thesis build takes minutes, while an author rewriting one chapter wants to see that chapter.\nThe thesis templates keep one file per chapter, included by the main file, but offered no way to compile a chapter on its own ([uni-stuttgart-dissertation-template#11](https://github.com/latextemplates/uni-stuttgart-dissertation-template/issues/11)).\nHow to compile a single chapter with the preamble of the thesis?\n\nSee the [general ADR on compiling parts of a document](https://github.com/latextemplates/gadr-latex-packages/blob/main/compiling-single-chapters.md) for the options and their pros and cons.\n\n## Considered Options\n\n* [subfiles](https://ctan.org/pkg/subfiles)\n* `\\includeonly` in the main file\n* [standalone](https://ctan.org/pkg/standalone)\n* [docmute](https://ctan.org/pkg/docmute)\n\n## Decision Outcome\n\nChosen option: \"subfiles\", because a chapter file needs only three boilerplate lines (`\\documentclass[../<main file>]{subfiles}`, `\\begin{document}`, `\\end{document}`) and then compiles alone with the preamble of the main file, while the main file includes it as before (`\\subfileinclude` behaves like `\\include`).\nA `.latexmkrc` in `chapters-<lang>/` reuses the settings of the main directory, adds the parent directory to `TEXINPUTS` and `BIBINPUTS` (packages shipped with the template, figures, the bibliography), and strips the spaces from the job name, which the ifplatform package (loaded by graphicscache) cannot handle.\nThe `ltgexample` environment passes `\\currfilename` instead of `\\currfilepath` to minted: subfiles reads a chapter through the import path, which minted prepends once more.\n\n### Consequences\n\n* Good, because `latexmk \"10 - introduction\"` in the chapter directory yields that chapter in seconds, with figures, listings and citations.\n* Good, because the full build is unchanged; `\\includeonly` is not needed.\n* Bad, because every chapter file carries three lines that only matter when it is compiled alone, and names one main file (the others are commented out in the template repositories).\n* Bad, because a chapter compiled alone shows `??` for references to other chapters and prints no bibliography.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "latextemplates/uni-stuttgart-dissertation-template#11",
+     "kind": "issue",
+     "url": "https://github.com/latextemplates/uni-stuttgart-dissertation-template/issues/11",
+     "number": "11"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/compiling-single-chapters.md",
+    "chapters-<lang>/"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0005-custom-example-environment.md",
+   "identity": "docs/adr/0005-custom-example-environment.md",
+   "adr_id": "5",
+   "title": "Use custom LaTeX environment for example presentation",
+   "first_commit": "2020-06-28T19:35:01+02:00",
+   "first_sha": "8a19aa3567237fc0a7aaeadc04ccb5ce4724ad40",
+   "last_commit": "2026-10-30T01:02:11+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# Use custom LaTeX environment for example presentation\n\n## Context and Problem Statement\n\nWe want to present LaTeX examples.\nThe template shows them both as LaTeX source and as rendered output.\n\n## Decision Drives\n\n* Write once - have two outputs (source and rendered)\n* Good interaction with all packages\n* Should support floats\n* Should support compilation without special configuration (such as `--shell-escape`)\n\n## Considered Options\n\n* Custom solution to present LaTeX code and rendered output\n* `cnltx-example` (part of [`cnltx`](https://www.ctan.org/pkg/cnltx))\n* [`examplep`](https://github.com/koppor/examplep)\n* [`tcolorbox`](https://www.ctan.org/pkg/tcolorbox)\n* [`showexpl`](https://ctan.org/pkg/showexpl)\n* [`latexdemo`](https://ctan.org/pkg/latexdemo)\n* `tkzexample` (part of [`tkz-doc`](https://ctan.org/pkg/tkz-doc))\n* `fancyvrb-ex` (part of [`fancyvrb`](https://ctan.org/pkg/fancyvrb))\n* [`sverb`](https://www.ctan.org/pkg/sverb)\n* `lstdoc` (part of [`listings`](https://www.ctan.org/pkg/listings))\n* `ydoc-expl` (part of [`ydoc`](https://www.ctan.org/pkg/ydoc))\n* [`gincltex`](https://ctan.org/pkg/gincltex)\n* [`minted`](https://ctan.org/pkg/minted)\n* Self-made with [standalone](https://ctan.org/pkg/standalone) package\n* [`codemwe`](https://ctan.org/pkg/codemwe)\n\nSee also\n\n* <https://tex.stackexchange.com/q/19295/9075>\n* [CTAN's macro-demo topic](https://ctan.org/topic/macro-demo)\n\n## Decision Outcome\n\nChosen option: \"custom solution\", because resolves all forces.\n\n### Positive Consequences\n\n* Works with floats and umlauts\n\n### Negative Consequences\n\n* The user sees a little more than minimal code\n\n## Pros and Cons of the Options\n\n### `cnltx-example`\n\nHint: The LuxiMono package generates bold typewriter keywords (hint by listings package).\n\n* Good, because offers nice boxes\n* Good, because [offers floating environments](https://github.com/cgnieder/cnltx/issues/4)\n* Bad, because floating environments need [some lines of LaTeX code](https://github.com/cgnieder/cnltx/issues/4#issuecomment-625693834)\n* Bad, because [code needs to be patched](https://github.com/cgnieder/cnltx/pull/7) to show code first\n* Bad, because [does not support umlauts](https://github.com/cgnieder/cnltx/issues/5)\n\n### examplep\n\n* Good, because allows for minipages automatically set to render the LaTeX source.\n* Bad, because it is GPL-licensed and thus requires all tex files to be GPL-licensed, too.\n* Bad, because it does not fully support floating environments. See [examplep#1](https://github.com/koppor/examplep/issues/1) for details.\n\n### showexpl\n\n* Good, because [supports floats](https://github.com/rolfn/showexpl/issues/1)\n* Good, because the output is rather minimalistic, but still looks good\n* Bad, because [does not support referencing inside the environment](https://github.com/rolfn/showexpl/issues/5)\n\n### tcolorbox, latexdemo, tkzexample, fancyvrb-ex\n\n`fancyvrb-ex` defines example environments that set input code and output side by side or on top of each other; the fancyvrb documentation itself uses them.\n\n* Good, because nice boxes\n* Bad, because all of them do not support floating environments\n\n### sverb\n\n* Bad, because it does not support floating environments\n\n### lstdoc\n\n* Bad, because works only within listings documentation properly (otherwise, it causes issues)\n\n### ydoc-expl\n\n### gincltex\n\nIncludes `.tex` as graphics.\n\n* Bad, because rendering as source and rendered output needs extra code \"on top\".\n\n### minted\n\nThe source code contains the `example` environment (taken from <http://blog.karssen.org/2009/11/15/a-latex-example-environment/>): <https://github.com/gpoore/minted/blob/5d72859d714a6f2f6a42eec524476994d954b960/source/minted.dtx#L134>.\n\n* Bad, because does not deal with protection.\n\n### Self-made with [standalone](https://ctan.org/pkg/standalone) package\n\n* Good, because complete documents can be typeset\n* Bad, because it requires -write-18\n\n### codemwe\n\nNew on CTAN in October 2026, after this decision.\nTypesets code and result from one source, side by side or stacked, and writes a standalone, compilable MWE file for each example.\n\n* Good, because each example also exists as a minimal working example file\n* Bad, because the result is set in a `tcolorbox`, so floating environments do not work inside (same as `tcolorbox`)\n* Bad, because syntax highlighting needs `minted` and thus `--shell-escape`\n\n<!-- markdownlint-disable-file MD013 -->\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "cgnieder/cnltx#4",
+     "kind": "issue",
+     "url": "https://github.com/cgnieder/cnltx/issues/4",
+     "number": "4"
+    },
+    {
+     "key": "cgnieder/cnltx#7",
+     "kind": "pull",
+     "url": "https://github.com/cgnieder/cnltx/pull/7",
+     "number": "7"
+    },
+    {
+     "key": "cgnieder/cnltx#5",
+     "kind": "issue",
+     "url": "https://github.com/cgnieder/cnltx/issues/5",
+     "number": "5"
+    },
+    {
+     "key": "koppor/examplep#1",
+     "kind": "issue",
+     "url": "https://github.com/koppor/examplep/issues/1",
+     "number": "1"
+    },
+    {
+     "key": "rolfn/showexpl#1",
+     "kind": "issue",
+     "url": "https://github.com/rolfn/showexpl/issues/1",
+     "number": "1"
+    },
+    {
+     "key": "rolfn/showexpl#5",
+     "kind": "issue",
+     "url": "https://github.com/rolfn/showexpl/issues/5",
+     "number": "5"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/gpoore/minted/blob/5d72859d714a6f2f6a42eec524476994d954b960/source/minted.dtx"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0007-use-glossaries-package.md",
+   "identity": "docs/adr/0007-use-glossaries-package.md",
+   "adr_id": "7",
+   "title": "Use glossaries-extra package for abbreviations",
+   "first_commit": "2022-02-25T14:36:07+01:00",
+   "first_sha": "becc6ddd7aced0d6721b1f212832f0be91d9cf3d",
+   "last_commit": "2026-10-30T01:02:11+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# Use glossaries-extra package for abbreviations\n\n## Context and Problem Statement\n\nHow to manage abbreviations\n\n## Considered Options\n\n* [glossaries-extra](https://ctan.org/pkg/glossaries-extra)\n* [glossaries](https://ctan.org/pkg/glossaries)\n* [acro](https://ctan.org/pkg/acro)\n\n## Decision Outcome\n\nChosen option: \"glossaries-extra\", because seems to be best.\n\n## More information\n\nA discussion on glossaries versus acro: <http://tex.stackexchange.com/questions/309203/glossaries-vs-acro>.\nA pull request switching from acro to glossaries: <https://github.com/latextemplates/scientific-thesis-template/pull/35>.\n\nSorting: the list is sorted by TeX itself (`\\makenoidxglossaries` and `\\printnoidxglossary`), so no external tool is needed and the list appears with any build, also without latexmk.\nThe external tools (`makeglossaries`, which needs Perl, or `makeglossaries-lite`) sort faster and by language rules, which matters for large glossaries or accented sort keys, not for a list of abbreviations.\nA missing tool run is what broke the template for students in 2016 (<https://github.com/latextemplates/scientific-thesis-template/issues/43>; the hotfix <https://github.com/latextemplates/scientific-thesis-template/pull/45> introduced `\\makenoidxglossaries`); the templates returned to it in 2026.\n\nThe options and their pros and cons in general: [How to manage acronyms and glossaries](https://github.com/latextemplates/gadr-latex-packages/blob/main/acronyms-and-glossaries.md).\n\n<!-- markdownlint-disable-file MD013 -->\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "latextemplates/scientific-thesis-template#35",
+     "kind": "pull",
+     "url": "https://github.com/latextemplates/scientific-thesis-template/pull/35",
+     "number": "35"
+    },
+    {
+     "key": "latextemplates/scientific-thesis-template#43",
+     "kind": "issue",
+     "url": "https://github.com/latextemplates/scientific-thesis-template/issues/43",
+     "number": "43"
+    },
+    {
+     "key": "latextemplates/scientific-thesis-template#45",
+     "kind": "pull",
+     "url": "https://github.com/latextemplates/scientific-thesis-template/pull/45",
+     "number": "45"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/acronyms-and-glossaries.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0019-use-footmisc-para-for-paragraph-footnotes.md",
+   "identity": "docs/decisions/0019-use-footmisc-para-for-paragraph-footnotes.md",
+   "adr_id": "19",
+   "title": "Use footmisc para for paragraph footnotes",
+   "first_commit": "2026-10-30T01:02:11+01:00",
+   "first_sha": "7f88ed1efb34373d956bc27b054441f89375c579",
+   "last_commit": "2026-10-30T01:02:11+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use footmisc para for paragraph footnotes\n\n## Context and Problem Statement\n\nEach footnote of a page takes a line of its own, even when it is just a short URL.\nIn a paper with a page limit, setting all footnotes of a page side by side in one paragraph saves space ([lncs-enhanced#20](https://github.com/latextemplates/lncs-enhanced/issues/20)).\nWhich package should the templates offer for that, and how?\n\n## Considered Options\n\n* [footmisc](https://ctan.org/pkg/footmisc) with option `para`\n* [manyfoot](https://ctan.org/pkg/manyfoot) with option `para`\n* [bigfoot](https://ctan.org/pkg/bigfoot) with `\\DeclareNewFootnote[para]{default}`\n* [fnpara](https://ctan.org/pkg/fnpara)\n* Keep one footnote per line\n\n## Decision Outcome\n\nChosen option: \"footmisc with option `para`\", offered as a commented-out block in the `lncs` template only, because it keeps `\\footnote` unchanged, is maintained by the LaTeX team, and is the package the theses already load.\nbigfoot does not compile with TeX Live 2026 and hyperref (`Undefined control sequence \\FN@colorstack`), manyfoot needs its own footnote commands, and fnpara is superseded by footmisc.\n\nAll paragraph-footnote packages collect each footnote in a box.\nTeX inserts no break points into math inside a box, and `\\url` typesets its argument in math mode, so URLs cannot break inside such footnotes and run into the margin (with xurl's stretchable glue, they are letter-spaced across the line instead).\nLuaTeX's `\\mathpenaltiesmode=1` inserts the break points also inside boxes, so the block is for LuaLaTeX only; pdfLaTeX has no such switch.\nThe block stays commented out, because it changes the look of the footnotes and the LNCS guidelines do not ask for it.\nIt is not offered for the two-column classes (`acm`, `ieee`), where the narrow column leaves no room for footnotes side by side.\n\n### Consequences\n\n* Good, because uncommenting two lines saves one line per additional footnote on a page.\n* Bad, because the block works with LuaLaTeX only.\n\n## More Information\n\nThe options and their pros and cons in general: [How to set footnotes side by side in one paragraph](https://github.com/latextemplates/gadr-latex-packages/blob/main/paragraph-footnotes.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "latextemplates/lncs-enhanced#20",
+     "kind": "issue",
+     "url": "https://github.com/latextemplates/lncs-enhanced/issues/20",
+     "number": "20"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/paragraph-footnotes.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0020-use-impnattypo-against-short-last-lines.md",
+   "identity": "docs/decisions/0020-use-impnattypo-against-short-last-lines.md",
+   "adr_id": "20",
+   "title": "Use impnattypo against short last lines",
+   "first_commit": "2026-10-30T01:02:11+01:00",
+   "first_sha": "7f88ed1efb34373d956bc27b054441f89375c579",
+   "last_commit": "2026-10-30T01:02:11+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use impnattypo against short last lines\n\n## Context and Problem Statement\n\nA paragraph whose last line holds only a short word or a hyphenated fragment looks bad.\nThe templates once loaded [impnattypo](https://ctan.org/pkg/impnattypo) for that and reverted it, because its pdfLaTeX variant widened the interword spacing in every paragraph ([lncs-enhanced#16](https://github.com/latextemplates/lncs-enhanced/issues/16)).\nHow to avoid short last lines?\n\n## Considered Options\n\n* [impnattypo](https://ctan.org/pkg/impnattypo) with option `lastparline`, LuaLaTeX only\n* impnattypo for both engines\n* limit the stretch of `\\parfillskip` by hand\n* leave it to the author (`\\looseness`, ties)\n\n## Decision Outcome\n\nChosen option: \"impnattypo with option `lastparline`, LuaLaTeX only\", because with LuaLaTeX the package vetoes only the offending line break of an affected paragraph, so all other paragraphs stay as they are.\nWith pdfLaTeX it is not loaded (`\\ifdefined\\directlua`): its fallback there is the global `\\parfillskip` stretch that caused the revert.\nThe LaTeX hints of the papers explain `\\looseness` for the remaining cases.\n\n### Consequences\n\n* Good, because LuaLaTeX documents get the fix without any action by the author.\n* Bad, because pdfLaTeX documents are unchanged.\n\n## More Information\n\nThe options and their pros and cons in general: [How to avoid a short last line of a paragraph](https://github.com/latextemplates/gadr-latex-packages/blob/main/short-last-lines.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "latextemplates/lncs-enhanced#16",
+     "kind": "issue",
+     "url": "https://github.com/latextemplates/lncs-enhanced/issues/16",
+     "number": "16"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/short-last-lines.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0021-use-lua-ul-for-highlighting-text.md",
+   "identity": "docs/decisions/0021-use-lua-ul-for-highlighting-text.md",
+   "adr_id": "21",
+   "title": "Use lua-ul for highlighting text",
+   "first_commit": "2026-10-30T01:02:11+01:00",
+   "first_sha": "7f88ed1efb34373d956bc27b054441f89375c579",
+   "last_commit": "2026-10-30T01:02:11+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use lua-ul for highlighting text\n\n## Context and Problem Statement\n\n`\\textcomment{text}{comment}` highlights a passage and attaches a PDF comment.\nThe highlighting used `\\colorbox`, which is an unbreakable box, so a highlighted passage of more than a few words ran into the margin ([lncs-enhanced#15](https://github.com/latextemplates/lncs-enhanced/issues/15)).\nHow to highlight text so that it breaks across lines?\n\n## Considered Options\n\n* [lua-ul](https://ctan.org/pkg/lua-ul) (`\\highLight`, with luacolor) for LuaLaTeX, `\\colorbox` for pdfLaTeX\n* [soul](https://ctan.org/pkg/soul) (`\\hl`) for both engines\n* keep `\\colorbox`\n\n## Decision Outcome\n\nChosen option: \"lua-ul for LuaLaTeX, `\\colorbox` for pdfLaTeX\", because lua-ul highlights at the node level after line breaking, so the passage may contain anything (`\\cite`, `\\url`, `\\emph`, `\\texttt`) and breaks like ordinary text.\nsoul re-scans the passage syllable by syllable and fails on `\\cite` and other fragile content unless it is braced, which made it unusable for the templates before.\npdfLaTeX documents keep `\\colorbox` (unchanged behavior), as LuaLaTeX is the default engine.\n\n### Consequences\n\n* Good, because a highlighted passage of any length is fine with LuaLaTeX.\n* Neutral, because luacolor changes how LuaTeX produces colors: it tags glyphs and rules with an attribute instead of writing color-stack specials. A package that drives the color stack itself could disagree with that; in the compiled lncs example, hyperref, minted, pgfplots, tcolorbox and pdfcomment rendered as before.\n\n## More Information\n\nThe options and their pros and cons in general: [How to highlight text](https://github.com/latextemplates/gadr-latex-packages/blob/main/text-highlighting.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "latextemplates/lncs-enhanced#15",
+     "kind": "issue",
+     "url": "https://github.com/latextemplates/lncs-enhanced/issues/15",
+     "number": "15"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/text-highlighting.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0022-use-tablefootnote-for-footnotes-in-tables.md",
+   "identity": "docs/decisions/0022-use-tablefootnote-for-footnotes-in-tables.md",
+   "adr_id": "22",
+   "title": "Use tablefootnote for footnotes in tables",
+   "first_commit": "2026-10-30T01:02:11+01:00",
+   "first_sha": "7f88ed1efb34373d956bc27b054441f89375c579",
+   "last_commit": "2026-10-30T01:02:11+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use tablefootnote for footnotes in tables\n\n## Context and Problem Statement\n\nA `\\footnote` inside a `tabular` within a floating `table` produces the mark, but the footnote text is lost ([scientific-thesis-template#91](https://github.com/latextemplates/scientific-thesis-template/issues/91)).\nHow to set footnotes in tables?\n\n## Considered Options\n\n* [tablefootnote](https://ctan.org/pkg/tablefootnote)\n* [threeparttable](https://ctan.org/pkg/threeparttable)\n* `\\footnotemark` in the table and `\\footnotetext` after the float\n\n## Decision Outcome\n\nChosen option: \"tablefootnote\", because `\\tablefootnote` is a drop-in for `\\footnote`: the note appears at the bottom of the page like every other footnote, with no extra environment and no manual numbering.\nthreeparttable sets the notes directly under the table, which is common in journals but rare in theses, and needs its own environment.\n\n### Consequences\n\n* Good, because authors replace `\\footnote` by `\\tablefootnote` and are done.\n* Bad, because a footnote of a float that moves to another page moves with it, so the note can be far from the table in the running text.\n\n## More Information\n\nThe options and their pros and cons in general: [How to set footnotes in tables](https://github.com/latextemplates/gadr-latex-packages/blob/main/footnotes-in-tables.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "latextemplates/scientific-thesis-template#91",
+     "kind": "issue",
+     "url": "https://github.com/latextemplates/scientific-thesis-template/issues/91",
+     "number": "91"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/footnotes-in-tables.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0023-use-graphicscache-to-shrink-images.md",
+   "identity": "docs/decisions/0023-use-graphicscache-to-shrink-images.md",
+   "adr_id": "23",
+   "title": "Use graphicscache to shrink images",
+   "first_commit": "2026-10-30T01:02:11+01:00",
+   "first_sha": "7f88ed1efb34373d956bc27b054441f89375c579",
+   "last_commit": "2026-10-30T01:02:11+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use graphicscache to shrink images\n\n## Context and Problem Statement\n\nPhotos and screenshots included with `\\includegraphics` are embedded as they are, so a thesis with many high-resolution images easily grows to tens of megabytes ([generator-latex-template#609](https://github.com/latextemplates/generator-latex-template/issues/609)).\nHow to keep the PDF small without asking authors to prepare their images?\n\n## Considered Options\n\n* [graphicscache](https://ctan.org/pkg/graphicscache), loaded only when shell escape is enabled\n* graphicscache always, with a generator switch\n* downsample the images before including them (ImageMagick, Ghostscript)\n* post-process the finished PDF with Ghostscript\n\n## Decision Outcome\n\nChosen option: \"graphicscache, loaded only when shell escape is enabled\", because it works on the unchanged sources and needs no knob: it re-encodes each image once through Ghostscript (lossless `compress=flat`, at most 300 dpi) and caches the result in `graphicscache/`, so later runs are as fast as before.\nThe package needs `\\write18` for Ghostscript and an external `pdflatex`, so the preamble loads it only under `--shell-escape` (`\\sys_if_shell_unrestricted:T`); a plain run embeds the images as before.\nIts `compress=flat` option spells the Ghostscript filter \"FlatEncode\", which Ghostscript rejects; the preamble corrects it to `FlateEncode` after loading (reported as [xqms/graphicscache#30](https://github.com/xqms/graphicscache/issues/30)).\nIt also does not know graphicx's `alt` key, which the markdown package sets; the preamble forwards it ([xqms/graphicscache#29](https://github.com/xqms/graphicscache/issues/29)).\n\n### Consequences\n\n* Good, because a `--shell-escape` build (PlantUML, minted up to TeX Live 2024, or by choice) gets smaller PDFs with no further configuration.\n* Bad, because the first `--shell-escape` run is slower: one `pdflatex` and one Ghostscript call per image.\n* Bad, because a build without shell escape is unchanged, so the gain is invisible to most authors unless they enable it.\n\n## More Information\n\nThe options and their pros and cons in general: [How to shrink images in the PDF](https://github.com/latextemplates/gadr-latex-packages/blob/main/image-compression.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "latextemplates/generator-latex-template#609",
+     "kind": "issue",
+     "url": "https://github.com/latextemplates/generator-latex-template/issues/609",
+     "number": "609"
+    },
+    {
+     "key": "xqms/graphicscache#30",
+     "kind": "issue",
+     "url": "https://github.com/xqms/graphicscache/issues/30",
+     "number": "30"
+    },
+    {
+     "key": "xqms/graphicscache#29",
+     "kind": "issue",
+     "url": "https://github.com/xqms/graphicscache/issues/29",
+     "number": "29"
+    }
+   ],
+   "mentioned_paths": [
+    "graphicscache/",
+    "github.com/latextemplates/gadr-latex-packages/blob/main/image-compression.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0024-use-phfcc-for-edits-by-several-authors.md",
+   "identity": "docs/decisions/0024-use-phfcc-for-edits-by-several-authors.md",
+   "adr_id": "24",
+   "title": "Use phfcc for edits and comments by several authors",
+   "first_commit": "2026-10-30T01:02:11+01:00",
+   "first_sha": "7f88ed1efb34373d956bc27b054441f89375c579",
+   "last_commit": "2026-10-30T01:02:11+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use phfcc for edits and comments by several authors\n\n## Context and Problem Statement\n\nWhen several people write a paper or when a supervisor reviews a thesis, additions, removals and remarks have to be visible in the PDF and attributable to their author.\nThe templates offered only single-author marks (`\\change`, `\\modified`, `\\textmarker`) and PDF annotations ([generator-latex-template#143](https://github.com/latextemplates/generator-latex-template/issues/143)).\nHow to mark edits and comments by several authors?\n\n## Considered Options\n\n* [phfcc](https://ctan.org/pkg/phfcc)\n* [changes](https://ctan.org/pkg/changes)\n* [todonotes](https://ctan.org/pkg/todonotes) only\n* [latexdiff](https://ctan.org/pkg/latexdiff) between versions\n\n## Decision Outcome\n\nChosen option: \"phfcc\", because one `\\phfMakeCommentingCommand` per author gives a single short command for everything: `\\FA{added}`, `\\FA*{removed}`, `\\FA[comment]`, `\\FA!{important}`, with the initials once per page in the margin instead of at every mark, and `\\phfDisableCommentingCommands` hides everything for the final version.\nWith LuaLaTeX, the `rmstrikethrough` style strikes removed text through across line breaks (lua-ul, which the templates load anyway); the `footcomments` style moves comments into footnotes so that the layout stays intact when checking page limits.\n\n![phfcc: an addition, a comment and a removal](0024-phfcc.png)\n\nSeparately, the thesis documents with `--todo=todonotes` set inline TODOs as a titled tcolorbox, which stands out in a long text better than todonotes' plain colored bar:\n\n![TODO as a titled box](0024-thesis-todo-box.png)\n\n### Consequences\n\n* Good, because the template defines `\\FA` (\"first author\") and a second author needs one more line in the preamble.\n* Good, because the existing `\\textcomment` and `\\sidecomment` (PDF annotations) stay as they are; phfcc adds in-text marks, it does not replace them.\n* Bad, because the margin initials need a margin; in two-column papers they sit in the narrow outer margin.\n\n## More Information\n\nThe options and their pros and cons in general: [How to track changes by several authors](https://github.com/latextemplates/gadr-latex-packages/blob/main/change-tracking.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "latextemplates/generator-latex-template#143",
+     "kind": "issue",
+     "url": "https://github.com/latextemplates/generator-latex-template/issues/143",
+     "number": "143"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/change-tracking.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0015-use-progressbar-for-writing-progress.md",
+   "identity": "docs/decisions/0015-use-progressbar-for-writing-progress.md",
+   "adr_id": "15",
+   "title": "Use progressbar to show the writing progress",
+   "first_commit": "2026-10-26T01:59:15+01:00",
+   "first_sha": "aab58eef85c6b13f9736e6a0bfe2397195a741d5",
+   "last_commit": "2026-10-26T01:59:15+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use progressbar to show the writing progress\n\n## Context and Problem Statement\n\nStudents and advisors want to see how far each chapter of a thesis is written ([#359](https://github.com/latextemplates/generator-latex-template/issues/359)).\nA bar below the heading shows it; it has to be removable for the submitted version.\nHow to show the writing progress?\n\n## Considered Options\n\n* [progressbar](https://ctan.org/pkg/progressbar), wrapped in a `\\progress{<percent>}` macro\n* [progress](https://ctan.org/pkg/progress)\n\n## Decision Outcome\n\nChosen option: \"progressbar\", because it only draws the bar and leaves the headings alone.\n`progress` redefines `\\chapter` and fails in the appendix (\"Missing number\", it compares the chapter letter with a number).\n`\\progress{60}` draws a bar filled to 60 % across the text width; `\\showprogressfalse` hides all bars.\nTheses enable it, papers contain it as commented-out lines.\n\n### Consequences\n\n* Good, because it works with KOMA-Script, hyperref, and appendices.\n* Bad, because there is no HTML progress report as `progress` writes one.\n\n## More Information\n\nThe options and their pros and cons in general: [How to show the writing progress of chapters](https://github.com/latextemplates/gadr-latex-packages/blob/main/progress-bars.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#359",
+     "kind": "hash",
+     "url": "",
+     "number": "359"
+    },
+    {
+     "key": "latextemplates/generator-latex-template#359",
+     "kind": "issue",
+     "url": "https://github.com/latextemplates/generator-latex-template/issues/359",
+     "number": "359"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/progress-bars.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0016-use-xurl-for-url-line-breaks.md",
+   "identity": "docs/decisions/0016-use-xurl-for-url-line-breaks.md",
+   "adr_id": "16",
+   "title": "Use xurl to break long URLs",
+   "first_commit": "2026-10-26T01:59:15+01:00",
+   "first_sha": "aab58eef85c6b13f9736e6a0bfe2397195a741d5",
+   "last_commit": "2026-10-26T01:59:15+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use xurl to break long URLs\n\n## Context and Problem Statement\n\nLong URLs ran into the margin, because `url` breaks only at a few symbols ([#133](https://github.com/latextemplates/generator-latex-template/issues/133)).\nHow to break long URLs?\n\n## Considered Options\n\n* [xurl](https://ctan.org/pkg/xurl)\n* [url](https://ctan.org/pkg/url) with additional break points (`\\UrlOrds`), as before\n\n## Decision Outcome\n\nChosen option: \"xurl\", because it allows breaks after any character, so no URL runs into the margin.\nIt is loaded before biblatex, so that the templates' own biblatex URL penalties stay.\n\n## More Information\n\nThe options and their pros and cons in general: [How to break long URLs](https://github.com/latextemplates/gadr-latex-packages/blob/main/url-line-breaks.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#133",
+     "kind": "hash",
+     "url": "",
+     "number": "133"
+    },
+    {
+     "key": "latextemplates/generator-latex-template#133",
+     "kind": "issue",
+     "url": "https://github.com/latextemplates/generator-latex-template/issues/133",
+     "number": "133"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/url-line-breaks.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0017-use-linebreaker-against-overfull-lines.md",
+   "identity": "docs/decisions/0017-use-linebreaker-against-overfull-lines.md",
+   "adr_id": "17",
+   "title": "Use linebreaker against overfull lines",
+   "first_commit": "2026-10-26T01:59:15+01:00",
+   "first_sha": "aab58eef85c6b13f9736e6a0bfe2397195a741d5",
+   "last_commit": "2026-10-26T01:59:15+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use linebreaker against overfull lines\n\n## Context and Problem Statement\n\nThe generated examples had lines running into the margin, e.g., with long inline code ([#92](https://github.com/latextemplates/generator-latex-template/issues/92)).\nHow to avoid overfull lines?\n\n## Considered Options\n\n* [linebreaker](https://ctan.org/pkg/linebreaker) with LuaLaTeX\n* fix each line by hand\n* set `\\emergencystretch` globally\n\n## Decision Outcome\n\nChosen option: \"linebreaker\", because it loosens only the paragraphs that would otherwise be overfull.\nIn the English scientific thesis, it removed all ten overfull lines without changing the page count.\nIt is loaded at the end of the preamble, only with LuaLaTeX; pdfLaTeX documents are unchanged.\n\n### Consequences\n\n* Good, because authors do not need to fix overfull lines by hand.\n* Bad, because a re-broken paragraph can have wide interword spaces.\n\n## More Information\n\nThe options and their pros and cons in general: [How to avoid lines running into the margin](https://github.com/latextemplates/gadr-latex-packages/blob/main/overfull-lines.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#92",
+     "kind": "hash",
+     "url": "",
+     "number": "92"
+    },
+    {
+     "key": "latextemplates/generator-latex-template#92",
+     "kind": "issue",
+     "url": "https://github.com/latextemplates/generator-latex-template/issues/92",
+     "number": "92"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/overfull-lines.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0018-use-lua-widow-control-against-widows-and-orphans.md",
+   "identity": "docs/decisions/0018-use-lua-widow-control-against-widows-and-orphans.md",
+   "adr_id": "18",
+   "title": "Use lua-widow-control against widows and orphans",
+   "first_commit": "2026-10-26T01:59:15+01:00",
+   "first_sha": "aab58eef85c6b13f9736e6a0bfe2397195a741d5",
+   "last_commit": "2026-10-26T01:59:15+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use lua-widow-control against widows and orphans\n\n## Context and Problem Statement\n\n`nowidow` avoids widows and orphans by penalties, so a page then ends a line early ([#92](https://github.com/latextemplates/generator-latex-template/issues/92)).\nHow to avoid widows and orphans?\n\n## Considered Options\n\n* [lua-widow-control](https://ctan.org/pkg/lua-widow-control) with LuaLaTeX, [nowidow](https://ctan.org/pkg/nowidow) with pdfLaTeX\n* [nowidow](https://ctan.org/pkg/nowidow) for both engines\n\n## Decision Outcome\n\nChosen option: \"lua-widow-control with LuaLaTeX, nowidow with pdfLaTeX\", because lua-widow-control keeps the pages full by lengthening or shortening a paragraph by one line.\nThe preamble chooses by engine (`\\ifdefined\\directlua`), so `--latexcompiler=both` works.\n\n## More Information\n\nThe options and their pros and cons in general: [How to avoid widows and orphans](https://github.com/latextemplates/gadr-latex-packages/blob/main/widows-and-orphans.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#92",
+     "kind": "hash",
+     "url": "",
+     "number": "92"
+    },
+    {
+     "key": "latextemplates/generator-latex-template#92",
+     "kind": "issue",
+     "url": "https://github.com/latextemplates/generator-latex-template/issues/92",
+     "number": "92"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/widows-and-orphans.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0010-use-lualatex-for-correct-ligatures.md",
+   "identity": "docs/decisions/0010-use-lualatex-for-correct-ligatures.md",
+   "adr_id": "10",
+   "title": "Use lualatex for correct ligatures",
+   "first_commit": "2025-01-29T16:45:08+01:00",
+   "first_sha": "2fd927a60b540348fbf54baca305ec177d21b24f",
+   "last_commit": "2026-10-19T08:12:17+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Use lualatex for correct ligatures\n\nTechnical Story: <https://github.com/latextemplates/scientific-thesis-template/issues/54>\n\n## Context and Problem Statement\n\nA [ligature](https://en.wikipedia.org/wiki/Typographic_ligature) is the joining of letters to look better.\nTypographic rules forbid ligatures at \"morpheme boundaries\".\nSee [english.stackexchange.com](https://english.stackexchange.com/q/50660/66058) for a long discussion.\n\nExample with correct ligatures:\n\n![selnolig activated](ligatures-selnolig-activated.png)\n\nExample with wrong ligatures:\n\n![selnolig not activated](ligatures-selnolig-deactivated.png)\n\nSee a German rant on wrong ligatures: <https://web.archive.org/web/20150425155310/http://www.mengensatz.de/blog/?p=79>.\nFor instance, in the English word \"offline\", the letters \"f\" and \"l\" must not form a ligature.\nIn the German word \"Auflage\", the letters \"f\" and \"l\" must not form a ligature.\nSee also the last lines in <https://tex.stackexchange.com/a/64457/9075>.\n\n### More readings\n\n* <https://www.typolexikon.de/ligatur/>\n* Questions on ligatures: <https://tex.stackexchange.com/questions/tagged/ligatures>\n* Disable ligatures in headings: <https://tex.stackexchange.com/q/198743/9075>\n\n## Considered Options\n\n* Use lualatex+selnolig\n* Use a post-processor\n* Suppress all ligatures\n* Ignore ligature issues\n\n## Decision Outcome\n\nChosen option: \"lualatex\", because comes out best (see below).\n\n## Pros and Cons of the Options\n\n### Use lualatex+selnolig\n\nThe only way to keep ligatures where appropriate is to switch to [lualatex](http://www.luatex.org/).\nThere is [selnolig](https://www.ctan.org/pkg/selnolig).\nFound going from <https://tex.stackexchange.com/q/28437/9075> to <https://tex.stackexchange.com/q/63005/9075> and then to <https://tex.meta.stackexchange.com/questions/2884/new-package-selnolig-that-automates-suppression-of-typographic-ligatures>\n\n* Good, because disables at the right places and not everywhere\n* Bad, because needs switch of LaTeX compiler to lualatex, which users are not used to\n\n### Use a post-processor\n\n* perl-based solution: <http://ctan.org/pkg/rmligs>\n* java-based solution: <http://www.ctan.org/pkg/delig>  (used by @sieversmartin)\n* C-based solution (working for German documents only): <https://ctan.org/pkg/ligatex>\n\n* Good, because proven solutions\n* Good, because works with pdflatex\n* Bad, because it uses babel's `\"|` shortcut, which produces correct results in the case of \"fl\" and the font \"latin modern\" only.\n  See <https://tex.stackexchange.com/a/389439/9075> for a long explanation.\n* Bad, because tex files change\n\n### Suppress ligatures completely\n\nSee <https://tex.stackexchange.com/q/61042/9075> and <https://tex.stackexchange.com/q/1841/9075>\n\n* Good, because easy to implement\n* Good, because works with pdflatex\n* Bad, because ligatures look better\n\n### Ignore ligature issues\n\n* Good, because LaTeX users expect ligatures everywhere\n* Good, because works with pdflatex\n* Bad, because higher-quality typesetting is possible\n\n## More Information\n\nThe options and their pros and cons in general: [How to avoid wrong ligatures](https://github.com/latextemplates/gadr-latex-packages/blob/main/ligatures.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "latextemplates/scientific-thesis-template#54",
+     "kind": "issue",
+     "url": "https://github.com/latextemplates/scientific-thesis-template/issues/54",
+     "number": "54"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/ligatures.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0000-use-markdown-architectural-decision-records.md",
+   "identity": "docs/adr/0000-use-markdown-architectural-decision-records.md",
+   "adr_id": "0",
+   "title": "Use Markdown Any Decision Records",
+   "first_commit": "2019-03-31T17:50:36+02:00",
+   "first_sha": "3b384a3ec37611c82d3891813bf0db4ce828571a",
+   "last_commit": "2026-10-16T13:53:36+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Use Markdown Any Decision Records\n\n## Context and Problem Statement\n\nWe want to record any decisions made in this project independent whether decisions concern the architecture (\"architectural decision record\"), the code, or other fields.\nWhich format and structure should these records follow?\n\n## Considered Options\n\n* [MADR](https://adr.github.io/madr/) 3.0.0-beta \u2013 The Markdown Any Decision Records\n* [Michael Nygard's template](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions) \u2013 The first incarnation of the term \"ADR\"\n* [Sustainable Architectural Decisions](https://www.infoq.com/articles/sustainable-architectural-design-decisions) \u2013 The Y-Statements\n* Other templates listed at <https://github.com/joelparkerhenderson/architecture_decision_record>\n* Formless \u2013 No conventions for file format and structure\n\n## Decision Outcome\n\nChosen option: \"MADR 3.0.0-beta\", because\n\n* Make implicit assumptions explicit.\n  Design documentation is important to enable people understanding the decisions later on.\n  See also [A rational design process: How and why to fake it](https://doi.org/10.1109/TSE.1986.6312940).\n* MADR allows for structured capturing of any decision.\n* The MADR format is lean and fits our development style.\n* The MADR structure is comprehensible and facilitates usage & maintenance.\n* The MADR project is vivid.\n\n<!-- markdownlint-disable-file MD013 -->\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "doi.org/10.1109/TSE.1986.6312940"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0001-use-yeoman.md",
+   "identity": "docs/adr/0001-use-yeoman.md",
+   "adr_id": "1",
+   "title": "Use Yeoman As Template Generator",
+   "first_commit": "2019-03-31T17:50:36+02:00",
+   "first_sha": "3b384a3ec37611c82d3891813bf0db4ce828571a",
+   "last_commit": "2026-10-16T13:53:36+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 11,
+   "text": "# Use Yeoman As Template Generator\n\n## Context and Problem Statement\n\nWe want to generate the template automatically.\n\n## Considered Options\n\n* [Yeoman](https://yeoman.io/)\n* [texplate](https://ctan.org/pkg/texplate)\n* [Cookiecutter](https://github.com/cookiecutter/cookiecutter)\n* [copier](https://github.com/copier-org/copier)\n* [Jinja2](http://jinja.pocoo.org/)\n* [Cheetah](http://cheetahtemplate.org/)\n* [Apache Velocity](http://velocity.apache.org/)\n* [lualatex](https://en.wikipedia.org/wiki/LuaTeX)\n* hygen\n* nx\n* plop\n\n## Decision Outcome\n\nChosen option: \"Yeoman\", because it seems to be the most easy to use generator.\n\n## Pros and Cons of the Options\n\n### [Yeoman](https://yeoman.io/)\n\nYeoman is a famous template generator. <https://alternativeto.net/software/yeoman/about/> summarizes it.\n\nProposed by @miwurster. In use in different projects:\n\n* [Andi-Lo/generator-latex](https://github.com/Andi-Lo/generator-latex)\n* [LeoColomb/generator-latex](https://github.com/LeoColomb/generator-latex)\n\n---\n\n* Good, because popular.\n* Good, because it works in the usual npm ecosystem, which makes it user friendly.\n* Bad, because uses JavaScript as language. The templates are hard to maintain.\n* Bad, because moves fast (e.g., yeoman-generator switched to TypeScript and [yo 5.0.0 does not work locally any more](https://github.com/yeoman/yo/issues/797))\n\n### [texplate](https://ctan.org/pkg/texplate)\n\nTeXplate is a Kotlin-based framework to generate LaTeX templates.\n\n* Good, because actively maintained by the Island of TeX community\n* Neutral, because it uses Kotlin\n* Neutral, because only basic templates offered (see <https://gitlab.com/islandoftex/texplate/-/tree/master/src/main/resources/org/islandoftex/texplate/templates>)\n* Bad, because no concept of \"mix and match\" implemented.\n\n### [Cookiecutter](https://github.com/cookiecutter/cookiecutter)\n\n* Good, because easy command line call. Example: `cookiecutter gh:audreyfeldroy/cookiecutter-pypackage`\n* Good, because Builds on Jinja2\n* Bad, because a JSON file holds the settings. Example: <https://cookiecutter.readthedocs.io/en/2.2.3/advanced/choice_variables.html>.\n\n### [copier](https://github.com/copier-org/copier)\n\n* Good, because Uses Python as language.\n* Good, because Supports template updates. Example: <https://github.com/pawamoy/copier-poetry/blob/6f5ec9f9c25769be1dec8d2b36e1748634bea8f0/copier.yml#L9>.\n* Good, because Prompts are configures in a simple YAML file (and not using some programming language). Example: <https://github.com/pawamoy/copier-poetry/blob/6f5ec9f9c25769be1dec8d2b36e1748634bea8f0/copier.yml#L19>.\n\n### [Jinja2](http://jinja.pocoo.org/)\n\nRecommended by @mfa and @andlaus, also because of <http://eosrei.net/articles/2015/11/latex-templates-python-and-jinja2-generate-pdfs>\n\n* Good, because it works together with [simple-term-menu](https://github.com/Cs137/simple-term-menu)\n* Bad, because it is a templating engine. Prompts are out of scope.\n\n### [Cheetah](http://cheetahtemplate.org/)\n\nRecommended at <https://tex.stackexchange.com/q/41875/9075>\n\n* Bad, because it is a templating engine. Prompts are out of scope.\n\n### [Apache Velocity](http://velocity.apache.org/)\n\nRecommended by <http://tex-talk.net/2012/03/generating-latex-code-with-a-template-engine/>\n\n* Bad, because it is a templating engine. Prompts are out of scope.\n\n### [lualatex](https://en.wikipedia.org/wiki/LuaTeX)\n\nRecommended by @Stefan-Kottwitz at <http://tex-talk.net/2012/03/generating-latex-code-with-a-template-engine/#comment-231>\n\n* Bad, because it is a framework. Not a templating engine and not a prompting engine per se.\n\n### [hygen](https://github.com/jondot/hygen)\n\n* Bad, because seems to miss interactivity\n\n### nx\n\nSee <https://nx.dev/features/generate-code?utm_source=homepage&utm_medium=website&utm_campaign=homepage_links&utm_content=cta_achieve_more_ship_quicker#build-your-own-generator>\n\n* Neutral, because it appeared later than we opted for Yeoman.\n\n### [plop](https://plopjs.com/)\n\n* Neutral, because it appeared later than we opted for Yeoman.\n\n## Links\n\n* <https://copier.readthedocs.io/en/latest/comparisons/> compares Copier, Cookiecutter, and Yeoman.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "yeoman/yo#797",
+     "kind": "issue",
+     "url": "https://github.com/yeoman/yo/issues/797",
+     "number": "797"
+    }
+   ],
+   "mentioned_paths": [
+    "cookiecutter.readthedocs.io/en/2.2.3/advanced/choice_variables.html",
+    "github.com/pawamoy/copier-poetry/blob/6f5ec9f9c25769be1dec8d2b36e1748634bea8f0/copier.yml"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0002-use-manuth-TSGeneratorGenerator.md",
+   "identity": "docs/adr/0002-use-manuth-TSGeneratorGenerator.md",
+   "adr_id": "2",
+   "title": "Use manuth/TSGeneratorGenerator",
+   "first_commit": "2019-10-15T17:13:01+00:00",
+   "first_sha": "1f93b91ae710adce72dbe710b47abab2bc346b5e",
+   "last_commit": "2026-10-16T13:53:36+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "Not Accepted",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Use manuth/TSGeneratorGenerator\n\nStatus: Not Accepted\n\n## Context and Problem Statement\n\nWhat to use as basis for the generator?\n\n## Considered Options\n\n* [manuth/TSGeneratorGenerator](https://github.com/manuth/TSGeneratorGenerator)\n* [seesharper/generator-typescript-generator](https://github.com/seesharper/generator-typescript-generator)\n\n## Decision Outcome\n\nChosen option: \"vojtechhabarta/typescript-generator\", because\n\n* actively maintained\n* TypeScript\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0003-use-cleveref.md",
+   "identity": "docs/adr/0003-use-cleveref.md",
+   "adr_id": "3",
+   "title": "Use cleveref for references",
+   "first_commit": "2020-04-29T20:25:26+02:00",
+   "first_sha": "1086f70af1134b8f8629fb91325757f4c52dcbcc",
+   "last_commit": "2026-10-16T13:53:36+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "superseded",
+   "status_raw": "superseded by ADR-0014",
+   "replacement": "ADR-0014",
+   "n_commits": 5,
+   "text": "---\nstatus: \"superseded by ADR-0014\"\n---\n\n# Use cleveref for references\n\n## Context and Problem Statement\n\nWhen referencing a figure (e.g., see Figure 5), should the text \"Figure\" also be a link?\nWhen referencing figures at the beginning of a sentence, should be possible to use a different word?\nFor instance, Springer demands \"Figure\" at the beginning of a sentence, but \"Fig.\" in the middle of the sentence?\nShould it be possible to summarize multiple figures? For instance, range fig:one, fig:two, fig:three automagically gets 1--3.\n\n## Decision Drivers\n\n* The word before the number of the target should also be a hyperlink to offer a wider clicking space.\n  E.g., \"Figure 1\" should be the hyperlink text, not only the \"1\".\n* Easy to use commands\n* Package should be compatible to other packages\n* Package should be available on overleaf\n\n## Considered Options\n\n* [cleveref](https://ctan.org/pkg/cleveref)\n* `autoref` - part of [hyperref](https://ctan.org/pkg/hyperref)\n* [modref](https://ctan.org/pkg/modref)\n* [fancyref](https://ctan.org/pkg/fancyref)\n* [refstyle](https://ctan.org/pkg/refstyle)\n* [fncylab](https://ctan.org/pkg/fncylab)\n* [prettyref](https://ctan.org/pkg/prettyref)\n* [typedref](https://ctan.org/pkg/typedref)\n\n## Decision Outcome\n\nChosen option: \"cleveref\", because it comes out best (see below).\n\n## Pros and Cons of the Options\n\n### cleveref\n\n* Good, because solves all requirements\n* Good, because one referencing command for all kinds of references (figures, tables, listings, ...)\n* Good, because cleveref is easy to setup and use\n* Good, because cleveref allows for hyperlinked text\n* Good, because supports typesetting \"Section\" and \"Sect.\" (used at the beginning resp. in the middle of a sentence; required by Springer guidelines).\n* Bad, because it sometimes needs tweaks to work\n* Bad, because `\\Cref` and `\\cref` distinguish beginning and middle of a sentence\n\n### autoref\n\n* Bad, because cannot distinguish between beginning of a sentence and middle of a sentence.\n\n### modref\n\n* Neutral, because forces user to provide proper labels\n* Bad, because it modifies the `\\ref` command\n\n### fancyref\n\nProvides fancy cross-referencing support, based on the package's reference commands (`\\fref` and `\\Fref`) that recognise what sort of object the reference points to.\nSo, for example, the package expects the label of a `\\section` in the form `sec:foo`: the package would recognise the `sec:` part.\n\n* Neutral, because forces user to provide proper labels\n* Bad, because `\\Fref` and `\\fref` distinguish beginning and middle of a sentence\n\n### fncylab\n\nThis functionality is build-in in the LaTeX kernel.\n\nWith `\\labelformat{section}{Section~#1}`, one can instruct LaTeX to render `\\ref{sec:test}` as `Section 1`.\n\n* Good, because simple to setup\n* Bad, because `\\ref` behaves differently in other LaTeX documents\n* Bad, because it is unclear whether hyperlinks work\n* Bad, because no support of \"Section\" (beginning of a sentence) and \"Sect.\" (in the middle of a sentence) support\n\n### prettyref\n\n> Prettyref provides a command  `\\newrefformat`, which specifies the way in which a reference is typeset, according to a label \"identification\".\n> The identification is set in the `\\label` command, by using prefixed label names; so instead of `\\label{mysection}`, one uses `\\label{sec:mysection}`, and prettyref interprets the \"sec:\" part.\n\nSource: <https://ctan.org/pkg/prettyref>\n\n* Good, because this follows the \"intuition\" of LaTeX beginners, that labels need their type as prefix\n* Bad, because hyperlinked reference name has to be manually crafted\n* Bad, because it is not widely known\n\n### refstyle\n\nRefstyle requires to setup `newref` for each reference type.\nIt provides defaults such as `tab`; then, `\\tabref{tab:xy}` works.\n\n* Neutral, because provided commands (`\\figref`, ...) are short, but make an intuitive impression\n* Bad, because no automatic compression of references\n* Bad, because the command states the kind of the referenced artifact (e.g., `\\eqref`)\n* Bad, because hard to configure\n\n### typedref\n\n* Good, because provided commands (`\\figureref`, ...) are intuitive\n* Bad, because it is not widely known\n\n## More Information\n\n* The package [crefthe](https://ctan.org/pkg/crefthe) adds support for definite articles (e.g., required in German documents)\n* The package [crossreftools](https://ctan.org/pkg/crossreftools) are helper tools for the cleveref package.\n* The package [listlbls](https://ctan.org/pkg/listlbls) offers outputting all defined labels.\n* The package [fancylabel](https://ctan.org/pkg/fancylabel) removes the burden of requiring to decide between `\\label` and `\\ref`. Useful in chemistry.\n* The package [fancyref](https://ctan.org/pkg/fancyref) makes the impression to be a predecessor to cleveref. It received no updates in this century.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#1",
+     "kind": "hash",
+     "url": "",
+     "number": "1"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0004-use-cc0-as-license-for-text.md",
+   "identity": "docs/adr/0004-use-cc0-as-license-for-text.md",
+   "adr_id": "4",
+   "title": "Use CC0 as license for text",
+   "first_commit": "2020-04-30T11:24:01+02:00",
+   "first_sha": "19c4642860ee43fe5084beddb8a0b7a7db2f0a45",
+   "last_commit": "2026-10-16T13:53:36+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Use CC0 as license for text\n\nEach information published should take a license stating what others may do with it.\n\n* The template should be usable freely.\n* The license should be an accepted one at least in the European Union and the US.\n\n## Considered Options\n\n* CC0\n* MIT\n* GPL\n\n## Decision Outcome\n\nChosen option: CC0, because comes out best (see below).\n\n## Pros and Cons of the Options\n\n### CC0\n\n* Good, because allows the user to do anything with the generated tex files\n* Bad, because long license text\n* Bad, because not as well-known as MIT, GPL\n\n### MIT\n\n* Good, because well-known\n* Bad, because more a code license than a license for text\n\n### GPL\n\n* Good, because well-known\n* Bad, because forces the user of the template to make available his text under GPL, too.\n  A long reasoning regarding this statement: <https://opensource.stackexchange.com/a/4206/5671>\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0006-use-single-quote-to-enquote.md",
+   "identity": "docs/adr/0006-use-single-quote-to-enquote.md",
+   "adr_id": "6",
+   "title": "Use single quote (\") to enquote text",
+   "first_commit": "2021-03-15T12:17:25+01:00",
+   "first_sha": "baee01e35d28aefb334e903f0eb69959141a2013",
+   "last_commit": "2026-10-16T13:53:36+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Use single quote (\") to enquote text\n\n## Context and Problem Statement\n\nIn a document, some words need quotes. How to direct LaTeX to enquote a word?\n\n## Decision Drivers\n\n* Automatic correct typographical layout\n* Less effort for the user\n* Supported by prominent LaTeX editors (overleaf, vs.code, ...)\n* Supported by standard LaTeX environments\n\n## Considered Options\n\n* Use single quote (\") to enquote text\n* Force the user to use `\\enquote{word}`\n* Force the user to use `\\qq{word}`\n* Force the user to use `\\glqq{}word\\grqq{}`\n\n## Decision Outcome\n\nChosen option: \"Use single quote (\") to enquote text\", because resolves all forces.\nWe accept that special hyphenation instructions such as `application\"=specific` do not work anymore.\n\n## More Information\n\nThe options and their pros and cons in general: [How to typeset quotation marks](https://github.com/latextemplates/gadr-latex-packages/blob/main/quotation-marks.md).\n\n<!-- markdownlint-disable-file MD013 -->\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/quotation-marks.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0008-use-autotype-for-german-ligature-correction.md",
+   "identity": "docs/decisions/0008-use-autotype-for-german-ligature-correction copy.md",
+   "adr_id": "8",
+   "title": "Use `autotype` For Ligature Correction for German Documents",
+   "first_commit": "2025-01-10T12:49:26+01:00",
+   "first_sha": "6333dfffb6e536f1b92634f82b0007919e733d64",
+   "last_commit": "2026-10-16T13:53:36+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Use `autotype` For Ligature Correction for German Documents\n\n## Context and Problem Statement\n\nLigatures can be typeset wrongly.\n\n## Considered Options\n\n* [`autotype`](https://ctan.org/pkg/autotype)\n* [`ligtype`](https://ctan.org/pkg/ligtype)\n* [`selnolig`](https://ctan.org/pkg/selnolig)\n\n## Decision Outcome\n\nChosen option: \"`autotype`\", because has more features and seems to be more maintained.\n\n## More Information\n\nAs of 2026, `autotype` receives updates (version 0.6 of 2026-04-27), while `selnolig` was last released in 2015 (version 0.302).\nEnglish documents use `selnolig`, because `autotype` does not support English (see [ADR-0009](0009-use-selnolig-for-english-ligature-correction.md)).\n\nThe options and their pros and cons in general: [How to avoid wrong ligatures](https://github.com/latextemplates/gadr-latex-packages/blob/main/ligatures.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/ligatures.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0011-offer-tex-files-instead-of-a-package.md",
+   "identity": "docs/decisions/0011-offer-tex-files-instead-of-a-package.md",
+   "adr_id": "11",
+   "title": "Offer tex files instead of a package",
+   "first_commit": "2026-10-15T14:24:34+02:00",
+   "first_sha": "240e0090e437360011f4eb12ee30ae4555f7c356",
+   "last_commit": "2026-10-16T13:53:36+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Offer tex files instead of a package\n\n## Context and Problem Statement\n\nHow are the templates distributed?\n\n## Considered Options\n\n* Distribute using a ZIP file downloadable via GitHub\n* Offer as LaTeX package (`.sty`) distributed using CTAN\n* Offer as a class file (`.cls`) distributed using CTAN\n\n## Decision Outcome\n\nChosen option: \"Distribute using a ZIP file downloadable via GitHub\", because it should be easy for users to\n\n1. start using the template and\n2. apply hints from tex.stackexchange or other LaTeX help platforms.\n\nWhen distributing as package (`.cls` and `.sty` files) (such as [hagenberg-thesis](https://ctan.org/pkg/hagenberg-thesis)), it is difficult for users to adapt the packages.\nThe main reason is that there will be never as much help as for basic classes such as [KOMA-Script](https://www.komascript.de/).\n\n### Consequences\n\n* Bad, because users have more effort to pick up updates of the template: by advanced use of Git or by copying the patches manually.\n\n## More Information\n\nThis decision was originally recorded in the scientific-thesis-template.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0012-use-minted-for-code-highlighting.md",
+   "identity": "docs/decisions/0012-use-minted-for-code-highlighting.md",
+   "adr_id": "12",
+   "title": "Use minted for code highlighting",
+   "first_commit": "2026-10-15T14:24:34+02:00",
+   "first_sha": "240e0090e437360011f4eb12ee30ae4555f7c356",
+   "last_commit": "2026-10-16T13:53:36+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Use minted for code highlighting\n\n## Context and Problem Statement\n\nSource code needs highlighting.\n\n## Considered Options\n\n* [minted](https://www.ctan.org/pkg/minted)\n* [listings](https://www.ctan.org/pkg/listings)\n* [pygmentex](https://www.ctan.org/pkg/pygmentex)\n* [texments](https://www.ctan.org/pkg/texments)\n\n## Decision Outcome\n\nChosen option: \"minted\", because\n\n1. listings is inferior because it doesn't utilize a full lexer,\n2. minted offers integration with [pygments](http://pygments.org/) and is actively maintained, and\n3. the person who took over minted development [evaluated all alternatives](https://tex.stackexchange.com/a/103471/9075) and came to the conclusion that minted is the most promising solution.\n\n### Consequences\n\n* Good, because it highlights source code properly.\n* Bad, because users need to install Python and [latexminted](https://ctan.org/pkg/latexminted) and compile with `--shell-escape`.\n\n## More Information\n\nBecause of the Python requirement, the generator offers both: `--listings=minted` and `--listings=listings` (default).\n\nThe options and their pros and cons in general: [How to typeset source code](https://github.com/latextemplates/gadr-latex-packages/blob/main/source-code-listings.md).\n\nThis decision was originally recorded in the scientific-thesis-template.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/source-code-listings.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0013-use-lualatex-as-default.md",
+   "identity": "docs/decisions/0013-use-lualatex-as-default.md",
+   "adr_id": "13",
+   "title": "Use lualatex as default",
+   "first_commit": "2026-10-15T14:24:34+02:00",
+   "first_sha": "240e0090e437360011f4eb12ee30ae4555f7c356",
+   "last_commit": "2026-10-16T13:53:36+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Use lualatex as default\n\n## Context and Problem Statement\n\nWhich LaTeX compiler to use?\n\n## Considered Options\n\n* pdflatex\n* xelatex\n* lualatex\n\n## Decision Outcome\n\nChosen option: \"lualatex\", because well-maintained and better typography (see also [ADR-0010](0010-use-lualatex-for-correct-ligatures.md)).\nWe accept that compilation will take longer.\nUsers can switch to pdflatex if they want and are aware of the consequences.\n\n## More Information\n\nThis decision was originally recorded in the scientific-thesis-template.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0014-use-zref-clever-for-cross-references.md",
+   "identity": "docs/decisions/0014-use-zref-clever-for-cross-references.md",
+   "adr_id": "14",
+   "title": "Use zref-clever for cross-references",
+   "first_commit": "2026-10-15T14:24:34+02:00",
+   "first_sha": "240e0090e437360011f4eb12ee30ae4555f7c356",
+   "last_commit": "2026-10-16T13:53:36+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Use zref-clever for cross-references\n\n## Context and Problem Statement\n\nA reference should name what it points at (\"Figure 3\", \"Section 2\", \"Equations 1 to 3\"), the name should be part of the hyperlink, and the reference should stay correct when floats move or change type.\nHow to write cross-references?\n\n## Considered Options\n\n* [zref-clever](https://ctan.org/pkg/zref-clever)\n* [cleveref](https://ctan.org/pkg/cleveref) (see [ADR-0003](0003-use-cleveref.md))\n\n## Decision Outcome\n\nChosen option: \"zref-clever\", because it offers the feature set of cleveref (`\\zcref`) and works with tagged PDFs.\nThe names follow the document language (babel).\n\n## More Information\n\nThe options and their pros and cons in general: [How to write cross-references](https://github.com/latextemplates/gadr-latex-packages/blob/main/cross-references.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/cross-references.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/decisions/0009-use-selnolig-for-english-ligature-correction.md",
+   "identity": "docs/decisions/0009-use-selnolig-for-english-ligature-correction.md",
+   "adr_id": "9",
+   "title": "Use `selnolig` For Ligature Correction for English Documents",
+   "first_commit": "2025-01-10T12:49:26+01:00",
+   "first_sha": "6333dfffb6e536f1b92634f82b0007919e733d64",
+   "last_commit": "2026-10-15T14:24:34+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Use `selnolig` For Ligature Correction for English Documents\n\n## Context and Problem Statement\n\nLigatures can be typeset wrongly.\n\n## Considered Options\n\n* [`autotype`](https://ctan.org/pkg/autotype)\n* [`ligtype`](https://ctan.org/pkg/ligtype)\n* [`selnolig`](https://ctan.org/pkg/selnolig)\n\n## Decision Outcome\n\nChosen option: \"`selnolig`\", because only package supporting ligature correction for English texts (without advanced package configuration).\n\n## More Information\n\nThe options and their pros and cons in general: [How to avoid wrong ligatures](https://github.com/latextemplates/gadr-latex-packages/blob/main/ligatures.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/latextemplates/gadr-latex-packages/blob/main/ligatures.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/decisions/0005-custom-example-environment.md",
+   "identity": "docs/adr/0005-custom-example-environment.md",
+   "commit": "e7fbf6d89bddf9c3f7342626848a1bb4042065a7",
+   "date": "2022-06-02T23:54:16+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "LNCS improvements, texlive 2022 (#104)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "path": "docs/decisions/0007-use-glossaries-package.md",
+   "identity": "docs/adr/0007-use-glossaries-package.md",
+   "commit": "e7fbf6d89bddf9c3f7342626848a1bb4042065a7",
+   "date": "2022-06-02T23:54:16+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "LNCS improvements, texlive 2022 (#104)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "path": "docs/decisions/0000-use-markdown-architectural-decision-records.md",
+   "identity": "docs/adr/0000-use-markdown-architectural-decision-records.md",
+   "commit": "e7fbf6d89bddf9c3f7342626848a1bb4042065a7",
+   "date": "2022-06-02T23:54:16+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "LNCS improvements, texlive 2022 (#104)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "path": "docs/decisions/0001-use-yeoman.md",
+   "identity": "docs/adr/0001-use-yeoman.md",
+   "commit": "e7fbf6d89bddf9c3f7342626848a1bb4042065a7",
+   "date": "2022-06-02T23:54:16+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "LNCS improvements, texlive 2022 (#104)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "path": "docs/decisions/0002-use-manuth-TSGeneratorGenerator.md",
+   "identity": "docs/adr/0002-use-manuth-TSGeneratorGenerator.md",
+   "commit": "e7fbf6d89bddf9c3f7342626848a1bb4042065a7",
+   "date": "2022-06-02T23:54:16+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "Not Accepted",
+   "new_raw": "Not Accepted",
+   "replacement": null,
+   "message": "LNCS improvements, texlive 2022 (#104)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "path": "docs/decisions/0003-use-cleveref.md",
+   "identity": "docs/adr/0003-use-cleveref.md",
+   "commit": "e7fbf6d89bddf9c3f7342626848a1bb4042065a7",
+   "date": "2022-06-02T23:54:16+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "LNCS improvements, texlive 2022 (#104)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "path": "docs/decisions/0003-use-cleveref.md",
+   "identity": "docs/adr/0003-use-cleveref.md",
+   "commit": "240e0090e437360011f4eb12ee30ae4555f7c356",
+   "date": "2026-10-15T14:24:34+02:00",
+   "old_state": "unknown",
+   "new_state": "superseded",
+   "old_raw": "",
+   "new_raw": "superseded by ADR-0014",
+   "replacement": "ADR-0014",
+   "message": "Refine LTG (#585)",
+   "renamed": false,
+   "script_label": "replaced",
+   "script_rule": "superseded-by-pointer",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "path": "docs/decisions/0004-use-cc0-as-license-for-text.md",
+   "identity": "docs/adr/0004-use-cc0-as-license-for-text.md",
+   "commit": "e7fbf6d89bddf9c3f7342626848a1bb4042065a7",
+   "date": "2022-06-02T23:54:16+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "LNCS improvements, texlive 2022 (#104)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "path": "docs/decisions/0006-use-single-quote-to-enquote.md",
+   "identity": "docs/adr/0006-use-single-quote-to-enquote.md",
+   "commit": "e7fbf6d89bddf9c3f7342626848a1bb4042065a7",
+   "date": "2022-06-02T23:54:16+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "LNCS improvements, texlive 2022 (#104)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "path": "docs/decisions/0008-use-autotype-for-german-ligature-correction.md",
+   "identity": "docs/decisions/0008-use-autotype-for-german-ligature-correction copy.md",
+   "commit": "240e0090e437360011f4eb12ee30ae4555f7c356",
+   "date": "2026-10-15T14:24:34+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Refine LTG (#585)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  }
+ ],
+ "ai_signals": [
+  {
+   "kind": "file:primary",
+   "name": "CLAUDE.md",
+   "date": "2026-06-12T02:57:11+02:00",
+   "commit": "b5b3183a293f1fc357d7e7eae827e228be9965a5",
+   "evidence": "Supoport TeXLive 2026 (#490)",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "file:primary",
+   "name": "generators/app/CLAUDE.md",
+   "date": "2026-09-30T17:02:40+02:00",
+   "commit": "1ff16ce56ae036301f45335e8cf136ce12eaf54c",
+   "evidence": "Add \"Use of AI Tools\" appendix to theses (#570)",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-06-25T10:46:44+02:00",
+   "commit": "4665a04a8debaddf5e9407d21bffd024b99743d0",
+   "evidence": "Refine LTG (#519)",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-06-25T10:59:59+02:00",
+   "commit": "b9aed807ed0926d3dad77b0c3e4cf79e5a0e510c",
+   "evidence": "Release 2026.6.26",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-06-30T21:59:08+02:00",
+   "commit": "9bb671482fa6e365255dee89743730e94b8745ee",
+   "evidence": "CHANGELOG for 2026.6.30",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+   "date": "2026-07-29T17:07:17+02:00",
+   "commit": "2d0eb047c40b38e2a1513ca90ec365d262dec861",
+   "evidence": "CLAUDE.md: couple latex-snippets snippet additions to a gadr-latex-packages ADR",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+   "date": "2026-07-29T17:30:53+02:00",
+   "commit": "bdc7dc9b93adcfe0039cfc9927b43d12c87a5d6d",
+   "evidence": "Finalize CHANGELOG for 2026.7.29",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+   "date": "2026-07-30T13:38:29+02:00",
+   "commit": "89d6c8cf152d87917db6e57fa144f6124471a657",
+   "evidence": "docs: note latex-snippets submodule is auto-bumped by Dependabot post-release",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-23T22:01:58+02:00",
+   "commit": "6398805622951c359c55aa44a167195c732e260e",
+   "evidence": "Finalize CHANGELOG for 2026.9.23",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-28T01:00:28+02:00",
+   "commit": "b6be5cfd5351057838e75184087ee183fe58a20e",
+   "evidence": "IEEE page numbers/THU hints, JPEG example, Related Work links, listings wrapping, typo fixes (#564)",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-28T01:02:05+02:00",
+   "commit": "b5918dbd6f1c179dae8059bd7123e7c6a38ff84d",
+   "evidence": "Finalize CHANGELOG for 2026.9.28",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-28T01:16:31+02:00",
+   "commit": "9c2a2bf470a644ff501c4ccb5a3adb317d27ba5e",
+   "evidence": "README: pass the gh token to github-release-from-changelog",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-09-30T17:02:40+02:00",
+   "commit": "1ff16ce56ae036301f45335e8cf136ce12eaf54c",
+   "evidence": "Add \"Use of AI Tools\" appendix to theses (#570)",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-10-01T16:09:27+02:00",
+   "commit": "414e9bff2317eefdc6343d2421efec9ccd1d70a8",
+   "evidence": "Finalize CHANGELOG for 2026.10.1",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-10-01T16:25:23+02:00",
+   "commit": "9868b053627afd51ed2d053d7ed9f6a8dbc15d0b",
+   "evidence": "Release 2026.10.1",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-08T21:22:08+02:00",
+   "commit": "8d4b57374809f805623f6781acacd47bcb037e5b",
+   "evidence": "Refine LTG (#574)",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+   "date": "2026-10-08T21:22:27+02:00",
+   "commit": "45091094eb7c1f11e4e2bb6ef9cb46df019d7bb7",
+   "evidence": "Finalize CHANGELOG for 2026.10.8",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+   "date": "2026-10-08T22:03:53+02:00",
+   "commit": "26464e844701c451582e60bd62170a74d788f102",
+   "evidence": "Add release-templates.sh and the npm publish check to the release runbook",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+   "date": "2026-10-08T22:29:38+00:00",
+   "commit": "680fa40f33616b9860a2128dd80ef11d03739871",
+   "evidence": "Bump yeoman-environment from 6.3.0 to 7.2.0 (#567)",
+   "official": true,
+   "author": "dependabot[bot]",
+   "email": "49699333+dependabot[bot]@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+   "date": "2026-10-13T14:11:13+02:00",
+   "commit": "12bb1b42348c7decae109d2bd392b415becd9a90",
+   "evidence": "Refine LTG (#578)",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-13T14:12:10+02:00",
+   "commit": "344892ef5d0f5ea02d001214d063b0fe83404064",
+   "evidence": "Finalize CHANGELOG for 2026.10.13",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-15T06:49:40+02:00",
+   "commit": "0ba52b3ed626e90b2bc137a2910c26ecbd4f7710",
+   "evidence": "Pin actions in generated check.yml to commit SHAs (#590)",
+   "official": true,
+   "author": "Lennard",
+   "email": "mentorfilou@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-15T07:01:27+02:00",
+   "commit": "fcaf763cc477408b191f5a60675254ee9b3719d0",
+   "evidence": "fix: generate list of abbreviations with latexmk (#591)",
+   "official": true,
+   "author": "Lennard",
+   "email": "mentorfilou@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-15T14:24:34+02:00",
+   "commit": "240e0090e437360011f4eb12ee30ae4555f7c356",
+   "evidence": "Refine LTG (#585)",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-15T14:25:00+02:00",
+   "commit": "d7fdf1e668defbfe6c65645b0685444f8d5ae16e",
+   "evidence": "Finalize CHANGELOG for 2026.10.15",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-16T13:53:36+02:00",
+   "commit": "064f427f4d03d1026b6e7578bc3ff3327be7752f",
+   "evidence": "Refine LTG (#594)",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-16T13:53:59+02:00",
+   "commit": "d7812c4b4f309c49acc931193e11d0b5bca1a1b0",
+   "evidence": "Finalize CHANGELOG for 2026.10.16",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-19T08:37:10+02:00",
+   "commit": "973263f6f92679f58fd2e5f385ec2ca256c8b9a0",
+   "evidence": "Finalize CHANGELOG for 2026.10.19",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+   "date": "2026-10-26T01:59:15+01:00",
+   "commit": "aab58eef85c6b13f9736e6a0bfe2397195a741d5",
+   "evidence": "Refine LTG (#600)",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-26T01:59:29+01:00",
+   "commit": "979a0236a55c6bfb4ee6c0bbb82e2d6b03b6d5f0",
+   "evidence": "Finalize CHANGELOG for 2026.10.26",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+   "date": "2026-11-01T00:25:34+01:00",
+   "commit": "32f1072e99d6ef3632f30937d52f9c62351ab8d1",
+   "evidence": "Finalize CHANGELOG for 2026.11.1",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>",
+   "date": "2026-11-03T18:35:50+01:00",
+   "commit": "16c2f599dc299d017dd18a3e9a522571b6bc60df",
+   "evidence": "CHANGELOG: finalize 2026.11.3",
+   "official": true,
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  }
+ ],
+ "signal_date": "2026-06-12T00:57:11+00:00",
+ "signal_kind": "file:primary",
+ "mentions": {
+  "strict": [
+   {
+    "sha": "2d0eb047c40b38e2a1513ca90ec365d262dec861",
+    "date": "2026-07-29T17:07:17+02:00",
+    "subject": "CLAUDE.md: couple latex-snippets snippet additions to a gadr-latex-packages ADR"
+   }
+  ],
+  "strict_count": 1,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-eligible",
+ "adr_count_before_signal": 11,
+ "superseded_in_window": 1,
+ "eligibility_reason": "at-least-5-adrs-before-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "7"
+}

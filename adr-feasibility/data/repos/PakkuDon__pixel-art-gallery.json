@@ -1,0 +1,333 @@
+{
+ "repo": "PakkuDon/pixel-art-gallery",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2020-10-10T18:28:03+11:00",
+ "last_commit": "2025-10-10T23:49:07+11:00",
+ "n_commits": 1429,
+ "n_authors": 1,
+ "n_files": 584,
+ "n_code_files": 55,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 10,
+ "adrs": [
+  {
+   "path": "doc/adr/0010-handle-index-and-details-routes-separately.md",
+   "identity": "doc/adr/0010-handle-index-and-details-routes-separately.md",
+   "adr_id": "10",
+   "title": "Handle index and details routes separately",
+   "first_commit": "2023-09-09T23:22:17+10:00",
+   "first_sha": "e6ded970f05cc64f022221262c7a43a49a053be1",
+   "last_commit": "2023-09-09T23:22:17+10:00",
+   "author": "PakkuDon",
+   "email": "pakku.pd@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 10. Handle index and details routes separately\n\nDate: 2023-09-09\n\n## Status\n\nAccepted\n\n## Context\n\nCurrently the index route (`/`) and details route (`/:id`) are both rendered using a dynamic route with optional catch-all segments (`/src/app/[[...id]]/page.tsx`).\n\nBoth routes share similar behaviour:\n\n- `/` route displays details for the latest entry posted\n- `/:id` route displays details for the entry specified in the URL (either by ID or alias)\n\nThis approach has a few issues:\n\n- The `id` parameter is either undefined or an array. The use of a singular noun with an array type can be confusing, but the singular noun `id` makes sense as this route will only contain zero or one segments.\n- The dynamic route with optional catch-all needs to handle four potential cases. Each case only matters to one specific type of route:\n  1. Case where there is no id present (index route)\n  2. Case where ID is present and matches an entry (details route)\n  3. Case where ID is an alias for an entry (details route)\n  4. Case where ID is present but does not match any existing entries (details route)\n- At the time of writing an [`opengraph-image`](https://nextjs.org/docs/app/api-reference/file-conventions/metadata/opengraph-image) file cannot be specified for the details route. This prevents us from co-locating the code used to generate preview images with the page the preview image is for. (Source: [Github issue: [NEXT-1204] opengraph-image can't be used to accept params in catch-all routes (Error: Catch-all must be the last part of the URL.)](https://github.com/vercel/next.js/issues/49630))\n\n## Decision\n\nThe dynamic route `[[...id]]` will be re-implemented as two separate routes\n\n- `/page.tsx` will handle the index route\n- `/[id]/page.tsx` will handle the details route\n\n## Consequences\n\n- Details routes can specify a preview image using an [`opengraph-image`](https://nextjs.org/docs/app/api-reference/file-conventions/metadata/opengraph-image) file.\n  - **Note:** At the time of writing Open Graph images cannot be statically generated for dynamic routes. (Source: [Github issue: OpenGraph images are not statically generated for dynamic routes](https://github.com/vercel/next.js/issues/51147))\n- There may be lag when navigating between the `/` and `/:id` routes as both routes will be code-split.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "vercel/next.js#49630",
+     "kind": "issue",
+     "url": "https://github.com/vercel/next.js/issues/49630",
+     "number": "49630"
+    },
+    {
+     "key": "vercel/next.js#51147",
+     "kind": "issue",
+     "url": "https://github.com/vercel/next.js/issues/51147",
+     "number": "51147"
+    }
+   ],
+   "mentioned_paths": [
+    "/:id",
+    "github.com/vercel/next.js",
+    "/page.tsx",
+    "/[id]/page.tsx"
+   ],
+   "implementation": {
+    "sha": "e7ab8ac47d5efcbe1ab925de940f06d36ff81054",
+    "date": "2023-09-09T23:31:01+10:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "src/app/page.tsx"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/0009-use-nextjs-for-static-site-generation.md",
+   "identity": "doc/adr/0009-use-nextjs-for-static-site-generation.md",
+   "adr_id": "9",
+   "title": "Use Next.js for Static Site Generation",
+   "first_commit": "2023-07-03T23:42:39+10:00",
+   "first_sha": "7e412a6f6e2ecd6a824c0213649fd893e6886bb7",
+   "last_commit": "2023-07-17T15:57:59+10:00",
+   "author": "PakkuDon",
+   "email": "pakku.pd@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted (Implemented 2023-07-17)",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 9. Use Next.js for Static Site Generation\n\nDate: 2023-07-03\n\n## Status\n\nAccepted (Implemented 2023-07-17)\n\n## Context\n\nThis project is written in React and bundled with Webpack. Aside from a `div` that the React application is mounted into, all content within the `body` tag is rendered client-side. This can result in a delay between the time at which the page first loads and the time at which the content is rendered.\n\nFurthermore in development this project uses [`webpack-dev-server`](https://www.npmjs.com/package/webpack-dev-server) to serve the generated HTML, CSS and JavaScript. The dev server is configured to respond to all `GET` requests that aren't for a specific asset with the `index.html` file. However, Github Pages does not have an option to enable similar behaviour. To enable the project to handle requests to specific entries a HTML page containing a link to the bundled source code as well as some additional metadata unique to each entry is generated for each pixel art entry.\n\nThis build process has the following consequences:\n\n- Requests to specific pixel art entries result in different HTML responses between development and production.\n- There's two separate but similar HTML templates - one for requests to `/` and another for specific pixel art entries that has different metadata\n\nThe only source of data for this application is a set of JSON files that are exposed via a repository object. As this data is fixed at build-time we have the data we need to render each page ahead of time.\n\n## Decision\n\n- This project will be migrated to Next.js\n- Build scripts will be replaced by Next.js' static site generation functionality where possible\n\n## Consequences\n\n- Directory structure will be modified to conform with Next.js' conventions\n- All pages will be statically generated and hydrated on the client-side. This will enable us to improve performance by reducing the bundle size sent back to the user\n- Behaviour between the local development environment and what's rendered in production will be more closely aligned as we will generate the same HTML in both cases\n- Rendering of RSS feed and specific pages for each pixel art entry will be handled by Next.js. This will reduce the number of steps required during the deployment process\n- Compilation will be performed using Next.js' compiler which will allow us to remove Webpack and other associated dependencies\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0008-store-search-query-in-url.md",
+   "identity": "doc/adr/0008-store-search-query-in-url.md",
+   "adr_id": "8",
+   "title": "Store search query in URL",
+   "first_commit": "2022-02-06T23:59:23+11:00",
+   "first_sha": "a05bdf08957e741708d7cfce0609ef8c19a693ee",
+   "last_commit": "2022-02-07T00:06:30+11:00",
+   "author": "PakkuDon",
+   "email": "pakku.pd@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 8. Store search query in URL\n\nDate: 2022-01-23 (Backfilled 2022-02-06)\n\n## Status\n\nAccepted\n\n## Context\n\nThis gallery has a search bar where users can filter entries by a search term. This search term is currently stored as a value in a component's React state.\n\nIt may be useful to provide a link to a particular search filter to make it easier to share a collection of entries.\n\n## Decision\n\nSearch query will be stored in URL.\n\n## Consequences\n\n- Search query will be appended to links for pixel art entries to ensure that the query is persisted as the user navigates between entries.\n- Special characters in query string will need to be encoded and decoded accordingly to ensure that they are displayed correctly.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0007-use-typescript-for-static-typing.md",
+   "identity": "doc/adr/0007-use-typescript-for-static-typing.md",
+   "adr_id": "7",
+   "title": "Use TypeScript for static typing",
+   "first_commit": "2021-08-29T22:52:03+10:00",
+   "first_sha": "13b44a61adbf05860fed47212dcf0acfaab77071",
+   "last_commit": "2021-09-04T23:14:53+10:00",
+   "author": "PakkuDon",
+   "email": "pakku.pd@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 7. Use TypeScript for static typing\n\nDate: 2021-08-03 (Backfilled 2021-08-29)\n\n## Status\n\nAccepted\n\n## Context\n\nAs mentioned in [ADR #3. Use relatively modern tech stack](0003-use-relatively-modern-tech-stack.md) this project is intended to be a [breakable toy](https://www.oreilly.com/library/view/apprenticeship-patterns/9780596806842/ch05.html#breakable_toys) where I can experiment with other tech.\n\nThis project was first implemented in JavaScript. We want to use a static typing system so that we can catch more errors at compile time and to document the interfaces between different functions, components and so on.\n\n## Decision\n\nThis project will be migrated over to TypeScript.\n\n## Consequences\n\nWe will need to install other dependencies alongside TypeScript to ensure that our tests and linter can support this language.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#3",
+     "kind": "hash",
+     "url": "",
+     "number": "3"
+    }
+   ],
+   "mentioned_paths": [
+    "www.oreilly.com/library/view/apprenticeship-patterns/9780596806842/ch05.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0006-record-aliases-for-pixel-art-entries.md",
+   "identity": "doc/adr/0006-record-aliases-for-pixel-art-entries.md",
+   "adr_id": "6",
+   "title": "Record aliases for pixel art entries",
+   "first_commit": "2021-05-24T23:53:31+10:00",
+   "first_sha": "89edeb8a2dd47b45d5127589cd08cbb6de04b2ae",
+   "last_commit": "2021-05-24T23:53:31+10:00",
+   "author": "PakkuDon",
+   "email": "pakku.pd@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 6. Record aliases for pixel art entries\n\nDate: 2021-05-24\n\n## Status\n\nAccepted\n\n## Context\n\nCurrently we use an image's filename as a URL slug so that we can link to individual pixel art entries.\n\nOccasionally we may want to change these filenames as there may be a typo in the name, or we may decide that we want to change our naming convention. As these URLs may have been bookmarked or shared elsewhere we still want the old URLs to remain valid.\n\n## Decision\n\nPixel art entries may define multiple aliases. These can be thought of as previous filenames (sans file extension).\n\nWhen we generate pages for each pixel art entry we will also generate a page for each alias listed which will include the same link preview but redirect to the canonical URL instead.\n\n## Consequences\n\n- Previous URLs for pixel art entries will remain valid.\n  - We can still invalidate old URLs by _not_ defining them in an entry's list of aliases.\n- As the redirects generated for aliases will use the same mechanism outlined in [4. Client-side routing using history API and redirects](./0004-client-side-routing-using-history-api-and-redirects.md) these redirects will have a longer load time.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/0004-client-side-routing-using-history-api-and-redirects.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0004-client-side-routing-using-history-api-and-redirects.md",
+   "identity": "doc/adr/0004-client-side-routing-using-history-api-and-redirects.md",
+   "adr_id": "4",
+   "title": "Client-side routing using history API and redirects",
+   "first_commit": "2020-11-16T23:11:11+11:00",
+   "first_sha": "a7b242ffa86b22b6b6dbb4d669d7d7542e2f85cb",
+   "last_commit": "2021-02-25T23:15:47+11:00",
+   "author": "PakkuDon",
+   "email": "pakku.pd@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted Amended by [5. Replace redirects with HTML pages](0005-replace-redirects-with-html-pages.md)",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 4. Client-side routing using history API and redirects\n\nDate: 2020-11-16\n\n## Status\n\nAccepted\n\nAmended by [5. Replace redirects with HTML pages](0005-replace-redirects-with-html-pages.md)\n\n## Context\n\nGiven that this repo may accumulate several pixel art entries over time it would be handy to be able to link to a specific image. As this project will be hosted on Github Pages we cannot use wildcard routes or server-side rendering.\n\nFurthermore, if these links are shared via Slack or other services we would like to customise the link preview. Slack supports the following formats for site metadata:\n\n- [oEmbed](http://oembed.com/) - Requires an API endpoint that returns data about a given URL\n- [Twitter cards](https://developer.twitter.com/en/docs/twitter-for-websites/cards/guides/getting-started) - Enhances preview for links shared in Twitter. Configured via `meta` tags\n- [Open Graph Protocol](https://ogp.me/) - Allows us to configure link preview image, description and more. Also configured via `meta` tags\n\nSource: [Slack Robots | Slack](https://api.slack.com/robots)\n\n## Decision\n\nWe will use [React Router](https://reactrouter.com/web) to provide client-side routing. This application will only have one route which will indicate the selected image via an optional route parameter.\n\n```js\n<Route path=\"/:filename?\">\n```\n\nTo ensure that the links generated by React Router's `BrowserRouter` continue to work once the application is deployed to Github Pages we will also generate a HTML file for each pixel art entry on deploy. Each of these pages will\n\n- Be named `:filename.html` to match up to the links generated by React Router's `Link`\n- Redirect to `index.html` where the React application is mounted. The application will then pre-select the image specified by the filename\n\nThese generated HTML files will also include Open Graph Protocol `meta` tags so that they display a preview and a description for the selected image when unfurled in applications that support Open Graph Protocol tags such as Slack.\n\n## Consequences\n\n- There may be a mismatch in behaviour between what is seen in development and production as different pages will be served in each. (`index.html` in dev using Webpack Dev Server's history fallback vs. a generated HTML file in production)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0005-replace-redirects-with-html-pages.md",
+   "identity": "doc/adr/0005-replace-redirects-with-html-pages.md",
+   "adr_id": "5",
+   "title": "Replace redirects with HTML pages",
+   "first_commit": "2021-02-25T23:15:47+11:00",
+   "first_sha": "82e84f8bb3570eff3f39400b030d722c1a4ffa73",
+   "last_commit": "2021-02-25T23:15:47+11:00",
+   "author": "PakkuDon",
+   "email": "pakku.pd@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted Amends [4. Client-side routing using history API and redirects](0004-client-side-routing-using-history-api-and-redirects.md)",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 5. Replace redirects with HTML pages\n\nDate: 2021-02-25\n\n## Status\n\nAccepted\n\nAmends [4. Client-side routing using history API and redirects](0004-client-side-routing-using-history-api-and-redirects.md)\n\n## Context\n\nAs described in [ADR #4. Client-side routing using history API and redirects](0004-client-side-routing-using-history-api-and-redirects.md), on deploy we generate a HTML file for each pixel art entry which contains the following:\n\n- A title\n- Additional meta tags to generate a link preview via [Open Graph Protocol](https://ogp.me/)\n- Some JavaScript to redirect back to `index.html` where users will see the actual pixel art gallery\n\nThis allows us to link to a specific entry and have preview images for each entry. However, this approach also leads to a somewhat slower page load when the user visits one of these links as the browser will land on one page, execute some JavaScript, and then load another page before they can see the actual pixel art gallery.\n\n## Decision\n\nWe will modify the existing process of generating pages for each pixel art entry to render a HTML page with the relevant `meta` tags and, rather than redirecting users to the main page, will instead load the same JavaScript loaded by `index.html`\n\n## Consequences\n\n- Users will now have mostly the same experience when viewing the gallery either by visiting `index.html` directly or by visiting any of the pages for a specific piece.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#4",
+     "kind": "hash",
+     "url": "",
+     "number": "4"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0003-use-relatively-modern-tech-stack.md",
+   "identity": "doc/adr/0003-use-relatively-modern-tech-stack.md",
+   "adr_id": "3",
+   "title": "Use relatively modern tech stack",
+   "first_commit": "2020-11-16T21:21:58+11:00",
+   "first_sha": "c5e6728200938cd2050f92cf67099faaa9fa5acc",
+   "last_commit": "2020-11-17T00:07:38+11:00",
+   "author": "PakkuDon",
+   "email": "pakku.pd@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 3. Use relatively modern tech stack\n\nDate: 2020-11-16\n\n## Status\n\nAccepted\n\n## Context\n\nThis application only has two functions:\n\n- Display past pixel art entries\n- Display details for selected pixel art entry\n\nBut as a side project this is a space where I can over-engineer things, both to experiment with new technologies and techniques and to either wow or scare off friends, family, colleagues, potential recruiters and anyone else who may stumble across this repo.\n\n## Decision\n\nThis project will leverage the following technologies:\n\n- React.js\n- PostCSS\n- Webpack\n- Jest\n- React Testing Library\n- Cypress\n\n## Consequences\n\n- As this will introduce new dependencies there will be some effort required in making sure that we're on top of any security alerts\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0002-store-pixel-art-in-github-repository.md",
+   "identity": "doc/adr/0002-store-pixel-art-in-github-repository.md",
+   "adr_id": "2",
+   "title": "Store pixel art in Github repository",
+   "first_commit": "2020-11-07T23:55:58+11:00",
+   "first_sha": "bd44f329ee433f0976b14364396954bea294005f",
+   "last_commit": "2020-11-16T21:06:17+11:00",
+   "author": "PakkuDon",
+   "email": "pakku.pd@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 2. Store pixel art in Github repository\n\nDate: 2020-11-06\n\n## Status\n\nAccepted\n\n## Context\n\nI've recently gotten into pixel art. I wanted a place to host these so I could share them later if I felt so inclined. But I didn't want to create a new account or use an existing account that had any PII associated with it.\n\nI also figured I could make another side project out of this.\n\n## Decision\n\n- Pixel art will be stored in a git repository that will be hosted on Github.\n- Link to image and associated details will be stored in a text file so they can be displayed in a UI later.\n\n## Consequences\n\n- Images and their associated metadata will be stored under version control so that they can be revised or reverted with relative ease.\n- As new images will be added in git commits my Github contribution graph may still appear green even if I haven't coded at all.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0001-record-architecture-decisions.md",
+   "identity": "doc/adr/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2020-11-06T00:40:14+11:00",
+   "first_sha": "c79a72f1a01023ae4361989d680b5cba5d021952",
+   "last_commit": "2020-11-06T00:40:14+11:00",
+   "author": "PakkuDon",
+   "email": "pakku.pd@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record architecture decisions\n\nDate: 2020-11-06\n\n## Status\n\nAccepted\n\n## Context\n\nThis is a new side project. It would be useful to capture the context behind past decisions.\n\n## Decision\n\nWe will use Architecture Decision Records, as [described by Michael Nygard](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions).\n\n## Consequences\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's [adr-tools](https://github.com/npryce/adr-tools).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 10,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "7"
+}

@@ -1,0 +1,638 @@
+{
+ "repo": "nicoespeon/abracadabra",
+ "clone_ok": true,
+ "error": null,
+ "description": "JS & TS automated refactorings for the VS Code editor \u2728 It's magic \u2728",
+ "first_commit": "2019-05-23T21:36:00-04:00",
+ "last_commit": "2026-11-01T09:34:42-05:00",
+ "n_commits": 4562,
+ "n_authors": 40,
+ "n_files": 373,
+ "n_code_files": 232,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 18,
+ "adrs": [
+  {
+   "path": "docs/adr/0018-stay-on-babel-7.md",
+   "identity": "docs/adr/0018-stay-on-babel-7.md",
+   "adr_id": "18",
+   "title": "Stay on Babel 7",
+   "first_commit": "2026-10-01T22:18:27-04:00",
+   "first_sha": "66dc5c315a2b884f0145aae6283de9197a95c619",
+   "last_commit": "2026-10-01T22:27:37-04:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 18. Stay on Babel 7\n\nDate: 2026-10-01\n\n## Status\n\nAccepted\n\n## Context\n\nBabel 8 was released on 2026-06-16. We tried to upgrade `@babel/parser`, `@babel/traverse` and `@babel/types` to 8.0.6 and hit 3 problems:\n\n1. [Recast][recast] can't print some of the new TypeScript nodes, like `TSClassImplements`. The latest [ast-types][ast-types] (0.16.3) doesn't define them. This is outside of our control. As of 2026-10-01, no upstream issue tracks Babel 8 and ast-types targets Babel 7.29.\n2. Type-checking runs out of memory. Babel 8's `NodePath<T>` distributes over unions, so `NodePath` becomes a union of every node path. Our helpers intersect and narrow it (e.g. `SelectablePath`), which explodes. Fixing it means reworking how we type paths across most of `src/ast/`.\n3. A few AST shapes changed (e.g. `TSTypeParameter.name` is now an `Identifier`) and the `minimal` pipeline operator proposal was dropped. After switching the parser to the `fsharp` proposal, 54 tests still failed across 9 files.\n\nBabel 7 is still maintained: 7.x patches were published after Babel 8 came out.\n\n## Decision\n\nWe stay on Babel 7 for now. Dependabot ignores Babel 8 for these 3 packages.\n\nWe'll reconsider when either:\n\n- ast-types/recast support the Babel 8 AST, or\n- Babel 7 stops getting patch releases\n\n## Consequences\n\n- No upgrade work until the ecosystem catches up\n- We keep receiving Babel 7 security and bug fixes through Dependabot\n- When we upgrade, expect to rework our `NodePath` typings first: TypeScript won't even finish type-checking until then\n\n<!-- Links -->\n\n[recast]: https://github.com/benjamn/recast\n[ast-types]: https://github.com/benjamn/ast-types\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "@babel/parser",
+    "@babel/traverse",
+    "@babel/types",
+    "src/ast/"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0017-use-vitest-instead-of-jest.md",
+   "identity": "docs/adr/0017-use-vitest-instead-of-jest.md",
+   "adr_id": "17",
+   "title": "Use Vitest instead of Jest",
+   "first_commit": "2026-10-01T16:17:09-04:00",
+   "first_sha": "bb316e63f9a74a2c2b78a6ee1d61a1ca3be3d014",
+   "last_commit": "2026-10-01T21:26:13-04:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted Supercedes [11. Use babel-jest instead of ts-jest](0011-use-babel-jest-instead-of-ts-jest.md)",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 17. Use Vitest instead of Jest\n\nDate: 2026-10-01\n\n## Status\n\nAccepted\n\nSupercedes [11. Use babel-jest instead of ts-jest](0011-use-babel-jest-instead-of-ts-jest.md)\n\n## Context\n\nMore and more of our dependencies only ship ES modules: jsdom 30 pulls a dozen of them, and Babel 8 (parser, traverse, types) is ESM-only.\n\nJest runs tests through its own CommonJS module system. It can't load these packages, even on a Node version that supports `require()` of ES modules. Making Babel transpile them from `node_modules` is brittle (nested packages, `.mjs` files) and made the test suite ~4x slower.\n\n[Vitest][vitest] loads ES modules natively and runs TypeScript without type-checking, like babel-jest did. Its API is close to Jest's: we only had to change a handful of `jest.fn()`/`jest.spyOn()` calls.\n\n## Decision\n\nUnit tests run with Vitest. Globals (`describe`, `it`, `expect`, `vi`) are enabled so test files don't need imports.\n\nTest files are not isolated from each other (`isolate: false`): workers are reused across files instead of spawning one per file. It makes the suite ~3x faster.\n\nBabel is no longer used to compile tests, so we dropped `@babel/core` and its presets.\n\n## Consequences\n\n- We can upgrade ESM-only dependencies again\n- Fewer dev dependencies and no Babel config to maintain\n- The full test suite runs in ~3s, against ~10s with Jest\n- Test files share module state. Tests must not mutate module-level variables, nor spy on or mock modules without restoring them. Otherwise, unrelated tests may fail depending on the order they run\n- Type errors still don't fail tests: CI checks them with `yarn typecheck`\n- Wallaby.js supports Vitest\n\n<!-- Links -->\n\n[vitest]: https://vitest.dev/\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "@babel/core"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0011-use-babel-jest-instead-of-ts-jest.md",
+   "identity": "docs/adr/0011-use-babel-jest-instead-of-ts-jest.md",
+   "adr_id": "11",
+   "title": "Use babel-jest instead of ts-jest",
+   "first_commit": "2022-02-02T09:56:22-05:00",
+   "first_sha": "71d3a0c955e757af5807164a9bb5a4894facaef8",
+   "last_commit": "2026-10-01T16:17:09-04:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "superseded",
+   "status_raw": "Superceded by [15. Use esbuild to build instead of webpack](0015-use-esbuild-to-build-instead-of-webpack.md) and [17. Use Vitest instead of Jest](0017-use-vitest-instead-of-jest.md)",
+   "replacement": "15. Use esbuild to build instead of webpack (0015-use-esbuild-to-build-instead-of-webpack.md)",
+   "n_commits": 3,
+   "text": "# 11. Use babel-jest instead of ts-jest\n\nDate: 2022-02-02\n\n## Status\n\nSuperceded by [15. Use esbuild to build instead of webpack](0015-use-esbuild-to-build-instead-of-webpack.md) and [17. Use Vitest instead of Jest](0017-use-vitest-instead-of-jest.md)\n\n## Context\n\nRunning the unit tests was taking way too long, slowing down the development beyond what's reasonable. Running 1.116 tests would take more than 1 minute, which is more than 50ms per test. Such tests should take ~1ms per test to run.\n\n[Wallaby.js](https://wallabyjs.com/) became unusable when developing, motivating the decision to invest some time to speed up the whole thing.\n\nTurns out the Wallaby.js team wrote [a blog post explaining the situation](https://wallabyjs.com/blog/optimizing-typescript.html). In short:\n\n> Wallaby creates multiple worker processes, and in each worker process, Jest creates a separate instance of the TypeScript compiler and compiles your entire project again.\n\nThe numbers here are very relatable. They are using the same stack (Jest + ts-jest) on a project of a similar size (22kLoC and 135 files, Abracadabra is 24kLoC and 200 files today).\n\nWith `ts-jest`, each test would compile the TypeScript source considering the types, which is naturally slow.\n\nThe recommended solution was to use a compiler that would not care about types, like Babel, SWC (in Rust), or ESBuild (in Go). But we got issues with SWC and ESBuild, they throw errors when trying to compile the project. We feel they are not mature enough yet to be used for this project.\n\nWe had no issue running the tests with Babel though.\n\n## Decision\n\nUnit tests will compile the project with `babel-jest` instead of `ts-jest`.\n\n## Consequences\n\n- Running the whole test suite (without cache) used to take more than 1min. Now it takes ~6s. That's more than 10 times faster!\n- Developers can use Wallaby.js again!\n- Tests won't fail for type errors anymore (which is a pro, actually) (CI will check for type errors, so we are good)\n- CI should run faster, even with running type checks as a first step\n\nNote: building the project still uses TS + Webpack. It could probably be speed up, but speed of releases is not an issue today.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "wallabyjs.com/blog/optimizing-typescript.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0005-use-custom-testeach-instead-of-jest-it-each.md",
+   "identity": "docs/adr/0005-use-custom-testeach-instead-of-jest-it-each.md",
+   "adr_id": "5",
+   "title": "Use custom testEach instead of jest it.each",
+   "first_commit": "2019-07-14T18:54:47-04:00",
+   "first_sha": "c20a67573e88a5a78f05e71607b137d54ac4a8d0",
+   "last_commit": "2025-11-06T20:48:22-05:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "superseded",
+   "status_raw": "Superceded by [16. Remove custom testeach](0016-remove-custom-testeach.md)",
+   "replacement": "16. Remove custom testeach (0016-remove-custom-testeach.md)",
+   "n_commits": 2,
+   "text": "# 5. Use custom testEach instead of jest it.each\n\nDate: 2019-07-14\n\n## Status\n\nSuperceded by [16. Remove custom testeach](0016-remove-custom-testeach.md)\n\n## Context\n\nJest [`it.each` seemed great][jest-it-each], but it turns out to be limited.\n\nSpecifically, it doesn't allow us to have a `.only` on a single test of the list.\n\nOf course, this can be done at runtime through Jest runner. But if we use tools like [Wallaby.js][wallaby], we can't do that. We need a way to add things like `.only` on individual tests.\n\n## Decision\n\nWe've decided to implement a custom `testEach()` function that will provide a convenient API to run the same test over different data.\n\nThis function will provide a way to run individual test of the list with `only: true`.\n\n## Consequences\n\nWe'll be able to run only one test, even if it's a single data variation of a test. This way, it will be easier to implement new use-cases on existing refactorings, with whatever tool we want.\n\n<!-- Links -->\n\n[jest-it-each]: https://jestjs.io/docs/en/api#testeachtable-name-fn-timeout\n[wallaby]: https://wallabyjs.com/\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0016-remove-custom-testeach.md",
+   "identity": "docs/adr/0016-remove-custom-testeach.md",
+   "adr_id": "16",
+   "title": "Remove custom testeach",
+   "first_commit": "2025-11-06T20:48:22-05:00",
+   "first_sha": "2bf5924f37a1cc8cb99434c9bae525d6a085bc0a",
+   "last_commit": "2025-11-06T20:48:22-05:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted Supercedes [5. Use custom testEach instead of jest it.each](0005-use-custom-testeach-instead-of-jest-it-each.md)",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 16. Remove custom testeach\n\nDate: 2025-11-06\n\n## Status\n\nAccepted\n\nSupercedes [5. Use custom testEach instead of jest it.each](0005-use-custom-testeach-instead-of-jest-it-each.md)\n\n## Context\n\nThe custom `testEach()` helper served well, but it doesn't work nicely with tools such as [Wallaby.js][wallaby]. Specifically, it makes it hard to focus and debug a single test.\n\nOver time, we experimented with different approaches and found a better option.\n\n## Decision\n\nNo more `testEach()` or `test.each()`. Stick with basic `it()`: one per test.\n\nTo avoid duplication, the _body_ of the test can be extracted in a function.\n\n## Consequences\n\n- Tests will be a bit more verbose\n- Fewer magic, tests code is more consistent and compatible with any tooling\n- Easier to debug a single test with Wallaby.js\n\n<!-- Links -->\n\n[wallaby]: https://wallabyjs.com/\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0015-use-esbuild-to-build-instead-of-webpack.md",
+   "identity": "docs/adr/0015-use-esbuild-to-build-instead-of-webpack.md",
+   "adr_id": "15",
+   "title": "Use esbuild to build instead of webpack",
+   "first_commit": "2023-12-29T10:24:22-05:00",
+   "first_sha": "c9aeaf26c15926d8b6861e217fb570d1625325b2",
+   "last_commit": "2023-12-29T10:24:22-05:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted Supercedes [11. Use babel-jest instead of ts-jest](0011-use-babel-jest-instead-of-ts-jest.md)",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 15. Use esbuild to build instead of webpack\n\nDate: 2023-12-29\n\n## Status\n\nAccepted\n\nSupercedes [11. Use babel-jest instead of ts-jest](0011-use-babel-jest-instead-of-ts-jest.md)\n\n## Context\n\nBuilding Abracadabra takes ~75s. It is an acceptable time for CI, but it's slowing down development when you want to debug the extension locally: you need to wait ~1 minute between each change for the extension to reload.\n\nBack in 2022, we already tried to use a faster compiler for the project, but it had a lot of issues:\n\n> The recommended solution was to use a compiler that would not care about types, like Babel, SWC (in Rust), or ESBuild (in Go). But we got issues with SWC and ESBuild, they throw errors when trying to compile the project. We feel they are not mature enough yet to be used for this project.\n\nHowever, [@j4k0xb](https://github.com/j4k0xb) managed to get ESBuild to work fine!\n\nThis is interesting because ESBuild is sensibly faster than webpack:\n\n- https://esbuild.github.io/faq/#benchmark-details\n- https://esbuild.github.io/faq/#why-is-esbuild-fast\n\n## Decision\n\nWe will be using ESBuild instead of Webpack to compile Abracadabra. Kudos to [@j4k0xb](https://github.com/j4k0xb)!\n\nWe also turned on `incremental` builds in the TypeScript config.\n\n## Consequences\n\nOverall, all the build commands are **much** faster now:\n\n| Command                               | Before | After |\n| ------------------------------------- | ------ | ----- |\n| yarn build                            | 23s    | 0.6s  |\n| yarn build:node                       | 17s    | 0.4s  |\n| yarn build:browser                    | 17s    | 0.4s  |\n| yarn pretest:contract                 | 14s    | 0.8s  |\n| yarn typecheck (incremental tsconfig) | 14s    | 1s    |\n\nIt results in a much more pleasant development experience when pressing F5: 0.6s instead of 23s (or more, depending on your machine).\n\nTo analyze the bundle, we simply need to drop the generated `meta-*.json` files in https://esbuild.github.io/analyze/\n\nFinally, it also requires fewer libraries to install since ESBuild already contains a lot of the dependencies we used to require (e.g. assert, process, util\u2026).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "meta-*.json"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0014-use-github-actions-instead-of-travis.md",
+   "identity": "docs/adr/0014-use-github-actions-instead-of-travis.md",
+   "adr_id": "14",
+   "title": "Use GitHub Actions instead of Travis",
+   "first_commit": "2023-10-28T14:27:02-04:00",
+   "first_sha": "a2df9b21b1dcfdedb59c775ecaf0c31b53c9399b",
+   "last_commit": "2023-10-28T14:27:02-04:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 14. Use GitHub Actions instead of Travis\n\nDate: 2023-10-28\n\n## Status\n\nAccepted\n\n## Context\n\nOften, when contributing to the extension after a few months of inactivity, [Travis CI](https://travis-ci.com/) would stop working.\n\nIn general, it's because I ran out of OSS credits. I need to ask Travis support for credit to keep running the actions. I get 25k credits than usually run out after a few months.\n\nSometimes, it may just not be working since it depends both on GitHub notifying Travis, but also on Travis status itself. And sometimes, I've experienced that Travis does not trigger a build, even though there are credits and Travis status says everything is OK.\n\nWithout Travis CI, there is no easy and public way to know that nothing has broken before making a release.\n\nWe already use GitHub Actions for automating the deployments when a tag is created.\n\n## Decision\n\nUse GitHub Actions to run the automated tests on commits\n\n## Consequences\n\n- Automated actions of Abracadabra will only depend on GitHub\n- Fewer time lost managing Travis on top of the rest of the project\n- In particular, no more asking Travis Support about OSS credits every 6 months\n- If GitHub Actions are down, tests won't run (which is still better than today, GitHub being more reliable than Travis in my experience)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0008-don-t-propose-quick-fix-for-react-convert-to-pure-component.md",
+   "identity": "docs/adr/0008-don-t-propose-quick-fix-for-react-convert-to-pure-component.md",
+   "adr_id": "8",
+   "title": "Don't propose Quick Fix for React Convert to Pure Component",
+   "first_commit": "2020-03-27T22:33:37-04:00",
+   "first_sha": "ade3aff3a713ad07e8439f9f6f55bc74167705be",
+   "last_commit": "2023-04-13T21:42:48-04:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted Amended by [13. Remove Extract Class and Convert to Pure Component refactorings](0013-remove-extract-class-and-convert-to-pure-component-refactorings.md)",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 8. Don't propose Quick Fix for React Convert to Pure Component\n\nDate: 2020-03-27\n\n## Status\n\nAccepted\n\nAmended by [13. Remove Extract Class and Convert to Pure Component refactorings](0013-remove-extract-class-and-convert-to-pure-component-refactorings.md)\n\n## Context\n\nAfter analysing performances of the extension on a big JavaScript file, [we noticed][comment] the \"Convert to Pure Component\" Quick Fix took most of the time:\n\n![][flame-chart]\n\nThis refactoring can only be applied under specific circumstances. It doesn't worth the toll for everyone, on every trigger.\n\nAlso, there's nothing we can do to improve the performance of this refactoring. The code is implemented by [react-codemod](https://github.com/reactjs/react-codemod). It was originally meant to be run through a CLI command.\n\n## Decision\n\nWe will stop proposing a Quick Fix for this refactoring.\n\n## Consequences\n\nThe extension will become much more performant in the background.\n\nIt will still be possible to run the refactoring using the Command Palette.\n\n<!-- Links -->\n\n[comment]: https://github.com/nicoespeon/abracadabra/pull/82#issuecomment-605381510\n[flame-chart]: https://github.com/nicoespeon/abracadabra/blob/main/docs/adr/assets/0008-flame-chart.png?raw=true\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "nicoespeon/abracadabra#82",
+     "kind": "pull",
+     "url": "https://github.com/nicoespeon/abracadabra/pull/82",
+     "number": "82"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/nicoespeon/abracadabra/blob/main/docs/adr/assets/0008-flame-chart.png"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0013-remove-extract-class-and-convert-to-pure-component-refactorings.md",
+   "identity": "docs/adr/0013-remove-extract-class-and-convert-to-pure-component-refactorings.md",
+   "adr_id": "13",
+   "title": "Remove Extract Class and Convert to Pure Component refactorings",
+   "first_commit": "2023-04-13T21:42:48-04:00",
+   "first_sha": "77fdb43a81d48d591d2d3bb609947d189170f589",
+   "last_commit": "2023-04-13T21:42:48-04:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted Amends [8. Don't propose Quick Fix for React Convert to Pure Component](0008-don-t-propose-quick-fix-for-react-convert-to-pure-component.md)",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 13. Remove Extract Class and Convert to Pure Component refactorings\n\nDate: 2023-04-13\n\n## Status\n\nAccepted\n\nAmends [8. Don't propose Quick Fix for React Convert to Pure Component](0008-don-t-propose-quick-fix-for-react-convert-to-pure-component.md)\n\n## Context\n\nAmong all refactorings we implemented, 2 are quite different. They are not using the regular process, but instead import their own packages:\n\n- \"Extract Class\" uses ts-morph\n- \"Convert to Pure Component\" uses jscodeshift and react-codemod\n\nWhile these were cool demonstrations of the plug-and-play architecture of Abracadabra, it comes at a cost.\n\nIn particular, the final bundle contained twice the `typescript.js` file, which is really unefficient for a single refactoring:\n\n![](https://github.com/nicoespeon/abracadabra/blob/main/docs/adr/13-bundle-before.png?raw=true)\n\nThe resulting production bundle is ~40 MB (3.5 MB gzipped).\n\n![](https://github.com/nicoespeon/abracadabra/blob/main/docs/adr/13-bundle-before-size.png?raw=true)\n\nIt also created some technical debt, since:\n\n- we wanted to refactor the code to retrofit the style of other refactorings (consistency)\n- the react-codemod source code has code that generated noise in our tests\n- \"Convert to Pure Component\" is specific to React and [was causing performance issues](0008-don-t-propose-quick-fix-for-react-convert-to-pure-component.md)\n\nFinally, these are edge-case refactorings that are not \"core\" ones. Even though there is no telemetry to have an objective view on this, these aren't as common as \"Extract Variable\", say.\n\n## Decision\n\nThe following refactorings aren't part of Abracadabra anymore (until re-implemented):\n\n- \"Extract Class\"\n- \"Convert to Pure Component\"\n\n## Consequences\n\nThe production bundle is much smaller:\n\n![](https://github.com/nicoespeon/abracadabra/blob/main/docs/adr/13-bundle-after.png?raw=true)\n\n| Before            | After          |\n| ----------------- | -------------- |\n| 38.49 MB          | 26.1 MB (-32%) |\n| 3.48 MB (gzipped) | 2.42 MB (-30%) |\n\nIt should also result in faster bundles and more consistency in the codebase.\n\nOn the other hand, we have lost 2 refactorings. These should be re-implemented following what Abracadabra uses today\u2014or at least, ensures the ROI is worth it.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "typescript.js",
+    "github.com/nicoespeon/abracadabra/blob/main/docs/adr/13-bundle-before.png",
+    "github.com/nicoespeon/abracadabra/blob/main/docs/adr/13-bundle-before-size.png",
+    "github.com/nicoespeon/abracadabra/blob/main/docs/adr/13-bundle-after.png"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0012-export-symbols-at-declaration.md",
+   "identity": "docs/adr/0012-export-symbols-at-declaration.md",
+   "adr_id": "12",
+   "title": "Export symbols at declaration",
+   "first_commit": "2022-02-14T16:47:25+01:00",
+   "first_sha": "c27bbfad27f2d3ddf2fb14b1a6ac2d41e63f3ea9",
+   "last_commit": "2022-02-14T16:49:08+01:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 12. Export symbols at declaration\n\nDate: 2022-02-14\n\n## Status\n\nAccepted\n\n## Context\n\nWe used to put the exported symbols at the top of each file. The idea was that it would be easier to see what's exported from each file at a glance.\n\nHowever, that doesn't work well with types since [we started using babel for running tests](./0011-use-babel-jest-instead-of-ts-jest.md). That created inconsistencies with some symbols being exported at the top of the file, and types being exported where they are declared.\n\nThat got me to reflect on exporting symbols at the top of the file. While the idea was to clarify what's the public API of each file, it's _not_ the most frequent question I have when working with the code. TypeScript is already providing auto-completion and auto-imports the symbols we need to use. However, having the exports far from the declaration made it harder to answer the question: \"is this symbol exported?\".\n\nConsistency and being able to tell if the symbol we are looking at is exported outweigh the simplicity of seeing what a given file exports.\n\n## Decision\n\nThe `export` keyword is used on the declaration of the symbol, as much as possible\n\n## Consequences\n\nBefore:\n\n```ts\nexport { doThis, doThat };\n\nfunction doThis() {}\nfunction doThat() {}\n```\n\nNow:\n\n```ts\nexport function doThis() {}\nexport function doThat() {}\n```\n\nThe pros:\n\n- Easier to tell if a given symbol is exported\n- No more inconsistency with types that have to be exported where they are declared\n- No more inconsistency when we want to export a `const` (they had to be declared _before_ the export)\n\nThe cons:\n\n- Harder to tell what is being exported from a file. That's fine because TS helps with auto-import/complete. Also, folding everything make it quite easy to detect the exported symbols.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/0011-use-babel-jest-instead-of-ts-jest.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0004-use-recast-for-ast-manipulation.md",
+   "identity": "docs/adr/0004-use-recast-for-ast-manipulation.md",
+   "adr_id": "4",
+   "title": "Use Recast for AST manipulation",
+   "first_commit": "2019-07-06T00:26:49-04:00",
+   "first_sha": "ce83c10662b935febbff85af30acdb200c431ac6",
+   "last_commit": "2021-08-20T07:39:02-04:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 4. Use Recast for AST manipulation\n\nDate: 2019-07-06\n\n## Status\n\nAccepted\n\n## Context\n\nWe used Babel to parse code into AST, transform this AST and re-generate code.\n\nWe went for Babel because it's popular, very active and is capable of parsing a lot of different syntaxes. Notably, it parses JSX, TS and TSX out of the box. That's great!\n\nWhat is not great is the code generation part. Babel formats the generated code. That means the code contained inside a transformed node gets reformated. This is not cool.\n\n## Decision\n\nAs we want to preserve the original style of the transformed code as much as possible, we went for [Recast][recast].\n\nAs the library says:\n\n> The magic of Recast is that it reprints only those parts of the syntax tree that you modify.\n\nThus, we now use Recast to parse and generate the code. AST transformation is still performed by Babel. Recast uses Babel to parse the code into AST, so we keep Babel benefits such as parsing JSX, TS\u00a0and TSX out of the box.\n\n## Consequences\n\nThis is what would happen before we switched to Recast:\n\n![Demo that code gets reformatted][refactoring-before-recast]\n\nWith Recast, this is how the refactoring now performs:\n\n![Demo that code keeps the original format][refactoring-after-recast]\n\n<!-- Links -->\n\n[recast]: https://github.com/benjamn/recast\n[refactoring-before-recast]: https://github.com/nicoespeon/abracadabra/blob/main/docs/adr/assets/0004-refactoring-before-recast.gif?raw=true\n[refactoring-after-recast]: https://github.com/nicoespeon/abracadabra/blob/main/docs/adr/assets/0004-refactoring-after-recast.gif?raw=true\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/nicoespeon/abracadabra/blob/main/docs/adr/assets/0004-refactoring-before-recast.gif",
+    "github.com/nicoespeon/abracadabra/blob/main/docs/adr/assets/0004-refactoring-after-recast.gif"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0006-create-generator-to-bootstrap-new-refactorings.md",
+   "identity": "docs/adr/0006-create-generator-to-bootstrap-new-refactorings.md",
+   "adr_id": "6",
+   "title": "Create generator to bootstrap new refactorings",
+   "first_commit": "2019-08-11T11:41:43-04:00",
+   "first_sha": "0e6826a6280de02ee66a3ed46ef24285754e7e18",
+   "last_commit": "2021-01-21T19:05:10-05:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 6. Create generator to bootstrap new refactorings\n\nDate: 2019-08-11\n\n## Status\n\nAccepted\n\n## Context\n\nCreating a new refactoring kinda always follow the same steps. There is a bunch of boilerplate code that needs to be created.\n\nWe could try to refactor this boilerplate into some good abstraction. But we still need to scaffold the same files over and over: the refactoring file, the test file, the command declaration file and eventually the action provider one.\n\n## Decision\n\nTo speed up this process, we've decided to use a code generator.\n\nWe went for [hygen](https://www.hygen.io/) because it's quite simple to use, very fast and flexible.\n\nWe're abstracting the usage of hygen behind a npm script alias: `yarn new` will ask you few questions to scaffold a new refactoring.\n\n## Consequences\n\nYou can use `yarn new` to create a new refactoring.\n\nFollow the tool, it will ask you the relevant questions.\n\nIf you want to contribute, check [hygen documentation](https://www.hygen.io/docs/quick-start) to learn how it works.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0002-no-integration-test.md",
+   "identity": "docs/adr/0002-no-integration-test.md",
+   "adr_id": "2",
+   "title": "No integration test",
+   "first_commit": "2019-05-24T01:05:57-04:00",
+   "first_sha": "1268f8d65ef896d3541ef760c7561bf53b6a6a4d",
+   "last_commit": "2021-01-21T08:33:15-05:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "superseded",
+   "status_raw": "Superceded by [10. Integration tests](0010-integration-tests.md)",
+   "replacement": "10. Integration tests (0010-integration-tests.md)",
+   "n_commits": 2,
+   "text": "# 2. No integration test\n\nDate: 2019-05-24\n\n## Status\n\nSuperceded by [10. Integration tests](0010-integration-tests.md)\n\n## Context\n\nVS Code has documented [how to test an extension][testing-extension] in integration with VS Code API.\n\n> These tests will run inside a special instance of VS Code named the `Extension Development Host`, and have full access to the VS Code API.\n\nBut VS Code test runner is adapted to be used with [mocha][mocha] or [Jasmine][jasmine].\n\nFor unit tests, we want to use [Jest][jest]. But Jest and mocha have conflicting types, preventing TS to build. A solution would have been to create a custom test runner for VS Code API, that would run integration tests with Jest. But we didn't managed to create one that works.\n\nThat's partly because Jest doesn't have an official way to run tests programatically. We weren't able to make VS Code test runner work with Jest `runCLI()` (async) method.\n\nAlso, integration tests are not the most important part of the project for the moment.\n\n## Decision\n\nWe won't do integration tests. We'll rely on unit tests (e.g. state-based tests, collaboration tests and contract tests).\n\n## Consequences\n\nWe can use [Jest][jest] to write (unit) tests.\n\nTests will run fast. They will be easy to write and maintain.\n\nWe won't be able to automatically test the extension with the actual VS Code API.\n\n[testing-extension]: https://code.visualstudio.com/api/working-with-extensions/testing-extension\n[mocha]: https://mochajs.org/\n[jasmine]: https://jasmine.github.io/\n[jest]: https://jestjs.io/\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0010-integration-tests.md",
+   "identity": "docs/adr/0010-integration-tests.md",
+   "adr_id": "10",
+   "title": "Integration tests",
+   "first_commit": "2021-01-21T08:33:15-05:00",
+   "first_sha": "03334e6af1bb23239bc646585e785c27db1559cd",
+   "last_commit": "2021-01-21T08:33:15-05:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted Supercedes [2. No integration test](0002-no-integration-test.md)",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 10. Integration tests\n\nDate: 2021-01-21\n\n## Status\n\nAccepted\n\nSupercedes [2. No integration test](0002-no-integration-test.md)\n\n## Context\n\nWe had to enhance editor capabilities and implement new editor adapters with the latest features. Not having integration tests to cover these changes became more and more risky.\n\nAfter giving it another try, we were able to get Jest & Mocha installed together, without compilation errors because of type conflicts. Therefore, it was possible to create integration tests that would have access to VS Code API.\n\n## Decision\n\nWe will now cover adapters with integration tests.\n\nBecause _integration tests_ has different meanings for different people, we have decided to call them **contract tests** instead. Our intention is to test that all adapters of an interface do follow the same contract.\n\n## Consequences\n\nContract tests will be run with a separate command than the unit ones.\n\nContract tests will be written using mocha API, whereas unit tests will be written using Jest API.\n\nAll adapters implementations will be run as contract tests, even the in-memory ones.\n\nContract tests will execute within a VS Code environment, to have access to its API.\n\nBecause of VS Code limitation, we won't be able to run contract tests from the terminal if VS Code is already open. To run these, we either need to:\n\n- Close VS Code and run the tests from CLI\n- Install VS Code Insiders and use it (limitation doesn't exist here)\n- Run the launch task named \"Contract Tests\" that will execute tests in a sandbox environment. Test report can be find in the `Debug Console` tab.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0009-use-custom-github-actions-to-deploy.md",
+   "identity": "docs/adr/0009-use-custom-github-actions-to-deploy.md",
+   "adr_id": "9",
+   "title": "Use custom GitHub actions to deploy",
+   "first_commit": "2020-10-22T18:27:03-04:00",
+   "first_sha": "60aad0eed2a3faa010e20476ae82934ba82736ac",
+   "last_commit": "2020-10-22T18:27:03-04:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 9. Use custom GitHub actions to deploy\n\nDate: 2020-10-22\n\n## Status\n\nAccepted\n\n## Context\n\nWe want to automate the process of deploying a bit more. At this point, crafting a new release is done manually by @nicoespeon.\n\nAlso, we want to start deploying to [the Open VSX Registry](https://open-vsx.org/) so Abracadabra would be available for VS Code alternatives as [VS Codium](https://vscodium.com/). You can read [the original issue](https://github.com/nicoespeon/abracadabra/issues/163) for more context.\n\nSource code is hosted and managed in GitHub, so GitHub Actions make sense.\n\nThere is [a custom GitHub Action](https://github.com/HaaLeo/publish-vscode-extension#readme) that would take care of that precise use-case. But what we need to do isn't very complex. Having less intermediate would make it easier to maintain.\n\n## Decision\n\nWe've created 2 GitHub Actions:\n\n1. One for deploying to the VS Code Marketplace\n2. One for deploying to the Open VSX Registry\n\nThese actions trigger on published releases.\n\n## Consequences\n\nPart of the release is still manual, because they still provide some value that doesn't feel worth to automate:\n\n- Deciding on a release title\n- Updating the Changelog that has a custom format\n- Create a GitHub release with the proper title\n\nWhen a GitHub release is created, there's no further step needed. The new version is deployed automatically to both registry!\n\nReleases can be generated from any computer, without the need to set up an access token locally.\n\n`vsce` and `ovsx` need to be installed locally so the actions can work reliably.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "nicoespeon/abracadabra#163",
+     "kind": "issue",
+     "url": "https://github.com/nicoespeon/abracadabra/issues/163",
+     "number": "163"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0007-usage-of-readthenwrite-vs-write.md",
+   "identity": "docs/adr/0007-usage-of-readthenwrite-vs-write.md",
+   "adr_id": "7",
+   "title": "Usage of `readThenWrite()` vs `write()`",
+   "first_commit": "2019-09-25T18:03:48-04:00",
+   "first_sha": "d33d80e2f8fb0cc4c5b5578affb1437f70b8eb7a",
+   "last_commit": "2019-09-25T18:03:48-04:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolas.carlo@busbud.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 7. Usage of `readThenWrite()` vs `write()`\n\nDate: 2019-09-25\n\n## Status\n\nAccepted\n\n## Context\n\nWe've implemented 2 different methods in the Editor interface:\n\n1. `write()`\n1. `readThenWrite()`\n\nMost refactorings use `write()`. They create new code from the AST, then write it in the editor. Still, some refactorings use `readThenWrite()`: they first read some code `string` from the editor, and use it to write new code.\n\nThe main problem of `readThenWrite()` is that we end up manipulating strings instead of the AST. This usually means the implementation is more complex. Instead of manipulating the AST, we need to retrieve the correct selection we need to read, then we have to mix this read code with the transformation to produce the final output. Final code is less straightforward and more cases need to be tackled by us, instead of relying on the AST parser to do the job.\n\nHowever, there is one key advantage of doing so: it absolutely preserve the code as it was written in the editor. Even though [we use recast to preserve code style as much as possible][recast-usage], it's not perfect. If the refactoring consist in re-using exactly code that was written, `readThenWrite()` is the only way we know to preserve exactly the original style.\n\n## Decision\n\nWe'll use `readThenWrite()` if we need to preserve a code exactly as it was written. E.g. if the refactoring consists in moving existing code, without transforming it (Extract Variable, Inline Variable).\n\nFor other refactorings, we'll use `write()`. E.g. if the refactoring transforms the code, it's OK to change it while preserving the original style as much as possible with recast.\n\n## Consequences\n\nRefactorings using `readThenWrite()` are harder to maintain. But the result of the refactoring is what the end user would expect, without bad surprise.\n\n[recast-usage]: ./0004-use-recast-for-ast-manipulation.md\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/0004-use-recast-for-ast-manipulation.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0003-use-hosted-image-links-in-readme.md",
+   "identity": "docs/adr/0003-use-hosted-image-links-in-readme.md",
+   "adr_id": "3",
+   "title": "Use hosted image links in README",
+   "first_commit": "2019-07-03T23:42:49-04:00",
+   "first_sha": "076ce9747a800f6a8e2291c93f76456f7f5b0e4c",
+   "last_commit": "2019-07-03T23:42:49-04:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 3. Use hosted image links in README\n\nDate: 2019-07-03\n\n## Status\n\nAccepted\n\n## Context\n\nRelative paths for images won't work when the README\u00a0is displayed somewhere where the images are not hosted. From experience developing npm libraries, images won't appear on the package manager website.\n\nTo solve this, we use absolute paths to hosted images. Since images are hosted in GitHub along the rest of the code, we use these absolute paths.\n\nVS Code has a way to deal with that issue. It won't allow you to create a package if README contains relative paths. It will emit this error:\n\n> Couldn't detect the repository where this extension is published. The image './docs/logo/abracadabra-logo.svg' will be broken in README.md. Please provide the repository URL in package.json or use the --baseContentUrl and --baseImagesUrl options.\n\nThus, we could technically use relative paths and provide the correct arguments to make images work on VS Code Marketplace.\n\nHowever, using absolute paths is something we're used to, and doesn't come up with a lot of downsides. So we decide to go with absolute paths, until downsides justify otherwise.\n\n## Decision\n\nWe use absolute paths to GitHub hosted images in the README (and other documentation files).\n\nWe don't use relative paths to images.\n\n## Consequences\n\nImages will always be visible, as long as you can reach GitHub.\n\nIt prevents from seing the actual image until it's pushed to `master` on GitHub. We're fine with this downside for now.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/docs/logo/abracadabra-logo.svg"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0001-record-architecture-decisions.md",
+   "identity": "docs/adr/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2019-05-23T21:36:00-04:00",
+   "first_sha": "224558fafc2c9247b637a74a7f17fe3c62140d47",
+   "last_commit": "2019-05-23T21:36:00-04:00",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record architecture decisions\n\nDate: 2019-05-23\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as [described by Michael Nygard](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions).\n\n## Consequences\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's [adr-tools](https://github.com/npryce/adr-tools).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/adr/0011-use-babel-jest-instead-of-ts-jest.md",
+   "identity": "docs/adr/0011-use-babel-jest-instead-of-ts-jest.md",
+   "commit": "c9aeaf26c15926d8b6861e217fb570d1625325b2",
+   "date": "2023-12-29T10:24:22-05:00",
+   "old_state": "accepted",
+   "new_state": "superseded",
+   "old_raw": "Accepted",
+   "new_raw": "Superceded by [15. Use esbuild to build instead of webpack](0015-use-esbuild-to-build-instead-of-webpack.md)",
+   "replacement": "15. Use esbuild to build instead of webpack (0015-use-esbuild-to-build-instead-of-webpack.md)",
+   "message": "Document decision of using ESBuild",
+   "renamed": false,
+   "script_label": "replaced",
+   "script_rule": "superseded-by-pointer",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com"
+  },
+  {
+   "path": "docs/adr/0005-use-custom-testeach-instead-of-jest-it-each.md",
+   "identity": "docs/adr/0005-use-custom-testeach-instead-of-jest-it-each.md",
+   "commit": "2bf5924f37a1cc8cb99434c9bae525d6a085bc0a",
+   "date": "2025-11-06T20:48:22-05:00",
+   "old_state": "accepted",
+   "new_state": "superseded",
+   "old_raw": "Accepted",
+   "new_raw": "Superceded by [16. Remove custom testeach](0016-remove-custom-testeach.md)",
+   "replacement": "16. Remove custom testeach (0016-remove-custom-testeach.md)",
+   "message": "Get rid of testEach() helper",
+   "renamed": false,
+   "script_label": "replaced",
+   "script_rule": "superseded-by-pointer",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com"
+  },
+  {
+   "path": "docs/adr/0002-no-integration-test.md",
+   "identity": "docs/adr/0002-no-integration-test.md",
+   "commit": "03334e6af1bb23239bc646585e785c27db1559cd",
+   "date": "2021-01-21T08:33:15-05:00",
+   "old_state": "accepted",
+   "new_state": "superseded",
+   "old_raw": "Accepted",
+   "new_raw": "Superceded by [10. Integration tests](0010-integration-tests.md)",
+   "replacement": "10. Integration tests (0010-integration-tests.md)",
+   "message": "Document decision to finally write integration tests",
+   "renamed": false,
+   "script_label": "replaced",
+   "script_rule": "superseded-by-pointer",
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com"
+  }
+ ],
+ "ai_signals": [
+  {
+   "kind": "file:primary",
+   "name": "CLAUDE.md",
+   "date": "2026-01-09T15:09:49-05:00",
+   "commit": "67400e3c104d4cd78eb1558cceb2de30fe25669d",
+   "evidence": "Add instructions for Claude to introduce a new refactoring",
+   "official": true,
+   "author": "Nicolas Carlo",
+   "email": "nicolascarlo.espeon@gmail.com"
+  }
+ ],
+ "signal_date": "2026-01-09T20:09:49+00:00",
+ "signal_kind": "file:primary",
+ "mentions": {
+  "strict": [
+   {
+    "sha": "ca3a18f3683d4fc103681778b48f2fa0d501acdf",
+    "date": "2024-08-09T15:58:25-04:00",
+    "subject": "Also update editor.selection when moving the cursor"
+   },
+   {
+    "sha": "67400e3c104d4cd78eb1558cceb2de30fe25669d",
+    "date": "2026-01-09T15:09:49-05:00",
+    "subject": "Add instructions for Claude to introduce a new refactoring"
+   },
+   {
+    "sha": "90332aefcbc2013d22306e31fa61b2d75c2c0310",
+    "date": "2026-10-01T21:42:53-04:00",
+    "subject": "Merge remote-tracking branch 'origin/main' into claude/nifty-herschel-9e0243"
+   },
+   {
+    "sha": "1369643292032f63867a296836506c8fe027608b",
+    "date": "2026-10-01T22:01:32-04:00",
+    "subject": "Merge pull request #1403 from nicoespeon/claude/nifty-herschel-9e0243"
+   },
+   {
+    "sha": "7a453e18183d7aff9ab9e8605571d8d93b19dd02",
+    "date": "2026-10-01T23:09:14-04:00",
+    "subject": "Merge remote-tracking branch 'origin/main' into claude/objective-cray-8c06b7"
+   },
+   {
+    "sha": "c6956db241f0ce0264f0ccfd0e20c722736197b9",
+    "date": "2026-10-01T23:12:13-04:00",
+    "subject": "Merge pull request #1416 from nicoespeon/claude/objective-cray-8c06b7"
+   }
+  ],
+  "strict_count": 6,
+  "literal_only_count": 33,
+  "capped": false
+ },
+ "group": "ai-eligible",
+ "adr_count_before_signal": 16,
+ "superseded_in_window": 3,
+ "eligibility_reason": "at-least-5-adrs-before-signal",
+ "sources": "sourcegraph:docs_adr;buchgeher-2022",
+ "stars": "896",
+ "ai_file_probe": "yes",
+ "buchgeher_adr_count": "10"
+}

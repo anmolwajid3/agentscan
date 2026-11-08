@@ -1,0 +1,396 @@
+{
+ "repo": "ministryofjustice/modernisation-platform",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2020-08-05T14:32:30+01:00",
+ "last_commit": "2026-11-06T14:10:55+00:00",
+ "n_commits": 23178,
+ "n_authors": 294,
+ "n_files": 1995,
+ "n_code_files": 30,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 0,
+ "adrs": [],
+ "status_changes": [],
+ "ai_signals": [
+  {
+   "kind": "file:secondary",
+   "name": ".github/agents/check-workflow-versions.agent.md",
+   "date": "2026-06-04T16:09:22+01:00",
+   "commit": "85df528005f1996bcf422578548473cb85699207",
+   "evidence": "feat(agents): add check-workflow-versions Copilot agent",
+   "official": false,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "file:secondary",
+   "name": ".github/agents/sip-implementation.agent.md",
+   "date": "2026-09-10T15:57:57+01:00",
+   "commit": "67099c9147e25c8c313603e76927c51262c62f32",
+   "evidence": "Add AI-assisted SIP delivery POC",
+   "official": false,
+   "author": "Kudzai Mtoko",
+   "email": "kudzai.mtoko@digital.justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <copilot@github.com>",
+   "date": "2026-04-27T16:24:27+01:00",
+   "commit": "21a634e9f40c026d65abfc5220b9ccf0ebbafe44",
+   "evidence": "Initial ADR for s3 scp",
+   "official": true,
+   "author": "Mark Roberts",
+   "email": "mark.roberts@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <copilot@github.com>",
+   "date": "2026-04-28T12:06:34+01:00",
+   "commit": "c828dc7edf18aeadc252e7eed571fa8cbc6bd653",
+   "evidence": "spelling change",
+   "official": true,
+   "author": "Mark Roberts",
+   "email": "mark.roberts@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <copilot@github.com>",
+   "date": "2026-04-29T10:59:29+01:00",
+   "commit": "259f532b829b0472511b701fc00bb694956b6258",
+   "evidence": "eucs access changes",
+   "official": true,
+   "author": "Mark Roberts",
+   "email": "mark.roberts@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <copilot@github.com>",
+   "date": "2026-05-05T14:32:56+01:00",
+   "commit": "4112915c7577a69d6be988b1bc79000b99977fff",
+   "evidence": "Update modernisation-platform-alarms documentation to match changes in the baseline alarms in v9.5.0",
+   "official": true,
+   "author": "Rich Green",
+   "email": "richard.green@digital.justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <copilot@github.com>",
+   "date": "2026-05-06T15:13:36+01:00",
+   "commit": "f34d54bf103916bd855f6d85de3ab250daf28ac0",
+   "evidence": "Update member delegation accounts for core-vpc development environment",
+   "official": true,
+   "author": "Rich Green",
+   "email": "richard.green@digital.justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <copilot@github.com>",
+   "date": "2026-05-08T10:40:36+01:00",
+   "commit": "02f3e6bd29ed703ed2c919e60bd2c4849317f0db",
+   "evidence": "Add service-area tag to all environment locals for consistency",
+   "official": true,
+   "author": "Rich Green",
+   "email": "richard.green@digital.justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-06-04T16:09:22+01:00",
+   "commit": "85df528005f1996bcf422578548473cb85699207",
+   "evidence": "feat(agents): add check-workflow-versions Copilot agent",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-06-04T17:31:12+01:00",
+   "commit": "134cdba030bc9c7c8cca1bde4d8ab3a4d17fde62",
+   "evidence": "fix(agents): replace placeholder URLs with real examples to fix broken link check",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-06-30T12:02:48+01:00",
+   "commit": "c61c0c5db0ac9c195ce74d469bf43d4c1b636cae",
+   "evidence": "Fix centralised endpoint hub: add TGW attachment and correct return routing",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-06-30T13:03:03+01:00",
+   "commit": "07084c2b53f2880c3cc608aa99fde8deb35297b0",
+   "evidence": "Refactor: move centralised endpoint TGW resources to conventional files",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-07-01T12:57:25+01:00",
+   "commit": "af70a1bce01a9156e787c5c66d6a21e9f0a11dfe",
+   "evidence": "fix: Add repository-projects:write permission to biannual-incident-simulation workflow",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-07-01T13:07:11+01:00",
+   "commit": "ac925fce3193a5ea323ef6afffb0d40e60cc673d",
+   "evidence": "fix: Add repository-projects:write to remaining biannual workflow permissions",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-07-01T15:53:51+01:00",
+   "commit": "7a455395e186fd21f029fbaf59ac1961885fc906",
+   "evidence": "fix: Add contents:read to workflow permissions for Project V2 access",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-07-02T12:03:56+01:00",
+   "commit": "379851ad45a9084cea2100479a7eb90ddfe1f493",
+   "evidence": "Add route53profiles:* to MemberInfrastructureAccess role",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-07-02T12:30:23+01:00",
+   "commit": "6583a55276785ae1f6b2ccefd8f0824b63df6da4",
+   "evidence": "Add route53profiles:* to platform-engineer-admin and sandbox SSO policies",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-07-02T15:43:07+01:00",
+   "commit": "dc9d400fbacfb0cfcdd6f05390e5a453f39daef0",
+   "evidence": "Propagate CP attachments into centralised endpoints TGW route table",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-07-03T11:38:38+01:00",
+   "commit": "eb84eed992b4c772a1d9b1af06fb63d91dcaec1c",
+   "evidence": "Add CP HMPPS and LAA accounts to centralised endpoint DNS share",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-07-03T15:38:26+01:00",
+   "commit": "7dcfbc2e4c95cedd423a7657c017009026df82e8",
+   "evidence": "Add modernisation-platform-audit security-audit access to CCMS accounts",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-07-06T17:09:31+01:00",
+   "commit": "760067d88e3a79738b2919ffc2646d1ec868bdee",
+   "evidence": "Add DNS overrides for non-standard centralised endpoint hostnames",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-07-15T12:49:02+01:00",
+   "commit": "7a9c107280034f29822e4d0b89af88888d003757",
+   "evidence": "Pilot Route53 Profile-native DNS for selected interface endpoints",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-07-15T14:44:47+01:00",
+   "commit": "f5afe49a0a2ba2cb2f07ef682c951be33c998d3c",
+   "evidence": "Switch Route53 profile-native pilot to SNS and SQS",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-07-15T16:42:19+01:00",
+   "commit": "01e5ea4cfdfbac40654aefd5097938484e2974c7",
+   "evidence": "Step 1: Remove SNS and SQS to clean up conflicting PHZs",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-07-15T18:03:56+01:00",
+   "commit": "8d0f00833ef0af3d5ecaa8b9719d862e583b7de1",
+   "evidence": "Step 2: Re-add SNS and SQS as profile-native interface endpoints",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-07-17T11:37:16+01:00",
+   "commit": "18d7a156bd70dec309316d754bb332d78bd1b042",
+   "evidence": "Refactor centralised endpoints to single resource and roll out profile-native DNS",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-08-07T16:40:41+01:00",
+   "commit": "812a7731e84247e909f9ba853f3c1dbb9f591eba",
+   "evidence": "Add ssmmessages and ec2messages centralised VPC interface endpoints",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-10-22T11:57:29+01:00",
+   "commit": "f176a76679972a59a641f1aca28cb52055dce846",
+   "evidence": "Allow internal security workflows to discover load balancer logging",
+   "official": true,
+   "author": "Aaron Robinson",
+   "email": "aaron.robinson1@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-10-22T15:21:44+01:00",
+   "commit": "4941f60f862d08acd1efa0022b53f11d4a41d6cd",
+   "evidence": "feat: register github-backup component",
+   "official": true,
+   "author": "Sandhya Buddharaju",
+   "email": "sandhya.buddharaju@justice.gov.uk"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-10-30T11:49:33+00:00",
+   "commit": "a3516af72f5851d1d8fdac868a980a819a115944",
+   "evidence": "Add ARC zonal shift permissions to developer policy",
+   "official": true,
+   "author": "mikereiddigital",
+   "email": "mike.reid@justice.gov.uk"
+  }
+ ],
+ "signal_date": "2026-04-27T15:24:27+00:00",
+ "signal_kind": "coauthor",
+ "mentions": {
+  "strict": [
+   {
+    "sha": "daa81652ff47195565d6e19034305261b7450395",
+    "date": "2023-12-12T10:22:55+00:00",
+    "subject": "Merge pull request #5781 from ministryofjustice/acc-aws-bedrock-access-for-CICA-Copilot"
+   },
+   {
+    "sha": "11832e56435cc875801f9dec368d812e6cf41f72",
+    "date": "2023-12-12T11:07:55+00:00",
+    "subject": "Add infrastructure-support tag in cica-copilot.json"
+   },
+   {
+    "sha": "4c202d01197403ee9b117cf1aeeab10f54c88e77",
+    "date": "2023-12-12T11:33:44+00:00",
+    "subject": "Merge pull request #5784 from ministryofjustice/acc-aws-bedrock-access-for-CICA-Copilot"
+   },
+   {
+    "sha": "71be545407e14760aad25a59a0e0adfda9b4e1a8",
+    "date": "2023-12-12T13:30:16+00:00",
+    "subject": "Add networking for copilot"
+   },
+   {
+    "sha": "ccc1fe106e32edc0a18b61ab6c6831ad2d256a66",
+    "date": "2023-12-12T14:35:19+00:00",
+    "subject": "Merge pull request #5787 from ministryofjustice/acc-networking-for-copilot"
+   },
+   {
+    "sha": "bd26953887947af99cea53cf25da92904ac24900",
+    "date": "2025-09-26T10:57:04+01:00",
+    "subject": "Merge branch 'main' into acc/PoC-for-Claude-account"
+   },
+   {
+    "sha": "bd8b8b9746be40509eb8ac968cdd3d4f1b0bcfa1",
+    "date": "2025-09-26T11:56:46+00:00",
+    "subject": "Merge pull request #11588 from ministryofjustice/acc/PoC-for-Claude-account"
+   },
+   {
+    "sha": "8f52f412d5a1597606d33c22090665ae3940ff51",
+    "date": "2025-09-26T13:53:08+01:00",
+    "subject": "network changes for claude"
+   },
+   {
+    "sha": "dded9a687de55db1b559711c974115e4ec9111ca",
+    "date": "2025-09-26T13:01:49+00:00",
+    "subject": "Merge pull request #11627 from ministryofjustice/acc/PoC-for-Claude-account"
+   },
+   {
+    "sha": "63955f1b0b7c37d8292cd5eb93cc81bd3b9fe06d",
+    "date": "2025-09-29T15:51:15+01:00",
+    "subject": "Add additional reviewer to hmcts-claude-provider.json"
+   },
+   {
+    "sha": "85df528005f1996bcf422578548473cb85699207",
+    "date": "2026-06-04T16:09:22+01:00",
+    "subject": "feat(agents): add check-workflow-versions Copilot agent"
+   },
+   {
+    "sha": "f36034c8ffb5856397ce7827a610c1ed35f8e87a",
+    "date": "2026-06-05T11:04:13+01:00",
+    "subject": "Merge branch 'main' into copilot/add-check-workflow-versions-agent"
+   }
+  ],
+  "strict_count": 16,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-native",
+ "adr_count_before_signal": 0,
+ "superseded_in_window": 0,
+ "eligibility_reason": "ai-native",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "17"
+}

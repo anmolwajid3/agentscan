@@ -1,0 +1,332 @@
+{
+ "repo": "Abelaa/pcmt",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2019-05-14T16:03:09+00:00",
+ "last_commit": "2020-10-15T10:06:42+00:00",
+ "n_commits": 1352,
+ "n_authors": 10,
+ "n_files": 1109,
+ "n_code_files": 569,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 7,
+ "adrs": [
+  {
+   "path": "doc/arch/adr-002.md",
+   "identity": "doc/arch/adr-002.md",
+   "adr_id": "2",
+   "title": "Containerization with Docker & Docker Compose",
+   "first_commit": "2019-05-27T14:20:30-07:00",
+   "first_sha": "626c3eab48e7ad90e50111facc4e167b1909e5c3",
+   "last_commit": "2020-02-05T17:51:39-08:00",
+   "author": "Josh Zamor",
+   "email": "josh.zamor@villagereach.org",
+   "status": "accepted",
+   "status_raw": "Accepted, 2019-07-01",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 2. Containerization with Docker & Docker Compose\n\n## Status\n\nAccepted, 2019-07-01\n\n## Context\n\nThe need to deliver PCMT in such a way that it's possible for interested \norganizations to provide it at a reasonable cost in a SaaS model, as well\nas for government organizations to have control over their tools and data by \ninstalling it on-prem calls for a containerization tool that has wide adoption\nand which can run in the major host operating systems.\n\n## Decision\n\nWe will provide each component of PCMT as a production ready docker image.\n\nWe will utilize docker-compose to orchestrate the docker containers that a \nsingle PCMT instance requires.\n\n## Consequences\n\nEach component of PCMT will be available as a pre-made docker container,\nready for client-configuration.\n\nA PCMT instance will be managed through docker-compose, including configuration.\n\n---\nCopyright (c) 2019, VillageReach.  Licensed CC BY-SA 4.0:  https://creativecommons.org/licenses/by-sa/4.0/\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "creativecommons.org/licenses/by-sa/4.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/arch/adr-003.md",
+   "identity": "doc/arch/adr-003.md",
+   "adr_id": "3",
+   "title": "Cloud Provisioning through Terraform",
+   "first_commit": "2019-05-27T14:21:10-07:00",
+   "first_sha": "aaa3d5c03d634c4c7d2a4c58f61892f655444d3b",
+   "last_commit": "2020-02-05T17:51:39-08:00",
+   "author": "Josh Zamor",
+   "email": "josh.zamor@villagereach.org",
+   "status": "accepted",
+   "status_raw": "Accepted, 2019-07-01",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 3. Cloud Provisioning through Terraform\n\n## Status\n\n\nAccepted, 2019-07-01\n\n## Context\n\nDeploying to the cloud is a fundamental part of increasing software delivery\nfrequency.  However once the frequency is increased, it becomes increasingly \nneeded to manage the provisioning and configuration of those cloud resources\nlest a step is forgotten, a security vulnerability is found, or an instance is\ncorrupted.  Following patterns found in software development, such as managing\ninfrastructure as code (IaC) and tracking changes in source control, are\nwidely regarded as good practice today.\n\nMany cloud providers have bespoke tooling that helps manage the creation of \nresources on their infrastructure.  While this tooling is hugely powerful, the\ncontext of PCMT is that our cloud resources should be kept as simple as\npossible, in part due to our constraint to allow for on-prem deployments.\nFurther an organization that chooses to deploy PCMT as a SaaS may not use the\nsame cloud provider as the one the PCMT project uses.\n\n## Decision\n\nWe will use Terraform to provision cloud resources:  compute instances, \nstorage, DNS, etc.\n\n## Consequences\n\nTerraform is a newer IaC tool that has support for multiple cloud providers,\nhowever not all cloud providers, or all advanced capabilities of the supported\ncloud providers may be available through Terraform.\n\n---\nCopyright (c) 2019, VillageReach.  Licensed CC BY-SA 4.0:  https://creativecommons.org/licenses/by-sa/4.0/\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "creativecommons.org/licenses/by-sa/4.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/arch/adr-004.md",
+   "identity": "doc/arch/adr-004.md",
+   "adr_id": "4",
+   "title": "Compute Provisioning through Ansible",
+   "first_commit": "2019-05-27T14:21:25-07:00",
+   "first_sha": "3f5fcaaeafb0c93d33818684cf885aa2504c1ce4",
+   "last_commit": "2020-02-05T17:51:39-08:00",
+   "author": "Josh Zamor",
+   "email": "josh.zamor@villagereach.org",
+   "status": "accepted",
+   "status_raw": "Accepted, 2019-07-01",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# 4. Compute Provisioning through Ansible\n\n## Status\n\nAccepted, 2019-07-01\n\n## Context\n\nWhile PCMT's basic unit of deployment is Docker and Docker-Compose \n([ADR #2](adr-002.md)), and Terraform is able to provision a cloud environment \n([ADR #3](adr-003.md)), we still need to address a gap where the computing \nenvironment needs to be provisioned and client configuration needs to be loaded.\n\n## Decision\n\nWe will use ready-made Ansible roles to install the latest versions of\nDocker and Docker-Compose, utilized through Terraform.\n\nWe will build PCMT Ansible role's that will serve as a template and are \navailable in the Ansible Galaxy repository.\n\nConfiguration of a PCMT instance will be managed as part of an Ansible Playbook.\n\n## Consequences\n\nDeploying, upgrading and destroying PCMT instances will be managed through\ninstance specific Ansible playbooks.\n\nThe target environment will need to be addressed and accessible from the\ncontrolling environment over SSH.\n\n---\nCopyright (c) 2019, VillageReach.  Licensed CC BY-SA 4.0:  https://creativecommons.org/licenses/by-sa/4.0/\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#2",
+     "kind": "hash",
+     "url": "",
+     "number": "2"
+    },
+    {
+     "key": "#3",
+     "kind": "hash",
+     "url": "",
+     "number": "3"
+    }
+   ],
+   "mentioned_paths": [
+    "creativecommons.org/licenses/by-sa/4.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/arch/adr-007.md",
+   "identity": "doc/arch/adr-007.md",
+   "adr_id": "7",
+   "title": "Versioning and Release Mechanism",
+   "first_commit": "2019-10-18T02:52:30+00:00",
+   "first_sha": "4f6dacbc7d5b47c9ef490001748c5370ad89cf7a",
+   "last_commit": "2019-10-18T02:52:30+00:00",
+   "author": "Josh Zamor",
+   "email": "josh.zamor@villagereach.org",
+   "status": "accepted",
+   "status_raw": "Accepted, 2019-10-15",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 7. Versioning and Release Mechanism\n\n## Status\n\nAccepted, 2019-10-15\n\n## Context\n\nPCMT wants to accomplish a number of goals through the use of versions:\n\n1. Convey to stakeholders the initial suitability of the project:\n    * Pre-v1: In development for global stakeholders.\n    * Version 1: Production ready for global stakeholders.\n    * Version 2: Production ready for national stakeholders.\n1. Leverage semantic versioning to convey to dependents the nature of the\n  release.  e.g. is it a patch-release, major new functionality, etc.\n1. Mark a specific state of the code-base, tied to a released asset.\n1. Indicate which version of Akeneo that PCMT is derived from.\n\n## Decision\n\n1. We will version PCMT by [Semantic Versioning 2.0][semver].  However since  \n    Docker tags do not support the use of the `+` symbol, we'll use `-` in  \n    its place.\n1. We will have a build number (from the commit SHA), which is from a CI  \n   pipeline, that includes a distinct set of commits.\n1. We will expire and remove old Build numbers, so they need to be pruned \n   regularly.\n1. We will not publish assets if a pipeline fails, and conversely if a pipeline\n   is re-run, it consists of the same commits (state of the code), and therefore\n   it should have the same build number.\n1. We will promote build numbers to a showcase or UAT server, manually.\n1. We will promote build numbers to a release, manually.  \n1. We will keep the semantic version of the system separate from the build\n   number, in a file in the SCM.  When an asset is labeled from\n   the CI pipeline, it'll use the full form by placing the build number in\n   the build meta-data of the Semantic Version.  e.g. `1.0.0+48af4a30`\n1. When promoting to a release we will co-label the published assets such that\n   one asset will have the build number, and the released asset will not include\n   that number. e.g. version 1.0.0 might be `image:v1.0.0+SHA` and\n   `image:v1.0.0`, which are equivalent assets.\n\n## Consequences\n\n1. Semantic versions must be set carefully and intentionally.  They should only\n   be set by those intending to designate a release.\n1. Builds, pre-releases, and stable releases are all controlled through the\n   setting of the semantic version in the SCM, and the commits that the CI\n   server builds.\n\n\n[semver]: https://semver.org/spec/v2.0.0.html",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "semver.org/spec/v2.0.0.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/arch/adr-006.md",
+   "identity": "doc/arch/adr-006.md",
+   "adr_id": "6",
+   "title": "Open Source License And IP",
+   "first_commit": "2019-08-02T14:14:19-07:00",
+   "first_sha": "a63d2e45a0c885cf1b99008db7db90a116773e86",
+   "last_commit": "2019-08-14T16:49:51-07:00",
+   "author": "Josh Zamor",
+   "email": "josh.zamor@villagereach.org",
+   "status": "accepted",
+   "status_raw": "Accepted, 2019-08-09",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# 6. Open Source License And IP\n\n## Status\n\nAccepted, 2019-08-09\n\n## Context\n\nPCMT is intended to be an open and free software product that's aligned with\nthe [Open Source Definition][osd] and the \n[Principles for Digital Development][pdd].  To this end PCMT needs to release \nthe software and documentation under appropriate software licenses.\n\nWhile PCMT has it's pick of open-source licenses, our starting point of Akeneo\ncomes with the OSL v3 license, a copy-left license.\n\n## Decision\n\n- We will abide by the Akeneo PIM Community Edition's [OSL v3][osl3] software \n  license. We will include the License and Copyright notice from Akeneo in the \n  root of every source repository which distributes Akeneo PIM CE.\n- We will license PCMT software (that which isn't a contribution to Akeneo)\n  under the [Non-Profit OSL v3][nposl3].  We will include a copy of this license \n  in the root of every source repository created.  We will mark every file \n  created with this license notice.\n- We will license all PCMT documentation and non-software materials under\n  [CC BY-SA 4.0][cc-by-sa]. We will include this mark with all documentation \n  and materials.\n- We will copyright all software and documentation, that's not a contribution to \n  Akeneo, to [VillageReach][villagereach].  We will include this notice in every \n  file created.\n- We will require that all contributions to PCMT be licensed under the\n  aforementioned licenses and copyright assigned to VillageReach.  We will\n  note this in a contribution guide available at the root of the PCMT project.\n\n## Consequences\n\nWe will ensure that the PCMT project is compliant with all IP rights and\nlicenses granted from Akeneo PIM CE.\n\nPCMT will use nearly the same, copy-left, license that Akeneo PIM CE uses.\nThis license is an OSD-compliant license which will ensure that PCMT remains \nfree and open for use or modification by all project stakeholders.\n\nPCMT will generate all of it's documentation under a Creative Common's license\nthat also requires that derivative works are shared.  The Share Alike license is \nvery similar to the copy-left OSL v3 in that use and modifications must be \ndeclared and shared.\n\nPCMT will include the appropriate copyright and license notices in all works,\nto ensure that all stakeholders understand who the licensor is and what license \nis granted to the licensee for use.\n\nPCMT will require all copyright to be assigned to the stewardship of \nVillageReach, which is primarily responsible to the project sponsors for\nensuring that PCMT is compliant with the Principals for Digital Development\nand the delivery of a free and open project.\n\n[osd]: https://opensource.org/osd\n[pdd]: https://digitalprinciples.org/\n[osl3]: https://opensource.org/licenses/OSL-3.0\n[nposl3]: https://opensource.org/licenses/NPOSL-3.0\n[cc-by-sa]: https://creativecommons.org/licenses/by-sa/4.0/\n[villagereach]: https://villagereach.org\n\n---\nCopyright (c) 2019, VillageReach.  Licensed CC BY-SA 4.0:  https://creativecommons.org/licenses/by-sa/4.0/\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "opensource.org/licenses/OSL-3.0",
+    "opensource.org/licenses/NPOSL-3.0",
+    "creativecommons.org/licenses/by-sa/4.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/arch/adr-001.md",
+   "identity": "doc/arch/adr-001.md",
+   "adr_id": "1",
+   "title": "Deployment on-prem & as a SaaS",
+   "first_commit": "2019-05-27T14:20:06-07:00",
+   "first_sha": "9866b604a736d346854a704364d2d2382bcc41f3",
+   "last_commit": "2019-08-14T16:48:49-07:00",
+   "author": "Josh Zamor",
+   "email": "josh.zamor@villagereach.org",
+   "status": "accepted",
+   "status_raw": "Accepted, 2019/05/31",
+   "replacement": null,
+   "n_commits": 8,
+   "text": "# 1. Deployment on-prem & as a SaaS\n\n## Status\n\nAccepted, 2019/05/31\n\n## Context\n\nIn global health there are two deployment constraints that push against one\nanother:  the desire for iNGO's, government agencies, multi-laterals, etc to\nlower the barrier to acquiring software solutions by utilizing a SaaS model,\nand that of many governments to exercise self-reliance and sovereignty of their\nsoftware and their data by being able to reasonably deploy software on premise\nin their own data center.\n\nWith regards to SaaS, most customers of the software are able and willing to\npay reasonable monthly fees, especially if those fees are predictable over a\nsuitable project timeline.  For organizations that want to offer PCMT as a\nSaaS they likely will expect the number of instances to be quite low:  likely\nless than 25 in the next 5 years.  Thus the key attributes for those running\nPCMT as a SaaS and for those consuming PCMT as a SaaS are reasonable fees and\nlead-times for signing a new instance on.\n\nWhen a government agency deploys the software in their own data center a\nprincipal concern is that of limited resources.  Limited both in hardware and\nthe maturity of the data center, as well as on the technical staff available.\nThere are few organizations within PCMT's user-base that have extensive \nexperience running highly available services or complicated deployment stacks.\n\nWe have a number of choices that are available to us:\n\n1. Multi-tenancy development in theory can achieve the greatest \n   cost-per-customer since the same application code on the same hardware\n   can serve more than one customer.  However it can significantly increase\n   the scope and development of each feature as each needs to consider how\n   many customers would share the same resources without impacting one-another.\n   It can also increase deployment cost and complexity as each instance needs\n   to be configured and monitored for many clients.\n1. Multi-single-tenancy is really a single tenancy model that utilizes advances\n   in containerization, oftentimes cloud providers, and deployment tools to \n   manage many single instances, one per customer, in such an automated fashion\n   as to make it nearly indistinguishable from multi-tenancy.\n1. Serverless is an approach to reduce overhead for developers by shifting \n   resource management to a provider.  It's included here for completeness, \n   and while it may make development practices easier, the deployment of a \n   serverless architecture on-prem in PCMT's context is non-trivial.\n\n## Decision\n\nWe will build PCMT to be [multi-single-tenant][multi-single-tenant] utilizing \ncontainers as the basic unit of deployment.  Each instance of PCMT will be \nserved by one or more containers, and where each container serves only one \nfunction for one PCMT instance.\n\nWe will build simple tools, in the category of Infrastructure as Code, that\nhelps provision computing resources both in one cloud provider as well as\non-prem, configure the instance of PCMT, and aid in the maintenance life-cycle \nof that instance:  upgrades, backups, archiving, destruction.\n\nWe will provide complete IaC deliverables that are able to provision resources\noutside of PCMT's scope, such as email & DNS.\n\nWe will build PCMT so that it runs in as little as 2GB of RAM, 2 cores of a \nmodern CPU and 10GB of storage which is a reasonable requirement of most on-prem \ndata centers.  As of May 2019 this targets a $30 / month per PCMT\ninstance price-point in one cloud provider, with plenty of opportunity for \nadditional per instance and per month reductions in cost.\n\n[multi-single-tenant]: https://www.linkedin.com/pulse/architecture-constraints-end-multi-tenancy-gregor-hohpe/\n\n## Consequences\n\nThe development team will not need to scope and build each feature to be\nmulti-tenant.\n\nThe development team will need to properly scope and build PCMT and its\nsupporting deployment tools to run both in the cloud and on-premise using\na basic set of IaC tools that are free and simple to use.\n\nPCMT's scope and performance characteristics will be constrained in-part by \nwhat can be reasonable run within 2GB of RAM and 2 CPU cores with 10GB of \nstorage.\n\nThose wishing to deploy PCMT as a SaaS will have a starting point, however they\nlikely will need to invest more in order to run a large number of instances,\nreduce the deployment lead-time, or reduce the per-instance cost.\n\n---\nCopyright (c) 2019, VillageReach.  Licensed CC BY-SA 4.0:  https://creativecommons.org/licenses/by-sa/4.0/\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "creativecommons.org/licenses/by-sa/4.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/arch/adr-005.md",
+   "identity": "doc/arch/adr-005.md",
+   "adr_id": "5",
+   "title": "Build PCMT from the Akeneo PIM Community Edition",
+   "first_commit": "2019-07-02T13:21:42-07:00",
+   "first_sha": "858f680abbc35980ecc21aeb7fb8cbe97ab93861",
+   "last_commit": "2019-08-14T16:48:49-07:00",
+   "author": "Josh Zamor",
+   "email": "josh.zamor@villagereach.org",
+   "status": "accepted",
+   "status_raw": "Accepted, 2019-07-01",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# 5. Build PCMT from the Akeneo PIM Community Edition\n\n## Status\n\nAccepted, 2019-07-01\n\n## Context\n\nThe PCMT group is interested in starting from an existing code-base to decrease\nour time-to-market and make use of our short available project time-line.  To do \nthis the group created a simple [evaluation process][eval-process] by which we\n[evaluated 14 mature software products][eval-matrix].  Out of this process a \n[recommendation][recommendation] narrowed the options down to 2, highlighting a \nfew business-focused trade-offs between them. These trade-offs were captured in \ndetail as a [pre-read to project stakeholders][pre-read], with the overall \nconsensus being that neither option would be a wrong-option. \n\n[eval-process]: https://drive.google.com/open?id=1vG-kVU5Jfh28g63mI21Lp3OwH4Vmq562101g8VdAoLQ\n[eval-matrix]: https://drive.google.com/open?id=19MLRJvzgIio41XjeefCc6z3ygrjiuVJLC11IxOHppoE\n[recommendation]: https://docs.google.com/document/d/1GCAWtYuwSrUBp5zmaP5rCqVXPBdH_Rats4ib7ZZIuoo/edit?usp=sharing\n[pre-read]: https://drive.google.com/open?id=17CWD5MBOTSuG1HtLHo0JQ_Y6E3L73IuVdIMzdfsJg48\n\n## Decision\n\nWe will build PCMT from [Akeneo PIM Community Edition][akeneo-ce].\n\nWe will sign the Akeneo SAS [Contributor's Agreement][contrib-agreement] should \nwe need to patch or otherwise contribute to Akeneo PIM Community Edition.\n\nWe will maintain an active down-stream fork of the Akeneo PIM Community Edition\ngit [repository][repo].\n\nWe will make every effort to be forward compatible with future Akeneo PIM\nCommunity Edition releases.\n\n[akeneo-ce]: https://www.akeneo.com/community-edition/\n[contrib-agreement]: https://www.akeneo.com/contributor-license-agreement/\n[repo]: https://github.com/akeneo/pim-community-dev\n\n## Consequences\n\nPCMT will leverage the Akeneo PIM Community Edition's modular architecture, \nincluding the use of the PHP Symphony framework.\n\nPCMT will regard the Akeneo PIM Community Edition git repository as the\nauthoritative upstream repository, following that project's conventions and\nrelease-cycle.\n\n---\nCopyright (c) 2019, VillageReach.  Licensed CC BY-SA 4.0:  https://creativecommons.org/licenses/by-sa/4.0/\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "creativecommons.org/licenses/by-sa/4.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "doc/arch/adr-002.md",
+   "identity": "doc/arch/adr-002.md",
+   "commit": "2c0ec9ba12fc175c5797d1655767bfbf418f1004",
+   "date": "2020-02-05T17:51:39-08:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted, 2019-07-01",
+   "replacement": null,
+   "message": "Fix adr link in README.",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Josh Zamor",
+   "email": "josh.zamor@villagereach.org"
+  },
+  {
+   "path": "doc/arch/adr-003.md",
+   "identity": "doc/arch/adr-003.md",
+   "commit": "2c0ec9ba12fc175c5797d1655767bfbf418f1004",
+   "date": "2020-02-05T17:51:39-08:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted, 2019-07-01",
+   "replacement": null,
+   "message": "Fix adr link in README.",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Josh Zamor",
+   "email": "josh.zamor@villagereach.org"
+  },
+  {
+   "path": "doc/arch/adr-004.md",
+   "identity": "doc/arch/adr-004.md",
+   "commit": "2c0ec9ba12fc175c5797d1655767bfbf418f1004",
+   "date": "2020-02-05T17:51:39-08:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted, 2019-07-01",
+   "replacement": null,
+   "message": "Fix adr link in README.",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Josh Zamor",
+   "email": "josh.zamor@villagereach.org"
+  },
+  {
+   "path": "doc/arch/adr-006.md",
+   "identity": "doc/arch/adr-006.md",
+   "commit": "97ffdbdcf4ae566d2b20324d7f7aa9a236475934",
+   "date": "2019-08-14T16:49:51-07:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted, 2019-08-09",
+   "replacement": null,
+   "message": "#16, mark adr 6 as accepted.",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Josh Zamor",
+   "email": "josh.zamor@villagereach.org"
+  },
+  {
+   "path": "doc/arch/adr-001.md",
+   "identity": "doc/arch/adr-001.md",
+   "commit": "62c5be7dd3edbacff0631a0860b813991cf331d2",
+   "date": "2019-05-31T21:12:50+00:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted, 2019/05/31",
+   "replacement": null,
+   "message": "#2, change status of ADR 1 to accepted",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Josh Zamor",
+   "email": "jzamor@gmail.com"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 7,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "7"
+}

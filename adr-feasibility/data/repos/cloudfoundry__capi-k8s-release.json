@@ -1,0 +1,196 @@
+{
+ "repo": "cloudfoundry/capi-k8s-release",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2019-10-23T14:37:41-07:00",
+ "last_commit": "2022-08-31T14:02:14-04:00",
+ "n_commits": 1058,
+ "n_authors": 52,
+ "n_files": 225,
+ "n_code_files": 99,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 5,
+ "adrs": [
+  {
+   "path": "decisions/0005-exec-curl-instead-of-http-liveness-probe-registry-buddy.md",
+   "identity": "decisions/0005-exec-curl-instead-of-http-liveness-probe-registry-buddy.md",
+   "adr_id": "5",
+   "title": "Use Exec / Curl in Liveness Probe for Registry-Buddy",
+   "first_commit": "2021-05-20T15:23:18-07:00",
+   "first_sha": "1a7e182dbf3b0ede20e668eaa1c433baa9f93420",
+   "last_commit": "2021-05-20T15:23:18-07:00",
+   "author": "Tim Downey",
+   "email": "tdowney@vmware.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 5. Use Exec / Curl in Liveness Probe for Registry-Buddy\n\nDate: 2021-05-20\n\n## Status\n\nAccepted\n\n## Context\n\nIn [#178030273](https://www.pivotaltracker.com/story/show/178030273) we added a liveness probe to the `registry-buddy`\ncontainers so that they will be restarted when the container is unhealthy. The `registry-buddy` is a simple http server\nimplemented in Go that is configured with permissions to push and delete images from a container registry.\n\nIt does not perform any authentication or authorization checks of its callers and is only protected by virtue of it being\na sidecar container on trusted workloads (`cf-api-server` and `cf-api-worker`). Given that it makes no auth(n/z) checks\nwe have it binding only to the loopback address (e.g. localhost). We cannot use the regular [`http` liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-a-liveness-http-request)\nto health check it since the `kubelet` does not have access to `localhost` within the Pod's network namespace.\n\nTo enable the `kubelet` to reach the `registry-buddy` we would need to listen on a reachable address instead of `localhost`.\nThis may expose it to the rest of the Pod network, though, and open up the registry to access by non-trusted `Pods`.\n\n## Decision\n\nInstead of adding additional auth(n/z) to `registry-buddy` and having it listen on an externally reachable address, we chose\nto instead use an `exec` liveness probe to execute a `curl` within the container itself.\n\n## Consequences\n\n`registry-buddy` can continue listening on `localhost` and we can defer the work to add additional auth(n/z).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#178030273",
+     "kind": "hash",
+     "url": "",
+     "number": "178030273"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/0004-sync-routes-from-k8s-to-cc.md",
+   "identity": "decisions/0004-sync-routes-from-k8s-to-cc.md",
+   "adr_id": "4",
+   "title": "Sync Routes from k8s to CC",
+   "first_commit": "2020-06-23T16:06:42-07:00",
+   "first_sha": "0e6ca4ff02227e75f8cfaaa1950b1032226765cf",
+   "last_commit": "2020-09-24T14:22:45-07:00",
+   "author": "Connor Braa",
+   "email": "cbraa@pivotal.io",
+   "status": "proposed",
+   "status_raw": "Proposal",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 4. Sync Routes from k8s to CC\n\nDate: 2020-06-23\n\n## Status\n\nProposal\n\n## Context\n\n### CF History\n\nTo maintain reliability in the event of temporary network partition, CF must ensure the user's desired state is consistent across components.\n\nIn the past, we've done this using \"bulk sync\" agents like: \n1. [nsync-bulker](https://github.com/cloudfoundry-attic/nsync/tree/master/cmd/nsync-bulker)\n1. [ProcessesSync](https://github.com/cloudfoundry/cloud_controller_ng/blob/master/lib/cloud_controller/diego/processes_sync.rb)\n1. [Copilot::Sync](https://github.com/cloudfoundry/cloud_controller_ng/blob/master/lib/cloud_controller/copilot/sync.rb)\n1. [hm9000](https://github.com/cloudfoundry-attic/hm9000)\n\nEach of these components share a similar goal: fetch desired state and ensure it is consistently represented everywhere where it needs to become actual state.\nIn practice, the modern versions of these bulk sync loops page through CCDB or the CF API and make requests to external components (diego, copilot, metac) to ensure that their internal states are consistent with values in CCDB.\n\n### Kubernetes\n\nKubernetes is also implemented via a series of \"bulk sync loops\" that are more commonly known as controllers, but there are some key differences in how these convergence loops work.\n1. k8s has a [\"watch\"](https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes) API so clients clients can subscribe to incremental changes in desired and actual state\n1. [k8s.io/client-go/cache](https://godoc.org/k8s.io/client-go/tools/cache) provides a mechanism for clients to build and maintain local caches of kubernetes state\n1. [kubebuilder](https://book.kubebuilder.io/) Provides, amongst other things, an SDK for building reconciliation loops on top of watches and client side caching\n\n### Problems and Solutions\n\nTo illustrate the necessity of these sync loops, it helps to think about how they improve resiliency in 2 cases of temporary network partition from the perspective of the CF API: \n1. Problem: Updates to CCDB succeed \u2705, but updates to the Route CRD fail \u274c\n1. Problem: Updates to the Route CRD succeed \u2705, but updates to CCDB fail \u274c\n\nTo handle these 2 failure modes, several approaches can be taken. \n\n##### Mimic historical sync loops:\n1. Problem: CCDB \u2705 & Route CRD \u274c\n   1. Solution: Raise the error to the user, but allow the CCDB transaction to commit. A bulk sync loop will detect that the Route CRD is \"missing\" and create it later.\n1. Problem: Route CRD \u2705 & CCDB \u274c\n   1. Solution A: Raise the error to the user, and don't do the Route CRD write until CCDB changes are committed.\n   1. Solution B: A bulk sync loop will detect that the Route CRD is \"extraneous\" and delete it later.\n\n##### Forgo a bulk sync and attempt to bootstrap consistency with k8s off CCDB transactions:\n1. Problem: CCDB \u2705 & Route CRD \u274c\n   1. Solution: Raise the error to the user, abort the CCDB transaction.\n1. Problem: Route CRD \u2705 & CCDB \u274c\n   1. Solution: Roll back changes to the Route CRD... (but what if that still fails due to network partition?!)\n\n##### Sync from k8s to CCDB\n1. Problem: CCDB \u2705 & Route CRD \u274c\n   1. Solution: Raise the error to the user, abort the CCDB transaction.\n1. Problem: Route CRD \u2705 & CCDB \u274c\n   1. Solution: Raise the error to the user, but leave the Route CRD. The \"bulk sync loop\" will not consider the route \"reconciled\" until it is correct in CCDB.\n\n### Viable Long Term Implementations & Tradeoffs\n\n##### CCDB->k8s Sync in Ruby\n1. Mimics ProcessesSync for efficient access to CCDB\n1. Run it in an independent process from clock_global to avoid BOSH entanglement\n1. Unclear what scale limitations we might encounter if we regularly download\n   all k8s Routes.\n\n##### CF API->k8s Sync in Go\n1. Probably a new, independent go program\n1. Can take advantage of go-client cache & reflector to avoid repeatedly\n   downloading all k8s state.\n   1. What does it mean to \"reconcile\" a change to a single Route CRD if CCDB is authoritative?\n1. Would need to page through CF API to build picture of CF state.\n\n##### Sync from k8s->CCDB with kubebuilder controller and reloads\n1. Probably a RoutesController akin to our existing kpack BuildsController\n1. Can take advantage of go-client cache & reflector to avoid repeatedly\n   downloading all k8s state.\n   1. Can take advantage of existing kubebuilder patterns\n   1. \"Reconciling\" a change to a single Route CRD means verifying with the CF\n      API that it has been loaded from k8s.\n1. Route Reconcile must `POST /v3/route/:guid/reload` endpoint on CF API\n   1. These must only succeed if the given resource can be loaded from k8s\n   1. Each \"reconcile\" call requires a successful call to this endpoint or else\n      it'll be reqeued.\n   1. Endpoint must short circuit if provided k8s resourceVersion matches one\n      stored in CCDB. This avoids endless loops and avoids unnecessary k8s\n      traffic.\n1. In normal operation, CF API must be careful not to commit changes to CCDB\n   that failed to be applied to k8s.\n   1. In practice, this means k8s Routes operations must occur inside CCDB\n      transactions.\n1. In failure modes, restarting RoutesController would resync existing Routes.\n1. Hard to handle Routes that are missing in k8s but still present in CCDB.\n   1. In theory this should never happen as the k8s delete would need to be\n      reconciled, but in practice it could happen due to bugs\n   1. Might require us to periodically `POST /v3/routes/:guid/reload` every route\n      in CCDB, anyways, or just have operators do that in the rare case the\n      route counts are out-of-sync.\n   1. Maybe PATCHes cause deletes with 409 Gone?\n1. Allows platform operators to add routes as part of their cf-for-k8s\n   configuration that could be viewable via the CF API.\n\n## Decision\n\nWe ended up taking a bit of a hybrid approach between \"CF API->k8s Sync in Go\" and \"Sync from k8s->CCDB with kubebuilder controller and reloads\".\nIn the discussion of this ADR it became apparent that we could use kubebuilder to build a bulk sync loop that reconciles all routes from the CF API.\n\nWe added a new CRD (PeriodicSync) and controller to cf-api-controllers. Using the CF API as a source of truth, the PeriodicSyncReconciler runs in the existing cf-ai-controller-manager and reconciles all the /v3/routes periodically.\n\n## Consequences\n\n### Pros\n1. Correct behavior for \"extra\" routes in k8s.\n    1. This case was hard to solve with any other proposal\n1. Minimal new Ruby code, minimal unnecessary k8s API load\n1. No custom logic for managing periodicity, and no reliance on CC's existing clock mechanism thanks to kubebuilder\n1. Doesn't prevent us from optimizing using per-route reconciliation later\n    1. When the route-doesn't-exist in k8s, this might be a little wonky, but is likely still possible\n1. PeriodicSync CRD has \"type\" field so we can hopefully re-use some of this work for other resources like Droplets or LRPs.\n1. This loop would also be necessary syncing k8s->CCDB.\n    1. For any sync direction, you can't detect an extra CCDB route without a loop like this.\n\n### Cons\n1. Similar to existing sync loops, care must be taken to prevent the loop from exiting early on errors\n    1. It does do this now, but it's not always easy\n1. No CCDB access in cf-api-controllers\n    1. Serializing/deserializing /v3/routes frequently\n    1. We punted on pagination, limiting us to 5000 routes. Handling pagination in the future might be challenging, especially if it can cause us to miss routes in CCDB.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/cloudfoundry/cloud_controller_ng/blob/master/lib/cloud_controller/diego/processes_sync.rb",
+    "github.com/cloudfoundry/cloud_controller_ng/blob/master/lib/cloud_controller/copilot/sync.rb",
+    "godoc.org/k8s.io"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/0003-cf-api-controller-repo.md",
+   "identity": "decisions/0003-cf-api-controller-repo.md",
+   "adr_id": "3",
+   "title": "CF API Controller Source Code Organization",
+   "first_commit": "2020-06-17T15:51:27-07:00",
+   "first_sha": "5c39c2f2b300637c70294b52bfd6152d69a50d40",
+   "last_commit": "2020-07-08T14:22:26-07:00",
+   "author": "Connor Braa",
+   "email": "cbraa@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# 3. CF API Controller Source Code Organization\n\nDate: 2020-06-17\n\n## Status\n\nAccepted\n\n## Context\n\nCurrently we store `capi-kpack-watcher` directly in `capi-k8s-release`. This has\ncaused some complexity when bumping image versions in our concourse pipeline.\nWe're also planning on reworking the watcher to use [kubebuilder](https://github.com/kubernetes-sigs/kubebuilder), and so now is a\ngood time to change any source code organization decisions.\n\nProposed locations for `capi-kpack-watcher` source code:\n\n1. `cf-api-kpack-watcher` a repo just for this particular component\n   1. Pros:\n      1. Very clear what goes where\n      1. It'd be a standard `kubebuilder` go repo\n      1. Fits our current pattern of go service repositories (1 repo for each service)\n   1. Cons:\n      1. Many more repos to manage to keep this pattern consistent in the\n       near-future as we will also create controllers for routes, droplets, etc\n\n1. `cf-api-controllers`/`cf-controllers` which would contain other future controllers we create for CF API resources\n   1. Pros:\n      1. It'd be a standard `kubebuilder` go repo with multiple controllers\n      1. Only one more repo to manage to keep this pattern consistent\n   1. Cons:\n      1. Possibly unclear in the future whether controllers without CF API dependency should go here. (This is specifically\n       if we use a more generic name like `cf-controllers` which doesn't make clear this repository is only managed by our team)\n      1. Marrying the versions of all these controllers together makes it\n         difficult if you ever to want use different effective versions of\n         source for the controllers\n          - e.g. if we introduce a bug in `controller-a` source, but want to\n            keep the same version of `controller-b` source\n\n1. `cloud_controller_ng` mono-repo\n   1. Pros:\n      1. 0 more repos to manage to keep this pattern consistent\n      1. No way for API to get out-of-sync with controllers - they all come from\n       the same source code.\n          - Versioning, for instance, becomes simplified a bit with this\n   1. Cons:\n      1. 1 repo with Ruby and Go code inside can be _very_ annoying to grep.\n      1. Nonstandard `kubebuilder` layout\n      1. Marrying the versions of CCNG to these controllers makes it difficult\n         if you ever want to split apart the versioning\n          - e.g. if we introduce a bug in the controller code, but want to keep the\n            same version of CCNG code\n\n1. leave it in `capi-k8s-release/src/capi-kpack-watcher`\n   1. Pros:\n      1. 0 more repos to manage to keep this pattern consistent\n   1. Cons:\n      1. Bumping `capi-k8s-release`'s built image reference with a SHA that points\n       at itself is confusing and difficult to manage within concourse.\n      1. Nonstandard `kubebuilder` layout\n\n## Decision\n\nWe are going to proceed with the option of leaving it in `capi-k8s-release/src/capi-kpack-watcher`; however, we are also going\nto rename the folder/pseudo-repository containing the source to be called `cf-api-controllers` for now with the intention to\nmove the folder out into a separate repository later if we still so desire.\n\n## Consequences\n\n### Pros:\n   1. 0 more repos to manage to keep this pattern consistent\n   1. Can more easily move this folder out into a separate repository now since\n      we've taken care of the renaming concern already\n### Cons:\n   1. Bumping `capi-k8s-release`'s built image reference with a SHA that points\n    at itself is confusing and difficult to manage within concourse.\n   1. Nonstandard `kubebuilder` layout\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "capi-k8s-release/src/capi-kpack-watcher"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/0001-record-architecture-decisions.md",
+   "identity": "decisions/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2020-04-29T15:09:35-07:00",
+   "first_sha": "5cf98e7889e0b5627b2a0369b539241895e64c44",
+   "last_commit": "2020-04-29T15:09:35-07:00",
+   "author": "Connor Braa",
+   "email": "cbraa@pivotal.io",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record architecture decisions\n\nDate: 2019-03-26\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as [described by Michael Nygard](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions).\n\n## Consequences\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's [adr-tools](https://github.com/npryce/adr-tools).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/0002-use-spec-for-bdd.md",
+   "identity": "decisions/0002-use-spec-for-bdd.md",
+   "adr_id": "2",
+   "title": "Use spec for bdd in capi-k8s-watcher",
+   "first_commit": "2020-04-29T15:09:35-07:00",
+   "first_sha": "5cf98e7889e0b5627b2a0369b539241895e64c44",
+   "last_commit": "2020-04-29T15:09:35-07:00",
+   "author": "Connor Braa",
+   "email": "cbraa@pivotal.io",
+   "status": "proposed",
+   "status_raw": "Draft",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Use spec for bdd in capi-k8s-watcher\n\nDate: 2020-1-05 (roughly)\n\n## Status\n\nDraft\n\n## Context\n\nWe wanted a test framework to provide some scaffolding for testing new k8s code.\nSome folks on the team had explained Ginkgo's problems with test pollution and\nconcurrency to many-a-pair. @christarazi wanted to use tools with broader\nacceptance in the k8s/go community. Testify vs Gomega also came into play.\n\n## Decision\n\nWe will try Stephen Levine's [\"spec\" library](https://github.com/sclevine/spec)\nWe will try [testify](https://github.com/stretchr/testify) while we're at it.\n\n## Consequences\n\nWe can run tests via \"go test\" and tests work better in IDEs like Goland.\n\nTests are serial by default, but we can control concurrency more granularly\nusing the same subtest mechanisms as go's default test suite.\n\nBy default, spec doesn't come plugged in with Gomega, so there's concern that\ntest output might be worse if we choose to use it in the future.\n\nTestify is more widely used than Gomega and may be familiar to the broader go\ncommunity, but also asserts expectations all at once in an After\n(mock.AssertExpectationsForObjects) in a way that might be risky on complicated\ntest cases.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "decisions/0003-cf-api-controller-repo.md",
+   "identity": "decisions/0003-cf-api-controller-repo.md",
+   "commit": "eb574ba4092edb46f7fecb676028db972d6da053",
+   "date": "2020-07-08T14:22:26-07:00",
+   "old_state": "unknown",
+   "new_state": "accepted",
+   "old_raw": "In Review",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "Made a decision regarding this ADR",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Jaskanwal Pawar",
+   "email": "jpawar@pivotal.io"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 5,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "5"
+}

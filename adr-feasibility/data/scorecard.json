@@ -1,0 +1,80 @@
+{
+  "generated": "2026-11-08T01:29+00:00",
+  "check1": {
+    "frame_rows": 2338,
+    "analyzed": 422,
+    "clone_failures": 33,
+    "ai_eligible": 67,
+    "non_ai_eligible": 273,
+    "ai_native": 11,
+    "ai_too_few_before": 1,
+    "too_few_adrs": 35,
+    "templates": 2,
+    "superseded_in_eligible_windows": 133,
+    "strict_ai_eligible": 67,
+    "strict_non_ai_eligible": 200,
+    "strict_superseded": 116,
+    "pass_bar": {
+      "ai_projects": 50,
+      "non_ai_projects": 50,
+      "superseded": 100
+    },
+    "passed": true,
+    "passed_strict_real_project_filter": true,
+    "frame_ai_probe": 1058,
+    "frame_unmeasured": 1916
+  },
+  "check2": {
+    "flagged_n": 20,
+    "confirmed_use": 19,
+    "confirmed_pass": true,
+    "with_observable_start": 19,
+    "within_92_days": 14,
+    "timing_pass": false,
+    "hidden_use": 0,
+    "unflagged_n": 20,
+    "passed": false,
+    "rule": "Pass if at least 16 of 20 flagged projects have an AI co-author, agent author, or a strict tool mention on or after the signal date, and at least 80% of flagged projects that have an observable use date are within 92 days of the signal, with at least 10 such dates. The instruction file alone is not counted as use."
+  },
+  "manual": {
+    "check3": {
+      "labeled": 30,
+      "placed_in_first_two_groups": 12,
+      "placement_rate": 0.4,
+      "placement_pass": false,
+      "implementation_judged": 30,
+      "implementation_correct": 28,
+      "implementation_rate": 0.9333333333333333,
+      "implementation_pass": true
+    },
+    "check4": {
+      "labeled": 30,
+      "agreements": 24,
+      "rate": 0.8,
+      "passed": false
+    },
+    "check5": {
+      "rater_a": 15,
+      "rater_b": 0,
+      "decision_type_kappa": null,
+      "hard_kappa": null,
+      "weighted": {},
+      "passed": false,
+      "waiting_for_second_rater": true
+    },
+    "check6": {
+      "replies": 0,
+      "compared": 0,
+      "matches": 0,
+      "passed": false,
+      "waiting_for_replies": true
+    },
+    "check2_maintainer_replies": 0
+  },
+  "samples": {
+    "check3": 30,
+    "check4": 30,
+    "check5": 15,
+    "check6": 10
+  }
+}

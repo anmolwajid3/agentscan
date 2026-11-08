@@ -1,0 +1,303 @@
+{
+ "repo": "dxw/wordpress-template",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2020-08-12T08:18:12-04:00",
+ "last_commit": "2026-11-03T12:31:33+00:00",
+ "n_commits": 399,
+ "n_authors": 23,
+ "n_files": 130,
+ "n_code_files": 57,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 9,
+ "adrs": [
+  {
+   "path": "Documentation/decisions/0009-use-github-as-source-for-whippet-dependencies.md",
+   "identity": "Documentation/decisions/0009-use-github-as-source-for-whippet-dependencies.md",
+   "adr_id": "9",
+   "title": "Use GitHub as source for Whippet dependencies",
+   "first_commit": "2022-09-06T17:10:33+01:00",
+   "first_sha": "2a54da9db8dba0bac7ba2685746e5157316b5156",
+   "last_commit": "2022-09-06T17:10:33+01:00",
+   "author": "Rob Skilling",
+   "email": "rob@dxw.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 9. Use GitHub as source for Whippet dependencies\n\nDate: 2022-09-06\n\n## Status\n\nAccepted\n\n## Context\n\nWe are migrating all our project repos from GitLab to GitHub. Doing the same with our Whippet dependency repos (mainly plugins, but could also be themes) will eventually mean we no longer have to maintain our GitLab instance, and will facilitate automation of Whippet updates.\n\n## Decision\n\nWe should use `git@github.com/dxw-wordpress-plugins/` as the primary source for third-party plugins. Any custom dxw plugins should be in public repos in `git@github.com/dxw/`.\n\n## Consequences\n\nThe `dxw-dalmatian` and `dxw-dalmatian-2` accounts will need access to all repos we reference in `whippet.json` files. They already have access to all repos in `git@github.com/dxw-wordpress-plugins`. If there are any plugin or theme repos in `git@github.com/dxw` which cannot be made public and are referenced in `whippet.json` files, the dalmatian accounts will need to be added to those repos.\n\nAll site repos will need to be updated so their `whippet.json` file uses GitHub as the source for all plugins and themes.\n\nWe should ensure all documentation is up to date, both in terms of managing Whippet dependencies, and adding new starters/removing leavers from the GovPress team on `github.com/dxw-wordpress-plugins`\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "git@github.com/dxw-wordpress-plugins/",
+    "git@github.com/dxw/",
+    "whippet.json",
+    "git@github.com/dxw-wordpress-plugins",
+    "git@github.com/dxw",
+    "github.com/dxw-wordpress-plugins"
+   ],
+   "implementation": {
+    "sha": "88ee25d95e910b27686834650721daa2d1e8062a",
+    "date": "2022-09-08T10:22:23+01:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "whippet.json"
+    ]
+   }
+  },
+  {
+   "path": "Documentation/decisions/0008-use-dependabot-yml-to-configure-security-alerts.md",
+   "identity": "Documentation/decisions/0008-use-dependabot-yml-to-configure-security-alerts.md",
+   "adr_id": "8",
+   "title": "Use a dependabot.yml file to configure security alert rules",
+   "first_commit": "2021-11-10T12:06:59+00:00",
+   "first_sha": "920b9282a2c9dea015a937339050c14503f7db82",
+   "last_commit": "2021-11-10T12:06:59+00:00",
+   "author": "Rob Skilling",
+   "email": "rob@dxw.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 8. Use a dependabot.yml file to configure security alert rules\n\nDate: 2021-11-10\n\n## Status\n\nAccepted\n\n## Context\n\nGitHub security alerts can provide us with useful information when there is a vulnerability in a package we use.\n\nHowever, currently the vast majority of alerts we receive are for vulnerabilities in NPM dev dependencies, which are highly unlikely to lead to any real vulnerability in the production environment. See https://overreacted.io/npm-audit-broken-by-design/ for more details.\n\nThis creates so many false positives that we're unable to spot the meaningful security alerts we need to act upon amongst the noise.\n\n## Decision\n\nWe will use a `dependabot.yml` file to [configure the security alerts](https://docs.github.com/en/code-security/supply-chain-security/keeping-your-dependencies-updated-automatically/configuration-options-for-dependency-updates) so that alerts are raised for all composer packages, but only production NPM packages. \n\n## Consequences\n\nThis should filter out most of the noise of alerts we don't need to act on, and leave us with a manageable number of meaningful security alerts. It will also control what dependencies Dependabot automatically opens PRs for.\n\nBecause Dependabot does not currently allow for glob/wildcard-based rules (see https://github.com/dependabot/dependabot-core/issues/2178), we will need to manually maintain the file for each repo.\n\nA PR template should help ensure we keep the `dependabot.yml` files up to date, and a separate ADR will be opened to that effect.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "dependabot/dependabot-core#2178",
+     "kind": "issue",
+     "url": "https://github.com/dependabot/dependabot-core/issues/2178",
+     "number": "2178"
+    }
+   ],
+   "mentioned_paths": [
+    "dependabot.yml"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "Documentation/decisions/0007-validate-whippet-files-in-CI.md",
+   "identity": "Documentation/decisions/0007-validate-whippet-files-in-CI.md",
+   "adr_id": "7",
+   "title": "Validate Whippet files in CI",
+   "first_commit": "2021-11-10T11:15:00+00:00",
+   "first_sha": "659ed1b0aca1828c5bfffdb600f0c997d4792036",
+   "last_commit": "2021-11-10T11:15:00+00:00",
+   "author": "Rob Skilling",
+   "email": "rob@dxw.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 7. Validate Whippet files in CI\n\nDate: 2021-10-01\n\n## Status\n\nAccepted\n\n## Context\n\nWhippet.lock and whippet.json files can sometimes become out of sync, or malformed. For instance, this can happen when attempting to remove a plugin. When this happens, we often are unaware until the deploy fails.\n\nWhippet now has a `whippet deps validate` command that will check if the two files are properly aligned, and well-formed, that we could use to spot such errors earlier.\n\n## Decision\n\nWe'll run `whippet deps validate` in CI via a re-usable workflow.\n\n## Consequences\n\nWe'll need to maintain the [GovPress-workflows repo](https://github.com/dxw/govpress-workflows) which will centrally control this workflow.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "Documentation/decisions/0006-use-roave-security-advisories-package.md",
+   "identity": "Documentation/decisions/0006-use-roave-security-advisories-package.md",
+   "adr_id": "6",
+   "title": "Use Roave/SecurityAdvisories to help protect against vulnerable packages",
+   "first_commit": "2021-07-13T11:55:37+01:00",
+   "first_sha": "f9885b9c0e4925ceb61b1e19865d7cc9e66c2955",
+   "last_commit": "2021-07-13T11:55:37+01:00",
+   "author": "Rob Skilling",
+   "email": "rob@dxw.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 6. Use Roave/SecurityAdvisories to help protect against vulnerable packages\n\nDate: 2021-07-13\n\n## Status\n\nAccepted\n\n## Context\n\nWe often use third-party Composer packages in our themes. We should review these packages via [libraries.io](https://libraries.io/) before installing them, and should receive GitHub security alerts on repos using composer packages that have known vulnerabilities.\n\nHowever, Composer does not warn you if you're installing a package that has a known vulnerability - those warnings will, at best, only come after that change has been pushed up to GitHub.\n\n## Decision\n\nAdd the [Roave/SecurityAdvisories](https://github.com/Roave/SecurityAdvisories) package to our template theme as a Composer dev dependency. \n\nThis package does not contain any executable code, it just contains a `composer.json` that uses Composer's `conflict` setting to provide a list of versions of Composer packages with known vulnerabilities. Attempting to install one of the listed packages at a known vulnerable version will result in an error, preventing the package being installed.\n\nThe SecurityAdvisories package takes its list of known vulnerabilities from [FriendOfPHP/security-advisories](https://github.com/FriendsOfPHP/security-advisories) and [the GitHub Advisory Database](https://github.com/advisories?query=ecosystem%3Acomposer), and is updated regularly.\n\n## Consequences\n\nWhilst we should still do manual review of new dependencies, as per [Tech Team RFC 087](https://github.com/dxw/tech-team-rfcs/blob/main/rfc-087-use-libraries-where-possible.md), this will provide us with an additional layer of protection against potential vulnerabilities.\n\nSecurityAdvisories will only throw errors when running `composer update` or adding a new dependency via `composer require`, so it should be noted that any warnings will not automatically be generated.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "composer.json",
+    "github.com/dxw/tech-team-rfcs/blob/main/rfc-087-use-libraries-where-possible.md"
+   ],
+   "implementation": {
+    "sha": "a3218c508ba69599f48efadb463cc9cb9d47392c",
+    "date": "2024-10-17T14:28:50+01:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "composer.json"
+    ]
+   }
+  },
+  {
+   "path": "Documentation/decisions/0005-use-this-repo-as-source-of-setup-scripts.md",
+   "identity": "Documentation/decisions/0005-use-this-repo-as-source-of-setup-scripts.md",
+   "adr_id": "5",
+   "title": "Use this repo as source of setup scripts",
+   "first_commit": "2021-05-28T16:03:59+01:00",
+   "first_sha": "8419a39cf469bba41ced4e5c757672919652abd9",
+   "last_commit": "2021-05-28T16:03:59+01:00",
+   "author": "Rob Skilling",
+   "email": "rob@dxw.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 5. Use this repo as source of setup scripts\n\nDate: 2021-05-28\n\n## Status\n\nAccepted\n\n## Context\n\nBefore we created this template repo, we had [WPC](https://github.com/dxw/wpc), a repo which served two main purposes:\n\n* Generating the files necessary within a Whippet-based WordPress app for local development in Docker, using the \"scripts to rule them all\" model. This meant e.g. generating the `docker-compose.yml` file, and the relevant files for the script folder (e.g. `script/setup`, `script/server`, etc.)\n* Acting as a source for the `thedxw/wpc-wordpress` docker image we use for running WordPress in docker in local development environments\n\nNow we have this template repo, which also contains all files necessary for running a docker-based development environment (but not the `wpc-wordpress` docker image itself). We shouldn't duplicate those files in two separate repos.\n\nWe no longer have the need to generate those files within existing projects, as all existing Whippet apps have already been converted for docker-based development. New projects (or projects we  inherit, e.g. old Helpful repos) will use this template repo to provide that infrastructure.\n\n## Decision\n\nUse this repository as the primary source for the files that were previously generated by WPC. \n\nRemove those files from the [WPC repo](https://github.com/dxw/wpc), so that repo is only responsible for the `wpc-wordpress` docker image, and nothing else.\n\n## Consequences\n\nWe only have one place to maintain the \"scripts to rule them all\" files, and any other files we use to support the local development environment. There is no confusion about what the primary source for those files is.\n\nWPC has a single responsibility: acting as the source for our `wpc-wordpress` docker image.\n\nIf in future we have a need to generate/update these files across multiple repos, we may have to build a new tool to meet that need as and when it arises. \n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "docker-compose.yml",
+    "script/setup",
+    "script/server",
+    "thedxw/wpc-wordpress"
+   ],
+   "implementation": {
+    "sha": "d8e12cae374b7ab76d07f6625c93d6579f4edbd6",
+    "date": "2022-03-03T10:26:45+00:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "script/server"
+    ]
+   }
+  },
+  {
+   "path": "Documentation/decisions/0004-use-a-version-tag-to-make-updating-wordpress-easier.md",
+   "identity": "Documentation/decisions/0004-use-a-version-tag-to-make-updating-wordpress-easier.md",
+   "adr_id": "4",
+   "title": "use a version tag to make updating wordpress easier",
+   "first_commit": "2021-02-25T10:47:34+00:00",
+   "first_sha": "5aec25198781f4d1fc127e69afa798024368c971",
+   "last_commit": "2021-02-25T10:47:34+00:00",
+   "author": "bob walker",
+   "email": "bob@dxw.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 4. use a version tag to make updating wordpress easier\n\nDate: 2021-02-25\n\n## Status\n\nAccepted\n\n## Context\n\nAs we move client sites to dalmatian we want an easy way to keep WordPress up\nto date. We currently use whippet-racetrack but that doesn't understand github\nand is still quite a manual process. We are likely to have 80 sites running on\ndalmatian so we also need a scalable way to update these sites to the latest\nversion of WordPress.\n\nWe want to automatically update minor and patch versions but not major\nversions. We have created a `v5` tag in our snapshot repo that will point to the\nlatest released version of version 5.\n\nWhen a new major version is released we will want to test it before updating\ntherefore we are not going to just point at master branch on our snapshot\nrepo.\n\n## Decision\n\nSet the revision of WordPress in `config/application.json` to be `v5`\n\n## Consequences\n\nWe will be able to update WordPress within a major version easily but upgrading\nto a new major version will still be quite manual.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "config/application.json"
+   ],
+   "implementation": {
+    "sha": "b60427d47bfbf5b0b7907502c025a8d70b2f052c",
+    "date": "2021-02-25T10:49:18+00:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "config/application.json"
+    ]
+   }
+  },
+  {
+   "path": "Documentation/decisions/0003-theme-namespace-naming-convention.md",
+   "identity": "Documentation/decisions/0003-theme-namespace-naming-convention.md",
+   "adr_id": "3",
+   "title": "Theme namespace naming convention",
+   "first_commit": "2020-08-13T08:41:00-04:00",
+   "first_sha": "035131c48a6f29b21424225553149404e257da1d",
+   "last_commit": "2020-08-13T08:41:00-04:00",
+   "author": "Mallory Adams",
+   "email": "mallory@dxw.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 3. Theme namespace naming convention\n\nDate: 2020-08-13\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to pick a namespace for themes, and renaming can be tedious.\n\nOnly one theme is ever active at a time, so there's no risk in naming collisions except when dealing with child themes.\n\n## Decision\n\nWe'll use the `\\Theme` namespace for every theme we make except for child themes which will have the namespace `\\ChildTheme`.\n\n## Consequences\n\nThis will mean we won't need to rename the theme before starting work on it.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "Documentation/decisions/0002-use-acf-pro.md",
+   "identity": "Documentation/decisions/0002-use-acf-pro.md",
+   "adr_id": "2",
+   "title": "Use ACF PRO",
+   "first_commit": "2020-08-13T08:47:31-04:00",
+   "first_sha": "9c67531533dea2398925a9957028dd9dc62e2916",
+   "last_commit": "2020-08-13T08:47:31-04:00",
+   "author": "Mallory Adams",
+   "email": "mallory@dxw.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 2. Use ACF PRO\n\nDate: 2020-08-13\n\n## Status\n\nAccepted\n\n## Context\n\nThe themes and plugins we make often need to add fields to the admin interface.\n\nWe've been using ACF PRO on nearly every new site we've made in the past few years, and we've used the free version of ACF for perhaps 5-7 years. We're comfortable with it and it's proven its stability and usefulness.\n\n## Decision\n\nInstall ACF PRO on every site we create. If we don't need it, we can remove it before deployment.\n\nTo add a field to a theme or plugin we should copy the PHP code and paste it into the codebase.\n\n## Consequences\n\nUsing ACF PRO has been a huge benefit to every site we've used it on.\n\nAdding fields via PHP code rather than storing that in the database means that development environments are quick and easy to set up.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "Documentation/decisions/0001-record-architecture-decisions.md",
+   "identity": "Documentation/decisions/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2020-08-12T09:08:03-04:00",
+   "first_sha": "ca89f2733e4aed0820c8bc8b1283262194e19306",
+   "last_commit": "2020-08-12T09:08:03-04:00",
+   "author": "Mallory Adams",
+   "email": "mallory@dxw.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record architecture decisions\n\nDate: 2020-08-12\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as [described by Michael Nygard](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions).\n\n## Consequences\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's [adr-tools](https://github.com/npryce/adr-tools).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 9,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "8"
+}

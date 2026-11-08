@@ -1,0 +1,472 @@
+{
+ "repo": "linagora/linshare-mobile-flutter-app",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2020-09-24T13:39:03+02:00",
+ "last_commit": "2025-07-05T23:51:16+07:00",
+ "n_commits": 1077,
+ "n_authors": 33,
+ "n_files": 1678,
+ "n_code_files": 3,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 15,
+ "adrs": [
+  {
+   "path": "doc/adr/0014-record-audio.md",
+   "identity": "doc/adr/0014-record-audio.md",
+   "adr_id": "14",
+   "title": "Record audio",
+   "first_commit": "2024-06-12T02:30:08+01:00",
+   "first_sha": "b48174d856e8bc13c442d66cf43afdebb21081c8",
+   "last_commit": "2024-06-12T02:30:08+01:00",
+   "author": "KhaledNjim",
+   "email": "knjim@linagora.com",
+   "status": "accepted",
+   "status_raw": "accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 14. Record audio\n\nDate: 2024-06-11\n\n## Status\n\naccepted\n\n## Context\n\nWe want to add the ability to record voice messages directly form inside linshare\n\n## Decision\n\nWe decided to use the dependecie audio_waveforms since it gives the possibility to display waveforms and also\nvoice recording and playback\n\n## Consequences\n\nadd audio_waveforms: 0.1.5+1 to `pubspec.yaml` this is the newest supported version\n\n we need to add permission for using microphone in android\n\n    ```\n     <uses-permission android:name=\"android\n     permission.RECORD_AUDIO\" />\n\n    ```\nand also for ios :\n\n```\n<key>NSMicrophoneUsageDescription</key>\n    <string>Record voice messages and upload them directly</string>\n```\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "pubspec.yaml"
+   ],
+   "implementation": {
+    "sha": "d35aa2ab694e8fccae0d0171f286108f9e7a9102",
+    "date": "2024-11-07T15:52:27+01:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "pubspec.yaml"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/0015-use-camera.md",
+   "identity": "doc/adr/0015-use-camera.md",
+   "adr_id": "15",
+   "title": "Use Camera",
+   "first_commit": "2024-06-12T02:30:08+01:00",
+   "first_sha": "b48174d856e8bc13c442d66cf43afdebb21081c8",
+   "last_commit": "2024-06-12T02:30:08+01:00",
+   "author": "KhaledNjim",
+   "email": "knjim@linagora.com",
+   "status": "accepted",
+   "status_raw": "accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 15. Use Camera\n\nDate: 2024-06-11\n\n## Status\n\naccepted\n\n## Context\n\nWe want to add the ability to use the camera in order to order to take photos or record videos\n\n## Decision\n\nWe dediced to use wechat_camera_picker for camera access\n\n## Consequences\n\n we need to add permissions for camera access for android\n\n    ```\n    <uses-permission android:name=\"android.permission.READ_MEDIA_IMAGES\" />\n    <uses-permission android:name=\"android.permission.READ_MEDIA_VIDEO\" />\n\n    ```\nsome methods in camera api uses some methods which were added in guauva-31-android in consequece we need to upgrade the used guava version from 27 to 31\n\n```\n\nconfigurations.all {\n       exclude group: 'com.google.guava', module: 'failureaccess'\n\n        resolutionStrategy {\n            eachDependency { details ->\n                if('guava' == details.requested.name) {\n                    details.useVersion '31.0-android'\n                }\n            }\n        }\n    }\n\n```\n\nwe need also to upgrade to used guava versio\n\nand also add permission for camera usage in ios :\n\n```\n\n<key>NSCameraUsageDescription</key>\n<string>You can take photos and videos and upload them directly</string>\n\n```\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0013-enhancement-biometric-authentication.md",
+   "identity": "doc/adr/0013-enhancement-biometric-authentication.md",
+   "adr_id": "13",
+   "title": "enhancement_biometric_authentication",
+   "first_commit": "2021-09-25T22:52:53+07:00",
+   "first_sha": "b8cb67e5caf537852c61fd51f84fafee5ec857d5",
+   "last_commit": "2021-09-25T22:52:53+07:00",
+   "author": "Huy Nguyen",
+   "email": "huynguyennovem@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 13. enhancement_biometric_authentication\n\nDate: 2021-09-25\n\n## Status\n\nAccepted\n\n## Context\n\nCurrent biometric authentication behavior is not enough powerful for security when user turns back to application (foreground) from background \n(in the case logged-in and already configured biometric authentication).\n\n## Decision\n\nAdding biometric authentication prompt when turning back application after dimmed application in background for X minute \n(X is configured by an option setting in the Biometric Authentication screen)\n\n### Solutions\n- Detecting application in foreground/background:\n\n   - `WidgetsBindingObserver`: \n     Working well when detect app on foreground or background. \n     But when app picking files for uploading, this solution is failed. \n     The reason is that it only listens the state changes of the embedding Activity/ViewController. \n     So, when app opens a new activity/view controller (file picking or other similar functions later),\n     the listener will be invoked. This make us to do more stuffs for checking conditions (1)\n\n   - `SystemChannels`: \n     Actually this is lower layer used by `WidgetsBindingObserver`. So, it makes the same result.\n\n   **(1)** Additional state on UIState for detecting some special cases (inside app, outside app, etc).\n  \n- Use [RestartableTimer](https://pub.dev/documentation/async/latest/async/RestartableTimer-class.html) by supported `reset()` method.\nWe need to reset timer when app comes back to foreground.\n\n- Listen Biometric Setting Timeout changes: \nUse a [StreamSubscription](https://api.dart.dev/stable/2.13.4/dart-async/StreamSubscription-class.html) for listening `biometricAuthenticationSettingState`'s viewState changes.\n\n## Consequences\n\n- App will be more secure with enhancement of biometric authentication whenever comes back to foreground.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "pub.dev/documentation/async/latest/async/RestartableTimer-class.html",
+    "api.dart.dev/stable/2.13.4/dart-async/StreamSubscription-class.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0002-receive-shared-file-from-other-app.md",
+   "identity": "doc/adr/0002-receive-shared-file-from-other-app.md",
+   "adr_id": "2",
+   "title": "receive-shared-file-from-other-app",
+   "first_commit": "2020-10-27T14:44:34+07:00",
+   "first_sha": "3a3688c71db3f2694c282b4d2eccda18159da61b",
+   "last_commit": "2021-09-14T16:31:29+07:00",
+   "author": "Manh Duc NGUYEN",
+   "email": "mdnguyen@linagora.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 2. receive-shared-file-from-other-app\n\nDate: 2020-10-27\n\n## Status\n\nAccepted\n\n## Context\n\nIn flutter application, we can receive file that is shared from other app. At this moment, LinShare app support receiving single file shared.\n\nThe following config is for receiving single file shared IOS (LinShareExtension/info.plist):\n```\n    <key>NSExtensionActivationSupportsImageWithMaxCount</key>\n    <integer>1</integer>\n    <key>NSExtensionActivationSupportsMovieWithMaxCount</key>\n    <integer>1</integer>\n    <key>NSExtensionActivationSupportsFileWithMaxCount</key>\n    <integer>1</integer>\n```\nThe following config is for receiving single file shared Android (AndroidManifest.xml):\n```\n    <intent-filter>\n         <action android:name=\"android.intent.action.SEND\" />\n         <category android:name=\"android.intent.category.DEFAULT\" />\n         <data android:mimeType=\"*/*\" />\n     </intent-filter>\n```\n\n- Update on 14/09/2021:\n    \n    - By the issue from [here](https://github.com/KasemJaffer/receive_sharing_intent/issues/81), need to update setting on Android `AndroidManifest.xml`:\n      Change from:\n      ```xml\n          android:launchMode=\"singleTop\"\n      ```\n      to:\n      ```xml\n          android:launchMode=\"singleTask\"\n      ```\n  \n    - Adapt to version change [`1.4.5`](https://pub.dev/packages/receive_sharing_intent/changelog#145):\n      - Support null-safety\n      - New CFBundleURLSchemes \n  \n## Decision\n\nWe decided that LinShare app support receiving single file shared at the moment.\n\n## Consequences\n\nBase on our implementation, the application is working well on both Android and IOS\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "KasemJaffer/receive_sharing_intent#81",
+     "kind": "issue",
+     "url": "https://github.com/KasemJaffer/receive_sharing_intent/issues/81",
+     "number": "81"
+    }
+   ],
+   "mentioned_paths": [
+    "LinShareExtension/info.plist",
+    "AndroidManifest.xml"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0010-migrate-to-null-safety-support.md",
+   "identity": "doc/adr/0010-migrate-to-null-safety-support.md",
+   "adr_id": "10",
+   "title": "migrate-to-null-safety-support",
+   "first_commit": "2021-05-10T17:16:37+07:00",
+   "first_sha": "26a6c6fd5c4735bc04ae511811ddbae8ef22f4e7",
+   "last_commit": "2021-09-14T16:31:29+07:00",
+   "author": "Huy Nguyen",
+   "email": "huynguyennovem@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 10. migrate-to-null-safety-support\n\nDate: 2021-05-10\n\n## Status\n\nAccepted\n\n## Context\n\n- Upload the latest stable Flutter version (2.0.5) and Dart (2.12.2)\n- Be familiar and apply new version change from dependency libraries\n\n## Decision\n\n- Upgrade Flutter SDK and Dart environment\n- Update dependency libraries version to support null-safety\n\n## Implementation\n\nFollow official guideline: [https://dart.dev/null-safety/migration-guide](https://dart.dev/null-safety/migration-guide)\n\n1. Upgrade Flutter and Dart SDK environment\n\n- Android Studio:\n    > Tool > Flutter > Flutter Upgrade\n\n- Terminal:\n    > flutter upgrade\n\n2. Check libraries support null-safety to review which libraries will be upgrade\n\n    > flutter pub outdated --mode=null-safety\n\n3. Upgrade library version\n\n    > flutter pub upgrade --null-safety\n\n4. Using the migration tool\n\n    > dart migrate\n    \n    Some optional command can use while migrating:\n    > dart migrate --skip-import-check\n    > dart migrate --skip-import-check --ignore-errors\n\n5. Open generated url in web-browser for reviewing and applying for all changes\n\n\n## Consequences\n\n- ADVANTAGE:\n    - Update the latest change from dependency libraries which may contains new features/bug fixes in new version\n\n- DISADVANTAGE:\n    - Some libraries haven't updated to support null-safety yet. This make some other dependencies libraries on them can not work. For eg: \n       \n        - **intl_translation: 0.17.10+1**\n            ```shell script\n                Because intl_translation 0.17.10+1 depends on intl >=0.15.3 <0.17.0 and linshare_flutter_app depends on intl 0.17.0, intl_translation 0.17.10+1 is forbidden.\n                So, because linshare_flutter_app depends on intl_translation 0.17.10+1, version solving failed.\n                pub get failed (1; So, because linshare_flutter_app depends on intl_translation 0.17.10+1, version solving failed.)\n            ```\n        \n            &rarr; Solution: Use `dependency_overrides`\n            ```yaml\n                dependency_overrides:\n                  # intl\n                  intl: 0.17.0\n                \n                  # build_runner dependencies\n                  crypto: 3.0.0\n                  args: 2.0.0\n                  dart_style: 2.0.0\n                  analyzer: 1.4.0\n                  convert: 3.0.0\n                  petitparser: 4.1.0\n            ``` \n      \n    - Some libraries supported null-safety but still have unresolved errors. For eg:\n        \n        - **flutter_uploader: 3.0.0-beta.1**\n            ```shell script\n            E/UploadWorker(26371): exception encounteredprotocol\n            E/UploadWorker(26371): java.net.ProtocolException: unexpected end of stream\n            ```\n            Check the issue [#162](https://github.com/fluttercommunity/flutter_uploader/issues/162)\n        \n            &rarr; Solution: Use `flutter_uploader: 1.2.1`\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#162",
+     "kind": "hash",
+     "url": "",
+     "number": "162"
+    },
+    {
+     "key": "fluttercommunity/flutter_uploader#162",
+     "kind": "issue",
+     "url": "https://github.com/fluttercommunity/flutter_uploader/issues/162",
+     "number": "162"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0012-upgrade-android-target-sdk-30.md",
+   "identity": "doc/adr/0012-upgrade-android-target-sdk-30.md",
+   "adr_id": "12",
+   "title": "upgrade-android-target-sdk-30",
+   "first_commit": "2021-09-07T18:51:34+07:00",
+   "first_sha": "1867058e16229403ce9e19777571b11dbf567251",
+   "last_commit": "2021-09-07T18:51:34+07:00",
+   "author": "Huy Nguyen",
+   "email": "huynguyennovem@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 12. upgrade-android-target-sdk-30\n\nDate: 2021-09-07\n\n## Status\n\nAccepted\n\n## Context\n\n- Download feature does not work when targeting into SDK 30 and above\n- From Android 11 and above, the [scoped storage](https://developer.android.com/training/data-storage#scoped-storage) has enabled that makes the access into external storage is limited. So, we need to adapt with this change.\n- We need to target to Android SDK 30 for any updates version beyond November 2021\n\n## Decision\n\n### Solution 1: Request permission [MANAGE_EXTERNAL_STORAGE](https://developer.android.com/training/data-storage/manage-all-files) for application:\n\n- Pros:\n    - Have access to manage all files (include app-specific and shared storage)\n    - Has less code change implementation\n\n- Cons:\n    - Need to send a request form to Google Play for reviewing the policy: [Google Play notice](https://developer.android.com/training/data-storage/manage-all-files#all-files-access-google-play)\n\n- Detail solution:\n\n    - In `android/app/main/AndroidManifest.xml`, add this permission:\n\n    ```xml\n        <uses-permission android:name=\"android.permission.MANAGE_EXTERNAL_STORAGE\"/>    \n    ```\n\n    - In `android/app/build.gradle`, change to:\n\n    ```groovy\n        android {\n            compileSdkVersion 30\n            ...\n            defaultConfig {\n                ...\n                targetSdkVersion 30\n            }\n        }\n    ```\n\n    - For all current implementation code which has checked `storage` permission, change to `manageExternalStorage`:\n\n      For eg: `my_space_viewmodel.dart`:\n\n        ```dart\n            final status = await Permission.storage.status;\n            ...\n            final requested = await Permission.storage.request();\n        ```\n\n        Change to:\n\n        ```dart\n            final status = await Permission.manageExternalStorage.status;\n            ...\n            final requested = await Permission.manageExternalStorage.request();\n        ```\n\n\n### Solution 2: Update the dependence [`flutter_downloader`](https://github.com/fluttercommunity/flutter_downloader) to support Android SDK 30\n\n- Pros:\n    - Have a good UX for user: User does not need to grant `MANAGE_EXTERNAL_STORAGE` permission in Settings app (Solution 1 does)\n    - Don't need to wait Google team review\n\n- Detail solution:\n\n    1. In the dependence project, we resolve two issue that relate to Android 11 changes:\n        - [ScopedStorage](https://developer.android.com/about/versions/11/privacy/storage): Require to use MediaStore or SAF to work with files\n        - [PackageVisibility](https://developer.android.com/about/versions/11/privacy/package-visibility): Fix issue that can not open downloaded file with default OS application from notification\n        - For more detail, look at PR [Upgrade to support Android SDK 30](https://github.com/fluttercommunity/flutter_downloader/pull/522)\n        - Version updated: `flutter_downloader: ^1.7.0`\n\n    2. In Linshare project:\n       \n        - In `android/app/main/AndroidManifest.xml`, add this permission:\n      \n            ```xml\n                <uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\" android:maxSdkVersion=\"28\"/>    \n            ```\n      \n        - In `android/app/build.gradle`, change to:\n      \n            ```groovy\n                android {\n                    compileSdkVersion 30\n                    ...\n                    defaultConfig {\n                        ...\n                        targetSdkVersion 30\n                    }\n                }\n            ```\n          \n        - In `pubspec.yaml` and `data/pubspec.yaml`:\n            \n            ```yaml\n                flutter_downloader: 1.7.0\n            ```\n\n        - For all current implementation code which has checked `storage` permission, add checking Android version before request `storage` permission:\n          \n          For eg: `my_space_viewmodel.dart`:\n    \n              ```dart\n                  final status = await Permission.storage.status;\n                  switch (status) {\n                    case PermissionStatus.granted: _download(documentIds, itemSelectionType: itemSelectionType);\n                    break;\n                    case PermissionStatus.permanentlyDenied:\n                      _appNavigation.popBack();\n                      break;\n                    default: {\n                      final requested = await Permission.storage.request();\n                      switch (requested) {\n                        case PermissionStatus.granted: _download(documentIds, itemSelectionType: itemSelectionType);\n                        break;\n                        default: _appNavigation.popBack();\n                        break;\n                      }\n                    }\n                  }\n              ```\n    \n              Change to:\n    \n              ```dart\n                  final needRequestPermission = await _deviceManager.isNeedRequestStoragePermissionOnAndroid();\n                  if(Platform.isAndroid && needRequestPermission) {\n                    final status = await Permission.storage.status;\n                    switch (status) {\n                      case PermissionStatus.granted: _download(documentIds, itemSelectionType: itemSelectionType);\n                      break;\n                      case PermissionStatus.permanentlyDenied:\n                        _appNavigation.popBack();\n                        break;\n                      default: {\n                        final requested = await Permission.storage.request();\n                        switch (requested) {\n                          case PermissionStatus.granted: _download(documentIds, itemSelectionType: itemSelectionType);\n                          break;\n                          default: _appNavigation.popBack();\n                          break;\n                        }\n                      }\n                    }\n                  } else {\n                    _download(documentIds, itemSelectionType: itemSelectionType);\n                  }\n              ```\n          \n          Do the same for: `RecevedShare`, `SharedSpace` and `UploadRequest`.   \n\n\n## Decision\n\nWe decided to use `Solution 2` which has a better UX for user (focus on user behavior)\n\n## Consequences\n\n- We can save the file in public storage directory without asking special permission or picking saved destination\n- We can release new Android version on Google Play\n\n## References\n\n- https://developer.android.com/about/versions/11/privacy/storage\n- https://developer.android.com/guide/topics/providers/document-provider\n- https://proandroiddev.com/scoped-storage-on-android-11-2c5da70fb077\n- https://betterprogramming.pub/android-scoped-storage-demystified-3024a062ba24\n- https://medium.com/androiddevelopers/modern-user-storage-on-android-e9469e8624f9",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "fluttercommunity/flutter_downloader#522",
+     "kind": "pull",
+     "url": "https://github.com/fluttercommunity/flutter_downloader/pull/522",
+     "number": "522"
+    }
+   ],
+   "mentioned_paths": [
+    "android/app/main/AndroidManifest.xml",
+    "android/app/build.gradle",
+    "pubspec.yaml",
+    "data/pubspec.yaml"
+   ],
+   "implementation": {
+    "sha": "7ad5d29b668e49b8b8d3adf4741a3483cd83101e",
+    "date": "2021-09-14T10:10:53+07:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "pubspec.yaml"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/0011-make-offline-mode-file.md",
+   "identity": "doc/adr/0011-make-offline-mode-file.md",
+   "adr_id": "11",
+   "title": "make-offline-mode-file",
+   "first_commit": "2021-06-25T02:38:29+07:00",
+   "first_sha": "88ff86eab57f99e99edd0373c8ea38362d6da073",
+   "last_commit": "2021-06-29T17:07:06+07:00",
+   "author": "dab246",
+   "email": "tdvu@linagora.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 11. make-offline-mode-file\n\nDate: 2021-06-14\n\n## Status\n\nAccepted\n\n## Context\n\nIn LinShare Flutter application, we can make offline mode files one by one from \"My Space\", \"Received Shares\" or \"Shared Spaces\" with the library [`sqflite`](https://pub.dev/packages/sqflite):\n\nSQLite plugin for Flutter. Supports iOS, Android and MacOS.\n\n- Support transactions and batches\n- Automatic version management during open\n- Helpers for insert/query/update/delete queries\n- DB operation executed in a background thread on iOS and Android\n\nUsage \n\n- Data\n\n - Document Table: Help save documents when it make available offline in MySpace\n\n````\nTable Document {\n  documentId TEXT PRIMARY KEY // Id of document file\n  description TEXT // Description of document file\n  creationDate Integer // Creation date of document file\n  modificationDate Integer // Modification date of document file\n  expirationDate Integer // Expiration date of document file\n  ciphered Integer // Document file has been set code not?\n  name TEXT // Name of document file\n  size Integer // Size of document file\n  sha256sum TEXT // SHA of document file\n  hasThumbnail Integer // Check if the file is downloadable as an thumbnail.\n  shared Integer // Number shares of document file.\n  mediaType TEXT // mediaType of document file.\n  localPath TEXT // local storage path of document file.\n}\n````\n - SharedSpace Table: Help save shared space when it contains at least one file make available offline in SharedSpace\n\n````\nTable SharedSpace {\n    sharedSpaceId TEXT PRIMARY KEY,\n    sharedSpaceRoleId TEXT,\n    sharedSpaceRoleName TEXT,\n    sharedSpaceRoleEnable Integer,\n    creationDate Integer,\n    modificationDate Integer,\n    name TEXT,\n    nodeType TEXT,\n    quotaId TEXT,\n    versioningParameters Integer\n}\n````\n\n - WorkGroupNode Table: Help save file/folder when it contains at least one file make available offline in SharedSpace\n\n````\nTable WorkGroupNode {\n    nodeId TEXT PRIMARY KEY,\n    sharedSpaceId TEXT,\n    parentNodeId TEXT,\n    creationDate Integer,\n    modificationDate Integer,\n    name TEXT,\n    nodeType TEXT,\n    description TEXT,\n    nameAccount TEXT,\n    mailAccount TEXT,\n    firstNameAccount TEXT,\n    lastNameAccount TEXT,\n    accountId TEXT,\n    accountType TEXT,\n    size Integer,\n    mediaType TEXT,\n    hasThumbnail Integer,\n    uploadDate Integer,\n    hasRevision Integer,\n    sha256sum TEXT,\n    localPath TEXT\n}\n````\n\n- Deployment\n\n - Example 1: \n \n + Make available file `A.png` in SharedSpace `SP1` has path: `SP1 > A.png`\n + The data is stored as follows: \n \nInformation of SharedSpace `SP1` will be saved in the SharedSpace table:\n```\nSharedSpace {\n    sharedSpaceId = SP1_ID,\n    name = SP1_NAME,\n    ...\n}\n```\n\nInformation of file `A.png` will be saved in the WorkGroupNode table:\n```\nWorkGroupNode {\n    nodeId = A_ID,\n    sharedSpaceId = SP1_ID,\n    parentNodeId = null,\n    name = A,\n    nodeType = DOCUMENT\n    ...\n}\n```\n \n - Example 2: \n \n + Make available file `file.png` in folders `B` & `B1` of SharedSpace `SP2` has path: `SP2 > B > B2 > A.png`\n + The data is stored as follows: \n \nInformation of SharedSpace `SP2` will be saved in the SharedSpace table:\n```\nSharedSpace {\n    sharedSpaceId = SP2_ID,\n    name = SP2_NAME,\n    ...\n}\n```\n\nInformation of folder `B` will be saved in the WorkGroupNode table:\n```\nWorkGroupNode {\n    nodeId = B_ID,\n    sharedSpaceId = SP2_ID,\n    parentNodeId = null,\n    name = B,\n    nodeType = FOLDER\n    ...\n}\n```\n\nInformation of folder `B1` will be saved in the WorkGroupNode table:\n```\nWorkGroupNode {\n    nodeId = B1_ID,\n    sharedSpaceId = SP2_ID,\n    parentNodeId = B_ID,\n    name = B1,\n    nodeType = FOLDER\n    ...\n}\n```\n\nInformation of file `file.png` will be saved in the WorkGroupNode table:\n```\nWorkGroupNode {\n    nodeId = file_ID,\n    sharedSpaceId = SP1_ID,\n    parentNodeId = B1_ID,\n    name = file,\n    nodeType = DOCUMENT\n    ...\n}\n```\n\n## Decision\n\nWe decided that LinShare could currently make offline mode a file one by one.\n\n## Consequences\n\nWe can preview files and perform actions with them when there is no network.",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0009-enhancement-retry-authen-interceptor.md",
+   "identity": "doc/adr/0009-enhancement-retry-authen-interceptor.md",
+   "adr_id": "9",
+   "title": "enhancement-retry-authen-interceptor",
+   "first_commit": "2021-05-10T17:16:37+07:00",
+   "first_sha": "26a6c6fd5c4735bc04ae511811ddbae8ef22f4e7",
+   "last_commit": "2021-05-10T17:16:37+07:00",
+   "author": "Huy Nguyen",
+   "email": "huynguyennovem@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 9. enhancement-retry-authen-interceptor\n\nDate: 2021-05-10\n\n## Status\n\nAccepted\n\n## Context\n\n- The current `retry` logic is limited in the number of `retry` for failed requests. For example, at a screen where more than 3 different requests fail, the chance of each request being retried is very little, since they share a variable that counts the number of retry times.\n- Using a (in memory) counter variable for `retry` is risky and difficult to control\n\n## Decision\n\n1. Send the `retry` counter into request header for each request\n2. Retrieve the `retry` count from request data\n3. Validate with the maximum allowed. If `retry` in the limit, increment it then re-send a request network with updated `retry` counter\n\n```\n{\n    ...\n    SET retriesCount from request extra map with key RETRY_KEY\n    IF _isAuthenticationError(dioError, retriesCount) THEN\n        INCREMENT retriesCount\n        ADD retriesCount to header with key RETRY_KEY\n        CALL request again\n    ENDIF\n    ...\n}\n```\n\n## Consequences\n\n- The chance of each request being retried is increased\n- `Retry` counter is controlled inside the request",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0008-upgrade-android-target-sdk-29.md",
+   "identity": "doc/adr/0008-upgrade-android-target-sdk-29.md",
+   "adr_id": "8",
+   "title": "upgrade-android-target-sdk-29",
+   "first_commit": "2021-03-17T11:52:30+07:00",
+   "first_sha": "38c47e53c1f8899094435bfdaf6624ca647b85b5",
+   "last_commit": "2021-03-17T11:52:30+07:00",
+   "author": "Huy Nguyen",
+   "email": "qhuynguyen@linagora.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 8. upgrade-android-target-sdk-29\n\nDate: 2021-03-17\n\n## Status\n\nAccepted\n\n## Context\n\n- Download feature does not work when targeting into SDK 29 and above\n- From Android 10 and above, the [scoped storage](https://developer.android.com/training/data-storage#scoped-storage) has enabled that makes the access into external storage is limited. So, we need to adapt with this change.\n\n## Decision\n\n- Target to Android 10 (SDK 29) first, then adapt to Android 11 (SDK 30) later.\n- Temporarily [opt-out of scoped storage](https://developer.android.com/training/data-storage/use-cases#opt-out-scoped-storage) in Android 10:\n\n```xml\n<manifest ... >\n<!-- This attribute is \"false\" by default on apps targeting\n     Android 10 or higher. -->\n  <application android:requestLegacyExternalStorage=\"true\" ... >\n    ...\n  </application>\n</manifest>\n```\n\n```groovy\ndefaultConfig {\n    ...\n    targetSdkVersion 29\n    ...\n}\n```\n\n## Consequences\n\n- The download feature can work in Android 10 (SDK 29) and below\n- Android 11 (SDK 30) will be updated in the near future.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0006-download-file-manager.md",
+   "identity": "doc/adr/0006-download-file-manager.md",
+   "adr_id": "6",
+   "title": "download-file-manager",
+   "first_commit": "2020-11-13T12:51:58+01:00",
+   "first_sha": "c5388bfe1f32de9bcd6efa459d5f49fd0b2e3b9b",
+   "last_commit": "2020-11-13T12:51:58+01:00",
+   "author": "Julian KOUNE",
+   "email": "jkoune@linagora.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 6. download-file-manager\n\nDate: 2020-11-13\n\n## Status\n\nAccepted\n\n## Context\n\nIn LinShare Flutter application, we can download files one by one from \"My Space\", \"Received Shares\" or \"Shared Spaces\" with the library `flutter_downloader` by adding it to the queue :\n\n```\nTaskId enqueue(String url, String saveDir, String header...)\n```\n\nWe can also clear or cancel file queue with dedicated functions.\n\n## Decision\n\nWe decided that LinShare could currently download a file one by one.\n\n## Consequences\n\nSince the UI only allow to download one file at the time for now, there is no consequence.",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0007-path-provider-library.md",
+   "identity": "doc/adr/0007-path-provider-library.md",
+   "adr_id": "7",
+   "title": "path-provider-library",
+   "first_commit": "2020-11-13T12:51:58+01:00",
+   "first_sha": "c5388bfe1f32de9bcd6efa459d5f49fd0b2e3b9b",
+   "last_commit": "2020-11-13T12:51:58+01:00",
+   "author": "Julian KOUNE",
+   "email": "jkoune@linagora.com",
+   "status": "proposed",
+   "status_raw": "Pending",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 7. path-provider-library\n\nDate: 2020-11-13\n\n## Status\n\nPending\n\n## Context\n\nAndroid and iOS have different folder architectures. \nTherefore we need to provide *path folder* according to user's plateform.\n\n`path-provider` library only provide *Download Folder* for Android Version.\n\n## Decision\n\nWe decided to use `path-provider` if the user is on Android, and use an other library (TBD) if the user is on iOS.\n\n## Consequences\n\nUsers can download file with LinShare with the same application on both platforms.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0005-i18n-with-dynamic-string.md",
+   "identity": "doc/adr/0005-i18n-with-dynamic-string.md",
+   "adr_id": "5",
+   "title": "i18n with dynamic string",
+   "first_commit": "2020-11-10T17:41:18+07:00",
+   "first_sha": "bc7da66426e7263827d21515f72d1a1c0cf297b7",
+   "last_commit": "2020-11-10T17:41:18+07:00",
+   "author": "Dat PHAM HOANG",
+   "email": "dphamhoang@linagora.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 5. i18n with dynamic string\n\nDate: 2020-11-10\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to provide i18n string with some requirements:\n\n- dynamic string\n\n- support plurals\n\n## Decision\n\nNeed to implement it with `intl` \n\n## Consequences\n\nSet up:\n\n1. Add localization dependencies\n```\ndependencies:\n  flutter:\n    sdk: flutter\n  flutter_localizations: # add this\n    sdk: flutter # add this\n# other lines\ndev_dependencies:  \n  intl_translation: {lastest version}\n```\n\n2. Localization class\n\n3. The `.arb` (Application Resource Bundle) file\n```\nflutter pub pub run intl_translation:extract_to_arb --output-dir=lib/l10n lib/localizations.dart\n```\nRequirement:\n- folder l10n is created\n- last parameter (localizations.dart) is the file that contains `Intl.message`\n\n```\nflutter pub pub run intl_translation:generate_from_arb --output-dir=lib/l10n \\\n   --no-use-deferred-loading lib/localization.dart lib/l10n/intl_*.arb\n``` ",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "lib/localizations.dart",
+    "lib/localization.dart"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0003-upload-file-manager.md",
+   "identity": "doc/adr/0003-upload-file-manager.md",
+   "adr_id": "3",
+   "title": "upload-file-manager",
+   "first_commit": "2020-11-02T18:14:17+07:00",
+   "first_sha": "160b7aec1849964ff07f2432c8fa3b1bde7b9dfa",
+   "last_commit": "2020-11-02T18:14:17+07:00",
+   "author": "Manh Duc NGUYEN",
+   "email": "mdnguyen@linagora.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 3. upload-file-manager\n\nDate: 2020-11-02\n\n## Status\n\nAccepted\n\n## Context\n\nIn LinShare Flutter application, we can receive files shared from other app via `UploadFileManager`.\nAt the moment, we can add new single pending share file to queue by:\n```\nvoid setPendingSingleFile(String filePath)\n```\n\nWe can clear all file in pending list by:\n```\nvoid clearPendingFile()\n```\n\nWe can get SharingStream which is returned share file list from library `ReceiveSharingIntent` by:\n```\nStream<List<SharedMediaFile>> getReceivingSharingStream()\n```\n\n## Decision\n\nWe decided that LinShare app can add new single pending share file to queue at the moment.\n\n## Consequences\n\nBase on our implementation, the application is working well on both Android and IOS\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0004-upgrade-file-picker-library-version.md",
+   "identity": "doc/adr/0004-upgrade-file-picker-library-version.md",
+   "adr_id": "4",
+   "title": "upgrade-file-picker-library-version",
+   "first_commit": "2020-11-02T18:14:17+07:00",
+   "first_sha": "160b7aec1849964ff07f2432c8fa3b1bde7b9dfa",
+   "last_commit": "2020-11-02T18:14:17+07:00",
+   "author": "Manh Duc NGUYEN",
+   "email": "mdnguyen@linagora.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 4. upgrade-file-picker-library-version\n\nDate: 2020-11-02\n\n## Status\n\nAccepted\n\n## Context\n\nIn LinShare Flutter application, we can select file from system file manager by library `file_picker`\nThe current version is `2.0.7` is not supporting well for Android and iOs,\nin Android when get fileName we will have fileName along with fileExtension\nin iOS when get fileName we will have only fileName\n\n## Decision\n\nWe decided to use newer version `2.0.11`, with this, both Android and iOS now have fileName along with fileExtension\n\n## Consequences\n\nBase on our implementation, the application is working well on both Android and IOS\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0001-record-architecture-decisions.md",
+   "identity": "doc/adr/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2020-10-27T14:44:34+07:00",
+   "first_sha": "3a3688c71db3f2694c282b4d2eccda18159da61b",
+   "last_commit": "2020-10-27T14:44:34+07:00",
+   "author": "Manh Duc NGUYEN",
+   "email": "mdnguyen@linagora.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record architecture decisions\n\nDate: 2020-10-27\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as [described by Michael Nygard](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions).\n\n## Consequences\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's [adr-tools](https://github.com/npryce/adr-tools).\n\n## References\n[Use Architectural Decision Records in mobile dev](https://ci.linagora.com/linagora/lgs/linshare/products/linshare-mobile-apps/issues/69).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 15,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "13"
+}

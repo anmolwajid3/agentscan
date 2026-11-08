@@ -1,0 +1,290 @@
+{
+ "repo": "chunksnbits/tooling",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2018-06-19T09:40:51+02:00",
+ "last_commit": "2019-10-30T06:17:55+01:00",
+ "n_commits": 27,
+ "n_authors": 2,
+ "n_files": 27,
+ "n_code_files": 1,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 9,
+ "adrs": [
+  {
+   "path": "docs/adr/0008-use-linter-for-css.md",
+   "identity": "docs/adr/0008-use-linter-for-css.md",
+   "adr_id": "8",
+   "title": "Use linter for CSS",
+   "first_commit": "2019-03-16T07:08:23+01:00",
+   "first_sha": "c3422ebf58be4b37a6ea9b1f2eb400e4674d68fd",
+   "last_commit": "2019-03-17T05:59:45+01:00",
+   "author": "Daniel Eissing",
+   "email": "mail.daniel.eissing@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Use linter for CSS\n\n* Date: 2019-03-16\n\n## Context and Problem Statement\n\nWhile some form of linting as part of the development chain, seems to mostly [standard for JavaScript / Typescript](https://ashleynolan.co.uk/blog/frontend-tooling-survey-2018-results#js-linters) projects, [the same cannot be said when it comes to CSS](https://ashleynolan.co.uk/blog/frontend-tooling-survey-2018-results#css-linting) and its flavours (Scss, Less, ...).\n\nConsistency for CSS selectors and rules can be hard to maintain in a project involving many team-members with varying CSS knowledge and experience.\n\nIn order not to rely solely on a manual review process, tooling may be used to support enforcing a defined CSS styleguide during the project lifecycle.\n\nEspecially when using a standard CSS styleguide like [BEM](http://getbem.com/introduction/), [OOCSS](http://oocss.org/) or [Atomic](https://github.com/nemophrost/atomic-css) or some extension / combination of those, tooling support for enforcing format rules, can be especially helpful for team-members not yet familiar with the notation.\n\n## Considered Options\n\n### Tooling support through linting\n\nExisting solutions:\n* no linting support for (S)CSS\n* [stylelint](https://github.com/stylelint/stylelint)\n* [CSSLint](https://github.com/CSSLint/csslint)\n* [SCSS Lint](https://github.com/brigade/scss-lint)\n* [SASS Lint](https://github.com/sasstools/sass-lint)\n\n### CSS Styleguides\n* none\n* [BEM](http://getbem.com/introduction/)\n* [OOCSS](http://oocss.org/)\n* [Atomic](https://github.com/nemophrost/atomic-css)\n\n## Choosen Option\n\n[stylelint](https://github.com/stylelint/stylelint) together with [BEM ruleset](https://github.com/simonsmith/stylelint-selector-bem-pattern)\n\n**Reasons**\n\n### Stylelint\n\n* Widest support for various CSS flavours (e.g., SCSS, Sass, Less)\n* CLI tool available, i.e., can be automated in development setup\n* best supported tool ([6329 stars on Github](https://github.com/stylelint/stylelint))\n* [well maintained](https://github.com/stylelint/stylelint/graphs/contributors)\n\n### BEM\n\n* [well documented](http://getbem.com/)\n* Rules are well defined and, once the rules are understood, it is obvious what a CSS selector must look like for any specific element or modifier\n* tends to produce unique classes out of the box\n* clear separation of concepts\n* [widest acceptance within CSS community](https://ashleynolan.co.uk/blog/frontend-tooling-survey-2018-results#css-naming) (see answer: 'feel comfortable using')\n* does not necessarily require tool support\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0007-use-mock-server-and-use-it-early.md",
+   "identity": "docs/adr/0007-use-mock-server-and-use-it-early.md",
+   "adr_id": "7",
+   "title": "Use mock server in your project setup and set it up when you start your project",
+   "first_commit": "2019-03-02T11:29:40+01:00",
+   "first_sha": "1aeb48f26f5796c92e28302805cee3f5be8a0661",
+   "last_commit": "2019-03-02T11:29:40+01:00",
+   "author": "Daniel Eissing",
+   "email": "mail.daniel.eissing@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use mock server in your project setup and set it up when you start your project\n\n* Date: 2019-03-02\n\n## Context and Problem Statement\n\nAs most web applications rely on data from one or multiple API services, this creates a dependency that effects the development and testing for the application to be build.\nOut of this situation a number of issues can arise:\n\n* API development can often not be fully synchronized with frontend development\n* Technical issues / development delays in the development of the API service impact frontend development as well\n* Testing, esp. UI-tests rely on data on scenarios to be able to test core aspects of the application.\n* Testing should be done on isolated datasets, which is not supported by all API services\n* Issues / downtimes of API services impact development progress of web development team\n\n## Considered Options\n\nCreate or use an existing mock server to allow development and (partially) testing without relying on the availability of (external) API services.\n\nExisting solutions:\n* [ng-apimock](https://www.npmjs.com/package/ng-apimock)\n\n## Choosen Option\n\n**Reasons**\n\n**Notes**\n\n## Background information\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0005-use-typescript-in-javascript-projects.md",
+   "identity": "docs/adr/0005-use-typescript-in-javascript-projects.md",
+   "adr_id": "5",
+   "title": "Use typescript in javascript projects",
+   "first_commit": "2019-01-01T07:31:25+01:00",
+   "first_sha": "7988412f70ba84fd0e3860fa0cb69f4cdc93708d",
+   "last_commit": "2019-01-01T07:31:25+01:00",
+   "author": "Daniel Eissing",
+   "email": "mail.daniel.eissing@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use typescript in javascript projects\n\n* Date: 2019-01-01\n\n## Context and Problem Statement\n\nJavaScript has been part of 100% of projects over the last 6+ years.\nIn addition to using pure JavaScript there are multiple languages available that\ncan be compiled to JavaScript and offer extensions to JavaScript.\n\n## Considered Options\n\n* none\n* [TypeScript](https://www.typescriptlang.org/)\n* [CoffeeScript](https://coffeescript.org/)\n* [Kotlin](https://kotlinlang.org/docs/tutorials/javascript/kotlin-to-javascript/kotlin-to-javascript.html)\n\n## Choosen Option\n\nUse Typescript. If not applicable use standard JavaScript.\n\n**Reasons**\n\n* TypeScript adds basic function documentation without much overhead for documentation (just by defining the types)\n* TypeScript is well established (e.g., in [VisualStudioCode](https://code.visualstudio.com/docs/languages/typescript)) in modern IDEs and enables completion helpers out of the box\n* TypeScript allows for typechecking prior to compile-/run-time\n* Typescript can be [configured](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html) to fit the demands of a project\n* TypeScript is standard language for major frameworks like [Angular](https://www.typescriptlang.org/docs/handbook/angular.html) and can be integrated easily in most framework CLIs (e.g., [create-react-app](https://facebook.github.io/create-react-app/docs/adding-typescript))\n* TypeScript is a superset of JavaScript that adds language features without changing the core components of the language. Most extensions are based off of discussions that will eventually be added to the ECMAScript core itself (e.g.,[async/await](https://github.com/tc39/ecmascript-asyncawait)).\n* Other alternatives (Kotlin, CoffeeScript) are [less established](https://stackshare.io/stackups/coffeescript-vs-kotlin-vs-typescript)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "kotlinlang.org/docs/tutorials/javascript/kotlin-to-javascript/kotlin-to-javascript.html",
+    "www.typescriptlang.org/docs/handbook/tsconfig-json.html",
+    "www.typescriptlang.org/docs/handbook/angular.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0006-use-linter.md",
+   "identity": "docs/adr/0006-use-linter.md",
+   "adr_id": "6",
+   "title": "Use linter for keeping code well formatted",
+   "first_commit": "2019-01-01T07:31:25+01:00",
+   "first_sha": "7988412f70ba84fd0e3860fa0cb69f4cdc93708d",
+   "last_commit": "2019-01-01T07:31:25+01:00",
+   "author": "Daniel Eissing",
+   "email": "mail.daniel.eissing@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use linter for keeping code well formatted\n\n* Date: 2019-01-01\n\n## Context and Problem Statement\n\nJavaScript / TypeScript code should be well formatted and follow agreed on coding guidelines.\nThere should a defined set of coding guidelines the developers involved in the project agree on in project initialization phase.\nThe coding guidelines are never to be considered final and can be fine-tuned if necessary in any project phase.\n\n## Considered Options\n\n* tool supported by using [tslint](https://palantir.github.io/tslint/)\n* tool supported by using [prettier](https://github.com/prettier/prettier)\n\n## Choosen Option\n\nUse [tslint](https://github.com/conventional-changelog/standard-version) for linting\n\n**Reasons**\n\n* linting is a [well established standard](https://ashleynolan.co.uk/blog/frontend-tooling-survey-2018-results#js-linters) in the developer community\n* TSLint seems to be the most mature linting tool available at this point and is compatible with [pure JavaScript projects as well](https://github.com/Microsoft/vscode-tslint/pull/120)\n* Allows to automates the code formatting process (check to [--fix option](https://palantir.github.io/tslint/usage/cli/))\n* manual determination of next version possible through `--release-as <major|minor|patch>` command line option is possible\n\n**Notes**\n\n* should be either integrated into either git-commit cycle (`commit` or `push`) or automated in the build stage of the CI\n* Manual linting is made available via package script, i.e.:\n\n```shell\nyarn lint\n```\n\nand by default includes the `--fix` option.\n\n* The default configuration follows the [tslint:recommended](https://github.com/palantir/tslint/blob/master/src/configs/recommended.ts) rule set with those extensions:\n\n| Rule Name  | Setting |\n| ------------- | ------------- |\n| [quotemark](https://palantir.github.io/tslint/rules/quotemark/) | [true, \"single\"] |\n| [indent](https://palantir.github.io/tslint/rules/indent/) | [true, \"spaces\", 2] |\n| [interface-name](https://palantir.github.io/tslint/rules/interface-name/) | false |\n| [ordered-imports](https://palantir.github.io/tslint/rules/interface-name/) | false |\n| [object-literal-sort-keys](https://palantir.github.io/tslint/rules/interface-name/) | false |\n| [no-consecutive-blank-lines](https://palantir.github.io/tslint/rules/interface-name/) | false |\n| [arrow-parens](https://palantir.github.io/tslint/rules/interface-name/) | [true, \"ban-single-arg-parens\"] |\n\n## Background information\n### standard-version\n\n* [tslint](https://github.com/conventional-changelog/standard-version)\n* based on [conventional commits](https://conventionalcommits.org/) (which in turn is based on [semantic versioning](https://semver.org/) standard)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "Microsoft/vscode-tslint#120",
+     "kind": "pull",
+     "url": "https://github.com/Microsoft/vscode-tslint/pull/120",
+     "number": "120"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/palantir/tslint/blob/master/src/configs/recommended.ts"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0004-use-standard-version-for-versioning.md",
+   "identity": "docs/adr/0004-use-standard-version-for-versioning.md",
+   "adr_id": "4",
+   "title": "Use standard-version for versioning",
+   "first_commit": "2018-06-19T13:22:58+02:00",
+   "first_sha": "402f63a9ae4cdb157e7d2567f891fae13602e33c",
+   "last_commit": "2018-06-19T13:22:58+02:00",
+   "author": "Daniel Eissing",
+   "email": "mail.daniel.eissing@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use standard-version for versioning\n\n* Date: 2018-06-19\n\n## Context and Problem Statement\n\nThere needs to be a well defined approach to versioning within a project or library.\nThe current version (and next version) should be easily comprehensible to everyone (new) in a project.\nThe changes made from version to version should be traceable, both in code and from a business perspective\n\n## Considered Options\n\n* manual handling using custom versioning\n* manual handling using [semantic versioning](https://semver.org/)\n* tool supported handling using custom scripting\n* tool supported handling using [standard-version](https://github.com/conventional-changelog/standard-version)\n\n## Choosen Option\n\nUse [standard-version](https://github.com/conventional-changelog/standard-version) for versioning\n\n**Reasons**\n\n* follows [semantic versioning](https://semver.org/) standard\n* Easy (automatic) versioning of your application or library, including automatic changelog updates\n* manual determination of next version possible through `--release-as <major|minor|patch>` command line option is possible\n\n**Notes**\n\n* dependencies and `script` configuration has been added to [package.json](../../package.json)\n* to create a new release run:\n\n```shell\nyarn release # alternatively: npm run release\n```\n\n* run `yarn release` to create a new version. This will\n  - update the `version` field in [package.json](../../package.json)\n  - update the changelog\n  - create a commit (including commitmessage following standard defined defined in [ADR-0003](0003-use-commitizen-commitlint.md))\n  - create a new tag for the commit\n  - synchroniye commit with `remote`\n* versions will be detected automatically from those commit message types:\n  - `fix` will result in a `patch` version bump\n  - `feat` will result in a `minor` version bump\n  - adding `BREAKING CHANGE: <description of breaking change>` will result in a `major` version bump\n* for applications (that usually do not create breaking changes) use `--release-as <major|minor|patch>` to force a `major` bump\n\n## Background information\n\n### standard-version\n\n* [standard-version](https://github.com/conventional-changelog/standard-version)\n* based on [conventional commits](https://conventionalcommits.org/) (which in turn is based on [semantic versioning](https://semver.org/) standard)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/../package.json"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0003-use-commitizen-commitlint.md",
+   "identity": "docs/adr/0003-use-commitizen-commitlint.md",
+   "adr_id": "3",
+   "title": "Use commitizen and commitlint for git commits",
+   "first_commit": "2018-06-19T12:45:38+02:00",
+   "first_sha": "2950e51412071171d61627c600793fa6e615ccfe",
+   "last_commit": "2018-06-19T12:45:38+02:00",
+   "author": "Daniel Eissing",
+   "email": "mail.daniel.eissing@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "\n# Use commitizen and commitlint for git commits\n\n* Date: 2018-06-19\n\n## Context and Problem Statement\n\nThere is no fully agreed on consensus on how to write commit messages.\nThis often leads to a big variety of commit message formats used in a project, depending on the backgrounds of the developers involved\n\n## Considered Options\n\n* Do not give a recommendation on commit messages\n* Document a standard (e.g., based on https://gist.github.com/robertpainsi/b632364184e70900af4ab688decf6f53), without additional tooling\n\n## Choosen Option\n\nTitle and details about possible mutations on the choosen option\n\n**Reasons**\n\nI decided to recommend a commit message format supported by tooling, because:\n\n* it removes questions / options for developers and thus in the long run makes commiting easier\n* the chosen format uses the same format backed by companies like [Google](https://github.com/angular/angular/blob/master/CONTRIBUTING.md#commit)\n* it integrates well with other tools like [standard-version](https://github.com/conventional-changelog/standard-version)\n* the available tooling supports the onboarding process by giving a command line tool to guide you through format definitions or more complex commits\n\n**Notes**\n\n* Use `npm run commit` / `yarn commit` to allow the [cli-tool](https://github.com/commitizen/cz-cli) help you compile a commit\n* [cz-customizable](https://github.com/leonardoanalista/cz-customizable) allows for additional customization options\n* There are no predefined scopes other than `system`, which should be used for general `chore` tasks - define scopes based on the module or component mostly effected by the commit\n* [commitlint](https://github.com/marionebl/commitlint) including plugins has been added to ensure the commit format\n* Configuration settings have been added to [package.json](../../package.json)\n* The format for the commit messages is defined in [.cz-config.js](../../.cz-config.js)\n* integration has been added using [husky git commit hooks](0002-use-husky-for-git-hooks.md)\n\n## Background information\n\n### commitizen\n\n* [commitizen](https://github.com/commitizen/cz-cli)\n* [commitlint](https://github.com/marionebl/commitlint)\n* [Angular commit message guidelines](https://github.com/angular/angular/blob/master/CONTRIBUTING.md#commit)\n\n```shell\ngit commit -m \"type(module-name): imperative, present tense description of commit #ticket\"\n\n## example\ngit commit -m \"feat(button): adds button component #pr-123\"\n```\n\n* Available types\n  - feat: describes a product feature added by this commit as well as detectable improvements made to existing modules or components\n  - fix: describes a bugfix, i.e., some correction to an existing module or component\n  - docs: describes a commit purely for documentation purposes\n  - style: describes changes that do not effect the functionality of the code, e.g., linting or code style improvements\n  - refactor: describes a refactoring of existing code\n  - chore: describes changes made to the infrastructure of the project, e.g., configuration or build jobs\n  - revert: reverts a previous commit\n  - test: a commit purely to for testing purposes without functional impact\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/angular/angular/blob/master/CONTRIBUTING.md",
+    "/../package.json",
+    "/../.cz-config.js"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0002-use-husky-for-git-hooks.md",
+   "identity": "docs/adr/0002-use-husky-for-git-hooks.md",
+   "adr_id": "2",
+   "title": "Use husky for git hooks",
+   "first_commit": "2018-06-19T12:44:26+02:00",
+   "first_sha": "f3994a06e3b13639e1ec3991512f33f8f13ce277",
+   "last_commit": "2018-06-19T12:44:26+02:00",
+   "author": "Daniel Eissing",
+   "email": "mail.daniel.eissing@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use husky for git hooks\n\n* Date: 2018-06-19\n\n## Context and Problem Statement\n\nHandling and applying git hooks is a common tasks in most projects.\nKeeping the handling (esp. installation) of git hooks is however mosten an complicated matter.\n\n## Considered Options\n\n* do not add tooling for supporting git hooks\n* provide a custom node script + templates for installing hooks\n* use [husky](https://github.com/typicode/husky)\n* \u2026 <!-- numbers of options can vary -->\n\n## Choosen Option\n\nUse [husky](https://github.com/typicode/husky) for installing and configuring git hooks\n\n**Reasons**\n\n* provides an painless and consistent approach to handling git hooks\n* well [documented](https://github.com/typicode/husky/blob/dev/docs.md), adopted and maintained\n* easily configurable\n\n## Background information\n\n### husky\n\n[example | description | pointer to more information | \u2026] <!-- optional -->\n\n* [husky](https://github.com/typicode/husky)\n* configuration example\n\n```json\n{\n  \"husky\": {\n    \"hooks\": {\n      \"commit-msg\": \"npm run commitlint\",\n      \"push\": \"npm run lint\"\n    }\n  }\n}\n```\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/typicode/husky/blob/dev/docs.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0000-template.md",
+   "identity": "docs/adr/0000-template.md",
+   "adr_id": "0",
+   "title": "[short title of solved problem and solution]",
+   "first_commit": "2018-06-19T11:24:02+02:00",
+   "first_sha": "93abde36e816a0ba7c589bf99d1733582c1f79af",
+   "last_commit": "2018-06-19T11:24:02+02:00",
+   "author": "Daniel Eissing",
+   "email": "mail.daniel.eissing@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# [short title of solved problem and solution]\n\n* Status: [accepted | superseeded by [ADR-0005](0005-example.md) | deprecated | \u2026] <!-- optional -->\n* Deciders: [list everyone involved in the decision] <!-- optional -->\n* Date: [YYYY-MM-DD when the decision was last updated] <!-- optional -->\n\nTechnical Story: [description | ticket/issue URL] <!-- optional -->\n\n## Context and Problem Statement\n\n[Describe the context and problem statement, e.g., in free form using two to three sentences. You may want to articulate the problem in form of a question.]\n\n## Considered Options\n\n* [option 1]\n* [option 2]\n* [option 3]\n* \u2026 <!-- numbers of options can vary -->\n\n## Choosen Option\n\nTitle and details about possible mutations on the choosen option\n\n**Reasons**\n\n* Chosen option: \"[option 1]\", because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)].\n* background information on the decision\n\n**Notes**\n\n* Added artifact / dependency / documentation\n* Notes on adaptions / mutations\n* and usage instructions\n\n## Background information\n\n### [option 1]\n\n[example | description | pointer to more information | \u2026] <!-- optional -->\n\n* Good, because [argument a]\n* [link](#to-background information)\n* Documentation and\n\n```\n# usage examples\n```\n\n* ...\n\n### [option 2]\n\n[example | description | pointer to more information | \u2026] <!-- optional -->\n\n* Good, because [argument a]\n* [link](#to-background information)\n* Documentation and\n\n```\n# usage examples\n```\n\n* ...\n\n## Links <!-- optional -->\n\n* [Link type] [Link to ADR] <!-- example: Refined by [ADR-0005](0005-example.md) -->\n* ...\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0001-use-architectural-decision-records.md",
+   "identity": "docs/adr/0001-use-architectural-decision-records.md",
+   "adr_id": "1",
+   "title": "Use Architectural Decision Records",
+   "first_commit": "2018-06-19T11:24:02+02:00",
+   "first_sha": "93abde36e816a0ba7c589bf99d1733582c1f79af",
+   "last_commit": "2018-06-19T11:24:02+02:00",
+   "author": "Daniel Eissing",
+   "email": "mail.daniel.eissing@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use Architectural Decision Records\n\n* Date: 2018-19-06\n\n## Context and Problem Statement\n\nI want to retrace why a certain development tool has been placed into this project.\n\n## Considered Options\n\n* do not document decision explicitly\n* use commit messages + changelog for documentation purposes\n* extend README.md with rationale + background information\n* use [Lightweight architecutral decision records](#lightweight_architectural_decision_records)\n\n## Choosen option\n\nLightweight architecutral decision records using an template adapted from [madr](https://adr.github.io/madr/)\n\n**Reasons**\n\nI decided to include ladrs as a recommended practice, because:\n\n* they provide an easily accessible and well defined format for documenting information about the presence of concepts / dependencies / tools used in a project\n* they provide background information, documentation and rationale that help onboarding\n* they are easily editable without additional documentation tools and can be updated and versioned through git\n\n**Notes**\n\n* an up-to-date template file has been added to the project\n* keep core reason to a sizable number (<= 3), add **tldr;** section if more are necessary / helpful\n* there is no additional tooling recommended at this point, as:\n  - the ladr format as is is lighweight enough already and can be managed without additional tooling\n  - dealing with plain markdown files can easily done by anyone using copy / paste, whereas additional tooling will require developers memorizing new commands\n* [madr](https://adr.github.io/madr/) has been applied as a base template, as:\n  - make access to creating and reading up on decision easier\n  - adaptions made:\n    - the section `Pros and Cons of the Options` has been replaced in favor of `Background information`\n    - the section `Decision outcome`has been replaced in favor of `Choosen option`\n\n## Background information\n\n### Lightweight architecteural decision records\n\nBackground information:\n\n* https://www.thoughtworks.com/radar/techniques/lightweight-architecture-decision-records\n* https://github.com/joelparkerhenderson/architecture_decision_record\n\nConsidered Tools:\n* https://adr.github.io/madr/\n* https://github.com/npryce/adr-tools\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 9,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "8"
+}

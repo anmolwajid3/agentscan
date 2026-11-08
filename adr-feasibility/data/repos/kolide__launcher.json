@@ -1,0 +1,71 @@
+{
+ "repo": "kolide/launcher",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2017-05-02T13:52:56-06:00",
+ "last_commit": "2026-11-04T22:16:55+00:00",
+ "n_commits": 2085,
+ "n_authors": 53,
+ "n_files": 1694,
+ "n_code_files": 883,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 0,
+ "adrs": [],
+ "status_changes": [],
+ "ai_signals": [
+  {
+   "kind": "file:primary",
+   "name": "AGENTS.md",
+   "date": "2026-07-01T12:00:05-05:00",
+   "commit": "de74456926659a257c503afca05425943d576e04",
+   "evidence": "adding agents file (#2757)",
+   "official": true,
+   "author": "Cesar Araujo",
+   "email": "56365373+cesarfda@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>",
+   "date": "2026-03-09T10:00:49-04:00",
+   "commit": "8a8af02cfd8e8c189840f4cc55ad9a0e638ac5d6",
+   "evidence": "Potential fix for code scanning alert no. 82: Workflow does not contain permissions (#2623)",
+   "official": true,
+   "author": "seph",
+   "email": "seph@kolide.co"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <62310815+github-advanced-security[bot]@users.noreply.github.com>",
+   "date": "2026-10-12T20:34:19+00:00",
+   "commit": "f14a0e23b84fe13ead88df98ef554c0161fcb593",
+   "evidence": "Use Device Trust icons in menu bar and notifications when DeviceTrustRebrand is enabled (#2840)",
+   "official": true,
+   "author": "Cesar Araujo",
+   "email": "56365373+cesarfda@users.noreply.github.com"
+  }
+ ],
+ "signal_date": "2026-03-09T14:00:49+00:00",
+ "signal_kind": "coauthor",
+ "mentions": {
+  "strict": [
+   {
+    "sha": "e9c820350fe213461100c9d58582f36e1bc966a8",
+    "date": "2026-05-20T14:04:52-05:00",
+    "subject": "dataflatten for claude (#2717)"
+   }
+  ],
+  "strict_count": 1,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-native",
+ "adr_count_before_signal": 0,
+ "superseded_in_window": 0,
+ "eligibility_reason": "ai-native",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "yes",
+ "buchgeher_adr_count": "6"
+}

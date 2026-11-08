@@ -1,0 +1,623 @@
+{
+ "repo": "croz-ltd/klokwrk-project",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2020-03-22T13:06:18+01:00",
+ "last_commit": "2024-06-09T15:54:35+02:00",
+ "n_commits": 2417,
+ "n_authors": 2,
+ "n_files": 781,
+ "n_code_files": 6,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 18,
+ "adrs": [
+  {
+   "path": "support/documentation/adr/content/0002-strategic-project-structure.md",
+   "identity": "support/documentation/adr/content/0002-startegic-project-structure.md",
+   "adr_id": "2",
+   "title": "ADR-0002 - Strategic Project Structure",
+   "first_commit": "2020-10-28T18:12:38+01:00",
+   "first_sha": "520f90692b83ee73e7e28cdac4d38c4918b954b7",
+   "last_commit": "2023-09-03T12:12:10+02:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 47,
+   "text": "# ADR-0002 - Strategic Project Structure\n* **Status: accepted**\n* Dates:\n  * proposed - 2020-10-28\n  * updated - 2023-09-01\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nExcluding the simplest hello-world-like cases, any useful project typically contains several modules. The traditional way to organize project modules is just to put them under the project root.\nWe can call that structure simply **flat structure**.\n\nWhile the flat structure is appropriate and sufficient for simpler projects, when the project grows and the number of modules increases, the flat structure starts suffering from many drawbacks:\n* Flat structure does not scale well when the number of modules grows.\n* Flat structure is difficult and confusing to navigate with numerous modules at the same hierarchy level.\n* Flat structure does not suggest a direction of dependencies between modules.\n* Flat structure does not suggest abstraction levels of modules.\n* Flat structure does not suggest where are the system's entry points.\n* Flat structure can use only module names to provide hints about relations between modules. Unfortunately, even that possibility is rarely leveraged.\n* Flat structure does not use any high-level constructs that may suggest how modules are organized and related.\n* Negative usage aspects are getting worse and worse as we add additional modules.\n* Flat structure often requires extracting modules in separate repositories just because confusion becomes unbearable with a larger number of modules.\n* When using microservices, the flat structure practically forces us to use one project per microservice.\n\n> Note: Terms **flat structure** and **strategic structure** (see below) are ad-hoc terms introduced just for this document. However, in the `klokwrk-project`, we may use them in other places for\n> convenience.\n\n### Architectural Context\n* System (`klokwrk-project`)\n\n## Decision\n**We'll organize project modules around strategic DDD (Domain Driven Design) constructs of bounded context and subdomains.**\n\nOur project organization will follow principles and recommendations of **strategic structure** as defined below.\n\n### Decision Details\nWe'll start with a concrete example of the strategic structure used in the klokwrk at the time of writing this document. As a follow-up, we'll present a general scheme for creating the strategic\nstructure focusing on the differences to the given concrete example.\n\n#### Strategic structure in klokwrk\nThe current project layout in the klokwrk looks like this:\n\n    klokwrk-project\n    \u251c\u2500\u2500 ... (other files or directories)\n    \u251c\u2500\u2500 modules\n    \u2502   \u251c\u2500\u2500 bc\n    \u2502   \u2502   \u2514\u2500\u2500 cargotracking\n    \u2502   \u2502       \u251c\u2500\u2500 asd\n    \u2502   \u2502       \u2502   \u2514\u2500\u2500 booking\n    \u2502   \u2502       \u2502       \u251c\u2500\u2500 app\n    \u2502   \u2502       \u2502       \u2502       cargotracking-booking-app-commandside\n    \u2502   \u2502       \u2502       \u2502       cargotracking-booking-app-queryside-projection-rdbms\n    \u2502   \u2502       \u2502       \u2502       cargotracking-booking-app-queryside-view\n    \u2502   \u2502       \u2502       \u2502       cargotracking-booking-app-rdbms-management\n    \u2502   \u2502       \u2502       \u2514\u2500\u2500 lib\n    \u2502   \u2502       \u2502               cargotracking-booking-lib-boundary-web\n    \u2502   \u2502       \u2502               cargotracking-booking-lib-out-customer\n    \u2502   \u2502       \u2502               cargotracking-booking-lib-queryside-model-rdbms-jpa\n    \u2502   \u2502       \u2502               cargotracking-booking-test-component\n    \u2502   \u2502       \u2502               cargotracking-booking-test-support-queryside\n    \u2502   \u2502       \u2502               cargotracking-booking-test-support-testcontainers\n    \u2502   \u2502       \u2502\n    \u2502   \u2502       \u251c\u2500\u2500 domain-model\n    \u2502   \u2502       \u2502       cargotracking-domain-model-aggregate\n    \u2502   \u2502       \u2502       cargotracking-domain-model-command\n    \u2502   \u2502       \u2502       cargotracking-domain-model-event\n    \u2502   \u2502       \u2502       cargotracking-domain-model-service\n    \u2502   \u2502       \u2502       cargotracking-domain-model-value\n    \u2502   \u2502       \u2502\n    \u2502   \u2502       \u2514\u2500\u2500 lib\n    \u2502   \u2502               cargotracking-lib-axon-cqrs\n    \u2502   \u2502               cargotracking-lib-axon-logging\n    \u2502   \u2502               cargotracking-lib-boundary-api\n    \u2502   \u2502               cargotracking-lib-boundary-query-api\n    \u2502   \u2502               cargotracking-lib-domain-model-command\n    \u2502   \u2502               cargotracking-lib-domain-model-event\n    \u2502   \u2502               cargotracking-lib-web\n    \u2502   \u2502               cargotracking-test-support\n    \u2502   \u2502\n    \u2502   \u251c\u2500\u2500 lib\n    \u2502   \u2502   \u251c\u2500\u2500 hi\n    \u2502   \u2502   \u2502       klokwrk-lib-hi-datasourceproxy-springboot\n    \u2502   \u2502   \u2502       klokwrk-lib-hi-jackson-springboot\n    \u2502   \u2502   \u2502       klokwrk-lib-hi-spring-context\n    \u2502   \u2502   \u2502       klokwrk-lib-hi-spring-data-jpa\n    \u2502   \u2502   \u2502       klokwrk-lib-hi-validation-springboot\n    \u2502   \u2502   \u2502\n    \u2502   \u2502   \u251c\u2500\u2500 lo\n    \u2502   \u2502   \u2502       klokwrk-lib-lo-archunit\n    \u2502   \u2502   \u2502       klokwrk-lib-lo-datasourceproxy\n    \u2502   \u2502   \u2502       klokwrk-lib-lo-hibernate\n    \u2502   \u2502   \u2502       klokwrk-lib-lo-jackson\n    \u2502   \u2502   \u2502       klokwrk-lib-lo-uom\n    \u2502   \u2502   \u2502       klokwrk-lib-lo-validation-constraint\n    \u2502   \u2502   \u2502       klokwrk-lib-lo-validation-validator\n    \u2502   \u2502   \u2502\n    \u2502   \u2502   \u2514\u2500\u2500 xlang\n    \u2502   \u2502           klokwrk-lib-xlang-groovy-base\n    \u2502   \u2502           klokwrk-lib-xlang-groovy-contracts-match\n    \u2502   \u2502           klokwrk-lib-xlang-groovy-contracts-simple\n    \u2502   \u2502\n    \u2502   \u2514\u2500\u2500 other\n    \u2502       \u251c\u2500\u2500 platform\n    \u2502       \u2502       klokwrk-platform-base\n    \u2502       \u2502       klokwrk-platform-micronaut\n    \u2502       \u2502       klokwrk-platform-spring-boot\n    \u2502       \u2502\n    \u2502       \u2514\u2500\u2500 tool\n    \u2502               klokwrk-tool-gradle-source-repack\n    \u251c\u2500\u2500 support\n    \u2502   \u2514\u2500\u2500 ... (other files or directories)\n    \u2514\u2500\u2500 ... (other files or directories)\n\nAt the top of the hierarchy, we have a project folder  - `klokwrk-project`. It is the equivalent of the whole system. In the strategic structure, the system name appears in the names of artifacts\nconsidered to be conceptually at the level of a system.\n\nRight below the root, we have `modules` and `support` folders. These should be the area of 99% of everyday work, with the `modules` folder taking a vast majority of that percentage.\n\nThe `support` folder houses all kinds of supportive files like scripts, documentation, git hooks, etc. The `support` folder is free-form, and the strategic structure does not impose any\nrecommendations or rules on its content. On the contrary, the strategic structure is applied to the content of the `modules` directory - the home of all source code modules in the system.\n\nAt the 1st level of strategic structure - the system level, we have the content of the `modules` directory. It is divided into three subdirectories: `bc` (bounded context modules),\n`lib` (system-level libraries), and `other` (miscellaneous helper modules).\n\nAt the 2nd level - the bounded context level, we have the content of the `modules/bc` directory that is further organized into three parts, `asd` (asd stands for **A** **S**ub**D**omain),\n`domain-model` (bounded context domain model), and `lib` (bounded context libraries).\n\nAt the 3rd level of a hierarchy, we have the content of the `modules/bc/[bounded-context-name]/asd` directory that holds all bounded context's subdomains. The modules for each subdomain are further\ndivided into `app` and `lib`. The `modules/bc/[bounded-context-name]/asd/[subdomain-name]/app` directory contains the **subdomain applications** responsible for implementing concrete subdomain\nscenarios. From the abstraction level and dependency perspectives, subdomain applications are at the top of the hierarchy. Subdomain applications speak the language of domain - the bounded context's\nubiquitous language. They even contribute to it through the naming and meaning of use cases.\n\nThe first thing that **subdomain libraries** (`modules/bc/[bounded-context-name]/asd/subdomain-name/lib)` can hold is infrastructural code related to the technological choices made for that\nparticular subdomain and are not reusable outside the subdomain. However, they can temporarily have infrastructural modules intended to be more reusable (either on the bounded context or system\nlevels) at the end. Still, for whatever reason, it was more convenient to hold them at the subdomain level for a limited time.\n\nThe second thing that can be found in subdomain libraries are business-related reusable modules that connect technological choices with the domain model. One characteristic example is the\n`cargotracking-booking-lib-queryside-model-rdbms-jpa` module. Those kinds of modules do speak bounded context's ubiquitous language.\n\nThe bounded context's **domain model** is implemented in `modules/bc/[bounded-context-name]/domain-model`. Those modules contain the essence of the bounded context business logic. Implementation of\nthe domain model should be free of technology as much as possible and practical. Adding external libraries is not strictly forbidden, but each addition should be conscious and must be carefully\nevaluated. It is best to have tests that monitor and control the dependencies of a domain model. The domain model implements the majority of code-level representation of the bounded context's\nubiquitous language and must be consistent across all bounded context's subdomains.\n\nBy default, the directory `modules/bc/[bounded-context-name]/lib` is the home of shareable **bounded context infrastructural libraries**. It contains modules with infrastructural code that is\nreusable across the bounded context. Those modules are at a lower abstraction level than subdomain libraries. Bounded context infrastructural libraries do not speak domain language. However, they can\nsupport the implementation of the domain model and other module groups higher in the hierarchy. Domain model should not generally depend on bounded context infrastructural libraries. Exceptions are\nallowed but should be conscious and carefully managed.\n\nDo note that another variant of bounded context libraries is also possible. It is a variant supporting the sharing of business logic at the bounded context level when necessary. In that case, instead\nof a single `lib` directory, we would have `blib` and `ilib` directories. The `blib` directory would contain business-related modules that can depend on a domain model. On the contrary, the `ilib`\ndirectory cannot use the domain model because it should contain infrastructural code only. The `ilib` directory role is the same as the role of `lib` directory from the default variant of bounded\ncontext libraries.\n\nLet's return to the `modules/lib` directory containing general **system-level libraries**. It is divided into `hi`, `lo`, and `xlang` subdirectories. All system-level libraries are at lower\ndependency and abstraction levels than any bounded context module.\n\nAlthough separation on the high (`hi`) and low-level (`lo`) system libraries is somewhat arbitrary, it is helpful in practice. The `hi` directory is intended to contain\n**high-level system libraries**, which are general infrastructural modules closer to the high-level technological frameworks (something like Spring, Spring Boot, or Axon frameworks) used in the\nsystem. They could contain some specifics of our system, but usually, they do not. In that later case, they are general enough to be reused even outside of our system.\n\nThe **low-level system libraries** from the `lo` directory deal with the customizations and extensions of widely used 3rd party libraries like Hibernate, Jackson, Java Bean validations, and similar.\nBoth types of system-level libraries should not be, in general, dependencies of a domain model.\n\nAt the lowest abstraction level, we have the **language extensions** (`modules/lib/xlang`). They focus on adding features to the programming language itself or its accompanying SDK (JDK in our case).\nLanguage extensions can be used from everywhere, even from the domain model, without restrictions. Some of them are often written to ease the implementation of the domain model by making it more\nexpressive and concise.\n\n#### Characteristics of strategic structure\n",
+   "truncated_text": true,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "modules/bc",
+    "modules/bc/[bounded-context-name]/asd",
+    "modules/bc/[bounded-context-name]/asd/[subdomain-name]/app",
+    "modules/bc/[bounded-context-name]/asd/subdomain-name/lib)",
+    "modules/bc/[bounded-context-name]/domain-model",
+    "modules/bc/[bounded-context-name]/lib",
+    "modules/lib",
+    "modules/lib/xlang",
+    "/../article/modules-and-packages/modulesAndPackages.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0012-response-format.md",
+   "identity": "support/documentation/adr/content/0012-response-fromat.md",
+   "adr_id": "12",
+   "title": "ADR-0012 - Response Format",
+   "first_commit": "2021-04-14T12:03:19+02:00",
+   "first_sha": "abdbbad9052b92829ae5ed3eb216ac77cf6989db",
+   "last_commit": "2023-08-04T18:47:56+02:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# ADR-0012 - Response Format\n* **Status: accepted**\n* Dates:\n  - proposed - 2021-04-14\n  - updated - 2021-08-10\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nEvery server-side application sends some kind of responses to its clients. Unfortunately, the exact structure of these responses is rarely defined.\n\nThe most probable cause is that each **successful** response has a different content and structure as it communicates various domain data depending on the requested endpoint. Consequently, it is\nimpossible to prescribe a predefined structure for such responses carrying only \"concrete\" data in its payload.\n\nHowever, there is often a need to communicate some kind of metadata with every response in more elaborate systems. While metadata can be useful for successful responses, they are almost unavoidable\nfor responses communicating failures. No matter if the failure cause originates from the client or the server.\n\nThe standard way for sharing metadata is through means of a concrete protocol. For example, HTTP uses statuses and headers. Messaging systems also employ headers but of different format, etc.\nHowever, if there is a need for more detailed metadata, headers are often combined with payloads.\n\nSuch a situation brings fragmentation and inconsistency in metadata transfers, especially when multiple protocols and channels have to be supported. While standard protocol features must be obeyed,\nfrom the application perspective, it might be helpful having all necessary data and metadata in one place.\n\nTo enable generalized creation on the server-side and generalized processing on the client-side, metadata should follow some kind of prescribed shape and format.\n\n### Architectural Context\n* System (`klokwrk-project`)\n\n## Decision\n**We will render responses following the prescribed format.**\n\nFormat structure is independent of concrete protocol or channel and should be used for all generated responses.\n\nConcrete details of the prescribed format are given in the \"[The format of rendered responses](../../article/response-format/responseFormat.md)\" article. Although the article presents prescribed\nstructures in JSON, concrete format implementation is not essential. It can be anything else that is more suitable for some chosen protocol, as long as defined structures are followed.\n\nImplementations of response renderers are specific for each supported channel. At the moment, we have an implementation for the Spring MVC channel that can be found in `cargotracking-lib-web` module\nin `org.klokwrk.cargotracking.lib.web.spring.mvc` package.\n\n## Consequences\n### Positive\n- Improved consistency for response rendering on the server-side.\n- Improved consistency for response handling on the client-side.\n- Enablement for creating generalized implementations for both rendering and handling of response metadata.\n\n### Negative\n- The prescribed format is not defined by any standard.\n- We are not using any standard metadata formats.\n- We might have missed some vital metadata.\n- It is quite possible that the format may be changed and evolved as we apply it in practice.\n\n### Neutral\n- The custom format might require some time to accustom and accept.\n\n## Considered Options\n- No custom response format.\n- Standard formats for presenting failures like \"RFC 7807\" or \"JSON:API Error Objects\".\n\n## References\n- [The format of rendered responses](../../article/response-format/responseFormat.md)\n- [RFC 7807](https://tools.ietf.org/html/rfc7807)\n- [JSON:API Error Objects](https://jsonapi.org/format/#errors)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/../article/response-format/responseFormat.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0005-using-groovy.md",
+   "identity": "support/documentation/adr/content/0005-using-groovy.md",
+   "adr_id": "5",
+   "title": "ADR-0005 - Using Groovy",
+   "first_commit": "2020-11-02T16:29:09+01:00",
+   "first_sha": "784d558acb258f03bf388007f0d7fb08ef281aea",
+   "last_commit": "2023-08-03T13:16:26+02:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR-0005 - Using Groovy\n* **Status: accepted**\n* Dates: proposed - 2020-11-02\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nWe would like to have a language or language extension that is very close, very similar, and 100% compatible with Java, but that offers significant productivity boosters at the same time.\n\nJava syntax is often verbose, and it is common to use various IDE tricks (folding/unfolding) or 3rd party libraries (e.g., Lombok) to deal with some of that clutter. It would be much better to have\na language with a clear, concise syntax that is almost naturally understandable for Java developers. At the same time, the language should provide user-friendly extensions of Java SDK and best\npractice implementations of various programming patterns.\n\n### Architectural Context\n* System (`klokwrk-project`)\n\n## Decision\n**We will use Groovy as a primary language.**\n\n## Consequences\n### Positive\n* Groovy is a very concise and productive alternative to Java language. It has a straightforward syntax for Java developers as it feels like Java, but without clutter.\n* Groovy is entirely compatible with Java. In fact, almost every Java code can be compiled and executed as a Groovy code.\n* Any Java library can be used from Groovy and vice-versa.\n* Besides concise and straightforward syntax, Groovy offers various extensions to the JDK and implements many best-practice patterns through the use of annotations and AST (Abstract Syntax Tree)\n  transformations.\n* Groovy is, at the same time, statically compiled and dynamic language, allowing the programmer to tune dynamism as appropriate to the problem at hand.\n* Great support for general-purpose testing via [Spock library](http://spockframework.org/spock/docs/2.0-M4/).\n* Groovy can be used in various contexts, from scripting to developing full-featured enterprise applications.\n* Groovy is an open-source language, maintained by the community, and hosted by Apache foundation.\n* Groovy offers ways for quick prototyping with minimal ceremony.\n* `klokwrk-project` development team has a significant experience with Groovy.\n\n### Negative\n* Java tooling often lags with support for Groovy.\n  * Although the situation is currently quite acceptable (e.g., IDE support, code coverage support, static analysis), there are some areas where much more work is needed in the future (e.g., GraalVM\n    native image support).\n  * Related to GraalVM native image support, it looks like things are improving considerably with Java 11 and latest GraalVM releases\n    ([GraalVM native-image - from 2.1s to 0.013s startup time | Groovy Tutorial](https://www.youtube.com/watch?v=RPdugI8eZgo)). Also, GraalVM native image still has limited usage. In the domain of\n    full-featured enterprise applications, it is not critical how fast an application can start, but rather how quickly it can run\n    ([Pros and Cons for Using GraalVM Native-Images](https://dzone.com/articles/profiling-native-images-in-java)).\n\n### Neutral\n* Many non-informed developers perceive Groovy as a strictly dynamic language capable and suitable only for scripting.\n* There is some learning curve, especially if one wants to use Groovy in an idiomatic way. However, that learning curve is significantly lower than in any other JVM language.\n\n## Considered Options\n* Java\n* Kotlin\n  * Not considered extensively since the development team has an only basic knowledge of the language and its ecosystem. Nevertheless, Kotlin looks like an interesting option.\n  * Much more different from Java than is the case with Groovy.\n  * It looks like many Kotlin features have their counterparts in Groovy. The only significant exception is coroutines, and that might be addressed with\n    [Project Loom](https://openjdk.java.net/projects/loom/) in the future.\n\n## References\n* [Design patterns in Groovy](https://groovy-lang.org/design-patterns.html)\n* [Groovy Language Documentation](https://groovy-lang.org/single-page-documentation.html)\n* [Spock library](http://spockframework.org/spock/docs/2.0-M4/)\n* [Groovy in Action, Second Edition](https://www.manning.com/books/groovy-in-action-second-edition)\n* [GraalVM native-image - from 2.1s to 0.013s startup time | Groovy Tutorial](https://www.youtube.com/watch?v=RPdugI8eZgo)\n* [Pros and Cons for Using GraalVM Native-Images](https://dzone.com/articles/profiling-native-images-in-java)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "spockframework.org/spock/docs/2.0",
+    "groovy-lang.org/design-patterns.html",
+    "groovy-lang.org/single-page-documentation.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0006-contributing-back-to-open-source.md",
+   "identity": "support/documentation/adr/content/0006-contirbuting-back-to-open-source.md",
+   "adr_id": "6",
+   "title": "ADR-0006 - Contributing Back to Open Source",
+   "first_commit": "2020-11-02T20:27:58+01:00",
+   "first_sha": "a41b6635e7bc60b77a24179bd42b99a548b19771",
+   "last_commit": "2023-08-03T13:16:26+02:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# ADR-0006 - Contributing Back to Open Source\n* **Status: accepted**\n* Dates: proposed - 2020-11-02\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nQuite often, in commercial projects, reporting back to the community is entirely in the developer's hands. They are allowed to do this, but commonly there is no dedicated time in the plans.\n\nOne of the ideas behind Project Klokwrk is to streamline development efforts as much as possible. As we are using many different open-source tools and libraries, it is in our best interest to try to\nhelp with the issues we encountered.\n\n### Architectural Context\n* System (`klokwrk-project`)\n\n## Decision\n**At least, we will report the issues in 3rd party open source software that are encountered during `klokwrk-project` development.** We'll strive to do this as consistently as possible. Besides being\nconstructive community members, resolving encountered issues should benefit us with an easier and streamlined workflow.\n\nWe will actively maintain [the list of reported issues and monitored issues](../../misc/klokwrkRelatedIssuesInTheWild.md) that are relevant for `klokwrk-project.`\n\nPutting open source contribution in ADR makes it an official guideline and moral obligation for all `klokwrk-project` members.\n\n## Consequences\n### Positive\n* To be a constructive member of the open source community.\n* To simplify our own workflows.\n\n### Negative\n* Working on 3rd party software issues requires significant time.\n\n### Neutral\n* Contributing back to open source is an obligation for each member of `klokwrk-project`.\n\n## Considered Options\n* Do not contribute back.\n\n## References\n* [Klokwrk Related Issues in the Wild](../../misc/klokwrkRelatedIssuesInTheWild.md)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/../misc/klokwrkRelatedIssuesInTheWild.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0011-component-testing.md",
+   "identity": "support/documentation/adr/content/0011-component-testing.md",
+   "adr_id": "11",
+   "title": "ADR-0011 - Component Testing",
+   "first_commit": "2020-11-05T19:42:09+01:00",
+   "first_sha": "b17fec33b40e6bbe1238019f48ad206bfc002d68",
+   "last_commit": "2023-08-03T10:14:02+02:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR-0011 - Component Testing\n* **Status: accepted**\n* Dates: proposed - 2020-11-05\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nWhen developing application monoliths, it is common to have a relatively small number of end-to-end tests (a.k.a. [broad-stack tests](https://martinfowler.com/bliki/BroadStackTest.html) or system\ntests). They are usually run on a full system, including necessary infrastructure, either by exercising UI or public system API.\n\nWhen developing a microservices based system, instead of a single, we have many runnable components. They are usually grouped into corresponding bounded contexts, where each bounded context\ncontains a group of closely related microservices. Further, depending on technology choices, each logical microservice might be split into multiple runnable components.\n\nIn an environment like that, spawning a whole system for testing might be challenging to set up and time-consuming to execute. Also, broad-stack tests are not focused on a single logical\nmicroservice, which can bring in a whole range of issues, from responsibility for development and maintenance to the expected but not yet developed system features.\n\nFor testing microservices, we need tests that have a very different focus than broad-stack tests.\n\n### Architectural Context\n* System (`klokwrk-project`)\n\n## Decision\n**We will use [component tests](https://martinfowler.com/bliki/ComponentTest.html) for exercising running instances of a single or multiple logical microservices inside a single bounded context.**\n\nThe technical implementation of component tests is very similar to broad-stack tests. Component tests are usually run through the public API of the component. If we have micro-frontends based UI,\nit can also be used. Therefore, the applied scope of tests is the major difference from broad-stack testing. Component tests are scoped and focused at bounded context only.\n\nImplementation of component tests will rely on the Testcontainers library. In contrast with [integration tests](0010-integration-testing-with-containerized-infrastructure.md), component tests do not\nonly containerize infrastructure but also logical microservices under the test. With such a setup, component tests usually leverage an external client for exercising the public API of microservices.\n\nAs an example of component tests, take a look at the `klokwrk-project` module `cargotracking-booking-test-component`.\n\n## Consequences\n### Positive\n* Testing a realistic running microservice through external API as it will be used in production.\n* All realistic integrations of a microservice are exercised.\n\n### Negative\n* More tests to write and maintain.\n* Component tests are usually slower than focused, realistic integration tests.\n\n### Neutral\n* Only the main successful and exceptional scenarios are tested.\n\n## Considered Options\n* Testing the whole system with broad-stack tests.\n* Do not test microservices under realistic conditions.\n\n## References\n* [Testing Strategies in a Microservice Architecture](https://martinfowler.com/articles/microservice-testing/)\n* [Component Testing](https://martinfowler.com/articles/microservice-testing/#testing-component-introduction)\n* [Broad-stack tests](https://martinfowler.com/bliki/BroadStackTest.html)\n* [Component tests](https://martinfowler.com/bliki/ComponentTest.html)\n* [ADR-0010 - Integration Testing with Containerized Infrastructure](0010-integration-testing-with-containerized-infrastructure.md)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "martinfowler.com/bliki/BroadStackTest.html",
+    "martinfowler.com/bliki/ComponentTest.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0017-minimal-audit-metadata-in-RDBMS-projections.md",
+   "identity": "support/documentation/adr/content/0017-minimal-audit-metadata-in-RDBMS-projections.md",
+   "adr_id": "17",
+   "title": "ADR-0017 - Minimal audit metadata in RDBMS projections",
+   "first_commit": "2022-04-07T13:58:26+02:00",
+   "first_sha": "15dbe1b6b939afcec66f4b36085662a093ff50bb",
+   "last_commit": "2023-08-03T09:50:05+02:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# ADR-0017 - Minimal audit metadata in RDBMS projections\n* **Status: accepted**\n* Dates: proposed - 2022-04-07\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nIn traditional applications that rely on the RDBMS databases, it is quite common to have a set of audit columns in tables of main entities. We can typically find columns like `created_at`,\n`created_by`, `last_updated_at` and `last_updated_by`. We can also find the `version` column in systems relying on optimistic locking. Those columns can be helpful as a quick way for collecting\nbasic information about table activity which might be handy for database administrators and application developers.\n\nAll values are populated or updated at the database transaction time, usually as a direct consequence of user interaction or communication with external systems. We can think about the time of a\ndatabase transaction as the moment at which our system becomes aware of some external change or event. In that sense, columns `created_at` and `last_updated_at` represent the moment when we have\nrecorded some external fact. From that perspective, we can see those audit columns contain potentially valuable domain information - the moment of recording a reality.\n\nIn event-sourced systems, the moment of recording an event or a fact is also valuable information. However, it does not correspond to the moment of inserting or updating a record in the RDBMS\nprojection table but rather to the moment we created the related event in our system. For this reason, `created_at` and `last_updated_at` columns should not contain projection database transaction\ntime. They have to be updated based on event metadata information. The column names should also reflect this, so using names like `first_event_recorded_at` and `last_event_recorded_at` is more\nappropriate.\n\nIf we still need, for some reason, the time of database transaction in our projection tables, you can still add corresponding columns if necessary. However, always be aware of how and when those\ncolumns are updated. For example, if you start the replay of events for creating a fresh projection, the database transaction moments will be completely different than previously.\n\nYou may wonder if there are other interesting moments that we should persist. This is highly dependent on the concrete domain. Still, typically we can find interesting the moment of some occurrence\nin the real world, the moment when people or other systems become aware of that occurrence, and similar. However, we cannot reduce those under common metadata information, and we have to deal with\nthem in a domain-specific way. You can find more details about such multi-temporal events in references.\n\nIn systems built on top of Axon framework, domain events (events originating from aggregates) also contain another valuable information - the sequence number of the event in the context of its\naggregate. That sequence number can be handy in various contexts like poling for the latest projection data, updating subscribing queries when projection and query applications are physically\nseparated, or implementing optimistic locking. Therefore, we should also record the sequence number in the column with a name like `last_event_sequence_number`.\n\nYou have probably noticed we skipped the `created_by` and `last_updated_by` columns. There are several reasons for that. First, the command-side application and projection application can be\nphysically separated, meaning they do not share the same thread context, which is usually the basis for extracting security-principal information. We can supply the principal as part of the event\npayload, but the Axon framework does not automatically provide this, which is not necessarily a bad thing.\n\nSecond, the availability of security-principal information may be domain or use-case specific and might not be available on all occasions. For example, when dealing with sagas or issuing commands\nfrom event handlers. For those reasons, we are leaving out those columns in the context of this ADR.\n\n## Architectural Context\n* RDBMS projections (`cargotracking-booking-app-queryside-projection-rdbms`, `cargotracking-booking-lib-queryside-model-rdbms-jpa`)\n\n## Decision\n**We will store the minimal set of event audit metadata in the following  columns of projection tables:**\n- `first_event_recorded_at` - the moment of recording the first projected event related to the aggregate corresponding to the record of projection table\n- `last_event_recorded_at` - the moment of recording the last projected event related to the aggregate corresponding to the record of projection table\n- `last_event_sequence_number` - the sequence number of the last projected event relative to the aggregate corresponding to the record of projection table\n\n## Consequences\n### Positive\n- The minimal set of event metadata is available in projection table\n- Stored event metadata can be a basis for implementing various domain and technical concerns\n\n### Neutral\n- Slight performance degradation of event projection handling\n- Increase of maintenance cost\n\n### Negative\n- Increase of stored data for every projected record\n\n## Considered Options\n- Not having a minimal set of audit metadata in projections\n\n## References\n- https://verraes.net/2022/03/multi-temporal-events/\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0018-random-UUID-as-a-primary-key-in-RDBMS-projections.md",
+   "identity": "support/documentation/adr/content/0018-random-UUID-as-a-primary-key-in-RDBMS-projections.md",
+   "adr_id": "18",
+   "title": "ADR-0018 - Random UUID as a primary key in RDBMS projections",
+   "first_commit": "2022-04-08T19:20:52+02:00",
+   "first_sha": "ee64bc352faf2e2c278dfd8e3346a0cdf40efe7a",
+   "last_commit": "2023-08-03T09:50:05+02:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# ADR-0018 - Random UUID as a primary key in RDBMS projections\n* **Status: accepted**\n* Dates: proposed - 2022-04-08\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nRandom UUIDs have many attractive characteristics that make them suitable to be used as publicly exposed identifiers of aggregates. For example, they are universally unique, unpredictable, and easy\nto generate.\n\nIn systems based on the Axon framework, random UUIDs are used as default aggregate identifiers if the user does not specify an identifier by themselves. As an aggregate identifier, random UUIDs are\ncommonly used as a primary key in RDBMS projection tables.\n\nHowever, random UUIDs as primary keys can cause performance issues for big data sets. Unfortunately, this can become obvious too late, typically when the system is in production for months or even\nyears. There are ways to add a bit of sequentiality to UUIDs to resolve those issues, which leads us towards COMB UUIDs and, more specifically, the short prefix COMB UUIDs.\n\nTo get a full story about using random UUIDs and COMB variants as primary keys in databases, refer to the article\n\"[Random UUID as a Primary Key in the Relational Database](../../article/random-uuid-as-database-primary-key/random-uuid-as-database-primary-key.md)\". The first part of the\narticle explains problems and solutions in detail, while the second part also explores UUID usage in some other areas. Therefore, the first part of the article can be considered a full context of\nthis ADR, and we will not repeat the discussion here. Please read the article to get a full explanation.\n\n## Architectural Context\n* RDBMS projections (`cargotracking-booking-app-queryside-projection-rdbms`, `cargotracking-booking-lib-queryside-model-rdbms-jpa`)\n\n## Decision\n**We will use short prefix COMB UUIDs as aggregate identifiers and as primary keys in related projection tables.**\n\n## Consequences\n### Positive\n- Acceptable performance when UUID is used as a database table primary key\n\n### Neutral\n- UUID is generated in a non-standard way\n\n### Negative\n- Can require a development of client-side support\n\n## Considered Options\n- Using plain random UUIDs for aggregate identifiers and for primary keys\n\n## References\n- [Random UUID as a Primary Key in the Relational Database](../../article/random-uuid-as-database-primary-key/random-uuid-as-database-primary-key.md)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/../article/random-uuid-as-database-primary-key/random-uuid-as-database-primary-key.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0009-testing-inter-module-dependencies.md",
+   "identity": "support/documentation/adr/content/0009-testing-inter-module-dependencies.md",
+   "adr_id": "9",
+   "title": "ADR-0009 - Testing Inter-Module Dependencies",
+   "first_commit": "2020-11-04T15:23:24+01:00",
+   "first_sha": "217d193fae2dd6c532ce027e9f4047020b9733b8",
+   "last_commit": "2023-08-02T21:49:28+02:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR-0009 - Testing Inter-Module Dependencies\n* **Status: accepted**\n* Dates: proposed - 2020-11-04\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nAlthough architectural testing ([ADR-0008 - Testing Architecture](0008-testing-architecture.md)) verifies some application dependencies, there are still dependencies that might be overlooked.\nIn general, we are not talking about 3rd party dependencies but rather about in-project modules at the lower level of abstraction compared to applications.\n\nThose project modules represent various pieces of functionality developed to streamline and simplify application development. The majority of lower-level modules will typically deal with\ninfrastructure concerns, but some of them might deal with the domain itself. If we have many of those modules, we might accidentally end up in situations where applications use something they should\nnot use. This might be just plain error, or it might be a suggestion that the lower-level module needs refactoring or splitting into more modules.\n\nTo avoid accidental inter-module dependencies, we should have in place a mechanism for verifying them. Also, as project modules grow, we should have some capable visual tooling that quickly can show\nand explore inter-module dependencies for easier comprehension and communication.\n\n### Architectural Context\n* System (`klokwrk-project`)\n\n## Decision\n**We will use [Structure101 Studio for Java](https://structure101.com/products/studio/) for displaying, exploring, and ad-hoc monitoring inter-module dependencies.**\n\n**We will use the [ArchUnit](https://www.archunit.org/) library for checking inter-module dependencies.**\n\nStructure101 Studio is an excellent tool for visualizing and exploring bytecode-level dependencies between software artifacts. To quickly get an overview of dependencies between project modules, it\nis enough to click on a module in an appropriate view, as is shown in a picture below.\n\n![Image 1 - Revealed dependencies in Structure101 Studio](images/ADR0009-01-revealed-dependencies.jpg0.jpg \"Image 1 - Revealed dependencies in Structure101 Studio\") <br/>\n*Image 1 - Revealed dependencies in Structure101 Studio*\n\nAlthough Structure 101 is very useful for visualization, exploration, and time-to-time monitoring of dependencies, we are still missing automated dependency checks. We can implement them by\nleveraging the ArchUnit library.\n\nAs an example, take a look at the `BookingCommandSideAppDependenciesSpecification` test. It is checking dependencies for the `cargotracking-booking-app-commandside` module. After a closer look,\nit can be seen that we are testing dependencies displayed in the picture above. This is very convenient since we can use the Structure101 diagram as direct input for our test.\n\n`BookingCommandSideAppDependenciesSpecification` test is a basic test since it enumerates all dependencies of a module without any additional criteria. Of course, the test can be expanded to verify\nmore precise details if needed.\n\n## Consequences\n### Positive\n* Dependencies of project modules are actively monitored and tested.\n* With tests in place, it is much harder to introduce accidental dependencies.\n* Dependencies are checked with each build.\n\n### Negative\n* Structure101 Studio for Java is a commercial product.\n\n### Neutral\n* Using Structure101 and writing tests for dependencies requires some learning.\n\n## Considered Options\n* Not to test inter-module dependencies.\n\n## References\n* [ADR-0008 - Testing Architecture](0008-testing-architecture.md)\n* [Structure101 Studio for Java](https://structure101.com/products/studio/)\n* [ArchUnit](https://www.archunit.org/)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "images/ADR0009-01-revealed-dependencies.jpg0.jpg"
+   ],
+   "implementation": {
+    "sha": "217d193fae2dd6c532ce027e9f4047020b9733b8",
+    "date": "2020-11-04T15:23:24+01:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "support/documentation/adr/content/images/ADR0009-01-revealed-dependencies.jpg0.jpg"
+    ]
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0013-validation-taxonomy.md",
+   "identity": "support/documentation/adr/content/0013-validation-taxonomy.md",
+   "adr_id": "13",
+   "title": "ADR-0013 - Validation taxonomy",
+   "first_commit": "2021-04-15T19:23:27+02:00",
+   "first_sha": "64e27957d88588faaf6a6f9b14a0eeed247e9a93",
+   "last_commit": "2023-08-02T21:49:28+02:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# ADR-0013 - Validation taxonomy\n* **Status: accepted**\n* Dates: proposed - 2021-04-15\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nWith today's technologies and frameworks, validation of input data looks like a solved problem. You just add few annotations on DTOs (Data Transfer Objects), hook up the validation service with the\napp, and move on.\n\nHowever, there are much more under the cover. When digging into the details, various questions pop up. Where exactly is the best place for input data validation? Are there multiple levels or phases\nof validation? What if we need a system state for validation? What happens when numerous inbound channels are in play?\n\nAfter trying to answer these, it turns out that validation is more involved than what is commonly shown in basic examples. Solutions are not too complex but require establishing some principles and\nrules.\n\n### Architectural Context\n* System (`klokwrk-project`)\n\n## Decision\n**We will execute syntactic validation at the application facade layer. If necessary for UI requirements, it may also be executed on the adapter layer.**\n\nCore validation at the application facade layer ensures that input data from any inbound channel will be validated in the same way. An example can be seen in `BookingOfferCommandApplicationService`\nclass from `cargotracking-booking-app-commandside` module.\n\nValidation at the inbound channel adapter layer is used when there is a need for UI or client-specific validations. A typical example is an email verification scenario where, with repetition, we want\nto assure that the user submitted the correct email.\n\n**We will organize validation into syntactic and semantic phases. Each of them will be divided further into subphases if necessary.**\n\n**We will execute semantic validation inside the domain layer. Depending on nature, this will happen either in the aggregate or in the application facade.**\n\n### Syntactic validations\nWe consider validation being syntactic if it does not require any system state. It validates input data fields in isolation and possibly some interdependencies between them (cross-field validation).\nSyntactic \"stateless\" validations are executed first. If they fail, semantic validations won't be triggered at all.\n\n### Semantic validations\nOn the other hand, semantic validation requires access to the system state. It may deal with checking if, for the current aggregate state, the request is valid or not. It may also check some other\nnon-aggregate conditions, such as the existence of necessary data in registries. We are reporting semantic validation failures as domain exceptions.\n\nRegarding the order, it is advisable to group and execute all non-aggregate-related validation first (checking against registry data, for example). Such validations do not require transactional\naggregate locking. They may use the transaction but must not have the aggregate in that transaction. Only if they pass, we should proceed with validations that require opening a transaction for the\naggregate (for example, if input data are valid for the current aggregate state).\n\n### Syntactic validation subphases\nWe can divide syntactic validation into several internal phases. Those phases are ordered from the simplest to the more complex - existence, size, lexical content, and syntax format.\n\nExistence validation ensures that provided data exist and are not empty. Further processing makes no sense when data is empty. In this subphase, we check for null objects, empty strings (zero-length\nor whitespace only), empty collections, etc.\n\nSize validation verifies if data are reasonably big. Before further phases, we are checking the length/size of input data no matter od the data type. Size checks will prevent additional processing of\ntoo big data, which might cause performance issues. Also, reporting about size failures might be helpful from the user perspective as it is a widespread mistake.\n\nLexical content validation checks if data contain the correct characters and encoding. This phase might be helpful if we are receiving the data in complex formats like JSON, XML, or HTML. For simpler\ndata inputs like size-limited strings, this phase is commonly executed as a part of the following stage.\n\nSyntax format validation verifies if the format is correct. For strings, this is often achieved with regular expressions. When regex is too complicated, we might get better results with specialized\nvalidator implementations.\n\nWe are reporting syntactic validation failures through means of an employed validation framework. As we are using JSR 380 (Jakarta Bean Validation 2.0) implementation, syntactic validation failures\nare reported through `jakarta.validation.ConstraintViolationException`. With JSR 380, we are implementing syntactic validation ordering with `GroupSequence` annotation, as demonstrated by\n`BookCargoCommandRequest` class from `cargotracking-booking-app-commandside` module.\n\n## Consequences\n### Positive\n- Consistency and predictability in validation handling and processing.\n\n### Negative\n- None.\n\n## Considered Options\n- None.\n\n## References\n- Manning - Secure by Design (https://www.manning.com/books/secure-by-design), Chapter 4.3: Validation\n- Domain-Driven Hexagon - https://github.com/Sairyss/domain-driven-hexagon#types-of-validation\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0010-integration-testing-with-containerized-infrastructure.md",
+   "identity": "support/documentation/adr/content/0010-integration-testing-with-containerized-infrastructure.md",
+   "adr_id": "10",
+   "title": "ADR-0010 - Integration Testing with Containerized Infrastructure",
+   "first_commit": "2020-11-05T10:27:29+01:00",
+   "first_sha": "09f99c793976177dd27ae2afe6bb0b52f5aee2b7",
+   "last_commit": "2022-06-30T08:58:05+02:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# ADR-0010 - Integration Testing with Containerized Infrastructure\n* **Status: accepted**\n* Dates: proposed - 2020-11-05\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nIntegration testing is commonly used in contemporary development. Frameworks like Spring and Spring Boot makes integration testing seamless, and it often looks like plain unit testing in terms of\nsimplicity and speed of execution.\n\nHowever, the way that integration tests are used today commonly exercises only integration between internal application components (e.g., integration between controllers and services, integration\nbetween services and domain objects, configuration correctness, etc.). If the tests require some external infrastructure, it is usually mocked out or replaced by alternative in-memory variants.\nInternal application integration tests are important, but they do not cover integration with realistic external infrastructure.\n\nAs containerized solutions (e.g., Docker) are a norm today, there is an obvious opportunity to use containerized infrastructure in our integration tests. There is a lot of value in such tests since\nthe infrastructure is (almost) the same as it will be in the production.\n\nThe most obvious examples are databases. A typical pattern in integration tests is to use an in-memory database, for example, H2. Although very convenient, it is not a real database as it will be in\nproduction. It will not behave like an actual database either in a functional (SQL dialect) or non-functional (security, performance) way. If our production uses, say, the PostgreSQL database, it\nwill be much better to use that same database in integration tests.\n\nIf we look at other non-database examples of infrastructure components, say some modern messaging system, we will probably encounter no in-memory equivalent exists. In these cases, infrastructure in\nintegration tests is usually mocked at something like the repository layer, and we end up with tests that do not exercise infrastructure at all. Not even inadequate in-memory replacement.\n\n### Architectural Context\n* System (`klokwrk-project`)\n\n## Decision\n**We will use the [Testcontainers](https://www.testcontainers.org/) library and Docker for implementing realistic integration tests whenever it makes sense.**\n\nTestcontainers relies on Docker for spawning required infrastructure during integration testing. Therefore, Docker must be available on a system where tests execute. Depending on the concrete\nexternal component, starting up the container can require non-negligible time, which can prolong test execution time.\n\nFor those reasons, we will use Testcontainers library only in scenarios when a realistic external structure is really required or when having it significantly simplifies tests (e.g., when mocking\nexternal infrastructure is complex).\n\nWe must reuse containerized infrastructure whenever we can and run as much as possible test suites on the same container instances. It would be inefficient to start new containers, say, for each\nrelated test class. We can achieve it with the Testcontainers library by creating abstract parent test classes that start up containers via static initializers.\n\nOf course, when we already have Testcontainers based tests that spawn relevant infrastructure components, we can reuse it for tests that otherwise will be simple internal application integration\ntests. Test execution time should not extend significantly.\n\nRunning unit tests and internal application component integration tests must be separate from running containerized integration tests. Each category of tests needs to have a different execution\ncommand. That way, we can trigger containerized tests only when appropriate.\n\nAs an example, take a look at `AbstractCommandSideIntegrationSpecification` abstract class, and related test classes `BookingOfferCommandWebControllerIntegrationSpecification` and\n`AbstractBookingOfferCommandApplicationServiceIntegrationSpecification`.\n\n## Consequences\n### Positive\n* Integration tests use realistic infrastructure components.\n\n### Negative\n* Integration tests execution time is extended.\n\n### Neutral\n* Have to use containerized tests selectively, taking into account test execution time.\n\n## Considered Options\n* Mocked infrastructure.\n* Alternative in-memory replacements of infrastructure components.\n\n## References\n* [Testcontainers](https://www.testcontainers.org/)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0016-handling-UTC-timestamps-in-the-application-and-relational-database.md",
+   "identity": "support/documentation/adr/content/0016-handling-UTC-timestamps-in-the-application-and-relational-database.md",
+   "adr_id": "16",
+   "title": "ADR-0016 - Handling UTC timestamps in the application and relational database",
+   "first_commit": "2022-03-31T10:07:29+02:00",
+   "first_sha": "2cde2f6b691bc0cd8a29deb6a3a94fc33314efc9",
+   "last_commit": "2022-03-31T10:07:29+02:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR-0016 - Handling UTC timestamps in the application and relational database\n* **Status: accepted**\n* Dates: proposed - 2022-04-06\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nHandling time with time zones is not the easiest task in Java. There are many reasons for that, but we can probably relate all of them to the history of date/time API evolution on the JVM. The new\nJava date/time API introduced in Java 8 was a big step forward in explicitness and correctness. But unfortunately, the API itself is quite complex and requires careful study to use it correctly.\nMoreover, adding the database to the picture makes things even more difficult since we have additional players like JDBC driver, ORM frameworks like Hibernate, and the database itself. And those new\nplayers can have their own ideas and nuances with date/time handling.\n\nWhen dealing with timestamps in the application and the database, using the UTC zone is standard best practice and a sensible approach. Ideally, neither the application nor the database will depend\nanymore on the local time zones in which they execute. Then we can freely move executables between time zones (quite common in today's cloud era), and they will always function correctly.\nFurthermore, UTC has a few additional advantages. It is the primary time standard and a base reference that regulates the world clocks and time. It is stable since it never changes because of\ndaylight saving time (DST), and it has a standard textual representation parsable at any platform without ambiguity.\n\n### Modeling UTC timestamps at the application level\nIn Java 8 date/time API, there are a few classes that we can use to represent UTC timestamp:\n* `java.time.Instant`<br/>\n  `Instant` represents a single moment, a specific point in time at the UTC timeline. Therefore, it can not be misinterpreted or confused with any other moment in the history. In short, it is the\n  simplest and probably the best choice to model UTC timestamps at the application level.\n* `java.time.OffsetDateTime`<br/>\n  `OffsetDateTime` can be perceived as an `Instant` generalization. `OffsetDateTime` also models a single moment in time but also includes a configurable offset relative to the UTC. Therefore,\n  `OffsetDateTime` with the offset of `+00` is the logical equivalent of the `Instant`.\n* `java.time.LocalDateTime`<br/>\n  `LocalDateTime` is often misused for modeling UTC timestamps. The problem is that `LocalDateTime` does not represent a single moment in time. Rather it represents a wallclock time which is always\n  highly coupled to the time zone in which that conceptual wallclock is running. Depending on the time zone, it stands for 24+ different moments, all simultaneously. Of course, it can be attached to\n  the UTC time zone, but its strong relation to the local time zone will always pop up in one way or the other. There are some usages where this might be considered an advantage, but `LocalDateTime`\n  should generally be avoided for modeling UTC timestamps.\n\nThere is also a `ZonedDateTime` class which brings in all the nuances of time zone handling from the real world. For example, `ZonedDateTime` handles daylight saving time (DST), including tracking\nthe latest political decisions about it. Conceptually, however, `ZonedDateTime` is just an `Instant` with the assigned `ZoneId`. As such, it is not the best choice for storing UTC timestamps but\nmight be handy for other use cases like presenting the timestamp in the user's time zone.\n\nFor the reasons described above, we are choosing `java.time.Instant` for modeling the UTC timestamps.\n\nLet's discuss now how Hibernate 5 handles the `Instant`.\n\n### UTC timestamps with Hibernate 5 and `timestamp` columns\nIn the following discussion, we assume the PostgreSQL database usage and its corresponding JDBC driver. Internal workings might be different for other databases, but the general mechanism should be\nquite similar.\n\nFor mapping an `Instant` to the database, Hibernate 5 uses `java.sql.Timestamp`. When writing to the database, Hibernate 5 converts an `Instant` into `java.sql.Timestamp` and passes that `Timestamp`\nto the JDBC driver. By default, Hibernate 5 will do this via `PreparedStatement.setTimestamp(int, Timestamp)` method (the same mechanism is used for `OffsetDateTime` and `LocalDateTime`). Note that\nthere is also a more appropriate `PreparedStatement.setTimestamp(int, Timestamp, Calendar)` method, but Hibernate will not use it unless we explicitly configure the time zone for Hibernate to use\nwhen communicating with the database.\n\nNext, the JDBC driver converts `java.sql.Timestamp` into the string representation. The last part of that string is time zone offset. Since we are using the `setTimestamp()` method with two\nparameters, an explicit time zone is not provided, and the JDBC driver uses the local application's time zone to calculate the offset.\n\nAlthough it may look like the local time zone will cause issues, we are still on the good path. The problem really happens when the targeted database column can not accept time zone offset\ninformation (i.e., the `timestamp` column). If this is the case, the offset part of the string is simply discarded. That loss of the time zone offset is the leading cause of all problems because we\nhave just written the local application timestamp into the database.\n\nWhen reading from the database, Hibernate 5 uses `ResultSet.getTimeStamp(String)` method. Again, there is also a `ResultSet.getTimeStamp(String, Calendar)` method, but it is not used unless we\nexplicitly configure Hibernate to do so. Therefore, the JDBC driver will interpret fetched string from the database as a `Timestamp` with the local application's time zone. Finally, Hibernate\nconverts the passed `Timestamp` into the `Instant` via epoch seconds and hands over the `Instant` to the application.\n\nIronically, everything seems to work correctly from the application perspective. Ok, there is a wrong timestamp written in the database, but the application works. Right? Well, it will work until you\nmove it to another time zone. If this happens, previously recorded timestamps will be invalid from the application perspective, and the new ones will be stored as shifted relative to the old ones.\nIn other words, your application and your data are invalid now.\n\n### `timestamp` vs `timestamptz`\nThe standard SQL data type of `timestamp` is commonly misused for columns intended to store UTC timestamps. Unfortunately, the `timestamp` SQL data type cannot keep time zone offset information which\nis evident if you consider its full name - `timestamp **without** time zone`. If the database supports it, we should always use the SQL type of `timestamp **with** time zone` to preserve the time\nzone offset.\n\nIn PostgreSQL `timestamp` stands for `timestamp without time zone` data type while `timestamptz` describes `timestamp with time zone`. Going further, I will use PostgreSQL data type names for brevity.\n\nWe can avoid the problem described in the previous section simply by using `timestamptz` columns instead of `timestamp` columns. Even if we move the application and/or the database into other time\nzones, they will continue to work correctly. But few drawbacks still remain.\n\nFirst, we don't have a setup that works for both `timestamptz` and `timestamp` columns. We should avoid this if possible.\n\nSecond, when we are using some kind of database viewer tool, the `timestamptz` columns will display data in the local time zone of the database. The data is correct as it includes the offset, but we\nalways have to convert to UTC in our heads.\n\nFinally, if we rely on direct query execution (without Hibernate or JDBC driver mediation), the database can display results in its own local time zone. For example, PostgreSQL internally stores\n`timestamptz` in UTC format. However, for all display and direct query purposes, it will always convert the UTC timestamp into the local time zone of the database before displaying the results.\n\n### Fixing inconsistencies\nWe can fix the issues with the `timestamp` columns by instructing Hibernate to use the UTC time zone for handling timestamps. To do this, we can leverage the `hibernate.jdbc.time_zone` configuration\nproperty. For example, in the Spring Boot application, we can put the following line in the `application.properties` file:\n\n    spring.jpa.properties.hibernate.jdbc.time_zone=UTC\n\nWith this configuration set, Hibernate will use `setTimestamp()` and `getTimestamp()` methods with the `Calendar` parameter where that `Calendar` instance is created for the configured UTC time zone.\n\nTo avoid issues with direct queries and data display in database management tools, we should configure UTC as the database's default time zone. The exact procedure is highly dependent on the concrete\ndatabase, but for PostgreSQL, you can examine `support/docker/postgres/postgresql.conf` and `support/docker/docker-compose-infrastructure.yml` files in the `klokwrk-project`.\n\nThere is one more thing to be aware of. When using database management tools for exploring the data, not all tools will correctly display the content of `timestamptz` columns. In my experience,\npgAdmin and IDEA database tools work correctly. For DBeaver, you should configure UTC as a local time zone. And in the case of DBVisualizer, there is currently no support for distinguishing between\n`timestamp` and `timestamptz` columns, and unfortunately, the same display format is used for both data types.\n\n## Architectural Context\n* System (`klokwrk-project`)\n\n## Decision\n**We will use the following recommendations for handling UTC timestamps:**\n- Use `java.time.Instant` as a type for modeling UTC timestamps\n- Configure Hibernate with UTC time zone to be used when handling `java.sql.Timestamp` (via `hibernate.jdbc.time_zone` configuration property)\n- Configure default time zone of the database to the UTC time zone\n- In PostgreSQL, use `timestamptz` SQL data type for UTC timestamp columns\n\n## Consequences\n### Positive\n- Consistent, correct and unambiguous handling of UTC timestamps.\n- At all system levels it is obvious what the timestamp represents.\n- It is much harder to misinterpret timestamp as anything else then UTC timestamp.\n\n### Neutral\n- Requires (minimal) changes in the infrastructure like configuring a default database time zone\n\n### Negative\n- With already existing data present, it might require data migration.\n\n## Considered Options\n- Ignoring the problem.\n\n## References\n- https://stackoverflow.com/questions/32437550/whats-the-difference-between-instant-and-localdatetime/32443004#32443004\n- https://wiki.postgresql.org/wiki/Don't_Do_This#Date.2FTime_storage\n- https://www.toolbox.com/tech/data-management/blogs/zone-of-misunderstanding-092811/\n- https://medium.com/building-the-system/how-to-store-dates-and-times-in-postgresql-269bda8d6403\n- https://kaiwern.com/posts/2021/07/20/what-you-need-to-know-about-postgresql-timezone/\n- https://kb.objectrocket.com/postgresql/postgresql-set-time-zone-1064\n- https://vladmihalcea.com/how-to-store-date-time-and-timestamps-in-utc-time-zone-with-jdbc-and-hibernate/\n- https://vladmihalcea.com/date-timestamp-jpa-hibernate/\n- https://vladmihalcea.com/whats-new-in-jpa-2-2-java-8-date-and-time-types/\n- https://github.com/hibernate/hibernate-orm/blob/main/hibernate-core/src/main/java/org/hibernate/type/descriptor/jdbc/InstantAsTimestampWithTimeZoneJdbcType.java\n- https://github.com/hibernate/hibernate-orm/blob/main/hibernate-core/src/main/java/org/hibernate/type/descriptor/jdbc/TimestampWithTimeZoneJdbcType.java\n- https://www.timeanddate.com/worldclock/converter.html\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "support/docker/postgres/postgresql.conf",
+    "support/docker/docker-compose-infrastructure.yml",
+    "github.com/hibernate/hibernate-orm/blob/main/hibernate-core/src/main/java/org/hibernate/type/descriptor/jdbc/InstantAsTimestampWithTimeZoneJdbcType.java",
+    "github.com/hibernate/hibernate-orm/blob/main/hibernate-core/src/main/java/org/hibernate/type/descriptor/jdbc/TimestampWithTimeZoneJdbcType.java",
+    "www.timeanddate.com/worldclock/converter.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0015-handling-exceptions-in-distributed-cqrs-system.md",
+   "identity": "support/documentation/adr/content/0015-handling-exceptions-in-distributed-cqrs-system.md",
+   "adr_id": "15",
+   "title": "ADR-0015 - Handling Exceptions in Distributed CQRS System",
+   "first_commit": "2021-08-10T08:44:15+02:00",
+   "first_sha": "b172443aa57930dbdcdfdc8b1b7bae3ca559cfd7",
+   "last_commit": "2022-01-17T09:56:49+01:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# ADR-0015 - Handling Exceptions in Distributed CQRS System\n* **Status: accepted**\n* Dates: proposed - 2021-08-10\n* Dates:\n  - proposed - 2021-08-10\n  - updated - 2022-01-17\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nDevelopers consider dealing with local (runtime) exceptions in JVM quite convenient and easy. As a consequence, exceptions are often used as a means for an alternative execution flow. One typical\nexample is reporting structural and business validation violations.\n\nIn the local JVM environment, expected execution flow exceptions are usually created with a full stack trace included. However, as these exceptions represent \"normal\" conditions, creating a full\nstack trace is wasteful in terms of performance and resources.\n\nThe full stack trace problem is additionally emphasized in a distributed JVM environment. Not only the stack trace creation is wasteful, but it will take much more bandwidth to transfer it on the\nother side.\n\nAnd finally, in a distributed JVM environment, we cannot safely assume that our custom exception classes are present in the classpath of both JVMs. Therefore, we can not assume the exception created\non the server-side can be deserialized on the client.\n\nTo remedy the situation, we can use a small number of stack-less exception classes shared between JVMs included in the communication. They belong to the boundary layer and are part of the API used\nfor distributed communication. To read more about boundary layer, take a look near the end of \"Domain libraries\" section in\n\"[Organizing modules and packages](../../article/modules-and-packages/modulesAndPackages.md#domain-libraries)\" article.\n\nFor communicating various custom exceptions, we can use violation (or error) codes. The violation code defines its severity and contains several additional properties for describing violation details.\n\n### Architectural Context\n* System (`klokwrk-project`)\n\n## Decision\n**For distributed error reporting, we will use stack-less exceptions for communicating custom error codes between JVMs in a distributed Axon environment.**\n\nIn a distributed Axon environment, the dispatching side (let's call it a client) sends commands and queries over Axon Server to the handling side (let's call it a server). When the handling side\ndetects broken business invariants, it can raise an exception to report the details to the dispatching side.\n\nAxon framework already contains base infrastructure for reporting such distributed errors via so-called exception details. Exception details can be any DTO-like class shared between communicating\nparties, including all necessary data describing error conditions.\n\n### Decision details\n#### Business exception handling\nIn our case, as exception details DTO, we will use the `DomainException` class and its descendants. It is a stack-less exception that carries `ViolationInfo` property. `ViolationInfo` contains\n`Severity` and `ViolationCode` properties. `ViolationCode` contains `code` and `codeMessage` in English. There are also a `resolvableMessageKey` and `resolvableMessageParameters` that support error\ncode resolving through a resource bundle for internationalization purposes.\n\nIt is worth noting that `DomainException` can be used on the dispatching side (client) too. Exception (un)wrapping on the handling side and centralized exception handling on the dispatching side are\nhidden in infrastructural code. From the developer's perspective, he works with `CommandException` or `QueryException` only (both are extended from `DomainException`). This is a nice addition as\nbusiness invariants are handled the same way on handling and dispatching sides, without depending on classes from the Axon framework.\n\nAs a usage example on the handling side, take a look at `BookingOfferAggregate` or `BookingOfferSummaryQueryHandlerService` classes. An example for the dispatching side can be found in\n`BookingOfferFactoryService` class.\n\n#### Unexpected exception handling\nWhen handling business exceptions, we are not interested in stack traces. Since business exceptions are just a form of the alternate execution flow, there isn't much benefit in logging their\nstacktrace.\n\nContrary, we want to log the stack trace when an unexpected exception (i.e., NullPointerException) occurs at the remote handler. However, communication constraints still hold, and we still have to\nuse error codes for communicating exceptions. Further, to correlate exceptions on handling and dispatching sides, we must use an exception identifier and put it in the log messages on both sides.\n\nThe logic of handling unexpected exceptions on the handling side can be seen in the `CommandHandlerExceptionInterceptor` and `QueryHandlerExceptionInterceptor` classes.\n\n## Consequences\n### Positive\n- consistent and optimal handling of remote business exceptions\n- consistent and optimal handling of remote unexpected exceptions\n- identical handling of local and remote business exceptions for developers\n- correlation of remote unexpected exceptions\n\n### Neutral\n- a bit unusual way of constructing exceptions\n\n### Negative\n- n/a\n\n## Considered Options\n- n/a\n\n## References\n- Organizing modules and packages (https://github.com/croz-ltd/klokwrk-project/blob/master/support/documentation/article/modules-and-packages/modulesAndPackages.md)\n- Steven van Beelen - Live coding session: Axon 4.4 in practice (start time: 29:25) (https://www.youtube.com/watch?v=UcmxyEjbzf4&t=1765s)\n- Steven van Beelen - Live coding session: Axon 4.4 in practice - sample code (https://github.com/smcvb/gamerental)\n- Axon Reference Guide - Exception Handling (https://docs.axoniq.io/reference-guide/axon-framework/messaging-concepts/exception-handling)\n- The Exceptional Performance of Lil' Exception (https://shipilev.net/blog/2014/exceptional-performance/)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/../article/modules-and-packages/modulesAndPackages.md",
+    "github.com/croz-ltd/klokwrk-project/blob/master/support/documentation/article/modules-and-packages/modulesAndPackages.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0014-commit-message-format.md",
+   "identity": "support/documentation/adr/content/0014-commit-message-format.md",
+   "adr_id": "14",
+   "title": "ADR-0014 - Commit Message Format",
+   "first_commit": "2021-05-10T15:37:12+02:00",
+   "first_sha": "4d905cca42cf952608cda17f961687280c76b861",
+   "last_commit": "2021-07-17T21:42:00+02:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR-0014 - Commit Message Format\n* **Status: accepted**\n* Dates: proposed - 2021-05-10\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nUsing commit messages without any structure looks convenient for developers as they do not have to think about messages too much. Unfortunately, that freedom and lack of thinking can impose some\nadditional burden on long-term project maintenance.\n\nQuite often, we can find incomprehensible commit messages that do not communicate anything useful. Hopefully, imposing some lightweight rules and guidance will help developers create commit messages\nthat are helpful for their colleagues.\n\nIn addition, with unstructured commit messages, there is much less opportunity to introduce any tools on top of commit history. For example, we would like to employ an automated changelog generator\nbased on extracting some semantical meaning from commits, but this will not work if commit messages lack any structure. Without the commit message structure, we can just dump the commit log in the\nchangelog, which does not make the changelog more helpful than looking at the history of commits in the first place.\n\n### Architectural Context\n* System (`klokwrk-project`)\n\n## Decision\n**We will use a customized [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) format for writing commit messages.**\n\nConventional commits format is nice and short and defines the simple structure that is easy to learn and follow. Here is basic structure of our customized conventional commits format:\n\n      <type>(optional <scope>): <description> {optional <metadata>}\n\nOur customization:\n- defines additional message types as an extension of [types defined by the Angular team](https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#-commit-message-guidelines)\n- allows adding additional metadata in the message title if useful and appropriate (see details section for more info)\n- requires format compliance only for messages of \"significant\" commits (see details section for more info)\n\n### Decision details\nDetails about the decision are given mainly as a set of strong recommendations (strongly recommended) and rules enforced by tooling (rule). In our case, the tooling is implemented as git commit hooks.\nEvery contributor should install git hooks provided in this repository. That can be done with following command (executed from the project root):\n\n    git config core.hooksPath support/git/hooks\n\nThere might be cases when implemented rules are not appropriate and should be updated or removed or just temporarily ignored. In such scenarios, hooks can be skipped with git's `--no-verify` option.\n\nWhile describing details, following terms are used as described:\n- *commit message title*: refers to the first line of a commit message\n- *commit message description*: refers to the part of the title describing a commit with human-readable message. In conventional commits specification that part is called `description`.\n\n#### General guidance and rules for all commit messages\n- (strongly recommended) - avoid trivial commit messages titles or descriptions\n- (strongly recommended) - use imperative mood in title or description (add instead of adding or added, update instead of updating or updated etc.) as you are spelling out a command\n- (rule) - message title or description must start with the uppercase letter <br/>\n  <br/>\n  The main reason is a desire for better readability as we want easily spot the beginning message description or title. There are some arguments for using the lowercase like \"message titles are not\n  sentences\". While this is true, we prefer to have better readability than comply with some vague constraints.<br/>\n  <br/>\n- (rule) - message title or description should not end with common punctuation characters: `.!?`\n- (strongly recommended) - message title or description should not be comprised of multiple sentences\n- (rule) - message title should not be longer than 120 characters. Use the message body if more space for description is needed<br/>\n  <br/>\n  Actually, there is a common convention that we should not use more than 69 characters in the message title. It looks like the main reason for it is that GitHub truncates anything above 69 chars\n  from message titles. Having such a tight constraint seems unreasonable today, and the apparent shortcomings of any tool shouldn't restrict us, even if the tool is GitHub.<br/>\n  <br/>\n- (strongly recommended) - commit message title or description should describe \"what\" (and sometimes \"why\"), instead of \"how\"<br/>\n  <br/>\n  For describing \"why\", the message body is more appropriate as we have more space there. If needed, the message body may contain \"how\" too, but it should be clearly separated (at least with a blank\n  line) from \"what\" and \"why\".<br/>\n  <br/>\n- (recommended) - commit message title should provide optional scope (from conventional commit specification) if applicable\n  - if commit refers to multiple scopes, scopes should be separated with `/` character\n  - if commit refers to the work which influences the whole project, the scope should be `project` or it can be left out\n  - the scope should be a single word in lowercase<br/>\n  <br/>\n- (strongly recommended) - message body must be separated from message title with a single blank line\n- (option) - message body can contain additional blank lines\n- (recommended) - message body should not use lines longer than 150 characters\n- (strongly recommended) - include relevant references to issues or pull request to the metadata section of message title<br/>\n  <br/>\n  Example: `feat(some-module): Adding a new feature {m, fixes i#123, pr#13, related to i#333, resolves i#444}`<br/>\n  <br/>\n- (option) - include relevant feature/bug ticket links in message footer according to conventional commits guidelines<br/>\n  <br/>\n  Footer is separated from body with a single blank line.\n\n#### Guidance and rules for \"normal\" commits to the main development branch\n- (rule) - all commits to the main development branch must have a message title in customized conventional commit format\n\n#### Guidance and rules for merge commits to the main development branch\nWhen used with [semi-linear commit history](./0007-git-workflow-with-linear-history.md), merge commits are the primary carriers of completed work units. As such, they are the most interesting for\ncreating a changelog.\n\nBefore merging, merge commits must be rebased against main development branch, and merging must be executed with no-fast-forward option (`--no-ff`).\n\n- (rule) - merge commits must have 'merge' metadata (`{m}`) present at the end of the title <br/>\n  <br/>\n  That way, merge commits can be easily distinguished on GitHub and in the changelog.\n- (option) - merge commit metadata can carry additional information related to the issues and PRs references like in the following example\n\n      feat(klokwrk-tool-gradle-source-repack): Adding a new feature {m, fixes i#123, pr#13, related to i#333, resolves i#444}\n\n  Here, `i#123` is a reference to the issue, while `pr#12` is a reference to the pull request. Additional metadata are not controlled or enforced by git hooks.\n\n#### Guidance and rules for normal commits to the feature branches\n- (option) - normal commits don't have to follow custom conventional commits format for message title\n- (strongly recommended) - normal commits should use conventional commits format when contained change is significant enough on its own to be placed in the changelog\n\nWhen all useful changelog entries are contained in normal commits of a feature branch, we can do two different things depending on the situation:\n  - use merge commit with type of `notype`. Such merge commit will be ignored when creating a changelog.\n  - merge a branch with fast-forward option (no merge commit will be present)\n\nPreferably, use `notype` merge commits, as they are still useful for clear separation of related work.\n\n#### Types for conventional commits format\n- common (angular)\n    - `feat` or `feature` - a new feature\n    - `fix` - a bug fix\n    - `docs` - documentation only changes\n    - `style` - changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)\n    - `test` - adding missing tests or correcting existing tests\n    - `build` - changes that affect the build system or external dependencies\n    - `ci` - changes to our CI configuration files and scripts\n    - `refactor` - a code change that neither fixes a bug nor adds a feature\n    - `perf` - a code change that improves performance\n    - `chore` - routine task\n\n\n- custom\n    - `enhance` or `enhancement` - improvements to the existing features\n    - `deps` - dependencies updates (use instead of `build` when commit only updates dependencies)<br/>\n      <br/>\n      There are two main scenarios when upgrading dependencies, a simple version bump and the more involved upgrade requiring resolving various issues like compilation errors, API upgrades, etc.<br/>\n      <br/>\n      Simple version bumps should be contained in a single individual commit with a description message starting with the word \"Bump\". For example: `deps: Bump Micronaut to 2.5.2 version`.<br/>\n      <br/>\n      More complicated upgrades should be organized as feature branches where each non-conventional commit resolves a single step in the process. When finished, the feature branch should be merged\n      into the main development branch with a description starting with the word \"Upgrade\". For example: `deps: Upgrade Spring Boot to 2.5.0 version {m}`.<br/>\n      <br/>\n    - `task` - same meaning as `chore`. Prefer using `task`.\n    - `article` - use instead of `docs` when changes are related only to articles\n    - `misc` - anything that does not fit into previous categories\n    - `notype` - only for merge commits in situations where contained plain commits carries all relevant types and merge commit doesn't add anything useful. It is ignored in changelog.<br/>\n      <br/>\n      Typical example is when we are updating number of dependencies through commits in a feature branch. In this situation each feature branch commit should contain updates to a single dependency\n      and communicate the update through its own commit message in conventional commit format. When all updates in the branch are tested, we can merge them in the main branch. However, that merge\n      should be ignored by changelog as it does not communicate anything new.\n\n## Consequences\n### Positive\n- facilities thinking about commit messages at they should provide useful changelog information\n- facilities thinking about organizing feature branches. If we have too many conventional commits in a single branch, maybe we should separate it into two or more.\n- when applied consistently, provides basis for automating changelog creation\n\n### Neutral\n- while adopting, it may be hard to come up with an appropriate message title or description\n\n### Negative\n- additional expectation and responsibility for developers\n\n## Considered Options\n- not prescribing the commit message format\n\n## References\n- Conventional Commits Specification v1.0.0 (https://www.conventionalcommits.org/en/v1.0.0/)\n- Commit Message Guidelines for Angular (https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#-commit-message-guidelines)\n- ADR-0007 - Git Workflow with Linear History\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#13",
+     "kind": "pull",
+     "url": "",
+     "number": "13"
+    },
+    {
+     "key": "#12",
+     "kind": "pull",
+     "url": "",
+     "number": "12"
+    }
+   ],
+   "mentioned_paths": [
+    "www.conventionalcommits.org/en/v1.0.0",
+    "github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md",
+    "/0007-git-workflow-with-linear-history.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0007-git-workflow-with-linear-history.md",
+   "identity": "support/documentation/adr/content/0007-git-workflow-with-linear-history.md",
+   "adr_id": "7",
+   "title": "ADR-0007 - Git Workflow with Linear History",
+   "first_commit": "2020-11-03T20:48:56+01:00",
+   "first_sha": "bb3b7660797d085d602e7dfb6499ec4c10fa6c9d",
+   "last_commit": "2021-05-10T15:37:12+02:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR-0007 - Git Workflow with Linear History\n* **Status: accepted**\n* Dates:\n  - proposed - 2020-11-03\n  - updated - 2021-05-10\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nThe value of tidy and [semi-linear commit history](https://fangpenlin.com/images/2013-09-30-keep-a-readable-git-history/source_tree_new_branch_rebase_merge.png) is often overlooked in many Git-based\nprojects. This is unfortunate since non-linear git commit history might be a [horrible mess](https://tugberkugurlu.blob.core.windows.net/bloggyimages/d773c1fe-4db8-4d2f-a994-c60f3f8cb6f0.png) that\ndoes not provide any useful information. We want to use as simple as possible git workflow that promotes and ensures a semi-linear history.\n\n> * **Semi-linear** commit history usually refers to a history that uses merge commits (git \"no-fast-forward\" merge option) to clearly denote which commits are meant to be together and represent a\n>   coherent whole.\n> * **Linear** commit history usually refers to completely flat history (git default \"fast-forward\") where it is impossible to tell at first glance which commits belong together.\n\nWhen working on individual features, related git commits can be organized either as \"work log\" or as a \"recipe\". When working in a team, it is crucial that team members and/or reviewers can easily\ncomprehend what is going on in a particular feature. For this reason, we prefer features to be organized as \"recipes\".\n\n> * **Work log** style of organizing feature commits refers to the style without any organization. Commits are added solely as they are developed through time.\n> * **Recipe** style of organizing feature commits refers to the style where commits have a sensible organization where peer developers can clearly see and learn how the feature is created. This\n>   style requires some additional work as its primary goal is communication, instead of just implementing a feature.\n\nVery often, in bigger teams, common git workflows have a problem of broken continuous integration builds. We want to embrace and use as simple as possible workflow that resolves that problem.\n\nChosen git workflow should seamlessly support release versioning and, if needed, related work on release branches.\n\n### Architectural Context\n* System (`klokwrk-project`)\n\n## Decision\n**We will use a [stable mainline branching model for Git](https://www.bitsnbites.eu/a-stable-mainline-branching-model-for-git/).** It\n[supports semi-linear Git history](https://www.bitsnbites.eu/a-tidy-linear-git-history/) and helps to resolve the problem of broken continuous integration builds.\n\n**We will, however, introduce several tweaks to the \"stable mainline branching model\":**\n* We will use the following naming pattern for feature branches: **`feature_<name>`** instead of `feature/name`.\n* We will not use new branches when remote feature branches need rebasing. Instead, we will just inform all collaborators that rebasing is pending for a feature branch. It is important\n  to communicate with collaborators **before** rebasing and force-pushing.\n* We will not create a release branch for each release. In general, we will just tag a release. However, we will create a release branch when a particular release needs fixing.\n\nWe will organize our [feature commits as recipes](https://www.bitsnbites.eu/git-history-work-log-vs-recipe/) because we want to promote the team's learning and communication.\n\nWe will also use specific commit message format as described in [ADR-0014 - Commit Message Format](./0014-commit-message-format.md)\n\n## Consequences\n### Positive\n* Semi-linear Git history.\n* Feature commits organized as recipes.\n* Releasing can be simplified just to tagging.\n\n### Negative\n* Some tools (e.g., GitHub) does not provide out-of-the-box support for semi-linear history.\n\n## Considered Options\n* Merge based workflows.\n\n## References\n* [A stable mainline branching model for Git](https://www.bitsnbites.eu/a-stable-mainline-branching-model-for-git/)\n* [A tidy, linear Git history](https://www.bitsnbites.eu/a-tidy-linear-git-history/)\n* [Git history: work log vs recipe](https://www.bitsnbites.eu/git-history-work-log-vs-recipe/)\n* [ADR-0014 - Commit Message Format](./0014-commit-message-format.md)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "fangpenlin.com/images/2013-09-30-keep-a-readable-git-history/source_tree_new_branch_rebase_merge.png",
+    "tugberkugurlu.blob.core.windows.net/bloggyimages/d773c1fe-4db8-4d2f-a994-c60f3f8cb6f0.png",
+    "feature/name",
+    "/0014-commit-message-format.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0004-hexagonal-architecture-for-applications.md",
+   "identity": "support/documentation/adr/content/0004-hexagonal-architecture-for-applications.md",
+   "adr_id": "4",
+   "title": "ADR-0004 - Hexagonal Architecture for Applications",
+   "first_commit": "2020-11-02T11:31:25+01:00",
+   "first_sha": "8da882b094b7eece2ff06b5249f1c28d33277c59",
+   "last_commit": "2020-12-21T11:49:23+01:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR-0004 - Hexagonal Architecture for Applications\n* **Status: accepted**\n* Dates: proposed - 2020-11-02\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nWe want improved application design architecture that supports and promotes the following characteristics:\n* An explicit promotion of application features as first-class citizens, instead of promoting technical aspects or database design.\n* Explicit support for DDD tactical patterns.\n* Is domain-centric with clear separation of the domain from infrastructure.\n* Improves testability, maintainability, flexibility, extensibility, and adaptability.\n* Discourages the use of any non-supported shortcuts.\n* Is explicit enough to allow testing of architecture constraints and rules.\n* Has sound structure and aesthetics where it is easy to find concrete artifacts.\n* Allows parallel work on features.\n* Is well-known and battle-tested already in the wild.\n\nIt is proven that traditional layer-centric designs fail on almost every characteristic above. Layer-centric application design architecture can work for simpler cases but often fails when the\nfeature set grows, and the domain becomes more complicated. We want architecture that can scale cleanly in terms of design and development.\n\n### Architectural Context\n* System (`klokwrk-project`)\n\n## Decision\n**We will use hexagonal architecture as a primary choice of architecture for designing applications.**\n\n**We will provide concrete guidance for creating structure and concrete artifacts** (see [\"Packaging for applications\"](../../article/modules-and-packages/modulesAndPackages.md#packaging-for-applications) for more\ndetails).\n\n**We will adapt hexagonal architecture for efficient use with CQRS/ES component architecture** (see\n[\"Applying hexagonal architecture\"](../../article/modules-and-packages/modulesAndPackages.md#applying-hexagonal-architecture) for more details). This includes adding support for enforcing and testing the structure and\nbehavior of the architecture (see [\"Behavior and architectural testing\"](../../article/modules-and-packages/modulesAndPackages.md#behavior-and-architectural-testing) for more details).\n\n## Consequences\n### Positive\n* Everything stated in [\"Context\"](#context)\n\n### Negative\n* It might be overkill for simpler cases.\n\n### Neutral\n* It requires some time for learning and adapting.\n\n## Considered Options\n* Traditional layered architecture.\n* Clean and onion architecture.\n  * Those are very similar to hexagonal architecture, but hexagonal architecture offers more concrete implementation guidance.\n\n## References\n* [Organizing modules and packages, section \"Packaging for applications\"](../../article/modules-and-packages/modulesAndPackages.md#packaging-for-applications)\n* [Organizing modules and packages, section \"Applying hexagonal architecture\"](../../article/modules-and-packages/modulesAndPackages.md#applying-hexagonal-architecture)\n* [Organizing modules and packages, section \"Behavior and architectural testing\"](../../article/modules-and-packages/modulesAndPackages.md#behavior-and-architectural-testing)\n* [\"Hexagonal Architecture with Java and Spring\"](https://reflectoring.io/spring-hexagonal/) by Tom Hombergs\n* [\"Get your hands dirty on Clean Architecture\"](https://reflectoring.io/book/) by Tom Hombergs\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/../article/modules-and-packages/modulesAndPackages.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0008-testing-architecture.md",
+   "identity": "support/documentation/adr/content/0008-testing-architecture.md",
+   "adr_id": "8",
+   "title": "ADR-0008 - Testing Architecture",
+   "first_commit": "2020-11-04T13:43:59+01:00",
+   "first_sha": "725147a4d6baf1d99aceab77b8bf3e777d7bc92e",
+   "last_commit": "2020-12-21T11:49:23+01:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR-0008 - Testing Architecture\n* **Status: accepted**\n* Dates: proposed - 2020-11-04\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nApplication architecture is commonly expressed as a set of guidelines (written or not) that the development team needs to follow. Although essential, architectural guidelines are rarely reviewed or\nenforced appropriately. The typical result is that architecture degrades through time.\n\nIn some cases, application use component ([ADR-0003 - CQRS and Event Sourcing (ES) for Applications](0003-cqrs-and-event-sourcing-for-applications.md)) and\ndesign ([ADR-0004 - Hexagonal Architecture for Applications](0004-hexagonal-architecture-for-applications.md)) architectural patterns that promote architectural guidelines, but usually there is\nnothing to verify them.\n\nThe hexagonal architecture provides a well-defined placeholder for every significant application artifact. But there are also some rules regarding dependencies between those artifacts. It is not\nallowed that each class or interface access anything that it wants. When you add additional CQRS/ES aspects, there are even more rules to follow.\n\nWe want to ensure that rules will not be broken and that developers new to the hexagonal architecture and CQRS/ES can comfortably work with them without breaking anything. It will help if we\nhave in place tests that verify all architectural invariants.\n\n### Architectural Context\n* System (`klokwrk-project`)\n\n## Decision\n**We will use architectural testing for verifying architectural constraints.**\n\nBuilding on top of the [ArchUnit](https://www.archunit.org/) library, Klokwrk provides DSL for specifying hexagonal architecture layers for CQRS/ES applications. There is support for several subtypes\nof CQRS/ES flavored hexagonal architecture corresponding to the commandside, projections, and queryside aspects.\n\nFor more insight and details, take a look at [\"Behavior and architectural testing\"](../../article/modules-and-packages/modulesAndPackages.md#behavior-and-architectural-testing). There is also a video\n[\"Project Klokwrk: how it helps defining software architecture and solves integration\"](https://www.youtube.com/watch?v=35oUxjXWNYU) that, besides other things, talks about architectural testing in\n`klokwrk-project`.\n\n## Consequences\n### Positive\n* Architectural constraints are verified and enforced by unit tests.\n* The architecture will not degrade over time.\n* Architectural requirements are expresses in code, not only in the documentation.\n\n### Neutral\n* Learning ArchUnit and Klokwrk Architectural Testing DSL take some time.\n\n## Considered Options\n* Not to test architectural constraints.\n\n## References\n* [ADR-0003 - CQRS and Event Sourcing (ES) for Applications](0003-cqrs-and-event-sourcing-for-applications.md)\n* [ADR-0004 - Hexagonal Architecture for Applications](0004-hexagonal-architecture-for-applications.md)\n* [Behavior and architectural testing](../../article/modules-and-packages/modulesAndPackages.md#behavior-and-architectural-testing)\n* [ArchUnit library](https://www.archunit.org/)\n* [Project Klokwrk: how it helps defining software architecture and solves integration](https://www.youtube.com/watch?v=35oUxjXWNYU)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/../article/modules-and-packages/modulesAndPackages.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0003-cqrs-and-event-sourcing-for-applications.md",
+   "identity": "support/documentation/adr/content/0003-cqrs-and-event-sourcing-for-applications.md",
+   "adr_id": "3",
+   "title": "ADR-0003 - CQRS and Event Sourcing (ES) for Applications",
+   "first_commit": "2020-10-28T19:21:51+01:00",
+   "first_sha": "d05faf6062e5df68d66876f362e70b0060c7a489",
+   "last_commit": "2020-10-28T19:21:51+01:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR-0003 - CQRS and Event Sourcing (ES) for Applications\n* **Status: accepted**\n* Dates: proposed - 2020-10-28\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nWhen building monoliths or microservices that contain non-trivial business logic, we want to have a high-level component architecture pattern that natively leverages a strategic Domain Driven\nDesign (DDD) concepts like ubiquitous language and bounded context. It should also support or allow, at least, the usage of application design architecture patterns like hexagonal architecture.\n\nAt the lower technical level, component architecture pattern should provide native support for tactical DDD concepts like aggregates, entities, value objects, and events.\n\nWhen building microservices, the chosen component architecture pattern should natively support asynchronous communication through events.\n\nIt would be ideal to have all of these in a single coherent open-source framework and platform.\n\nFor anemic CRUD style applications, more traditional approaches, like layered architecture, would be just fine.\n\n### Architectural Context\n* System (`klokwrk-project`)\n\n## Decision\n**We will use the Axon framework and Axon Server as a mature open-source implementation of the CQRS/ES component architecture pattern.**\n\nEspecially as one of the major `klokwrk-project` goals is to demonstrate the creation of complex CQRS/ES microservice applications. We can use more traditional approaches like classic layered\narchitecture and anemic model for anemic CRUD style applications.\n\n## Consequences\n### Positive\n* CQRS/ES naturally supports building microservices and distributed systems.\n* CQRS/ES naturally supports asynchronous communication through events.\n* Axon platform is a mature open-source library that provides all necessary building blocks to support CQRS/ES, DDD, testing, distribution, and scaling.\n\n### Negative\n* Axon and CQRS/ES, in general, have a steep learning curve.\n\n## Considered Options\n* Anemic CRUD-style applications.\n* Classic layered applications written with DDD concepts in mind.\n\n## References\n[DDD, CQRS and Event Sourcing Explained](https://lp.axoniq.io/whitepaper-event-sourcing)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "support/documentation/adr/content/0001-architectural-decision-records.md",
+   "identity": "support/documentation/adr/content/0001-architectural-decision-records.md",
+   "adr_id": "1",
+   "title": "ADR-0001 - Architectural Decision Records",
+   "first_commit": "2020-10-27T19:18:17+01:00",
+   "first_sha": "ad15614e67185208f1c5b0a3e65e155749c1f69b",
+   "last_commit": "2020-10-28T18:12:16+01:00",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR-0001 - Architectural Decision Records\n* **Status: accepted**\n* Dates: proposed - 2020-10-27\n* Authors: Damir Murat (`damir.murat.git at gmail.com`)\n* Reviewers: None\n\n## Context\nWe want a light way means of tracking and describing architecturally significant decisions made during this project. Selected methodology should include appropriate templates and possibly other\ntools to help with documentation consistency.\n\n### Architectural Context\n* System (`klokwrk-project`)\n\n## Decision\n**We will use the architecture decision log expressed as a time-ordered collection of Architecture Decision Records (ADRs).** Architecture decision log is nothing more than a simple index of all\navailable ADRs.\n\n**We will use [custom ADR template](../template/template.md).** It includes parts of following *\"standard\"* ADR templates:\n* [Michael Nygard's template](https://github.com/joelparkerhenderson/architecture_decision_record/blob/master/adr_template_by_michael_nygard.md)\n* [MADR template](https://adr.github.io/madr/)\n* [Ken Power's template](https://youtu.be/LFiTwqblqsk?t=1295)\n\n## Consequences\n### Positive\n* ADRs provide a way for communicating, collaborating, and documenting architecturally significant decisions.\n* Writing ADRs requires conscious thinking and light elaboration of significant decisions, which leads to better decisions.\n* The provided architecture decision log helps with maintaining and onboarding.\n\n### Negative\n* Writing ADRs takes time. As we progress and gain experience, time requirements should shrink.\n* Using custom template might cause problems with available ADR tools. However, we don't consider tooling support as important requirement.\n\n### Neutral\n* Writing ADRs requires some time to get used to, and have some (minimal) learning curve.\n\n## Considered Options\n* Not documenting critical decisions.\n* Using more elaborated process, for example, using RFC documents and process as proposed by Patrik Kua in CROZ internal workshop.<br/>\n  * We do not want any overhead at this point, so more light way approach is preferable.\n\n## References\n* [`klokwrk-project` architecture decision log](../index.md)\n* [`klokwrk-project` custom ADR template](../template/template.md)\n\n### ADR Methodology\n* [Michael Nygard's article introducing ADRs.](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)\n* [SATURN 2017 Talk: Architecture Decision Records in Action - Michael Keeling](https://www.youtube.com/watch?v=41NVge3_cYo)\n* [Communicating and documenting architectural decisions - David Ayers](https://www.youtube.com/watch?v=rwfXkSjFhzc)\n* [Architectural Decision Records - adr.github.io](https://adr.github.io)\n* [The Evolution of Comcast\u2019s Architecture Guild](https://www.infoq.com/articles/architecture-guild-800-friends/)\n* [Using Architecture Decision Records \u2013 Jonathan Wolski](https://www.youtube.com/watch?v=MQJUWtTM1-E)\n* [SATURN 2019 Talk: Creating, Reviewing, and Succeeding with Architectural Decision Records - Ken Power](https://www.youtube.com/watch?v=LFiTwqblqsk)\n* [Share the Load: Distribute Design Authority with Architecture Decision Records](https://www.agilealliance.org/resources/experience-reports/distribute-design-authority-with-architecture-decision-records/)\n* [List of system quality attributes](https://en.wikipedia.org/wiki/List_of_system_quality_attributes)\n* [Decision Log](https://structurizr.com/help/documentation/decision-log)\n\n### ADR Examples\n* [Communicating and Documenting Architectural Decisions - David Ayers](https://github.com/davidaayers/comm-and-doc-arch-decisions/blob/master/readme.md)\n* [Enterprise Architecture in a Devops Time - David Ayers](https://github.com/davidaayers/ea-talk)\n* [Markdown Architectural Decision Records](https://github.com/adr/madr)\n\n### ADR Template Examples\n* [Michael Nygard's template](https://github.com/joelparkerhenderson/architecture_decision_record/blob/master/adr_template_by_michael_nygard.md)\n* [MADR template](https://adr.github.io/madr/)\n* [Ken Power's template](https://youtu.be/LFiTwqblqsk?t=1295)\n* [Architecture decision record (ADR) - Joel Parker Henderson](https://github.com/joelparkerhenderson/architecture_decision_record)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/template/template.md",
+    "/index.md",
+    "github.com/davidaayers/comm-and-doc-arch-decisions/blob/master/readme.md"
+   ],
+   "implementation": {
+    "sha": "a41b6635e7bc60b77a24179bd42b99a548b19771",
+    "date": "2020-11-02T20:27:58+01:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "README.md"
+    ]
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "support/documentation/adr/content/0002-strategic-project-structure.md",
+   "identity": "support/documentation/adr/content/0002-startegic-project-structure.md",
+   "commit": "45bf6a1346eade11f35da31d7d94b9d10e528fc8",
+   "date": "2021-05-25T09:23:29+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Fix typo in the file name of ADR 0002",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com"
+  },
+  {
+   "path": "support/documentation/adr/content/0012-response-format.md",
+   "identity": "support/documentation/adr/content/0012-response-fromat.md",
+   "commit": "dbc1b588c5c20e802c17d715d8475c9690ff9b36",
+   "date": "2021-05-25T09:25:04+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Fix typo in the file name of ADR 0012",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com"
+  },
+  {
+   "path": "support/documentation/adr/content/0006-contributing-back-to-open-source.md",
+   "identity": "support/documentation/adr/content/0006-contirbuting-back-to-open-source.md",
+   "commit": "5354768d67f8197426bc733fec82b2e31d46858c",
+   "date": "2021-05-25T09:24:21+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Fix typo in the file name of ADR 0006",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Damir Murat",
+   "email": "damir.murat.git@gmail.com"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 18,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "15"
+}

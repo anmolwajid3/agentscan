@@ -1,0 +1,1181 @@
+{
+ "repo": "ngarbezza/testy",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2018-10-15T02:22:12-03:00",
+ "last_commit": "2026-10-30T14:45:49-03:00",
+ "n_commits": 990,
+ "n_authors": 21,
+ "n_files": 167,
+ "n_code_files": 103,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 19,
+ "adrs": [
+  {
+   "path": "doc/decisions/0018-host-capability-catalog.md",
+   "identity": "doc/decisions/0017-host-capability-catalog.md",
+   "adr_id": "18",
+   "title": "Host capability catalog",
+   "first_commit": "2026-07-22T16:22:56-03:00",
+   "first_sha": "7bd97546338cf3d9a2bf57f421b2ca1e1551e2a2",
+   "last_commit": "2026-07-30T15:05:53-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 18. Host capability catalog\n\nDate: 2026-07-22\n\n## Status\n\nAccepted\n\n## Context\n\nTesty wants to decouple itself from the specific language and runtime it happens\nto run on, so that porting it to another language becomes a matter of design\ntranslation rather than archaeology.\n\nToday the coupling to Node internals is scattered but small (around seven contact\npoints). The valuable artifact for a port is **not** a JavaScript wrapper over\n`fs` or `console` \u2014 that code is thrown away when the framework is rewritten in\nanother language. What survives the port is knowing *what Testy needs from its\nhost*: the set of capabilities the core relies on, named in domain terms.\n\nThis decision names that set. It builds on existing decisions:\n\n- 0003 (zero dependencies) \u2014 we already reimplement host-adjacent helpers rather\n  than pulling packages, so isolating them is consistent.\n- 0002 (utilities in the `Utils` module) \u2014 reimplementable algorithms already live\n  there.\n- 0004 (console UI and formatter) \u2014 `console` and `process` are already injected\n  into `ConsoleUI`/`Formatter`, so there is precedent for treating host access as\n  an injected collaborator rather than a direct dependency.\n\n## Decision\n\nTreat the capabilities Testy requires from its host as an **explicit, named\ncontract** \u2014 the portability seam. The core is defined in terms of *what it needs\nfrom the host*, not in terms of the Node API names that currently satisfy those\nneeds.\n\nCapabilities are classified into two kinds, because they port very differently:\n\n### Host services (I/O; runtime-dependent; injectable)\n\nBehaviour that talks to the outside world. It changes per runtime (Node, Deno,\nBun, browser) and is a natural injection point for fakes in Testy's own tests.\n\n1. **File discovery** \u2014 find the files matching a pattern under a directory.\n   Today: `lib/utils/files.js` (`allFilesMatching`, `resolvePathFor`) via\n   `fs.lstatSync`, `fs.readdirSync`, `path.join`/`path.resolve`, `process.cwd()`.\n2. **File removal** \u2014 delete a temporary file.\n   Today: `lib/testy.js` (`fs.unlinkSync`) and the TypeScript cache directory.\n3. **Output sink** \u2014 print lines and emit timing marks.\n   Today: `lib/ui/formatter.js` via `console.log`/`console.time`/`console.timeEnd`.\n4. **Process control** \u2014 terminate with an exit code and read CLI arguments.\n   Today: `lib/ui/console_ui.js` (`process.exit`) and `bin/testy_cli.js`\n   (`process.argv`).\n5. **Clock** \u2014 obtain the current time in milliseconds.\n   Today: `lib/ui/tap_formatter.js` and `lib/ui/json_formatter.js` via `Date.now()`.\n6. **Test module loading** \u2014 load and evaluate a test file given its path, and\n   read JSON documents (configuration, translations, `package.json`).\n   Today: dynamic `import()` + `pathToFileURL` and `createRequire` across\n   `lib/testy.js`, `lib/config/configuration.js`, `lib/i18n/i18n.js`,\n   `lib/script_action.js`, `lib/ui/json_formatter.js`.\n   **This is the hardest seam and the least portable capability**: loading and\n   evaluating a test file is intrinsically language-specific. Naming it isolates\n   it; it does not make it abstract.\n\n### Reimplementable semantics (algorithms; rewritten per language)\n\nPure computations, not I/O. A port reimplements these directly in the target\nlanguage; there is nothing to inject.\n\n1. **Deep structural equality** \u2014 compare two values by structure.\n   Today: `lib/utils/comparison.js` via `util.isDeepStrictEqual`.\n2. **Object inspection / string representation** \u2014 render a value as a\n   human-readable string for output.\n   Today: `lib/utils/formatting.js` via `util.inspect`.\n\n### Design rules\n\n- Name each capability in **domain verbs** (`allFilesMatching`, \"print a line\"),\n  never as a one-to-one passthrough of the Node API (`readdirSync`, `lstatSync`).\n  A thin passthrough adds indirection without value; the contract must describe\n  what Testy needs, not what Node offers.\n- Keep host services behind **injectable collaborators**, following the precedent\n  of 0004.\n- Keep reimplementable semantics isolated in `Utils`, so a port can rewrite them\n  without touching the core.\n\nThis decision does **not** commit to the concrete shape of a `Platform` /\n`Environment` object. It fixes the contract and the classification; the concrete\ninjection design is deferred to its own decision.\n\n### Out of scope\n\nThe TypeScript transpiler (`lib/typescript/`) is a host-specific extension, not\npart of the portable core. A port is not expected to reproduce it.\n\n## Consequences\n\n1. A language port has a concrete checklist: implement N host services plus M\n   reimplementable algorithms, and provide a test-loading mechanism for the target\n   language.\n2. Testability improves: host services can be faked in Testy's own tests, which is\n   itself the proof that the seam is real.\n3. Portability across JavaScript runtimes (Deno, Bun, browser, workers) improves\n   for free, since the core stops naming Node modules directly.\n4. Test module loading remains a **known boundary**: it is named but not made\n   portable, and every port must solve it in its own terms.\n5. There is an indirection cost. It is mitigated by defining the contract in domain\n   verbs rather than mirroring the Node API.\n6. The direction is consistent with the project DNA (zero dependencies, no dark\n   magic, message-sends over conditionals) and with the injection already present\n   in the console/formatter layer.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "lib/utils/files.js",
+    "lib/testy.js",
+    "lib/ui/formatter.js",
+    "lib/ui/console_ui.js",
+    "bin/testy_cli.js",
+    "lib/ui/tap_formatter.js",
+    "lib/ui/json_formatter.js",
+    "package.json",
+    "lib/config/configuration.js",
+    "lib/i18n/i18n.js",
+    "lib/script_action.js",
+    "lib/utils/comparison.js",
+    "lib/utils/formatting.js",
+    "lib/typescript/"
+   ],
+   "implementation": {
+    "sha": "e49ecd2658c3649bce529a2db0e7d9a3e8aa34b1",
+    "date": "2026-07-22T16:41:59-03:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "lib/ui/formatter.js",
+     "lib/ui/json_formatter.js",
+     "lib/ui/tap_formatter.js"
+    ]
+   }
+  },
+  {
+   "path": "doc/decisions/0017-simplicity-guardian.md",
+   "identity": "doc/decisions/0017-simplicity-guardian.md",
+   "adr_id": "17",
+   "title": "Simplicity Guardian",
+   "first_commit": "2026-07-17T09:23:03-03:00",
+   "first_sha": "92e48e4c97dfc15b3d9d91dc76c8a0d7a8206e5d",
+   "last_commit": "2026-07-17T09:23:03-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 17. Simplicity Guardian\n\nDate: 2026-06-29\n\n## Status\n\nAccepted\n\n## Context\n\nTesty's core identity is simplicity: zero external dependencies, no metaprogramming, and OOP in the\nSmalltalk spirit. These values are documented in `CLAUDE.md` and individual ADRs, but nothing\nenforced them automatically on every PR until now.\n\nESLint and SonarCloud already enforce a wide range of quality rules, but they are not specific to\nTesty's design contract. A PR that adds a zero-line external import, or uses `new Proxy` to wrap\nan object, would pass both tools yet violate Testy's identity.\n\n## Decision\n\nAdd a **Simplicity Guardian** \u2014 a purpose-built CI check with three layers:\n\n### Layer 1 \u2014 Zero-dependency\n\nDetects imports of external packages (not relative paths, not `node:*` built-ins) in `lib/` and\n`bin/`. ESLint cannot enforce this because it doesn't know which packages are external at lint time.\n\n**Passes:** `import fs from 'node:fs'`, `import Formatter from './formatter.js'`  \n**Fails:** `import chalk from 'chalk'`, `import { foo } from 'some-library'`\n\n### Layer 2 \u2014 No metaprogramming\n\nDetects patterns that intercept or redefine JavaScript's property access machinery:\n`new Proxy(...)`, `Object.defineProperty(...)`, `Object.defineProperties(...)`, `__proto__ =`.\n\n`Object.defineProperty` is also caught by an ESLint `no-restricted-syntax` rule (AST-based).\nBoth checks are intentional: ESLint runs on the AST and catches calls in any context; the\nguardian runs as a regex scan and produces a unified JSON report that drives the PR comment\nindependently of ESLint's output.\n\n**Passes:** regular property assignment (`obj.x = 1`), class field declarations  \n**Fails:** `new Proxy(target, handler)`, `Object.defineProperty(obj, 'x', { get() {...} })`\n\n### Layer 3 \u2014 Fan-out per file\n\nCounts `import` statements per file. A file with more than 7 imports may be violating single\nresponsibility. The threshold is deliberate: the most complex files in Testy's core today sit at\nor below 7 imports.\n\n**Passes:** a file with 7 or fewer imports  \n**Fails:** a file with 8 or more imports\n\n### How it differs from ESLint and SonarCloud\n\n| Concern | ESLint | SonarCloud | Simplicity Guardian |\n|---|---|---|---|\n| External package imports | \u274c not possible | \u274c not specific | \u2705 Layer 1 |\n| Metaprogramming patterns | \u2705 `no-restricted-syntax` | \u2705 generic rules | \u2705 Layer 2 (also unified report) |\n| Fan-out / coupling | \u2705 `max-statements` etc. | \u2705 | \u2705 Layer 3 (import-specific) |\n| Testy-specific contract | \u274c generic | \u274c generic | \u2705 purpose-built |\n| PR comment with details | \u274c | \u274c inline only | \u2705 unified comment |\n\n### Implementation\n\n- `bin/simplicity-guardian.js` \u2014 zero-dependency Node.js CLI; outputs JSON with `violations` and `summary`\n- `.github/workflows/simplicity_guardian.yml` \u2014 triggered on `pull_request` to `main`\n- `.github/scripts/simplicity-guardian/` \u2014 scripts to read outputs and post the PR comment\n\n## Consequences\n\n* Every PR against `main` is checked against Testy's simplicity contract automatically.\n* Contributors get a detailed PR comment explaining each violation with file and line number.\n* The guardian adds a second, Testy-specific safety net on top of ESLint and SonarCloud \u2014 not\n  a replacement for either.\n* New layers can be added to `bin/simplicity-guardian.js` as the contract evolves.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "lib/",
+    "bin/",
+    "bin/simplicity-guardian.js",
+    "github/workflows/simplicity_guardian.yml",
+    "github/scripts/simplicity-guardian/"
+   ],
+   "implementation": {
+    "sha": "92e48e4c97dfc15b3d9d91dc76c8a0d7a8206e5d",
+    "date": "2026-07-17T09:23:03-03:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "bin/simplicity-guardian.js",
+     "lib/config/parameters_parser.js",
+     "lib/core/asserter.js",
+     "lib/core/equality_assertion_strategy.js",
+     "lib/core/test_result.js",
+     "lib/i18n/i18n_messages.js",
+     "lib/ui/formatter.js"
+    ]
+   }
+  },
+  {
+   "path": "doc/decisions/0016-criteria-for-creating-new-exceptions.md",
+   "identity": "doc/decisions/0016-criteria-for-creating-new-exceptions.md",
+   "adr_id": "16",
+   "title": "Criteria for creating new exceptions",
+   "first_commit": "2025-04-21T15:21:04-03:00",
+   "first_sha": "235dde826630212ef8e46e1881ee839194c12ad0",
+   "last_commit": "2025-04-21T15:21:04-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 16. Criteria for creating new exceptions\n\nDate: 2025-04-21\n\n## Status\n\nAccepted\n\n## Context\n\nThis tool has some exceptional flows that need to be designed with a common criteria.\n\n## Decision\n\nCreate a new exception class **only** when we have at least one specific handler for it. If many business cases\nhave the same exception handler, we should not create an exception for each.\n\n## Consequences\n\nWe'll have a limited number of exceptions, therefore tackling the complexity of the code early.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0004-console-ui-and-formatter.md",
+   "identity": "doc/decisions/0004-console-ui-and-formatter.md",
+   "adr_id": "4",
+   "title": "Console UI and Formatter",
+   "first_commit": "2020-10-29T08:10:05-03:00",
+   "first_sha": "9ab5c55fd4738054effef1e1aab15824a62c6750",
+   "last_commit": "2024-12-29T21:51:49-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 4. Console UI and Formatter\n\nDate: 2020-10-28\n\n## Status\n\nAccepted\n\n## Context\n\nReducing complexity in the `ConsoleUI` object and make it more reusable and testable.\n\n## Decision\n\n`ConsoleUI` now only knows when to output things, but not the contents of messages, which is now responsibility of a\n`Formatter`. This object can be replaced by other formatters in the future.\n\n## Consequences\n\n* `Formatter` becomes testable, as well as `ConsoleUI`\n* Responsibilities are better split\n* There are more control on Node built-in modules, `Formatter` now talks to `console` object, and `ConsoleUI` to\n`process`\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0005-avoiding-test-doubles.md",
+   "identity": "doc/decisions/0005-avoiding-test-doubles.md",
+   "adr_id": "5",
+   "title": "Avoiding test doubles",
+   "first_commit": "2020-12-15T22:31:00-03:00",
+   "first_sha": "5a65fbc6e6e58b1f03f996c381240d4a1b8c3875",
+   "last_commit": "2024-12-29T21:51:49-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 5. Avoiding test doubles\n\nDate: 2020-12-15\n\n## Status\n\nAccepted\n\n## Context\n\nTests against the real system instead of test doubles was proven to be useful detecting bugs and exercising better our\nsystem.\n\n## Decision\n\nAvoid introducing test doubles as much as possible. The only allowed exception is to stub/simulate external systems we\ncan't control. Library code should never be stubbed.\n\n## Consequences\n\n- Testing with all the real objects that are used in the tool.\n- No need to maintain test doubles and their protocol that should match the real objects' protocols.\n- Potentially more setup code, objects could be hard to setup because there are no shortcuts. This can be solved by\nfactory methods and/or test helpers.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0006-avoid-offensive-vocabulary.md",
+   "identity": "doc/decisions/0006-avoid-offensive-vocabulary.md",
+   "adr_id": "6",
+   "title": "Avoid offensive vocabulary",
+   "first_commit": "2021-01-14T20:38:40-03:00",
+   "first_sha": "9f25ee7ced11993a733f33d74d7f8633c3e22620",
+   "last_commit": "2024-12-29T21:51:49-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 6. Avoid offensive vocabulary\n\nDate: 2021-01-13\n\n## Status\n\nAccepted\n\n## Context\n\nThere is an initiative about questioning the technical vocabulary we use, and avoiding some words that are widely used\nand may offend people. This is a project that adheres to this initiative, therefore...\n\n## Decision\n\nRemove all existing technical vocabulary that might be offensive, and prevent those terms to be added in the future.\nFor instance, the use of \"master/slave\" replaced by \"main/replica\" (or similar), or \"whitelist/blacklist\" by\n\"safelist/blocklist\" (or similar).\n\n## Consequences\n\n* Supporting causes like Black Lives Matter and let all people know that their voices are heard.\n* Having a friendly place for all contributors around the world.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0011-mutation-testing-practices-and-quality-thresholds.md",
+   "identity": "doc/decisions/0011-mutation-testing-practices-and-quality-thresholds.md",
+   "adr_id": "11",
+   "title": "Use Mutation Testing and define quality thresholds",
+   "first_commit": "2022-10-25T00:06:10-03:00",
+   "first_sha": "597ab12c9ef0691b96d1b719715891c19eeb5333",
+   "last_commit": "2024-12-29T21:51:49-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 11. Use Mutation Testing and define quality thresholds\n\nDate: 2022-10-24\n\n## Status\n\nAccepted\n\n## Context\n\nGiven this tool was designed to serve as an example of well crafted code with the most up-to-date testing practices,\nwe think it is important to consider mutation testing as a practice. We are already considering Test-Driven Development\nand mutation testing will be a great addition to this toolset.\n\n## Decision\n\nStart using mutation testing as part of the development flow. An automated tool will be setup to help detecting\nsurviving mutants. Developers should run a mutation testing report at least once before integrating the code into the\nmainline. CI will run a mutation testing analysis reporting results on every push to the main branch.\n\n## Consequences\n\n* Another way to ensure high quality solutions: mutation score is a qualitative metric that can help us measure the\nquality of every introduced change.\n* Slowness: the analysis is relatively slow compared with the time it takes to run the test suite, because every\nmutation forces a run of the entire test suite. But given the benefits, we accept this.\n* Spreading mutation testing culture: sadly, mutation testing is not well known among developers, so this is a humble\nattempt to show the benefits of it with concrete and practical examples.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0012-no-backwards-compatibility.md",
+   "identity": "doc/decisions/0012-no-backwards-compatibility.md",
+   "adr_id": "12",
+   "title": "No backwards compatibility",
+   "first_commit": "2023-06-28T20:37:52-03:00",
+   "first_sha": "74fb56c4a3a95e9d502d5dd71b95bfee8a1873ad",
+   "last_commit": "2024-12-29T21:51:49-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 12. No backwards compatibility\n\nDate: 2023-06-28\n\n## Status\n\nAccepted\n\n## Context\n\nThis tool is not widely used (Github lists only 12 dependents on this tool), the cost of maintaining multiple versions\nis high for a single person.\n\n## Decision\n\nNew major versions might not be backwards compatible, and we will always maintain only the latest major version. We\nwill keep documenting changes and migration notes, but not solving bugs of previous versions.\n\n## Consequences\n\n* Once a new major version is released, we encourage users to upgrade as soon as possible.\n* We will keep documenting breaking changes in the CHANGELOG file, and provide upgrade guides if that information is not\n  enough.\n* Maintaining a single major version (the latest) is not an ideal scenario, but it makes things much more simpler to the\n  maintainer.\n* This decision might change if the tool is adopted by more users, and/or we have more maintainers.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0013-support-for-es-modules-only.md",
+   "identity": "doc/decisions/0013-support-for-es-modules-only.md",
+   "adr_id": "13",
+   "title": "Support for ES Modules Only",
+   "first_commit": "2023-06-28T20:59:23-03:00",
+   "first_sha": "b114c1776b484078e1fa73e3d6a8fd4ebf6ee1ce",
+   "last_commit": "2024-12-29T21:51:49-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 13. Support for ES Modules Only\n\nDate: 2023-06-28\n\n## Status\n\nAccepted\n\n## Context\n\nES Modules are no longer experimental and are starting to become a standard for new projects, in contrast with CommonJS\nthat is only supported in Node, and not in other environments like Deno or the browser.\n\n[This article](https://www.knowledgehut.com/blog/web-development/commonjs-vs-es-modules) contains a detailed comparison\nof CommonJS and ES Modules.\n\nThis tool uses modules a lot, as it dynamically requires files written by the users of Testy, and the asynchronous\nfeatures of ES makes things easier and brings more reliability than synchronous CommonJS modules.\n\n## Decision\n\nSupport only ES Modules, dropping support for CommonJS that was the original module system adopted by the tool.\nIt is possible, as a package, to offer both ES anc CommonJS interfaces, but it increases the complexity of the code,\nwhich is against the spirit of this project.\n\n## Consequences\n\n* This is a disruptive change for users. Projects that uses CommonJS will need to migrate to ES, at least to load the\n  tests.\n* This will represent a breaking change, to be released in a new major version.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0015-sequential-loading-and-execution-of-suites-and-tests.md",
+   "identity": "doc/decisions/0015-sequential-loading-and-execution-of-suites-and-tests.md",
+   "adr_id": "15",
+   "title": "Sequential loading and execution of suites and tests",
+   "first_commit": "2024-11-30T16:36:45-03:00",
+   "first_sha": "100df3d28b593734f3e9ec2707c825711dfefc01",
+   "last_commit": "2024-12-29T21:51:49-03:00",
+   "author": "mariabelenamat",
+   "email": "belen.amat29@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 15. Sequential loading and execution of suites and tests\n\nDate: 2024-11-30\n\n## Status\n\nAccepted\n\n## Context\n\nThe loading of test suites files is done in a strictly sequential manner\n\n## Decision\n\nLoading the files sequentially allows the `TestRunner` to know which is the current file that is being loaded at the moment,\nmaking possible for it to use this information when needed.\n\n## Consequences\n\nOne example of use is that the `TestRunner` can indicate each `TestSuite` its own filepath to then be printed as part of\nthe suite run output.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0002-place-utilities-in-utils-module.md",
+   "identity": "doc/decisions/0002-place-utilities-in-utils-module.md",
+   "adr_id": "2",
+   "title": "Place utilities in Utils module",
+   "first_commit": "2020-10-13T08:09:02-03:00",
+   "first_sha": "518f304c2edfd011bb504bd8bd44fae2a8c90e41",
+   "last_commit": "2024-12-29T21:04:07-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 2. Place utilities in Utils module\n\nDate: 2020-10-13\n\n## Status\n\nAccepted\n\n## Context\n\nHaving control of all the utility functions the tool might need.\n\n## Decision\n\nUse the `Utils` module for any responsibility whose domain does not seem to be part of other objects' essence. Every\ntime you feel you need a \"helper\" function, it is a good candidate for `Utils`. If you need to rely on `typeof`, it is\nalso a good sign for needing `Utils`. We want to maximize reuse of these functions by having in a single, \"static\"\nplace. We understand this might be a temporary solution.\n\n## Consequences\n\n1. We will have a centralized place of all the logic that needs to be placed somewhere.\n2. `Utils` module can potentially become a hotspot in the code, or a file that grows at a high pace. A subfolder with\n   particular utils might be needed at some point in the future.\n3. `Utils` is also a good place for interaction with external dependencies, although we want to keep zero dependencies.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0015-current-executed-file-in-runner.md",
+   "identity": "doc/decisions/0015-current-executed-file-in-runner.md",
+   "adr_id": "15",
+   "title": "Current executed file in Test  Runner",
+   "first_commit": "2024-11-18T18:11:50-03:00",
+   "first_sha": "321f72adefbe05303be89135e4ed68575ad11d4b",
+   "last_commit": "2024-11-30T16:36:45-03:00",
+   "author": "mariabelenamat",
+   "email": "belen.amat29@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 15. Current executed file in Test  Runner\n\nDate: 2024-11-18\n\n## Status\n\nAccepted\n\n## Context\n\nFor more readability, we wanted to print the current executed file path in the console as part of a test suite output\n\n## Decision\n\nAdd a current executed file path value in `TestRunner` so it can be passed to every `TestSuite` when parsing the suite file.\nThis is only possible to do because the runner executes the suites sequentially.\n\n## Consequences\n\nThe suite filepath is executed as part of the test output for each suite. ",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0014-config-folder.md",
+   "identity": "doc/decisions/0014-config-folder.md",
+   "adr_id": "14",
+   "title": "Config Folder",
+   "first_commit": "2023-07-03T07:17:50-03:00",
+   "first_sha": "46db2c2304d5e9720378fb8c46e130ff75a37657",
+   "last_commit": "2023-07-03T07:17:50-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 14. Config Folder\n\nDate: 2023-07-03\n\n## Status\n\nAccepted\n\n## Context\n\nThe root folder is becoming larger due to many configuration files placed on it.\n\n## Decision\n\nCreate a `config` folder to include all the \"dotfiles\" to configure different tools.\n\n## Consequences\n\nWe will start adding new configuration files, whenever possible, on that folder, and progressively move all existing\nfiles to that folder.\n\nSome tools/CI scripts might not work with the defaults, so we need to be careful and be explicit about where to look\nfor config files.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0003-zero-dependencies.md",
+   "identity": "doc/decisions/0003-zero-dependencies.md",
+   "adr_id": "3",
+   "title": "Zero dependencies",
+   "first_commit": "2020-10-13T08:09:02-03:00",
+   "first_sha": "518f304c2edfd011bb504bd8bd44fae2a8c90e41",
+   "last_commit": "2022-10-26T20:24:36-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 3. Zero dependencies\n\nDate: 2020-10-13\n\n## Status\n\nAccepted\n\n## Context\n\nKeeping the tool simple, minimal, easy to install and understand.\n\n## Decision\n\nDo not depend on any NPM package unless there's a strong reason to do that. Keep the zero dependence counter as much\nas possible.\n\n## Consequences\n\n1. We will be \"reimplementing\" things, like file handling functions, or `isEmpty` or `isUndefined` type of queries, but\nthat's fine. We want to keep control of that, and we can keep that in a single place, `Utils` (see decision 0002).\n2. If there's a security problem, we will be 100% sure our code is causing it.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0010-technical-documentation-for-public-api.md",
+   "identity": "doc/decisions/0010-technical-documentation-for-public-api.md",
+   "adr_id": "10",
+   "title": "Write technical documentation for the public API",
+   "first_commit": "2022-07-29T12:51:47-03:00",
+   "first_sha": "d7ae83d8c82291345e74871f480b78b7ec4ebfb3",
+   "last_commit": "2022-07-29T12:51:47-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 10. Write technical documentation for the public API\n\nDate: 2022-07-29\n\n## Status\n\nAccepted\n\n## Context\n\nDocumentation is very important for learning to use any tool effectively, and to understand all the features and options\nyou have to do something.\n\nThe only documentation piece we had so far was the README, which is a good starting point but it might not be detailed\nenough. Code was \"self-documented\" so far, but that is not enough from the eyes of a new user.\n\nWe also know that documentation is better when it is as close to the code as possible, and it reduces the need of\nsearching for help in online forums, sites like StackOverflow, and so on.\n\n## Decision\n\nDocument all public API parts of the tool, so that users can understand with detail every feature, and understand the\ncontract of each class/method (parameters expected, return types, etc). Use a standard format (JSDoc) that can be\nused to generate an HTML version with all the documentation in a self-contained way. Try to add examples to better\nillustrate usages and ultimately soften the learning curve.\n\n## Consequences\n\nREADME will still be there, and it will serve as a high-level overview, quick start examples, and summarizing all the\naspects of the tool. Nothing will change on that document.\n\nWriting JSDoc will be a required step for every feature that involves a public export/class/method/function. This will\nbe added to our contributing guidelines.\n\nWe'll do a back-fill of all the undocumented pieces, and from now on we expect code and docs to evolve together.\n\nUsers will hava a detailed reference and can use it with the IDE, or a documentation website, navigate the different\nparts and use the examples to copy, paste and run them.\n\nFeature development costs will increase, but we expect this new cost of documentation to be small compared with pure\ndevelopment work. Plus, we'll be forced to think about the contract by the time of writing the code.\n\nAs we will document only public API methods, we expect the documentation to not change often, because a change in the\npublic API means that we are breaking compatibility.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0009-asynchronous-code-support.md",
+   "identity": "doc/decisions/0009-asynchronous-code-support.md",
+   "adr_id": "9",
+   "title": "Asynchronous Code Support",
+   "first_commit": "2021-12-22T03:13:35-03:00",
+   "first_sha": "a1b6683e72c9d83e98c3522f5aaa1b9fdf386b36",
+   "last_commit": "2021-12-22T03:13:35-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 9. Asynchronous Code Support\n\nDate: 2021-12-22\n\n## Status\n\nAccepted\n\n## Context\n\nIt's necessary for a testing tool to support asynchronous code, the community is using a lot async/await in their code.\n\nWe want Testy to be competitive with other testing tools, so we need to provide a solution for asynchronous code.\n\n## Decision\n\nFully implement asynchronous code support ([#106](https://github.com/ngarbezza/testy/issues/106)). This will allow us to\nuse async/await in both tests and hooks (before/after).\n\n## Consequences\n\nOne of the main values, which is simplicity, is notably affected. There are many occurrences of `async` anc `await` in\nplaces where before they were just common function calls. This also makes debugging harder, as not always we have a\nclear sequence of steps.\n\nTests within a suite and suites within a test runner will still run in sequence, to avoid adding even more complexity\nabout dealing with parallelism.\n\nEven though these consequences can be negative, all the possibilities it provides make this a good idea going\nforward. It allows testing complex code that involves most of the libraries widely used.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#106",
+     "kind": "hash",
+     "url": "",
+     "number": "106"
+    },
+    {
+     "key": "ngarbezza/testy#106",
+     "kind": "issue",
+     "url": "https://github.com/ngarbezza/testy/issues/106",
+     "number": "106"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0008-code-style-guide-definition.md",
+   "identity": "doc/decisions/0008-code-style-guide-definition.md",
+   "adr_id": "8",
+   "title": "Define a Code Style Guide",
+   "first_commit": "2021-11-21T14:47:12-03:00",
+   "first_sha": "1599525b0d05c2beedc1c1cc3bbf5bd020f61931",
+   "last_commit": "2021-11-21T14:47:12-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 8. Define a Code Style Guide\n\nDate: 2021-11-13\n\n## Status\n\nAccepted\n\n## Context\n\nEnsuring a consistent style in our current code and future changes on it. Make more clear and explicit for contributors\nto know what rules to follow.\n\n## Decision\n\nEstablish an initial version of a code style guide based on (in priority order):\n\n1. Custom Rules\n1. [Airbnb Style Guide](https://github.com/airbnb/javascript)\n1. [ESLint `recommended` guide](https://github.com/eslint/eslint/blob/main/conf/eslint-recommended.js)\n\nThe first step allow us to iterate and modify existing rules, for instance: we do not agree with [Airbnb 7.1 section\nabout functions](https://github.com/airbnb/javascript#functions--declarations), that's why we don't have the\n`func-style` rule.\n\nTechnically, we have an ESLint configuration. We don't depend on Airbnb Style Guide (because of decision #0003) but we\nmanually selected the rules we'd like to have.\n\nIt's worth mentioning that this is just a start, it should be possible at any time to iterate and modify ANY rule.\n\n## Consequences\n\n* Changes in current code: after applying these rules, we had to do some changes to the code, but the majority of the\ncode was already compliant.\n* The code style will become more opinionated, but we prefer to have more rules and discuss/disable if needed, rather\nthan many code styles living in the same codebase.\n* The priority order established between ESLint, Airbnb and custom rules allow us to have a baseline that is shared\nwith the community but having the flexibility to change some rules if needed.\n* Having a large `.eslintrc` file with many rules: Given that we'd like to share this configuration, in the future,\nthose rules will be extracted into its own package (to be used by other tools similar to Testy)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#0003",
+     "kind": "hash",
+     "url": "",
+     "number": "0003"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/eslint/eslint/blob/main/conf/eslint-recommended.js"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0007-support-node-versions-with-at-least-security-updates.md",
+   "identity": "doc/decisions/0007-support-node-versions-with-at-least-security-updates.md",
+   "adr_id": "7",
+   "title": "Support Node versions with at least security updates",
+   "first_commit": "2021-10-08T22:35:30-03:00",
+   "first_sha": "cb21d3e5a077884f148fb3bac995a9dd819c2418",
+   "last_commit": "2021-10-08T22:35:30-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 7. Support Node versions with at least security updates\n\nDate: 2021-10-08\n\n## Status\n\nAccepted\n\n## Context\n\nMaking clear which versions are supported and how this will be updated as time passes.\n\n## Decision\n\nOnly support Node versions with active and security support. Do not support newer, unstable versions.\nWe can use [endoflife.date](https://endoflife.date/nodejs) as a reference. Example: at the moment\nof this decision, only Node 12, 14 and 16 should be supported.\n\n## Consequences\n\n- Everytime we drop support of a major Node version, we need to make a major release.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/decisions/0001-record-architecture-decisions.md",
+   "identity": "doc/decisions/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2020-10-13T08:08:34-03:00",
+   "first_sha": "a36c82f54d1e2e9f10fa8cdf4e42fe6748f26920",
+   "last_commit": "2020-10-13T08:08:34-03:00",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record architecture decisions\n\nDate: 2020-10-13\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as [described by Michael Nygard](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions).\n\n## Consequences\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's [adr-tools](https://github.com/npryce/adr-tools).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "doc/decisions/0018-host-capability-catalog.md",
+   "identity": "doc/decisions/0017-host-capability-catalog.md",
+   "commit": "5ec28c6bfd95bc8e219a84471fd6975240404a0f",
+   "date": "2026-07-30T15:05:53-03:00",
+   "old_state": "accepted",
+   "new_state": "accepted",
+   "old_raw": "Accepted",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "docs: renumber host capability catalog ADR to 0018",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "path": "doc/decisions/0015-current-executed-file-in-runner.md",
+   "identity": "doc/decisions/0015-current-executed-file-in-runner.md",
+   "commit": "100df3d28b593734f3e9ec2707c825711dfefc01",
+   "date": "2024-11-30T16:36:45-03:00",
+   "old_state": "accepted",
+   "new_state": "deleted",
+   "old_raw": "Accepted",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Changes after review: updating ADR, renames, moving location validations and adding tests",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "deleted-without-replacement-pointer",
+   "author": "mariabelenamat",
+   "email": "belen.amat29@gmail.com"
+  }
+ ],
+ "ai_signals": [
+  {
+   "kind": "file:primary",
+   "name": ".github/copilot-instructions.md",
+   "date": "2025-09-01T11:41:37+00:00",
+   "commit": "d56b2b6fa12cdf21656b21af269ed7cb8d145673",
+   "evidence": "Create comprehensive GitHub Copilot instructions for testy repository",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "file:primary",
+   "name": "CLAUDE.md",
+   "date": "2026-06-16T14:40:56-03:00",
+   "commit": "985c8777ec7c6588537c03f0009c000451d4db81",
+   "evidence": "Add CLAUDE.md and untrack ephemeral implementation plans",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-06-11T21:24:10-03:00",
+   "commit": "4551034cb6c32168cb320f6103d6fd734f85d57d",
+   "evidence": "Add AI ideas catalog and prioritization for Testy",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-06-11T21:40:05-03:00",
+   "commit": "4c3cad9abfa66e83b63ebebefa9c9613ada886ca",
+   "evidence": "Add design doc for LLM-friendly output (#380)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-06-11T22:11:22-03:00",
+   "commit": "003e9ed61d35f186afc3585dcfb313dadfc0e064",
+   "evidence": "Add implementation plan for LLM-friendly output (#380)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-06-12T01:07:29-03:00",
+   "commit": "99e51c13ecfc408e2ef6ef28b0479790697cb3d7",
+   "evidence": "Extract base Formatter and ConsoleFormatter (#380)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-06-12T07:47:53-03:00",
+   "commit": "8d5524483c747f39e34107dd2665e32bfc8c7e60",
+   "evidence": "Add formatter test helpers for driving the event stream (#380)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-06-12T07:51:29-03:00",
+   "commit": "d234e99d6ced48839ea1376a824024464f712ec5",
+   "evidence": "Add TapFormatter for TAP version 13 output (#380)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-06-12T09:37:25-03:00",
+   "commit": "1f87feb02e526e3559a7eb1df2de83fa8a9bc9bd",
+   "evidence": "Add JsonFormatter emitting a single structured report (#380)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-06-12T10:10:00-03:00",
+   "commit": "7e4a1abfae1abc8f445e26cc0cf63b59ef139195",
+   "evidence": "Add output configuration option and -o/--output CLI flag (#380)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-06-12T11:49:57-03:00",
+   "commit": "389114cb25ae7999d31422c804d47baefbd74f24",
+   "evidence": "Add FormatterFactory and wire ConsoleUI to select output format (#380)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-06-12T14:49:45-03:00",
+   "commit": "6b4693ffe767780cab4f9c241203b9f4b0927e39",
+   "evidence": "Allow -o/--output flag after test path routes (#380)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-06-16T09:55:59-03:00",
+   "commit": "fde90a18407c191da898c7d726d069ef79694de9",
+   "evidence": "Document output formats (console/tap/json) (#380)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+   "date": "2026-06-16T10:26:12-03:00",
+   "commit": "69fa3b3a459ecb6493f8970da1d3a291b89043eb",
+   "evidence": "List -o/--output flag in CLI --help text (#380)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-06-16T14:40:56-03:00",
+   "commit": "985c8777ec7c6588537c03f0009c000451d4db81",
+   "evidence": "Add CLAUDE.md and untrack ephemeral implementation plans",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-06-16T16:03:44-03:00",
+   "commit": "797998e5631b2ce03ad472b30f4c40b9d232e536",
+   "evidence": "Move singleLine logic to normalizeToSingleLine util",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-06-16T23:26:36-03:00",
+   "commit": "23d896504841fe47625a9c5688be3ddf58da10ec",
+   "evidence": "Migrate from Renovate to Dependabot (#266)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-06-17T13:44:48-03:00",
+   "commit": "c110415e453234c61ef6086afe065f3d3a0f6b56",
+   "evidence": "Move quality commands to Commands section, add lint/test PR gate (#381)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-06-17T14:01:15-03:00",
+   "commit": "083b2344c9147a6787089e2d2794f0d104d7b5ca",
+   "evidence": "Fix alignment of test:coverage and test:mutation commands",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-06-29T16:08:34-03:00",
+   "commit": "dfafd72017add9b353b09ed5fd4422791bba823d",
+   "evidence": "Use node: prefix in json_formatter.js module import",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-06-29T15:36:00-03:00",
+   "commit": "14abb0a3863a2c1e6b9866c5886408e0ba58466e",
+   "evidence": "feat: add simplicity guardian detection functions (#382)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-06-29T15:42:55-03:00",
+   "commit": "9a4bd7c9ccacb9ce60c8e536bfa91fee1132dd3a",
+   "evidence": "feat: add simplicity guardian CLI entry point (#382)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-06-29T15:53:32-03:00",
+   "commit": "07bacf18951abf12aa6d21565fea43cf9058ff48",
+   "evidence": "feat: add OOP discipline and layer-direction ESLint rules (#382)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-06-29T15:56:34-03:00",
+   "commit": "511026ed1f51eb71d28c2e9a432a76166c4056d4",
+   "evidence": "fix: keep OutputConfigurationParameterParser as instance for consistency (#382)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-06-29T16:07:13-03:00",
+   "commit": "bd8e39d7cd9681ee904bb605880e0b9175c3952d",
+   "evidence": "feat: add PR comment script with formatting tests (#382)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+   "date": "2026-06-29T16:10:28-03:00",
+   "commit": "bdfa5cefc945976cc7cdacb5e433cc4d4354d452",
+   "evidence": "fix: paginate comments, extract countEslintErrors, add input validation (#382)",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>",
+   "date": "2026-08-21T23:56:10+00:00",
+   "commit": "a174bebd6bdf2ccfbc0e5612160123a87a345fd1",
+   "evidence": "fix(core): resolve JSDoc/behavior inconsistencies in assertions",
+   "official": true,
+   "author": "Claude",
+   "email": "noreply@anthropic.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>",
+   "date": "2026-08-26T01:12:49+00:00",
+   "commit": "a51f7d505b6b3d859d4e87de75acc81e9a5b7d39",
+   "evidence": ":bookmark: release v8.1.0",
+   "official": true,
+   "author": "Claude",
+   "email": "noreply@anthropic.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-28T16:06:50-03:00",
+   "commit": "7ba4cdb8a1f2ff21b2c404d079e8fd51fcda0ec2",
+   "evidence": "chore(deps): upgrade eslint to 10.13 and refresh lockfile",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-28T16:07:42-03:00",
+   "commit": "94dd18b1a61f799d8d97a7f58757f81760c0b8ba",
+   "evidence": "fix(typescript): write transpiled test next to the original so relative imports resolve",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>",
+   "date": "2026-10-28T16:10:22-03:00",
+   "commit": "0bcad8e75699c8b47cfd3860375884767481acd9",
+   "evidence": "chore: drop unused .testy-cache entry from .gitignore",
+   "official": true,
+   "author": "Nahuel Garbezza",
+   "email": "n.garbezza@gmail.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-01T11:26:51+00:00",
+   "commit": "5bc7c9ee00e3c08409e85f103c1d9740f52e647e",
+   "evidence": "Initial plan",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-01T11:28:04+00:00",
+   "commit": "8a8fa1f27268549a9b42be86e946d942a71050fa",
+   "evidence": "Initial plan",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-01T11:28:55+00:00",
+   "commit": "dfec0a810b51586b1c224ee44a2259129f431f76",
+   "evidence": "Initial plan",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-01T11:33:38+00:00",
+   "commit": "ce31f06940ea426bcef49002b1557ede2173a963",
+   "evidence": "Add repository social preview image (repo card)",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-01T11:35:10+00:00",
+   "commit": "c714e537b66ca6b53ee77098f091f109a660da14",
+   "evidence": "Add comprehensive tests for isNotEqualTo mirroring isEqualTo test coverage",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-01T11:41:37+00:00",
+   "commit": "d56b2b6fa12cdf21656b21af269ed7cb8d145673",
+   "evidence": "Create comprehensive GitHub Copilot instructions for testy repository",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-01T12:48:39+00:00",
+   "commit": "506379acd47525a4e7542f26dea551684f3caed8",
+   "evidence": "Initial plan",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-01T13:04:33+00:00",
+   "commit": "e9f774c5f9b5ee80db49c1fe3994fc7007ccaec5",
+   "evidence": "Migrate from CodeClimate to QLTY",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-01T13:14:06+00:00",
+   "commit": "43cb8061458405b3225f90eba264c663edb33bf7",
+   "evidence": "Update QLTY action to correct name and version",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-02T00:16:49+00:00",
+   "commit": "a45966c68980d1ad2c4e9bc1bb35249cd4a651aa",
+   "evidence": "Initial plan",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-02T00:22:44+00:00",
+   "commit": "905b6ecccd81c498ca5a027c3640d1508f6dd6c8",
+   "evidence": "Add complete Portuguese (pt) translations for testy framework",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-03T23:46:21+00:00",
+   "commit": "23923039ed37873197818d820ef9a7120bb98fa2",
+   "evidence": "Initial plan",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-03T23:52:26+00:00",
+   "commit": "e1230cbc2f05eb83a6254fa62a4cc404c1ba4eb4",
+   "evidence": "Add tests for TestSuite callbacks to ensure onStart and onFinish are called",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-05T08:43:12+00:00",
+   "commit": "bdf35b474730c54aab134ea887032cecdbe2434e",
+   "evidence": "Initial plan",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-05T08:44:49+00:00",
+   "commit": "5c3a126520836b22179d46998fad34f91224ccc1",
+   "evidence": "Fix lint errors in TestSuite callback tests",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-05T08:51:53+00:00",
+   "commit": "ade214643a2e0308ad4232d4d0be953056a060d9",
+   "evidence": "Fix matches() assertion to provide meaningful error message for undefined",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2025-09-05T08:55:29+00:00",
+   "commit": "532feb0b63171a78ecf2c2c2342a5d769e28f065",
+   "evidence": "Add test for isMatching shortcut method validation",
+   "official": true,
+   "author": "copilot-swe-agent[bot]",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "Claude <noreply@anthropic.com>",
+   "date": "2026-08-21T23:56:10+00:00",
+   "commit": "a174bebd6bdf2ccfbc0e5612160123a87a345fd1",
+   "evidence": "fix(core): resolve JSDoc/behavior inconsistencies in assertions",
+   "official": true,
+   "author": "Claude",
+   "email": "noreply@anthropic.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "Claude <noreply@anthropic.com>",
+   "date": "2026-08-26T01:12:49+00:00",
+   "commit": "a51f7d505b6b3d859d4e87de75acc81e9a5b7d39",
+   "evidence": ":bookmark: release v8.1.0",
+   "official": true,
+   "author": "Claude",
+   "email": "noreply@anthropic.com"
+  }
+ ],
+ "signal_date": "2025-09-01T11:26:51+00:00",
+ "signal_kind": "agent-author",
+ "mentions": {
+  "strict": [
+   {
+    "sha": "d56b2b6fa12cdf21656b21af269ed7cb8d145673",
+    "date": "2025-09-01T11:41:37+00:00",
+    "subject": "Create comprehensive GitHub Copilot instructions for testy repository"
+   },
+   {
+    "sha": "4e0cfbb520e17711deb5e0012f742318e14314cf",
+    "date": "2025-09-01T09:19:49-03:00",
+    "subject": "Merge pull request #351 from ngarbezza/copilot/fix-221"
+   },
+   {
+    "sha": "f77616ced5b77081458706097724a872877c913b",
+    "date": "2025-09-01T11:01:54-03:00",
+    "subject": "Merge pull request #356 from ngarbezza/copilot/fix-355"
+   },
+   {
+    "sha": "5cb1da0ea3825cf17f0af471901ad35fa54da9a3",
+    "date": "2025-09-01T21:15:27-03:00",
+    "subject": "Merge pull request #352 from ngarbezza/copilot/fix-180"
+   },
+   {
+    "sha": "3fb22f6243892154e4239ae8a86f8195c3213d6f",
+    "date": "2025-09-01T22:30:55-03:00",
+    "subject": "Merge pull request #357 from ngarbezza/copilot/fix-199"
+   },
+   {
+    "sha": "b9669e807e65bc843c72aacac9eeb3ac6f06b2ce",
+    "date": "2025-09-05T06:40:57-03:00",
+    "subject": "Merge pull request #358 from ngarbezza/copilot/fix-200"
+   },
+   {
+    "sha": "4133b9c03918c7bfbbe005b7c26992702127f9c2",
+    "date": "2025-09-05T07:18:58-03:00",
+    "subject": "Merge pull request #360 from ngarbezza/copilot/fix-273"
+   },
+   {
+    "sha": "86312b5281ac6491a4c84fb5c028e5072a7795f4",
+    "date": "2025-09-08T10:56:14-03:00",
+    "subject": "Merge branch 'main' into copilot/fix-353"
+   },
+   {
+    "sha": "ff05fe81e64e594f8a82038d76928a313bb96488",
+    "date": "2025-09-08T13:59:27-03:00",
+    "subject": "Merge pull request #354 from ngarbezza/copilot/fix-353"
+   },
+   {
+    "sha": "985c8777ec7c6588537c03f0009c000451d4db81",
+    "date": "2026-06-16T14:40:56-03:00",
+    "subject": "Add CLAUDE.md and untrack ephemeral implementation plans"
+   },
+   {
+    "sha": "18d75adeae3c9429cd793f8bee1fc9ae3ea896e7",
+    "date": "2026-06-17T12:23:09-03:00",
+    "subject": "Add Project DNA section to CLAUDE.md (#381)"
+   },
+   {
+    "sha": "c226b68b60b6b234be2aee28fe2651df56c36c18",
+    "date": "2026-06-17T12:44:17-03:00",
+    "subject": "Add Contributing conventions section to CLAUDE.md (#381)"
+   }
+  ],
+  "strict_count": 28,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-eligible",
+ "adr_count_before_signal": 17,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-before-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "9"
+}

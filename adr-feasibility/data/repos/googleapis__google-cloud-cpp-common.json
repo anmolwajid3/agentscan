@@ -1,0 +1,223 @@
+{
+ "repo": "googleapis/google-cloud-cpp-common",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2019-10-02T09:32:21-04:00",
+ "last_commit": "2020-04-24T17:45:26-04:00",
+ "n_commits": 192,
+ "n_authors": 10,
+ "n_files": 394,
+ "n_code_files": 64,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 6,
+ "adrs": [
+  {
+   "path": "doc/adr/2018-06-13-storage-always-retries.md",
+   "identity": "doc/adr/2018-06-13-storage-always-retries.md",
+   "adr_id": "2018",
+   "title": "The GCS Library retries all operations.",
+   "first_commit": "2019-10-02T09:32:21-04:00",
+   "first_sha": "a48a2653adc8d4b767d3d6910119617bd702e9f2",
+   "last_commit": "2019-10-02T09:32:21-04:00",
+   "author": "Carlos O'Ryan",
+   "email": "coryan@google.com",
+   "status": "accepted",
+   "status_raw": "accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "## The GCS Library retries all operations.\n\n**Status**: accepted\n\n**Context**: operations that change state in the server may complete with an\nindeterminate status code. For example: an error in the 500 range may be\nproduced by a middle-tier server after the operation was started by the backend.\nRe-issuing the request may not work as expected for the application developer.\n\n**Decision**: by default the library will retry all requests, including\nnon-idempotent ones. The library will allow application developers to override\nthe definition of what operations are automatically retried.\n\n**Consequences**: most operations become easier to use for application\ndevelopers. In very rare cases the operation will result in double uploads, or\nin a new generation of the object or metadata being created. In even more\nrare cases the operation may fail, for example, an operation to create an object\nwith `IfGenerationMatch(0)` would fail on the second attempt.\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/2018-06-18-storage-request-parameters-are-function-arguments.md",
+   "identity": "doc/adr/2018-06-18-storage-request-parameters-are-function-arguments.md",
+   "adr_id": "2018",
+   "title": "The GCS Library represents optional parameters as variadic function arguments.",
+   "first_commit": "2019-10-02T09:32:21-04:00",
+   "first_sha": "a48a2653adc8d4b767d3d6910119617bd702e9f2",
+   "last_commit": "2019-10-02T09:32:21-04:00",
+   "author": "Carlos O'Ryan",
+   "email": "coryan@google.com",
+   "status": "accepted",
+   "status_raw": "accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "## The GCS Library represents optional parameters as variadic function arguments.\n\n**Status**: accepted\n\n**Context**: most APIs in the GCS library have a number of optional parameters,\nfor example, the API can use `ifMetagenerationMatch` to apply an operation only\nif the metadata generation matches a given number. The question arose of how to\nrepresent these parameters, as properties that we modify in the client or\nobject, or as per-request parameters in the function used to access the API.\nThat is, we had two proposals, one where the application would write code like\nthis:\n\n```C++\nvoid AppCode(Bucket b, FixedArgument1 foo, FixedArgument2 bar) {\n  b.ApiName(\n      foo, bar, storage::IfMetagenerationMatch(7), UserProject(\"my-project\"));\n```\n\nvs. code like this:\n\n```C++\nvoid AppCode(Bucket b, FixedArgument1 foo, FixedArgument2 bar) {\n  // Create a new bucket handle that applies the given optional parameters to\n  // all requests.\n  auto bucket = b.ApplyModifiers(\n      storage::IfMetagenerationMatch(7), UserProject(\"my-project\"))\n  bucket.ApiName(foo, bar);\n}\n```\n\n**Decision**: The parameters are passed as variadic arguments into any function\nthat needs them. That is, all APIs look like this:\n\n```C++\nclass Bucket /* or Object as applicable */ { public:\ntemplate <typename... Parameters>\nReturnType ApiName(\n    FixedArgument1 a1, FixedArgument2 a2,\n    Parameters&&... p);\n```\n\nand are used like this:\n\n```C++\nvoid AppCode(Bucket b, FixedArgument1 foo, FixedArgument2 bar) {\n  b.ApiName(\n      foo, bar, storage::IfMetagenerationMatch(7), UserProject(\"my-project\"));\n```\n\n**Consequences**: The advantages of this approach include:\n\n- It is easier to use parameters in an API, it does not require to create a new\n  bucket or object or client handle just for changing the parameters in one\n  request.\n\nThe downsides include:\n\n- All APIs become templates, we should be careful not to create massive header\n  files that are slow to compile.\n- It is harder to overload APIs.\n- It is not clear how other optional parameters of the APIs, such as timeouts,\n  fit with this structure.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/2018-06-19-do-not-duplicate-server-side-validation.md",
+   "identity": "doc/adr/2018-06-19-do-not-duplicate-server-side-validation.md",
+   "adr_id": "2018",
+   "title": "**Title**: Do not duplicate validation performed by the server-side.",
+   "first_commit": "2019-10-02T09:32:21-04:00",
+   "first_sha": "a48a2653adc8d4b767d3d6910119617bd702e9f2",
+   "last_commit": "2019-10-02T09:32:21-04:00",
+   "author": "Carlos O'Ryan",
+   "email": "coryan@google.com",
+   "status": "accepted",
+   "status_raw": "accepted.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "**Title**: Do not duplicate validation performed by the server-side.\n\n**Status**: accepted.\n\n**Context**: many APIs impose restrictions on their parameters. Names may have\nlength limits, or strings may need to conform to specific formats, or ranges\nmust be non-empty.  It is tempting to validate these arguments in the\nclient-side, since we *know* the API will fail if it is allowed to continue\nwith the invalid parameters. However, any such validation is redundant, since\nthe server is going to validate its inputs as well. Furthermore, any such\nvalidation is wasteful: most of the time the application will pass on valid\narguments, checking them twice is just wasting client-side CPU cycles. Moreover,\nthe server-side is the source of truth, so having the validations performed on\nthe client side wil require extra work if the server restrictions are ever\nmodified.\n\n**Decision**: the client libraries do not validate any of the request\nparameters beyond what is required to avoid local crashes.\n\n**Consequences**: the main downsides are:\n\n- The error messages could be better if generated locally.\n- The server must validate all inputs correctly.\n- Sometimes, we will need to validate inputs to avoid library crashes, and\n  that will be confusing because it will seem like a violation of this ADR.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/2018-10-30-storage-metadata-fields-and-optional.md",
+   "identity": "doc/adr/2018-10-30-storage-metadata-fields-and-optional.md",
+   "adr_id": "2018",
+   "title": "The GCS Library uses optional fields only for sub-objects.",
+   "first_commit": "2019-10-02T09:32:21-04:00",
+   "first_sha": "a48a2653adc8d4b767d3d6910119617bd702e9f2",
+   "last_commit": "2019-10-02T09:32:21-04:00",
+   "author": "Carlos O'Ryan",
+   "email": "coryan@google.com",
+   "status": "accepted",
+   "status_raw": "accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "## The GCS Library uses optional fields only for sub-objects.\n\n**Status**: accepted\n\n**Context**: because the underlying protocol for GCS is JSON, any field can be\nabsent from the responses received from the server. Furthermore, the application\ncan use the `fields` query parameter to select a subset of the fields in a\nresponse. A natural question is whether the fields should be represented as\n`optional<T>`. That is, whether the class to represent object attributes should\nlook like this:\n\n```C++\nclass ObjectMetadata { public:\n  std::string const& name() const;\n  std::chrono::system_clock::time_point time_created() const;\n  CustomerEncryption const& customer_encryption() const;\n};\n```\n\nor it should look like this:\n\n```C++\nusing google::cloud::optional;\nclass ObjectMetadata { public:\n  optional<std::string> const& name() const;\n  optional<std::chrono::system_clock::time_point> time_created() const;\n  optional<CustomerEncryption> const& customer_encryption() const;\n};\n```\n\n**Decision**:\n\n* For string fields where there is no semantic difference between an empty\n  string and the field not present we just use `std::string<>`.\n* For array fields where there is no semantic difference between field not\n  present and an empty array we just use `std::vector<>`.\n* For integer and boolean fields we default to `0` (and `false`) if the field\n  is not present.\n* For object fields we default to wrapping the field in `optional<>`.\n\nFor fields wrapped in `optional<>` we offer convenience functions to make it\neasier to operate on these fields. For a field called `foo` these are:\n\n* `has_foo()` returns true if the field is set.\n* `foo()` returns the field value if set, the behavior is undefined if the value\n  is not set.\n* `foo_as_optional()` returns the optional field.\n* `reset_foo()` resets the field (for writable fields).\n* `set_foo()` sets the field (for writable fields).\n\n**Consequences**: The advantage of this approach is that most fields are easy\nto use most of the time. The disadvantage of this approach include:\n\n* The ambiguity when the application filters the returned fields, the value\n  may be the default value because the client did not get the field.\n* As applications change over time and they start filtering different fields\n  the code may assume that the value of a field is valid, but it has a default\n  value. With optionals the application should crash during testing, or may\n  be programmed defensively since the start.\n* It also requires more thought designing the classes a field has different\n  semantics for \"not there\" vs. \"the default value\".\n\n**Reference**\n\nThis was originally discussed in\n[#934](https://github.com/googleapis/google-cloud-cpp/issues/934).\n\nThe original [PR](https://github.com/googleapis/google-cloud-cpp/pull/1358)\nalso has some interesting discussions.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#934",
+     "kind": "hash",
+     "url": "",
+     "number": "934"
+    },
+    {
+     "key": "googleapis/google-cloud-cpp#934",
+     "kind": "issue",
+     "url": "https://github.com/googleapis/google-cloud-cpp/issues/934",
+     "number": "934"
+    },
+    {
+     "key": "googleapis/google-cloud-cpp#1358",
+     "kind": "pull",
+     "url": "https://github.com/googleapis/google-cloud-cpp/pull/1358",
+     "number": "1358"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/2019-01-04-error-reporting-with-statusor.md",
+   "identity": "doc/adr/2019-01-04-error-reporting-with-statusor.md",
+   "adr_id": "2019",
+   "title": "**Title**: Functions should report errors using `StatusOr<T>` *instead of*",
+   "first_commit": "2019-10-02T09:32:21-04:00",
+   "first_sha": "a48a2653adc8d4b767d3d6910119617bd702e9f2",
+   "last_commit": "2019-10-02T09:32:21-04:00",
+   "author": "Carlos O'Ryan",
+   "email": "coryan@google.com",
+   "status": "accepted",
+   "status_raw": "accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "**Title**: Functions should report errors using `StatusOr<T>` *instead of*\nthrowing exceptions.\n\n**Status**: accepted\n\n**Context**: We know there will be users of these C++ libraries who want to use\nC++ exceptions as well as those who are not able to. Our C++ libraries must\nwork for all of our users, regardless of their ability to use exceptions.\n\n**Decision**: None of our APIs will throw exceptions to indicate errors.\nInstead, our APIs will typically report errors to callers by returning a\n`Status` or `StatusOr<T>` object, unless the library we're using has another\nnon-throwing way to report errors (e.g., [badbit][badbit-link] in the standard\nI/O library).\n\n**Consequences**: This decision will result in a single set of APIs and a\nconsistent vocabulary for all users, whether or not they choose to compile with\nexceptions. This decision does not prevent callers from using exceptions in\ntheir own code.\n\nA downside of this decision is that our APIs will not be natural or idiomatic\nfor the [50+%][survey-link] of users who might prefer exceptions for error\nreporting.\n\nChanging existing APIs from throwing exceptions to returning `StatusOr<T>` is a\nbreaking change. As of this writing (Jan 2019), this project has a [Google\nCloud Storage][gcs-link] component that is at the Alpha quality level, and a\n[Google Cloud Bigtable][bigtable-link] that is already at the Beta quality\nlevel. We plan to immediately change the API for Google Cloud Storage. We have\nno immediate plans to change the API for Cloud Bigtable. We will communicate a\ntimeline to change this API in a separate document.\n\n[badbit-link]: https://en.cppreference.com/w/cpp/io/ios_base/iostate\n[gcs-link]: https://github.com/googleapis/google-cloud-cpp/tree/master/google/cloud/storage\n[bigtable-link]: https://github.com/googleapis/google-cloud-cpp/tree/master/google/cloud/bigtable\n[survey-link]: https://isocpp.org/blog/2018/03/results-summary-cpp-foundation-developer-survey-lite-2018-02\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/2019-03-26-binary-distributions.md",
+   "identity": "doc/adr/2019-03-26-binary-distributions.md",
+   "adr_id": "2019",
+   "title": "**Title**: We will not distribute/own/maintain binary packages, but we will",
+   "first_commit": "2019-10-02T09:32:21-04:00",
+   "first_sha": "a48a2653adc8d4b767d3d6910119617bd702e9f2",
+   "last_commit": "2019-10-02T09:32:21-04:00",
+   "author": "Carlos O'Ryan",
+   "email": "coryan@google.com",
+   "status": "accepted",
+   "status_raw": "accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "**Title**: We will not distribute/own/maintain binary packages, but we will\nsupport others doing so within reason.\n\n**Status**: accepted\n\n**Context**: Compiling google-cloud-cpp from source is not always possible nor\ndesired by all users. Some users may want to install a binary package that\ncontains our public headers and pre-compiled libraries so that they can link\nagainst our library. There is no single standard binary package manager in C++,\ninstead there are a variety of others that users might want to use (e.g., dpkg,\nrpm, vcpkg).\n\n**Decision**: We will not directly support nor provide any binary packages. We\nwill not test binary distributions of our code. And we will not host configs\nfor binary distributions, since that would involve hosting files which we do\nnot test. However, we will do our best to make our code easily packageable by\nothers in a wide variety of formats. For more context, see\n[#333](https://github.com/googleapis/google-cloud-cpp/issues/333).\n\n**Consequences**: This decision will shield from endorsing any particular\nbinary package management system. Other individuals who want to build and\nmaintain a binary distribution of our code may do so without our permission or\nknowledge. If they need small and reasonable tweaks from us to support their\nbinary distributions, they may file an issue and we'll do our best to\naccommodate them within reason.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#333",
+     "kind": "hash",
+     "url": "",
+     "number": "333"
+    },
+    {
+     "key": "googleapis/google-cloud-cpp#333",
+     "kind": "issue",
+     "url": "https://github.com/googleapis/google-cloud-cpp/issues/333",
+     "number": "333"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 6,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "6"
+}

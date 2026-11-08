@@ -1,0 +1,283 @@
+{
+ "repo": "contiamo/operational-visualizations",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2019-05-22T17:56:26+02:00",
+ "last_commit": "2019-09-30T09:30:36+00:00",
+ "n_commits": 135,
+ "n_authors": 6,
+ "n_files": 95,
+ "n_code_files": 50,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 7,
+ "adrs": [
+  {
+   "path": "docs/adr/0002-about-render-props.md",
+   "identity": "docs/adr/0002-about-render-props.md",
+   "adr_id": "2",
+   "title": "about-render-props",
+   "first_commit": "2019-07-30T10:17:06+02:00",
+   "first_sha": "437477f8a3fbbd38242e3a7bb72c6d8d579316dd",
+   "last_commit": "2019-09-16T12:29:25+02:00",
+   "author": "stereobooster",
+   "email": "stereobooster@gmail.com",
+   "status": "proposed",
+   "status_raw": "2019-07-11 proposed",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 2. about-render-props\n\nDate: 2019-07-11\n\n## Status\n\n2019-07-11 proposed\n\n## Context\n\nWe planned to use so called [render prop](https://reactjs.org/docs/render-props.html) pattern to be able to swap out content of cells (or headers, or axes) in `PivotGrid`.\n\nThen we discovered that we need code like this:\n\n```tsx\nconst axes = {\n  row: ({ row, width, height }): { row: number; width: number; height: number } => {\n    const heightWithoutPadding = height - 2 * padding;\n    const yScale = useScaleBand({\n      frame: pivotedFrame.row(row) as IteratableFrame<string>,\n      column: cityCursor,\n      range: [0, height],\n    });\n    return (\n      <svg\n        width={width}\n        height={heightWithoutPadding}\n        viewBox={`0 0 ${width} ${heightWithoutPadding}`}\n        style={{ margin: `${padding} 0` }}\n      >\n        <Axis scale={yScale} transform={`translate(${width}, -${padding})`} position=\"left\" />\n      </svg>\n    );\n  },\n};\n```\n\nbut we can't use hooks inside the render prop, so we [decided to switch from hooks to components](https://github.com/contiamo/operational-visualizations/pull/87).\n\nThen we discovered that we need code like this:\n\n```tsx\nconst axes = (\n  data: DataFrame<string>,\n  pivotedFrame: PivotFrame<string>,\n  categorical: string,\n  measuresInRow: boolean,\n) => {\n  const Row = ({ row, measure, width, height }: { row: number; measure?: string; width: number; height: number }) => {\n    const scale = useScaleBandOrLinear(\n      measuresInRow && !!measure\n        ? {\n            frame: data,\n            column: data.getCursor(measure),\n```\n\nThis is because we need access to \"root\" `data` to get cursor (see previous discussion about cursors) and other params.\n\nI wonder if we overcomplicated our own life witout any benefit \ud83e\udd14?\n\nMaybe it was premature optimisation to use hooks for scales, maybe it is very cheap to calculate it again and again (on React re-render)? Maybe we need to remove hooks and instead worry about caching of components?\n\nLimitation of not having `getCursor` on all substructures forces to pass root data everywhere. Either it shows that we are doing something wrong or this limitation was a bad idea.\n\nThis code was premature optimisation - I thought it would be more performant than do pattern matching on some tag field (like `.type` in Redux actions):\n\n```ts\ncase \"Empty\":\n  if (prop.measure && prop.rowIndex === undefined) {\n    return {\n      measure: true,\n    };\n  } else if (prop.axis && prop.rowIndex === undefined) {\n    return {\n      axis: true,\n    };\n  } else {\n    return {\n      rowIndex: prop.rowIndex!,\n    };\n  }\n```\n\nBut it caused so much confusion in the code.\n\n## Decision\n\n- [We added getCursor everywhere](https://github.com/contiamo/operational-visualizations/pull/93)\n- [We added data to every sub-component](https://github.com/contiamo/operational-visualizations/pull/96)\n- We didn't touch scale hooks for now, let's see how it goes\n- We undid some of premature optimisation and simplified code\n\n## Consequences\n\nN/A\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "contiamo/operational-visualizations#87",
+     "kind": "pull",
+     "url": "https://github.com/contiamo/operational-visualizations/pull/87",
+     "number": "87"
+    },
+    {
+     "key": "contiamo/operational-visualizations#93",
+     "kind": "pull",
+     "url": "https://github.com/contiamo/operational-visualizations/pull/93",
+     "number": "93"
+    },
+    {
+     "key": "contiamo/operational-visualizations#96",
+     "kind": "pull",
+     "url": "https://github.com/contiamo/operational-visualizations/pull/96",
+     "number": "96"
+    }
+   ],
+   "mentioned_paths": [
+    "reactjs.org/docs/render-props.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0005-about-measure-labels.md",
+   "identity": "docs/adr/00005-about-measure-labels.md",
+   "adr_id": "5",
+   "title": "about-measure-labels",
+   "first_commit": "2019-09-09T15:16:06+02:00",
+   "first_sha": "e264892a7082159f3a9143b6b2f517efd06dd627",
+   "last_commit": "2019-09-16T12:29:25+02:00",
+   "author": "Imogen Mason",
+   "email": "imogen@contiamo.com",
+   "status": "proposed",
+   "status_raw": "2019-09-09 proposed",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 5. about-measure-labels\n\nDate: 2019-09-09\n\n## Status\n\n2019-09-09 proposed\n\n## Context\n\nThe visualization library contains a `Labels` component, which can be used in the same way as all other axial chart renderers:\n\n```jsx\n<Chart>\n  <Bars ... />\n  <Labels ... />\n</Chart>\n```\n\n## Decision\n\nHowever, the user can also display labels by passing a `showLabels` flag. This solves multiple problems:\n\n- In the case of stacked bars or area charts, using the above API does not take stacking into account, so the labels will be in the wrong places.\n- The `Labels` component only works for axial charts, not for pie charts, so `PieChart` would have needed a flag anyway - this ensures consistency across all renderers.\n- For scatter plots, the labels are now automatically offset by the radius of the dots. Any other renderer-specific styling that may be required is now also easier.\n\n## Consequences\n\n...\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0006-static-vs-dynamic-check.md",
+   "identity": "docs/adr/0006-static-vs-dynamic-check.md",
+   "adr_id": "6",
+   "title": "static-vs-dynamic-check",
+   "first_commit": "2019-09-16T12:29:25+02:00",
+   "first_sha": "932f88806fbf82b1a752fac3b111138ddb792b8e",
+   "last_commit": "2019-09-16T12:29:25+02:00",
+   "author": "stereobooster",
+   "email": "stereobooster@gmail.com",
+   "status": "proposed",
+   "status_raw": "2019-09-13 proposed",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 6. static-vs-dynamic-check\n\nDate: 2019-09-13\n\n## Status\n\n2019-09-13 proposed\n\n## Context\n\nWe tried to employ type system to prevent wrong combination of options for charts. For examples, bar chart expects one band and one continious scale:\n\n```ts\nexport type BaseAxialChartProps<Name extends string> =\n  | {\n      xScale: ScaleBand<string>;\n      yScale: ScaleLinear<number, number>;\n    }\n  | {\n      xScale: ScaleLinear<number, number>;\n      yScale: ScaleBand<string>;\n    };\n```\n\nBut this won't work, because TS can't work with disjoint union without actual discriminant, so we need to add tag (`metricDirection`):\n\n```ts\nexport type BaseAxialChartProps<Name extends string> =\n  | {\n      metricDirection: \"vertical\";\n      xScale: ScaleBand<string>;\n      yScale: ScaleLinear<number, number>;\n    }\n  | {\n      metricDirection: \"horizontal\";\n      xScale: ScaleLinear<number, number>;\n      yScale: ScaleBand<string>;\n    };\n```\n\nBut this resulted in clumsy code, which we refactored down to:\n\n```ts\nexport type BaseAxialChartProps<Name extends string> = {\n  metricDirection: \"vertical\" | \"horizontal\";\n  categorical: ScaleBand<string>;\n  metric: ScaleLinear<number, number>;\n};\n```\n\nWhich was ok-ish, except it confuses people who are not familiar with terminology (categorical, metric values). But then we got to scatter plot, which can take any combination of scales:\n\n```tsx\nexport interface DotsProps<Name extends string> {\n  xScale: ScaleLinear<number, number> | ScaleBand<string>;\n  yScale: ScaleLinear<number, number> | ScaleBand<string>;\n}\n```\n\nAnd now we want to refactor all chart to have consistent interface, so it would be easy to interchange them.\n\nPretty similar thing happens in `PivotGrid`:\n\n```tsx\n/**\n * We support text only pivot grid out of the box,\n * for this case you don't need to provide cell render prop, but you need to provide measures\n */\ntype TextOnlyPivotGridProps<Name extends string> =\n  | {\n      type?: \"text\";\n      rowMeasures: Name[];\n      columnMeasures?: undefined;\n    }\n  | {\n      type?: \"text\";\n      rowMeasures?: undefined;\n      columnMeasures: Name[];\n    };\n\n/**\n * This is props for general PivotGrid, you need to provide cell render prop.\n * It can return any React component which will be rendered in cells\n */\ntype GeneralPivotGridProps<Name extends string> =\n  | {\n      type: \"general\";\n      cell: (prop: CellPropsWithoutMeasure<Name>) => React.ReactElement | null;\n    }\n  | {\n      type: \"generalWithMeasures\";\n      rowMeasures?: Name[];\n      columnMeasures?: Name[];\n      cell: (prop: CellPropsWithMeasure<Name>) => React.ReactElement | null;\n    };\n```\n\n`type` is a tag for the disjoint union, which defines what combinations of parameters is supported. The problem is that it generates very confusing TypeScript errors, because it has huge type signature:\n\n```tsx\ntype Props<Name extends string = string> = (TextOnlyPivotGridProps<Name> | GeneralPivotGridProps<Name>) & {\n  ...\n}\n```\n\n## Decision\n\nWe want to avoid a static check and instead rely on dynamic type checking for charts:\n\n```tsx\nexport const Bars: DiscreteAxialChart<string> = ({ xScale, yScale }) => {\n  if (isScaleBand(xScale) && isScaleContinuous(yScale)) {\n    return <g>{bars}</g>;\n  } else if (isScaleBand(yScale) && isScaleContinuous(xScale)) {\n    return <g>{bars}</g>;\n  } else {\n    throw new Error(\"Unsupported case of scales\");\n  }\n};\n```\n\nThere is a chance that the visualisation can crash at runtime in the user's face. We can be more graceful about this and replace `throw` with `return \"Error\"` in production mode.\n\nMaybe later we will do the same change for `PivotGrid`.\n\n## Consequences\n\nThe decision mainly affects DX. It is hard to foresee consequences without trying out in a real project\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0007-frame-vs-scale.md",
+   "identity": "docs/adr/0007-frame-vs-scale.md",
+   "adr_id": "7",
+   "title": "frame-vs-scale",
+   "first_commit": "2019-09-16T12:29:25+02:00",
+   "first_sha": "932f88806fbf82b1a752fac3b111138ddb792b8e",
+   "last_commit": "2019-09-16T12:29:25+02:00",
+   "author": "stereobooster",
+   "email": "stereobooster@gmail.com",
+   "status": "proposed",
+   "status_raw": "2019-09-13 proposed",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 7. frame-vs-scale\n\nDate: 2019-09-13\n\n## Status\n\n2019-09-13 proposed\n\n## Context\n\nWhen we draw charts we iterate over the frame, as the result there are some issues with continuous charts (Line, Area):\n\n- it will draw lines in case of missing data (to prevent this we added special code)\n- there is a chance it will draw a \"twist\" (or tangle, or knot), because **there is no guarantee that points in Scale and in Frame are in the same order**\n\nThis is the same issue as reported in [#94](https://github.com/contiamo/operational-visualizations/issues/94).\n\n### uniqueValues issue\n\nBandScale is built from unqiue values of the frame (`uniqueValues(frame, column)`). Let's assume we have following frame\n\n| age  | city    |\n| ---- | ------- |\n| < 50 | Dresden |\n| < 50 | London  |\n| > 50 | Berlin  |\n| > 50 | Dresden |\n\nUnqiue values of the frame: `Dresden, London, Berlin`. But if we would group frame by `age` and take each fragment separately\n\n- `< 50`: `Dresden, London`\n- `> 50`: `Berlin, Dresden` (vs scale's `Dresden, London, Berlin`)\n\nIf we would iterate over the Frame and oreder of points in Scale and Frame is different (as example above), we would get \"twist\":\n\n```\n^              3        4\n|              *--------*--\n|               \\\n|                \\\n|      1          \\\n|  ----*-----------*2\n|\n+---------------------------->\n       A      B     C    D\n```\n\nThis is wrong, instead it should look like:\n\n```\n^             2         4\n|            /*\\       *--\n|           /   \\     /\n|          /     \\   /\n|      1  /       \\ /\n|  ----*-/         *3\n|\n+---------------------------->\n       A      B     C    D\n```\n\n### uniqueValues solution\n\nThe only solution I see is to sort Frame by the same values we use for grouping and for graphing (e.g. in this case we would sort by age and city). This way we can sort unique values as well:\n\n```js\ncacheItem.unique = [...unique].sort();\n```\n\n_Note_: The default sort order is built upon converting the elements into strings, then comparing their sequences of UTF-16 code units values (for numbers it produce unexpected results).\n\nOn the other hand if we would want to sort the data on the server, then we can't use `[...unique].sort();`, because we wouldn't know which kind of sorting criteria server is using.\n\n### Missing data handling\n\nIf we would have consistent order of items in Frame and Scale we could iterate over Scale instead of Frame and this way we can easily track if there are missing data points or not.\n\n```ts\nconst xTicks = xScale.domain();\nlet offset = 0;\nxTicks.map((z, i) => {\n  const row = data.row(i + offset) || [];\n  if (z !== x(row)) {\n    offset -= 1;\n    return; // undefined will be skipped by `.defined()` d3 function\n  }\n  return row;\n});\n```\n\n## Decision\n\nDecision here...\n\n## Consequences\n\nConsequences here...\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#94",
+     "kind": "hash",
+     "url": "",
+     "number": "94"
+    },
+    {
+     "key": "contiamo/operational-visualizations#94",
+     "kind": "issue",
+     "url": "https://github.com/contiamo/operational-visualizations/issues/94",
+     "number": "94"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0003-about-caching.md",
+   "identity": "docs/adr/0003-about-caching.md",
+   "adr_id": "3",
+   "title": "about-caching",
+   "first_commit": "2019-07-30T15:48:21+02:00",
+   "first_sha": "07ddbf86ebfb46d605a94a9aede7d0cd238d77ab",
+   "last_commit": "2019-08-05T10:42:50+02:00",
+   "author": "stereobooster",
+   "email": "stereobooster@gmail.com",
+   "status": "proposed",
+   "status_raw": "2019-07-30 proposed",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 3. about-caching\n\nDate: 2019-07-30\n\n## Status\n\n2019-07-30 proposed\n\n## Context\n\nSome decisions were taken about how data is organised and how we do caching, but they weren't explicitly documented. Let's fix that.\n\nWe have 3 methods of caching:\n\n- flru in PivotFrame\n- WeakMaps in stats utils\n- hooks for scales\n\n### Referential transparency\n\nReact relies a lot on **referential transparency** when it decides if it needs to rerender or not e.g. it compares objects as reference (so called shallow comparison), it doesn't compare structure. It is a very cheap operation, because underneath it compares pointers.\n\nFor example, if you compare primitive values:\n\n```ts\n1 === 1; //true\n```\n\nbut when you compare objects\n\n```ts\n{} === {}; // false\nconst a = {};\na === a; // true\n```\n\nEvery `{}` creates new instance of the object, and a new reference. Referential transparency is closely related to the \"purity\" of function.\n\nThis is a pure function:\n\n```ts\nconst add = (x: number, y: number) => x + y;\n```\n\nbut is the next one a pure function as well?\n\n```ts\nconst getPoint = (x: number) => new Point(x);\ngetPoint(0) === getPoint(0); // false\n```\n\nIt doesn't seem to have any side effects, but it produces a new instance every time. One of the solutions to this problem is to use memoisation so it would always return the same result\n\n```ts\nconst memoise = f => {\n  const cache = new Map();\n  return x => {\n    if (!cache.has(x)) cache.set(x, f(x));\n    return cache.get(x);\n  };\n};\nconst getPoint = memoise((x: number) => new Point(x));\ngetPoint(0) === getPoint(0); // true\n```\n\nThe problem here is that memory is not infinite, and we need to clean up it at some point. How are we going to do it? There are many approaches to this problem. We chose to store some number (1024 in our case for PivotFrame) of recently created references. It is ok, because we need to show only part of the PivotFrame (PivotGrid) on the screen (we use \"windowing\" technique). In practice it means the following\n\n```ts\nconst first = frame.column(0);\nframe.column(1);\n// frame.column(2) ... frame.column(500)\nfirst === frame.column(0); // true, still in cache\n// frame.column(500) ... frame.column(1024)\nfirst === frame.column(0); // false, evicted from cache\n```\n\nNot all operations are referentially transperent, for example DataFrames `pivot` is not.\n\n### Performance optimisation\n\nAnother point of caching is that you can trade computational cycles for memory e.g. once you have done a computation you can cache it and next time when you need it would be faster, but you need to store results in memory. For example, when we need to calculate maximum value of or total value of the column - we need to go through the whole data set so it's O(N) operations, which is not much from one side, but on the other side if you do this for every cell in PivotGrid (to calculate axes and on each React rerender) the whole cost can turn into O(N^2).\n\nCaching is easy to do with something like `memoise`, but the question is when and how to clean up cache. Imagine we load one data set, do a calculation, load another data set, do more calculations - we will run out of cache at some point.\n\nWe can employ a nice trick to solve this problem (especially if we deal with a referentially transparent system). We can store cache until the initial object for which we did the calculation is in memory. As soon as it goes away (swiped by Garbage Collector), we can drop the cache as well. To do this in JS we can use `WeakMap`.\n\n```ts\nconst weakMemoise = f => {\n  const cache = new WeakMap();\n  return x => {\n    if (!cache.has(x)) cache.set(x, f(x));\n    return cache.get(x);\n  };\n};\n```\n\nThe limitation of `WeakMap` is that keys can't be primitive values, but this is ok because we can use `FragmentFrame` and `DataFrame` as cache keys.\n\nInside each cache \"slot\" we can store an empty object, inside which we can store cache for each column, for each type of operation.\n\nSo cache of `max` of `firstColumn` of `frame`, would be stored as:\n\n```ts\ncache.get(frame)[firstColumn][\"max\"];\n```\n\nAs soon as `frame` is removed by GC, the whole slot (`cache.get(frame)`) will be removed as well.\n\nThis system works only with referentially transparent functions, so for example it will not work with FragmentFrames `groupBy`. (Maybe we need to change `groupBy` and return some kind of `GroupFrame` \ud83e\udd14).\n\n### Hooks\n\nSome values, like scales, are hard to cache with the `WeakMap` style cache, because you have a lot of components so you will need really deep nesting in \"slot\" object (we already use 2 levels :/), which is hard to work with.\n\nTo solve such cases we decided to use hooks, which simplify caching (because in React they can attach cache to React tree node). The downside of this, is that we can't use render prop, we were forced to switch to components. See 0002-about-render-props for details.\n\n## Decision\n\nSo we have 3 approaches for caching, but we have room for improvement. For example, we can't have (or can we?) big number of arguments in stats functions.\n\nNot all of our methods are referentially transparent. We may want to address this later.\n\n## Consequences\n\nN/A\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0001-about-cursors.md",
+   "identity": "docs/adr/0001-about-cursors.md",
+   "adr_id": "1",
+   "title": "about-cursors",
+   "first_commit": "2019-07-09T13:56:28+02:00",
+   "first_sha": "947fa9486e897b784561b1d191895ce8da5c7aac",
+   "last_commit": "2019-08-01T11:56:25+02:00",
+   "author": "stereobooster",
+   "email": "stereobooster@gmail.com",
+   "status": "proposed",
+   "status_raw": "2019-07-08 proposed",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 1. about-cursors\n\nDate: 2019-07-08\n\n## Status\n\n2019-07-08 proposed\n\n## Context\n\nIn the grid in cell function we recieve `FragmentFrame` which is vertical slice of original `DataFrame` and then when we render visualaisation we iterate through raw data with `mapRows` method of `IterableFrame` and then we need to access some exact value in raw row. One of the ideas on how to do this universally was to use some kind of **cursor**.\n\nCurrent implementation of **cursor** looks like this\n\n```tsx\nexport interface ColumnCursor<Name extends string, ValueInRawRow = any> {\n  (row: RowCursor): ValueInRawRow;\n  column: Name;\n  index: number;\n}\n```\n\nso we can access value like this `cursor(row)` or more hacky and optimised way `row[cursor.index]`. Second option is fragile, in case we would want to change implementation of `row` (for example, from row-oriented storage to column-orinted) it will brake in many places (at least we have types, which will make this refactoring easier).\n\nCursor at the moment can be recieved from \"root\" `DataFrame`, which we think of as source of all derivative `PivotFrame`s and `FragmentFrame`s. Cursors are cached for referential transparency, so if they got passed down to React components, they will not trigger rerender.\n\n**Question** raised in [one of PR](https://github.com/contiamo/operational-visualizations/pull/70/files#diff-2044c7c7ba6c3fbf04dd49cf3cfa68b9R38): Shall we provide `getCursor` functionality in `FragmentFrame`? From one side it may make code simpler, on the other side we need to make sure that `FragmentFrame`s are referentially transperent (which is not the case, for example, for `cell` method) and it will create a lot of copies of the same cursors. We can as well pass reference to \"root\" `DataFrame` along all derivative structures and \"proxy\" `getCursor` method call to it.\n\n## Decision\n\nAt the moment we decided to use proposed version of cursors and adjust it in the future depending if we like DX or not. We will provide `getCursor` method only for `DataFrame` for now, but we can chnage this in the future.\n\n## Consequences\n\nThis decision mainly affects DX. And it is hard to foresee, without trying out in real project\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "contiamo/operational-visualizations#70",
+     "kind": "pull",
+     "url": "https://github.com/contiamo/operational-visualizations/pull/70",
+     "number": "70"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0004-about-row-cursor.md",
+   "identity": "docs/adr/0004-about-row-cursor.md",
+   "adr_id": "4",
+   "title": "about-row-cursor",
+   "first_commit": "2019-08-01T11:56:25+02:00",
+   "first_sha": "fa97b9df6ba7914463332c8bd55f37b1596c4f87",
+   "last_commit": "2019-08-01T11:56:25+02:00",
+   "author": "stereobooster",
+   "email": "stereobooster@gmail.com",
+   "status": "proposed",
+   "status_raw": "2019-08-01 proposed",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 4. about-row-cursor\n\nDate: 2019-08-01\n\n## Status\n\n2019-08-01 proposed\n\n## Context\n\nWe use `RawRow` in `frame` library to expose rows from data stored in the `frame`. At the moment `RawRow` implemented as `export type RawRow = any[];`. This approach exposes implementation details - that `frame` is row oriented storage. If we would want to swap implementation from row oriented to column oriented storage, we may need to change implementation details and it will break code for people who use our library. We need to hide implemntation details.\n\n### Row-oriented storage vs Column-oriented storage\n\nThe main difference between two storages is the cost of accessing rows and columns:\n\n|            | row-oriented | column-oriented |\n| ---------- | ------------ | --------------- |\n| get row    | O(1)         | O(N)            |\n| get column | O(N)         | O(1)            |\n\n(the simplified version, really depends on the implementation).\n\nAs well you can have some hybrid solution, like return cursors instead of raw data, to get data lazily.\n\nAt the moment we have all data loaded in the memory, so this distinction is not so critical, but as soon as we would want to switch implementation to some proxy which will read data from the remote server, this can be important.\n\n### Rename\n\nThe minimal improvement we can make is to rename `RawRow` to `RowCursor`, to shift away from mentality of row-oriented storage. To get the value from the table you would need to use two cursors, like x and y coordinates (or latitude and longitude):\n\n```ts\ncolumnCursor(rowCursor); // this is what we have right now\n// or\ngetValue(rowCursor, columnCursor);\n// or\nrowCursor(columnCursor);\n```\n\n### Hide implementation\n\nThe next step would be to hide implementation. We can:\n\n- wrap rows into objects, to hide the shape of the data\n- in Flow you can hide implementation with [opaque type](https://flow.org/en/docs/types/opaque-types/), maybe something similar is possible with interfaces in TS\n\n### Premature optimisation\n\nAt the moment it is possible to write this:\n\n```ts\nrowCursor[columnCursor.index];\n// which is the same as\ncolumnCursor(rowCursor);\n```\n\nAssumption was that array access is faster than function call (which inside still will do array access). It may happen that it was premature optimisation and it exposes a lot of implementation details.\n\nPossible middle-ground here would be [macros](https://github.com/Microsoft/TypeScript/issues/4892): developer would write `columnCursor(rowCursor);` but generated JS contains `rowCursor[columnCursor.index];`, so in case we would change implmentation we can as well change implementation of macro. And user of our library doesn't need to worry about implemntation details.\n\n## Decision\n\nFor now we only took first step (rename, in this PR). We will think about other steps in the future.\n\n## Consequences\n\nN/A\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "Microsoft/TypeScript#4892",
+     "kind": "issue",
+     "url": "https://github.com/Microsoft/TypeScript/issues/4892",
+     "number": "4892"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/adr/0005-about-measure-labels.md",
+   "identity": "docs/adr/00005-about-measure-labels.md",
+   "commit": "932f88806fbf82b1a752fac3b111138ddb792b8e",
+   "date": "2019-09-16T12:29:25+02:00",
+   "old_state": "unknown",
+   "new_state": "proposed",
+   "old_raw": "",
+   "new_raw": "2019-09-09 proposed",
+   "replacement": null,
+   "message": "feat(visualizations): Use x and y for visualizations instead of metric and categorical (#169)",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "accepted-during-cleanup",
+   "author": "stereobooster",
+   "email": "stereobooster@gmail.com"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 1,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 7,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "7"
+}

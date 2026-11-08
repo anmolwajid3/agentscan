@@ -1,0 +1,1286 @@
+{
+ "repo": "Sylius/Sylius",
+ "clone_ok": true,
+ "error": null,
+ "description": "Headless open-source eCommerce platform on top of PHP/Symfony/API Platform",
+ "first_commit": "2011-09-09T16:12:24+02:00",
+ "last_commit": "2026-11-06T12:47:14+01:00",
+ "n_commits": 41529,
+ "n_authors": 972,
+ "n_files": 12040,
+ "n_code_files": 4989,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 32,
+ "adrs": [
+  {
+   "path": "adr/2025_04_07_transition_from_phpspec_to_phpunit.md",
+   "identity": "adr/2025_04_07_transition_from_phpspec_to_phpunit.md",
+   "adr_id": "2025",
+   "title": "Transition from PHPSpec to PHPUnit",
+   "first_commit": "2025-04-07T10:27:10+02:00",
+   "first_sha": "47f804129fe42ea9f86b2131465892c83613abd2",
+   "last_commit": "2025-04-07T10:53:13+02:00",
+   "author": "Grzegorz Sadowski",
+   "email": "sadowskigp@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Transition from PHPSpec to PHPUnit\n\n* Status: Accepted\n* Date: 2025-04-07\n\n## Context and Problem Statement\n\nSylius has historically used PHPSpec for unit testing, following a behavior-driven development (BDD) approach. However, \nmaintaining PHPSpec alongside PHPUnit (which is already used for integration and functional tests) has introduced challenges \nin terms of maintainability, tooling, and onboarding new contributors.\n\nTo ensure long-term sustainability and align with modern PHP development practices, we need to evaluate whether \ncontinuing with PHPSpec is beneficial or if a transition to PHPUnit for unit testing is a better approach.\n\n## Decision Drivers\n\n* **Consistency** \u2013 how well each approach integrates with the existing Sylius testing strategy.\n\n* **Maintainability** \u2013 the long-term viability of each testing framework and the effort required to support it.\n\n* **Developer Experience** \u2013 the learning curve, IDE support, and available tooling for each approach.\n\n* **Flexibility** \u2013 the ability to write and structure tests in a way that supports the evolving architecture of Sylius.\n\n* **Community and Ecosystem** \u2013 the adoption, support, and future development of each tool within the broader PHP ecosystem.\n\n## Considered Options\n\n### Option 1: Keep using PHPSpec for unit tests\n\n* **Good**, because maintains a strict BDD approach, enforcing specification-driven design.\n* **Good**, because no need for immediate refactoring of existing tests.\n* **Bad**, because PHPSpec adoption has been declining, making long-term support uncertain.\n* **Bad**, because new contributors unfamiliar with PHPSpec face a steeper learning curve.\n* **Bad**, because requires maintaining two separate testing frameworks, increasing complexity.\n\n### Option 2: Migrate unit tests from PHPSpec to PHPUnit\n\n* **Good**, because aligns Sylius with the broader PHP ecosystem, making contribution easier.\n* **Good**, because reduces tooling complexity by removing a niche framework.\n* **Good**, because provides more flexibility in writing unit tests.\n* **Good**, because of better support from IDEs, static analysis tools, and CI/CD pipelines.\n* **Good**, because is directory agnostic, meaning tests can be structured more freely without being tightly coupled \n  to a specific directory structure.\n* **Bad**, because requires refactoring existing PHPSpec tests to PHPUnit.\n* **Bad**, because developers accustomed to PHPSpec need to adapt to a different testing approach.\n\n### Option 3: Use a hybrid approach (PHPSpec for unit tests, PHPUnit for integration and functional tests)\n\n* **Good**, because retains the benefits of PHPSpec for specification-driven development.\n* **Good**, because avoids immediate refactoring of all unit tests.\n* **Bad**, because maintains complexity by requiring knowledge of two different testing frameworks.\n* **Bad**, because does not resolve the long-term viability concerns of PHPSpec.\n\n## Decision Outcome\n\n**Chosen option**: **Option 2: Migrate unit tests from PHPSpec to PHPUnit**, because it simplifies our testing strategy, \nimproves maintainability, and ensures Sylius remains aligned with the PHP ecosystem.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2024_11_28_languages_flags.md",
+   "identity": "adr/2024_11_28_languages_flags.md",
+   "adr_id": "2024",
+   "title": "Removal of Language Flags from the UI",
+   "first_commit": "2024-11-28T10:26:35+01:00",
+   "first_sha": "f367a37c5e0e91c6147af0074f334d5f2aa7e1b1",
+   "last_commit": "2024-11-28T10:26:35+01:00",
+   "author": "Bart\u0142omiej S\u0119k",
+   "email": "bartlomiej.sek@bitbag.pl",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Removal of Language Flags from the UI\n\n* Status: Accepted\n* Date: 2024-11-28\n\n## Context and Problem Statement\n\nThe use of flags alongside language selection in the application UI has caused usability and consistency issues. Flags do not always accurately represent languages, especially in cases where:\n\n1. A language is used in multiple countries, leading to ambiguity.\n2. The regional variation of a language (e.g., \"English (Germany)\") is represented by the region\u2019s flag, which may mislead users.\n\nThis raises the question: How can we ensure a clear and consistent language selection experience while avoiding potential confusion or technical complexity?\n\n## Decision Drivers\n\n* **User Experience**: Avoid user confusion and ensure clarity in language selection.\n* **Aesthetic Appeal**: Maintain a visually pleasing interface where possible.\n* **Technical Simplicity**: Minimize implementation and maintenance overhead.\n* **Consistency**: Provide a uniform and predictable experience across all languages.\n\n## Considered Options\n\n### Option 1: Do Not Display Flags When Country Information Is Unavailable\n\nIf a country is not associated with the selected language, omit the flag entirely instead of displaying a placeholder or blank flag.\n\n* **Good**, because it avoids misrepresentation and is straightforward to implement.\n* **Bad**, because the absence of a flag may reduce the interface's visual appeal.\n\n### Option 2: Manually Assign Flags to Languages Without Countries\n\nCreate a custom mapping of flags for languages not tied to specific countries.\n\n* **Good**, because it ensures every language has a flag and retains visual appeal.\n* **Bad**, because it introduces maintenance overhead, increases code complexity, and may cause disagreements over appropriate flag assignments.\n\n### Option 3: Remove Flags Entirely\n\nEliminate flags from the language selection UI, relying solely on language names.\n\n* **Good**, because it simplifies implementation and maintenance, avoids all ambiguity, and ensures consistency.\n* **Bad**, because it sacrifices the aesthetic appeal of flags, which some users may prefer.\n\n## Decision Outcome\n\n**Chosen option**: **Option 3: Remove Flags Entirely**, because it resolves all ambiguity and ensures a consistent and straightforward language selection experience. This approach reduces maintenance complexity and eliminates the risk of incorrect or misleading flag assignments.\n\n## References\n\n*   [Why flags do not represent languages](https://www.flagsarenotlanguages.com/blog/why-flags-do-not-represent-language/)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2022_02_09_catalog_promotions_validation.md",
+   "identity": "adr/2022_02_09_catalog_promotions_validation.md",
+   "adr_id": "2022",
+   "title": "Catalog promotions validation",
+   "first_commit": "2022-02-09T13:58:58+01:00",
+   "first_sha": "825089e5d0ce696f0a8383737459a462d8e2be2d",
+   "last_commit": "2024-11-08T02:20:36+01:00",
+   "author": "Mateusz Zalewski",
+   "email": "zaleslaw@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Catalog promotions validation\n\n* Status: accepted\n* Date: 2022-02-09\n\n## Context and Problem Statement\n\nCatalog Promotions, as the new feature in Sylius 1.11, is developed in API-first manner, but of course provides\nUI functionality as well. The challenge, that we faced during the implementation was the validation, and either it should\nbe unified for API and UI or separated.\n\n## Decision Drivers\n\nCatalog Promotions' validation should:\n* be easy to customize and extend\n* work on both API and UI\n* validate both business scenarios and syntactical correctness\n\n## Considered Options\n\n### Unified validation in custom validators\n\nThis is the first approach to validation we had. The concept was, to have\n[custom validator for each action and scope](https://github.com/Sylius/Sylius/blob/b5458fa31aadaf699e39b0cc106d5efd25144823/src/Sylius/Bundle/CoreBundle/Validator/CatalogPromotionAction/FixedDiscountActionValidator.php).\nThe correct validation is chosen based on the key provided in `sylius.catalog_promotion.action_validator` tag. These custom\nvalidators should contain both business and syntactical validation (as the latter is not configured anywhere else).\n\n* Good, because custom validators are unified for API and UI, which results in the lack of duplications\n* Bad, because business and syntactical validation is mixed, even though these are different type of validations\n* Bad, because it resulted in some problems in validation messages display (Catalog Promotions' forms are quite complicated)\n\n### Unified business validation and separated syntactical validation\n\nVariation of the previous option, which still uses custom validators but only for business (or functional) validation.\nSyntactical validation is delivered separately for UI and API.\n\n* Good, because syntactical and business validation is separated, as it should be\n* Good, because UI validation on forms is less problematic still being extendable and customizable\n* Semi-bad, because it results in _apparent_ duplication of logic\n* Bad, because there is no easy way to syntactically validate requests in ApiPlatform, so it needs to be done in validators anyway\n\n## Decision Outcome\n\nChosen option: **\"Unified business validation and separated syntactical validation\"**\n\nSyntactical and functional validation are two different types of validation. They should be separated, especially as they\ncan be approached differently (from the technical point of view) regarding the interface used (UI or API). Moreover, this\nseparation gives us better control over how requests/forms are validated (e.g. some values passed in forms does not have\nto be validated in Sylius, as they're already protected in used Symfony types). Output of this decisions results in following\nstructure of validators:\n\n* `src/Sylius/Bundle/PromotionBundle/Validator/CatalogPromotionAction` - base business validation of catalog promotion actions\nnot related to the concepts from other bundles (currently empty, only interface)\n* `src/Sylius/Bundle/CoreBundle/Validator/CatalogPromotionAction` - business validation of catalog promotion actions related\nto the concepts from other bundles (e.g. product variants)\n* `src/Sylius/Bundle/CoreBundle/Validator/CatalogPromotionScope` - business validation of catalog promotion scopes related\nto the concepts from other bundles (e.g. taxons)\n* `src/Sylius/Bundle/ApiBundle/Validator/CatalogPromotion` - syntactical validation of API requests; validators here usually\ndecorate validators from the **CoreBundle**\n\nSyntactical validation of forms data shall be done on each specific form (e.g. those from `src/Sylius/Bundle/CoreBundle/Form/Type/CatalogPromotionScope`).\n\n## References\n\n* [1st approach](https://github.com/Sylius/Sylius/pull/13174)\n* [Chosen approach](https://github.com/Sylius/Sylius/pull/13620)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "Sylius/Sylius#13174",
+     "kind": "pull",
+     "url": "https://github.com/Sylius/Sylius/pull/13174",
+     "number": "13174"
+    },
+    {
+     "key": "Sylius/Sylius#13620",
+     "kind": "pull",
+     "url": "https://github.com/Sylius/Sylius/pull/13620",
+     "number": "13620"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/Sylius/Sylius/blob/b5458fa31aadaf699e39b0cc106d5efd25144823/src/Sylius/Bundle/CoreBundle/Validator/CatalogPromotionAction/FixedDiscountActionValidator.php",
+    "src/Sylius/Bundle/PromotionBundle/Validator/CatalogPromotionAction",
+    "src/Sylius/Bundle/CoreBundle/Validator/CatalogPromotionAction",
+    "src/Sylius/Bundle/CoreBundle/Validator/CatalogPromotionScope",
+    "src/Sylius/Bundle/ApiBundle/Validator/CatalogPromotion",
+    "src/Sylius/Bundle/CoreBundle/Form/Type/CatalogPromotionScope"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2024_10_22_filters_structure_refactor.md",
+   "identity": "adr/2024_10_22_filters_structure_refactor.md",
+   "adr_id": "2024",
+   "title": "API - Filters Structure Refactor",
+   "first_commit": "2024-10-22T08:40:35+02:00",
+   "first_sha": "d58fcdd6d22fe6bbf591d2e6eea8b3941f709c74",
+   "last_commit": "2024-10-23T14:13:52+02:00",
+   "author": "Kamil Grygierzec",
+   "email": "kam.grygierzec@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# API - Filters Structure Refactor\n\n* Status: Accepted\n* Date: 2024-10-22\n\nIn effect from version: 2.0\n\nRelated PRs: #17290\n\n## Context and Problem Statement\n\nIn previous versions, Sylius had API filters grouped by field type rather than by resource and section. This led to filters being applied inconsistently, making it hard to customize them per resource. The filters were also located in the `Filter/Doctrine/` directory, which didn't align with how we organize other Doctrine-related features, creating confusion.\nTo improve maintainability, clarity, and ease of customization, a refactor is required to group filters per resource and section (admin and shop) and move the custom ones into the `Doctrine/ORM/Filter/` directory, as other Doctrine-related features are organized.\n\n## Decision Drivers\n\n- Need for a clearer structure to reflect resource-based filtering.\n- Separation between admin and shop filters.\n- Alignment with Doctrine's structure for better maintainability and understanding.\n\n## Considered Options\n\n### Leave Filters Grouped by Field Type\n\n* **Good, because:**\n    * No need for refactoring.\n* **Bad, because:**\n    * Hard to see which filter applies to which resource.\n    * Filters applied inconsistently.\n    * Difficult to customize.\n\n### Split Filters by Resource and Section\n\n* **Good, because:**\n    * Clear separation between resources.\n    * Easier to apply and customize filters for admin or shop sections.\n* **Bad, because:**\n    * Requires refactoring.\n\n### Use a Common Directory for Shared Filters\n\n* **Good, because:**\n    * Reduces duplication of similar filters.\n* **Bad, because:**\n    * Still doesn't provide clear separation between resources and sections.\n\n## Decision Outcome\n\nChosen option: **Split Filters by Resource and Section**, because it provides the most clarity and maintainability. This approach aligns with the goal of separating filters for admin and shop sections and allows for better customization per resource.\nFilters will no longer be organized by field but by resource, ensuring they are clear and easy to maintain.\n\nNew structure:\n\n```\n/Doctrine/ORM/Filter\n    CustomFilter.php\n```\n\nThe following format will be used for filter IDs: `sylius_api.[filter_type].[context].[resource]`.\n\nExamples:\n```\nsylius_api.search_filter.admin.[resource]\nsylius_api.order_filter.shop.[resource]\nsylius_api.exists_filter.admin.[resource]\nsylius_api.custom_filter.shop.[resource]\n```\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#17290",
+     "kind": "hash",
+     "url": "",
+     "number": "17290"
+    }
+   ],
+   "mentioned_paths": [
+    "Filter/Doctrine/",
+    "Doctrine/ORM/Filter/"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2022_02_11_declaring_services_in_container.md",
+   "identity": "adr/2022_02_11_declaring_services_in_container.md",
+   "adr_id": "2022",
+   "title": "Declaring services in container",
+   "first_commit": "2022-02-11T15:39:53+01:00",
+   "first_sha": "6adb39d680252c5238e9ab0bdea9ff156dec55c2",
+   "last_commit": "2024-10-23T12:27:47+02:00",
+   "author": "\u0141ukasz Chru\u015bciel",
+   "email": "lchrusciel@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Declaring services in container\n\n* Status: accepted\n* Date: 2022-02-11\n\n## Context and Problem Statement\n\nSince Symfony 3.4, all Symfony services are declared private by default. And this is the recommended Symfony approach. On the \nother hand, first stable Sylius release was published before that and therefore at the moment of publication of this recommendation\nSylius had hundreds public services. The question is how should we handle services declared after the 3.4 release.\n\n## Decision Drivers\n\nDeclared services should be:\n* easily usable in ResourceControllers (where we are allowing for fetching services directly from the container)\n* easily usable as state machine callbacks, which are fetched directly for the container\n* easily accessible in PHPUnit\n* it would be better to have one, coherent rule for all services\n\n## Considered Options\n\n### Making all services public\n\n* Good, because it is coherent with previous services\n* Good, because it is easily usable with ResourceController, StateMachines and PHPUnit\n* Good, because it maintains backward compatibility\n* Bad, because it is against Symfony recommendation\n\n### Making all service private\n\n* Good, because it is coherent with previous services\n* Good, because it follows Symfony recommendation\n* Bad, because it breaks backward compatibility\n* Bad, because it requires additional code to rework ResourceController and StateMachines service handling\n* Bad, because it requires small refactor for PHPUnit handling\n\n### Making only new services private\n\n* Good, because it follows Symfony recommendation for new stuff\n* Good, because it maintains backward compatibility\n* Bad, because it requires additional code to rework ResourceController and StateMachines service handling\n* Bad, because it requires small refactor for PHPUnit handling\n\n## Decision Outcome\n\nChosen option: **\"Making all services public\"**\n\nFor now, it is the most straightforward solution, that does not cost us too much, does not put additional debt on us, and \nit is the solution that we are doing since 3.4 (it was just implicit).\n\n## References\n\n* [Announcement of private services](https://symfony.com/blog/new-in-symfony-3-4-services-are-private-by-default)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2024_10_03_services_naming_convention.md",
+   "identity": "adr/2024_10_03_services_naming_convention.md",
+   "adr_id": "2024",
+   "title": "Services naming convention",
+   "first_commit": "2024-10-03T10:37:53+02:00",
+   "first_sha": "b40fc8a9d1dad44951bd1cd76a192418c105c3a0",
+   "last_commit": "2024-10-08T16:41:38+02:00",
+   "author": "Wojdylak",
+   "email": "karolwojdyla37@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Services naming convention\n\n* Status: Accepted\n* Date: 2024-10-03\n\n## Context and Problem Statement\n\nServices in Sylius are named in different ways, depending on the time of their creation, and other services' names.\nAlso, some services named with using the `dot` notation are harder to be used with `autowire` feature.\n\n## Decision Drivers\n\n* Make naming services predictable\n* Provide a consistent way of naming services\n* Support the `autowire` feature\n\n## Considered Options\n\n### Stay with the `dot` notation\n\nThis variant is the most common way of naming services in Sylius from the beginning.\nIt was the only considered option in Symfony-based projects before the `autowire` feature was introduced.\n\n* Good, because it is a common way of naming services in Symfony\n* Bad, because you have to use `#[Autowire]` attribute to inject services\n\n### Use the FQCN as a service id\n\nThis variant of naming appeared along with introducing the `autowire` feature in Symfony.\nIt makes using services easier, but at the same time introduces a little bit magic to the code.\n\n* Good, because it supports the `autowire` feature\n* Bad, because it requires a lot of work from the developers already using the `dot` notation\n* Bad, because it is not recommended by Symfony\n\n### Combine the `dot` notation with the FQCN (when it makes sense)\n\nThis variant is a combination of the previous two options, but it considers declaring the `FQCN` alias only when it makes sense.\nThe `FQCN` alias should be declared only for services that implement a non-generic interface. \n\nSome services that are not meant to be used with the `autowire` feature should continue to be named with the `dot` notation, including:\n- form types/extensions\n- message handlers\n- validators\n- event listeners/subscribers\n- service/form type registry\n- etc.\n\nFor services that adhere to the Composite pattern, the `FQCN` alias should be declared for the composite service, and the alias should be based on the interface name.\nThis ensures clarity in identifying composite services while maintaining a consistent and logical structure.\n\n* Good, because it is a recommended way by Symfony [Best Practices for Reusable Bundles](https://symfony.com/doc/current/bundles/best_practices.html#services)\n* Good, because we use the `dot` notation for many services, so we do not have to rename them\n* Good, because services already named with the `FQCN` will still work\n* Bad, because it requires more work and increases the number of service definitions\n\n## Decision Outcome\n\nChosen option: **\"Combine the `dot` notation with the FQCN (when it makes sense)\"**\n\nDespite the fact that it requires more work, it is the best option to provide a consistent way of naming services and support the `autowire` feature.\nAlso, thanks to this approach, we stay consistent with the Symfony best practices.\n\n## Example\n\n```xml\n<services>\n    <service id=\"sylius_admin.resolver.some\" class=\"Sylius\\Bundle\\AdminBundle\\Resolver\\SomeResolver\" />\n    <service id=\"Sylius\\Bundle\\AdminBundle\\Resolver\\ResolverInterface\" alias=\"sylius_admin.resolver.some\" />\n</services>\n```\n\n## References\n\n* [Best Practices for Reusable Bundles](https://symfony.com/doc/current/bundles/best_practices.html#services)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "symfony.com/doc/current/bundles/best_practices.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2024_08_29_message_buses_unification.md",
+   "identity": "adr/2024_08_29_message_buses_unification.md",
+   "adr_id": "2024",
+   "title": "Unification of base message buses in sylius",
+   "first_commit": "2024-08-29T10:35:59+02:00",
+   "first_sha": "70288b3c7a91946f523b74b3b043ec636efadf01",
+   "last_commit": "2024-08-29T10:35:59+02:00",
+   "author": "Jan Goralski",
+   "email": "jan.wojciech.goralski@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Unification of base message buses in sylius\n\n* Status: accepted\n* Date: 2024-29-08\n\n## Context and Problem Statement\n\nDue to historical reasons, and being BC compliant, we had duplications with our message buses. \nWe had `sylius.command_bus` and `sylius_default.bus` for commands, `sylius.event_bus` and `sylius_default.bus` for events.\n\n## Decision Drivers\n\n* Unification of the message buses\n* Simplification of configuration and usage\n* Lesser cognitive load for developers\n\n## Decision Outcome\n\nKeep only one message bus per context.\nUsers shouldn't have to think about which bus to use.\nIn conclusion anyone using Sylius should use:\n - `sylius.command_bus` for commands\n - `sylius.event_bus` for events\n - `sylius.query_bus` for queries\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2024_07_16_state_processors_directory_structure.md",
+   "identity": "adr/2024_07_16_state_processors_directory_structure.md",
+   "adr_id": "2024",
+   "title": "API - State Processors Directory Structure",
+   "first_commit": "2024-07-16T08:34:46+02:00",
+   "first_sha": "3f8940f8f7335f05f7eea5d213ee12dda13c7651",
+   "last_commit": "2024-07-16T08:34:46+02:00",
+   "author": "Micha\u0142 Pysiak",
+   "email": "mpysiak@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# API - State Processors Directory Structure\n\n* Status: Accepted\n* Date: 2024-07-15\n\nIn effect from version: 2.0\n\nRelated PRs: #16565\n\n## Context and Problem Statement\n\nUntil version 2.0, Sylius used API Platform version 2.x, \nwhich utilized `DataPersisters` to handle data persistence \noperations like saving, updating, and deleting resources. \nThese `DataPersisters` were all located within a single \ndirectory, lacking clear organization.\n\nWith the upgrade to Sylius 2.0, the API Platform has been \nupdated to version 3. One significant change in API Platform 3\nis the shift from `DataPersisters` to `StateProcessors`. \nThis necessitates a reconsideration of how we organize \nand structure our data-processing classes to ensure clarity, \nmaintainability, and scalability.\n\n## Decision Drivers\n\n* Migrate from DataPersisters to StateProcessors\n* Clear separation between admin and shop processors\n* Clear separation between resources\n* Separation of Persist and Remove processors\n* Ease of customization in end applications\n\n## Considered Options\n\n### Leave all StateProcessors in one directory\n\n* **Good, because:**\n    * Less to refactor\n* **Bad, because:**\n    * Hard to see which processor is for admin and which for shop\n    * No separation of Persist and Remove processors\n    * Difficult to customize in end applications\n\n### Separate StateProcessors by resource\n\n* **Good, because:**\n    * Clear separation between resources\n* **Bad, because:**\n    * Need to refactor all processors\n    * Hard to see which processor is for admin and which for shop\n    * No separation of Persist and Remove processors\n\n### Separate StateProcessors by sections and resources\n\n* **Good, because:**\n    * Clear separation between admin and shop processors\n    * Clear separation between resources\n* **Bad, because:**\n    * Need to refactor all processors\n    * No separation of Persist and Remove processors\n\n### Separate StateProcessors by sections, resources, and operations\n\n* **Good, because:**\n    * Clear separation between admin and shop processors\n    * Clear separation between resources\n    * Separation of Persist and Remove processors\n    * Easy to customize in end applications\n* **Bad, because:**\n    * Need to refactor all processors\n\n## Decision Outcome\n\nChosen option: Separate StateProcessors by sections, resources, and operations, \nbecause it provides a clear and manageable way to customize processors for \ndifferent contexts, including separating persist and remove operations.\n\nNew Structure:\n\n```\n/StateProcessors\n    /Admin\n        /AdminUser\n            PersistProcessor.php\n            RemoveProcessor.php\n        /Product\n            RemoveProcessor.php\n    /Shop\n        /Address\n            PersistProcessor.php\n```\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#16565",
+     "kind": "hash",
+     "url": "",
+     "number": "16565"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2024_07_16_api_query_extensions_directory_structure.md",
+   "identity": "adr/2024_07_16_api_query_extensions_directory_structure.md",
+   "adr_id": "2024",
+   "title": "API - Query Extensions Directory Structure",
+   "first_commit": "2024-07-16T15:03:17+02:00",
+   "first_sha": "72a432d1488a879fcef01544625b15ad10955869",
+   "last_commit": "2024-07-16T15:03:17+02:00",
+   "author": "Kamil Grygierzec",
+   "email": "kam.grygierzec@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# API - Query Extensions Directory Structure\n\n* Status: accepted\n* Date: 2024-07-16\n\nIn effect from version: 2.0\n\nRelated PRs: #16573\n\n## Context and Problem Statement\n\nThe current directory structure of Query Extensions in the codebase is disorganized and unclear.\n\n```\n/Doctrine\n    /QueryCollectionExtension\n        ExampleExtension.php\n    /QueryExtension\n    /QueryItemExtension\n```\n\nThere is no differentiation between sections such as Admin, Shop, and resources, resulting in unrelated extensions being grouped together based solely on their type.\n\n## Decision Drivers\n\n* Improve code organization and clarity\n* Clear separation of extensions by section\n* Clear separation of extensions by resource\n\n## Considered Options\n\n### Maintain Current Structure\n\n* **Good, because:**\n    * No refactoring required\n    * Informs about extension type\n* **Bad, because:**\n    * Everything is in one place with no separation other than extension type\n    * Difficult to find related extensions for a specific section\n    * Difficult to find related extensions for specific resources\n    * Lacks information about the ORM context\n\n### Separate by Section\n\n* **Good, because:**\n    * Clear separation by section (Admin, Shop, Common)\n    * Improves clarity and maintainability by grouping extensions by role rather than type of service\n    * Informs about the ORM context of the extensions\n* **Bad, because:**\n    * Requires refactoring existing code\n    * Lacks further organization by specific resources\n    * Lacks further organization by extension type\n\n### Separate by Resource\n\n* **Good, because:**\n    * Clear separation by specific resources\n    * Improves clarity and maintainability by grouping extensions by role rather than type of service\n    * Informs about the ORM context of the extensions\n* **Bad, because:**\n    * Requires refactoring existing code\n    * Lacks further organization by section\n    * Lacks further organization by extension type\n\n### Separate by Section and Resource\n\n* **Good, because:**\n    * Clear separation by section (Admin, Shop, Common)\n    * Further organized by specific resources\n    * Improves clarity and maintainability by grouping extensions by role\n    * Informs about the ORM context of the extensions\n* **Bad, because:**\n    * Requires refactoring existing code\n    * Lacks further organization by extension type\n\n## Decision Outcome\n\nChosen option: `Separate by Section and Resource`, because it provides the best balance of clarity and maintainability, ensuring that related extensions are grouped together in a logical manner. \nThis structure will improve navigation and future scalability of the codebase.\n\nNew Structure:\n```\nDoctrine/ORM/QueryExtension/\n    /Admin\n        /Product\n            ExampleExtension.php\n    /Shop\n    /Common\n```\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#16573",
+     "kind": "hash",
+     "url": "",
+     "number": "16573"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2024_07_15_api_state_providers_structure.md",
+   "identity": "adr/2024_07_15_api_state_providers_structure.md",
+   "adr_id": "2024",
+   "title": "API - State Providers Structure",
+   "first_commit": "2024-07-15T12:38:04+02:00",
+   "first_sha": "a0158fa03bf4617125c09a7b6fa44695b2cddfd1",
+   "last_commit": "2024-07-16T08:23:32+02:00",
+   "author": "Wojdylak",
+   "email": "karolwojdyla37@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# API - State Providers Structure\n\n* Status: Accepted\n* Date: 2024-07-15\n\nIn effect from version: 2.0\n\nRelated PRs: #16567\n\n## Context and Problem Stratement\n\nUntil version 2.0, we supported API Platform version 2, which utilized\n`DataProviders` to deliver data to the API. These `DataProviders` were all\nlocated within the `Sylius\\Bundle\\ApiBundle\\DataProvider` directory.\nThis structure lacked differentiation between the admin and shop sections\nand did not provide clear organization for individual resources. \nAs a result, it became challenging to manage and maintain the codebase\nas the number of providers grew.\n\nWith Sylius 2.0, the API Platform has been upgraded to version 3.\nOne of the significant changes in API Platform 3 is the shift from \n`DataProviders` to `StateProviders`. This change necessitates a \nreconsideration of how we organize and structure our data-providing\nclasses to ensure clarity, maintainability, and scalability.\n\n## Decision Drivers\n\n* Moving from DataProviders to StateProviders\n* Clear separation between admin and shop providers\n* Clear separation between resources\n\n## Considered Options\n\n### Leave all StateProviders in one directory\n\n* **Good, because:**\n    * Less to refactor\n* **Bad, because:**\n    * Hard to see which provider is for admin and which for shop\n\n### Separate StateProviders by resource\n\n* **Good, because:**\n    * Clear separation between resources\n* **Bad, because:**\n    * Need to refactor all providers\n    * Hard to see which provider is for admin and which for shop\n\n### Separate StateProviders by sections\n\n* **Good, because:**\n    * Clear separation between admin and shop providers\n* **Bad, because:**\n    * Need to refactor all providers\n    * A lot of providers in one directory\n\n### Separate StateProviders by sections and resources\n\n* **Good, because:**\n    * Clear separation between admin and shop providers\n    * Clear separation between resources\n* **Bad, because:**\n    * Need to refactor all providers\n\n## Decision Outcome\n\nChosen option: `Separate StateProviders by sections and resources`,\nbecause it provides a clear and manageable way to organize state providers.\n\nNew Structure:\n\n```\n/StateProvider\n    /Admin\n        /Order\n            ItemProvider.php\n        /Product\n            ItemProvider.php\n            CollectionProvider.php\n    /Shop\n        /Order\n            ItemProvider.php\n            CollectionProvider.php\n        /Product\n            CollectionProvider.php\n    /Common\n        /Adjustment\n            CollectionProvider.php\n```\n\nProviders for Command classes should be placed in the relevant resource\ndirectory and named with a `Provider` suffix,\ne.g., `/StateProvider/Shop/ShopUser/ResetPasswordProvider.php` for the\n`ResetPassword` command.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#16567",
+     "kind": "hash",
+     "url": "",
+     "number": "16567"
+    }
+   ],
+   "mentioned_paths": [
+    "/StateProvider/Shop/ShopUser/ResetPasswordProvider.php"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2024_05_15_use_separate_base_form_types_for_admin_panel_instead_of_type_extensions.md",
+   "identity": "adr/2024_05_15_use_separate_base_form_types_for_admin_panel_instead_of_type_extensions.md",
+   "adr_id": "2024",
+   "title": "Use Separate Base Form Types Instead of Type Extensions",
+   "first_commit": "2024-05-20T15:23:36+02:00",
+   "first_sha": "011f2ad5990d3137c45b8f6d7d3d4b9f5f0e4279",
+   "last_commit": "2024-05-20T15:23:36+02:00",
+   "author": "Kamil Grygierzec",
+   "email": "kam.grygierzec@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Use Separate Base Form Types Instead of Type Extensions\n\n* Status: Accepted\n* Date: 2024-05-15\n\n## Context and Problem Statement\n\nIn our current system, every base form type is placed at the lowest possible level, either within a specific bundle or the core. \nForm extensions serve as the primary means of extending form types since all form types are final. \nHowever, this approach leads to a significant issue: form extensions work globally, which prevents us from reusing any form type easily in different contexts. \nFor example, if a field is added through an extension in the AdminBundle (admin context), the same field will also appear in the shop's context.\nThis problem is compounded by the introduction of Symfony UX, which necessitates overriding some fields to enable its functionality. \nAs a result, distinguishing which context added a specific change and when each change should be applied becomes exceedingly difficult.\n\n## Decision Drivers\n\n* Need for context-specific form type customization.\n* Avoiding global side effects caused by form extensions.\n* Clear separation between admin and shop form types.\n* Simplification of managing and overriding form fields with Symfony UX.\n\n## Considered Options\n\n### Use Separate Form Types\n\n* **Good, because:**\n    * Provides clear separation between admin and shop form types.\n    * Allows context-specific customization without affecting other contexts.\n    * Simplifies debugging and maintenance.\n    * Facilitates the integration and management of Symfony UX-specific overrides.\n\n* **Bad, because:**\n    * Vastly increases the number of form types, leading to potential redundancy.\n    * Requires additional effort to create and maintain separate form types.\n\n### Continue Using Type Extensions\n\n* **Good, because:**\n    * Fewer form types to manage.\n    * Leverages existing infrastructure without requiring significant changes.\n    * Easier customization, you do not need to know where a form is used.\n\n* **Bad, because:**\n    * Form extensions affect all contexts globally, leading to unintended side effects.\n    * Difficult to distinguish and manage context-specific changes.\n    * Adding a specific functionality only in one context is extremely tedious.\n    * Complicates integration with Symfony UX in AdminBundle due to overlapping overrides.\n\n## Decision Outcome\n\nChosen option: \"Use Separate Form Types\", because it provides a clear and manageable way to customize form types for different contexts.\nThis approach resolves the issues of global side effects and the difficulty in distinguishing context-specific changes, making it easier to integrate with Symfony UX and maintain the system.\n\n## References\n\n* [Use Separate Form Types Example](https://github.com/Sylius/Sylius/pull/16257)\n* [Continue Using Type Extensions Example](https://github.com/Sylius/Sylius/pull/15896)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "Sylius/Sylius#16257",
+     "kind": "pull",
+     "url": "https://github.com/Sylius/Sylius/pull/16257",
+     "number": "16257"
+    },
+    {
+     "key": "Sylius/Sylius#15896",
+     "kind": "pull",
+     "url": "https://github.com/Sylius/Sylius/pull/15896",
+     "number": "15896"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2021_02_05_unified_api_prefix.md",
+   "identity": "adr/2021_02_05_unified_api_prefix.md",
+   "adr_id": "2021",
+   "title": "Unified API prefix",
+   "first_commit": "2021-02-05T16:20:00+01:00",
+   "first_sha": "1e6544b0a8f4206fb8e175a616e64bd36d8feebb",
+   "last_commit": "2022-01-31T12:22:35+01:00",
+   "author": "\u0141ukasz Chru\u015bciel",
+   "email": "lchrusciel@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Unified API prefix\n\n* Status: accepted\n* Date: 2021-02-05\n\n## Context and Problem Statement\n\nInitial implementation of Unified API used `/new-api` prefix, to aggregate all following endpoints. This prefix does not \nclearly state the version of it and is not future-proof. At some moment of time our \"new api\" can become \"old api\". We should \nhave clear guidance how to version our APIs.\n\n## Considered Options\n\n### Using URL based versioning\n\nWe could change `/new-api` into `/api/v2`.\n\n* Good, because it follows an already established pattern. Our old Admin API had `/api/v1` prefix.\n* Good, because it's easy to understand API precedence.\n* Good, because it's easy to use. Links are working out-of-the-box as expected.\n\n* Bad, because it makes it hard for the clients to slowly migrate some subset of API to the new version.\n* From the REST point of view, the version in URL should not influence the presentation of resource.\n\n### Using the Accept header with an additional vendor information \n\nWe could change `/new-api` into `/api` and require presence of following header: `Accept: application/vnd.sylius.v1+json`.\n\n* Good, because it may be considered as a best practice.\n* Good, because `Accept` header was meant for content negotiation.\n\n* Bad, because it breaks an already established pattern. Our old Admin API had `/api/v1` prefix. \n* Bad, because it's a bit harder to execute in a RAW form.\n\n### Using a custom header \n\nWe could change `/new-api` into `/api` and require presence of following header: `X-Sylius-API-Version: 1`.\n\n* Bad, because it does not provide any major benefit over usage of `Accept` header\n\n## Additional context\n\nAt the moment of writing of this document, API Platform does not have a clear answer how to resolve API versioning. Recommendation\nvariate between usage of serialization groups to choose proper serialization delivered to app in whatever way to creation\nof separate app all together.\n\n## Decision Outcome\n\nAs the underlaying technology, structure and content have changed significantly and taking into account easiness of first solution\nthe decision is to go with the `/api/v2` endpoint path. In the future it does not block us from the usage of the `Accept`\nheader in addition to this path, however it may be misleading for consumers. \n\n#### References:\n\n- https://github.com/api-platform/api-platform/issues/290\n- https://github.com/api-platform/core/issues/972\n- https://stackoverflow.com/questions/389169/best-practices-for-api-versioning\n- https://www.troyhunt.com/your-api-versioning-is-wrong-which-is/\n- https://github.com/api-platform/core/issues/45\n- https://github.com/api-platform/docs/issues/451\n- https://github.com/api-platform/docs/pull/452\n- https://api-platform.com/docs/core/content-negotiation/#supporting-custom-formats\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "api-platform/api-platform#290",
+     "kind": "issue",
+     "url": "https://github.com/api-platform/api-platform/issues/290",
+     "number": "290"
+    },
+    {
+     "key": "api-platform/core#972",
+     "kind": "issue",
+     "url": "https://github.com/api-platform/core/issues/972",
+     "number": "972"
+    },
+    {
+     "key": "api-platform/core#45",
+     "kind": "issue",
+     "url": "https://github.com/api-platform/core/issues/45",
+     "number": "45"
+    },
+    {
+     "key": "api-platform/docs#451",
+     "kind": "issue",
+     "url": "https://github.com/api-platform/docs/issues/451",
+     "number": "451"
+    },
+    {
+     "key": "api-platform/docs#452",
+     "kind": "pull",
+     "url": "https://github.com/api-platform/docs/pull/452",
+     "number": "452"
+    }
+   ],
+   "mentioned_paths": [
+    "/new-api",
+    "/api/v2",
+    "/api/v1",
+    "/api"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2020_05_13_handling_non_crud_operations_in_api.md",
+   "identity": "adr/2020_05_13_handling_non_crud_operations_in_api.md",
+   "adr_id": "2020",
+   "title": "Handling Non-CRUD operations in API",
+   "first_commit": "2020-05-14T15:53:58+02:00",
+   "first_sha": "7f34ad58c5964ddf7f2f12c8fe9409ce76cf7c89",
+   "last_commit": "2022-01-04T08:57:42+01:00",
+   "author": "\u0141ukasz Chru\u015bciel",
+   "email": "lchrusciel@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Handling Non-CRUD operations in API\n\n* Status: accepted\n* Date: 2020-08-31\n\n## Context and Problem Statement\n\nHandling non-CRUD operation over REST API is not trivial. Once operations are beyond Create(`POST`/`PUT` HTTP methods), \nRead(`GET` HTTP method), Update(`PUT`/`PATCH` HTTP methods), Delete(`DELETE` HTTP method) there is no clear recommendation \nhow to map others actions. These actions include, but are not limited to, changes of states (described in the form of \nworkflow in a state machine) or command execution.\n\n## Decision Drivers\n\n* Solution should not be limited by its convention. We may need to support two different actions of the same name, \nbut with different business logic. E.g., one object may have two transitions with the same name but described by \ntwo different state machines.\n* Solution should allow for an easy understanding of what is expected behavior of its execution.\n* Solution should provide easy to implement a way of exposing the next possible actions, according to HATEOAS paradigm.\n* Solution should provide a clean way of adding additional fields during the execution of requested operations.\n\n## Considered Options\n\nAll options are presented on the example of making a `ship` operation over the shipment, that is ready to be shipped.\n \nExpectations: being able to call `ship` transition on the `Shipment` with the XYZ tracking code. \n\n### Enrich resource data with possible operations\n\nIt is possible to add additional fields or reuse current ones to accept operations and leverage HTTP Verbs. In \nthis solution we can use regular `Update` request to execute additional logic:\n\nPUT `/api/orders/1/shipment/1`\n\n```json\n{\n  \"status\": \"ship\",\n  \"tracking_code\": \"XYZ\"\n}\n```\n\nThis solution works for all standards supported by ApiPlatform(JSON-LD, JSON HAL, GraphQL).\n\n* Good, because it does not introduce verbs into URL (which may be considered as a bad practice for REST API)\n* Good, because it does not introduce any new endpoints.\n* Bad, because calling `ship` on `status` may be misleading, as a result, may be different(In presented example command \n`\"status\": \"ship\"` results with `\"status\": \"shipped\"`).\n* Bad, because it is not clear how to expose possible transitions. Should a separate endpoint be created, or data should\n be further enriched with the `possibleTransitions` field? It is not clear how non-state machine operations should be \n handled as well. \n* Bad, because it uses `PUT` operation for action, which is nonidempotent, which may mislead end clients.\n* Bad, because it allows for using only one type of transition per field.\n\n### Defining custom operations in the style of the command pattern\n\nWe may trace operations as separate resources. We may operate with these operations using regular HTTP Verbs. All these \noperations should be named as nouns. \n\nPOST `/api/orders/1/shipment/1/ship-attempts`\n\n```json\n{\n  \"tracking_code\": \"XYZ\"\n}\n```\n\n* Good, because it does not introduce verbs into URL (which may be considered as a bad practice for REST API)\n* Good, because there may be a straight forward way to expose possible transitions (GET `/api/orders/1/shipment/1/ship-attempts`)\n* Good, because it provides a clear solution for all custom endpoints. \n* Good, because it uses `POST` operation for action, which is not idempotent. \n* Bad, because state changes are not traceable resources in Sylius. They do not have unique identifiers to check their \nstatus, nor are they possible for retries.\n* Bad, because there is no clear solution on how to declare links in JSON-LD format.\n\n### Taking advantage of the `Controller` REST archetype\n\nThis approach was described in the REST API Design Rulebook, which states 4 archetypes: `Document`, `Collection`, `Store`,\nand `Controller`. `Controller` archetype allows for custom operations over the resource with the custom verb as the last \npart of the URL. However, these custom actions cannot duplicate the logic of any HTTP verbs.\n\nPOST `/api/orders/1/shipment/1/ship`\n\n```json\n{\n  \"tracking_code\": \"XYZ\"\n}\n```\n\n* Good, because it is already supported by Sylius Admin REST API - which reduces the number of possible problems during \nmigration.\n* Good, because it is straight-forward and easy to comprehend.\n* Good, because it provides a clear solution for all custom solutions. \n* Good, because it uses `POST` operation for action, which is not idempotent. \n* Bad, because there is no clear solution on how to declare links in JSON-LD format.\n* Bad, because usage of verbs in URL may be considered as a bad practice. \n\n### Google recommendation for custom operations\n\nGoogle is taking an approach of suffixing its custom endpoints with `:operation`.\n\nPOST `/api/orders/1/shipment/1:ship`\n\n```json\n{\n  \"tracking_code\": \"XYZ\"\n}\n```\n\n* Good, because it is straight-forward and easy to comprehend.\n* Good, because it provides a clear solution for all custom solutions. \n* Good, because it uses `POST` operation for action, which is nonidempotent. \n* Bad, because it seems to be unnatural for standard REST endpoints.\n* Bad, because it can be hard to achieve with the API Platform.\n\n## Decision Outcome\n\nThe \"Taking advantage of the `Controller` REST archetype\" should be considered as a recommended solution. All Sylius \nusers are already familiar with it, and it is easy to understand expected behavior. Linked data references should provide\nthe discoverability of the new endpoints. The possible operation may be sent in the `Link` header\nor new schema should be introduced for the JSON-LD structure. \n\nOption 2: \"Defining custom operations in the style of command pattern\" may be useful once async data processing is \ndelivered with vanilla Sylius installation. \n\n## References\n\n* [Json-LD & Hydra links to custom operations](https://stackoverflow.com/questions/41125810/json-ld-with-hydra-how-to-define-a-custom-operation-and-specify-its-url) \n* [Hydra links representation](https://www.hydra-cg.com/spec/latest/core/#adding-affordances-to-representations)\n* [Command pattern in REST](https://allegro-restapi-guideline.readthedocs.io/en/latest/CommandPattern/)\n* Masse, M., REST API design rulebook. 2011:\" O'Reilly Media. Chapter 2 - Identifier Design with URIs.\n* [Google custom endpoint design guide](https://cloud.google.com/apis/design/custom_methods)\n* [Representing State in REST and GraphQL](https://phil.tech/api/2017/06/19/representing-state-in-rest-and-graphql/#hateoas-i-call-on-thee)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/api/orders/1/shipment/1",
+    "/api/orders/1/shipment/1/ship-attempts",
+    "/api/orders/1/shipment/1/ship",
+    "/api/orders/1/shipment/1:ship"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2021_06_24_api_content_internationalization.md",
+   "identity": "adr/2021_06_24_api_content_internationalization.md",
+   "adr_id": "2021",
+   "title": "API - Customization internationalization",
+   "first_commit": "2021-06-24T15:26:44+02:00",
+   "first_sha": "d3ed76fbe1eb5e8b7db792f909bc7835009fc9db",
+   "last_commit": "2021-06-24T15:26:44+02:00",
+   "author": "\u0141ukasz Chru\u015bciel",
+   "email": "lchrusciel@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# API - Customization internationalization\n\n* Status: proposed\n* Date: 2021-06-24\n\n## Context and Problem Statement\n\nA big chunk of resources available in Sylius have some part locale aware. Product descriptions, names of payment or shipping methods\nshould be translated to the customer to provide the best user experience. Right now most of the resources are returned with \nall available translations in the store and proper localization of content is left to the frontend developers. What is more,\nthis solution is not consistent, as some endpoints already embeds some part of translatables in them. We should provide clear,\neasy to use and consistent way of handling customer locales. \n\n## Considered Options\n\n### Returning all possible translations to the frontend\n\nWe can update all not coherent at the moment resources to always returning all possible translations and leave it to the fronted to render proper one.\n\n* Good, because it is simplest and fastest solution at the moment of writing this document.\n* Good, because it leaves decision of proper content localization to the frontend developer. This guarantees flexibility.\n* Bad, because of data over-fetching. Most of the locales in the most to the cases won't be needed.\n* Bad, because it leaves decision of proper content localization to the frontend developer. Additional work is required on the frontend\n  App in order to provide localization functionality.\n\n### Taking advantage of JSON-LD specification for strings internationalization\n\nAs researched by @pamil, we can take advantage of JSON-LD processor, return data according to its specification and leave \nproper data structure to the JSON-LD processor.\n\n* Good, because it follows some external standard. This may allow us to take an advantage of the standard ecosystem.\n* Good, because it solves over-fetching problem, yet leaves the flexibility to the developer if they decide to fetch more than one locale in a single request.\n* Good, because it is suggested as a good direction for content internationalization by the API Platform core team. \n* Bad, because we are bounded to only one standard. It may not solve internationalization issues with other formats than JSON-LD.\n* Bad, because it is not part of API Platform yet and significant effort would need to be done in order to provide proper solution.\n\nRef.\n* https://github.com/Sylius/Sylius/issues/11412\n* https://github.com/api-platform/core/issues/127\n\n### Flatting down translatable parts of resources to the structure of the main resource\n\nThis approach goes the most side to side with the default Sylius architecture. This is the way, how we treat Sylius resources \ninternally for most of the cases. It is supported out-of-the-box and can be easily achieved. By default all resources are \nserved in a default locale of a channel (or Administrator in terms of admin panel). This may fallback to app wise default locale.\n\n* Good, because it follows our current behaviour.\n* Good, because it solves over-fetching problem.\n* Good, because it is straight-forward to implement.\n* Bad, because it does not allow fetching more than one locale.\n* Bad, because it will become our internal standard only.\n\n## Decision Outcome\n\nThe first approach should be used in admin section of API, while the third one should be used in shop section. This way, we\nwill receive best of both worlds with the minimal effort. It is worth mentioning that Sylius have two distinguish entry points\nto API - admin and shop. They are concerned about different things and resolves different problems. Unified view of a product\nin the shop will make it easy and straightforward to build product pages. At the same time all translation approach should be used in\nadmin to provide full control over \"translation\" resource - as we should treat them. Therefore, every resource translation\nshould be linked to the main resource through IRI. Each of these translation resource may be a subject of all CRUD operations\naccessible throughout HTTP Verbs.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "Sylius/Sylius#11412",
+     "kind": "issue",
+     "url": "https://github.com/Sylius/Sylius/issues/11412",
+     "number": "11412"
+    },
+    {
+     "key": "api-platform/core#127",
+     "kind": "issue",
+     "url": "https://github.com/api-platform/core/issues/127",
+     "number": "127"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2022_03_18_raw_data_in_command_and_events.md",
+   "identity": "adr/2022_03_18_raw_data_in_command_and_events.md",
+   "adr_id": "2022",
+   "title": "Use raw data in commands and events",
+   "first_commit": "2022-03-18T14:41:00+01:00",
+   "first_sha": "a47dbaa4f2ecb98e11e3979040293877bae6024e",
+   "last_commit": "2022-03-25T08:52:20+01:00",
+   "author": "Ernest Warwas",
+   "email": "ernest.warwas96@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Use raw data in commands and events\n\n* Status: accepted\n* Date: 2022-03-18\n\n## Context and Problem Statement\n\nWhile working with commands and handlers, we are always working with objects; therefore, these objects need to be \npresent in handlers. We may either fetch them from the repository based on identifiers or pass them as a part of \ncommands. The selected solution needs to take into account that our commands may be dispatched to external systems or \nprocessed asynchronously\n\n## Decision Drivers\n\n* always operate on the actual state of the object\n* ease to integrate with external systems\n* be more consistent with CQRS pattern\n\n## Considered Options\n\n### Passing raw data or objects to commands\n\nObjects passed to commands or events may desynchronize with the main object which can be causing problems with handlers \nthat may operate on wrong data. Passing objects to commands can ease us to implement new features and make it faster but \nthis solution gives us plenty of problems with integrations with external systems or eg. operating with the actual state \nof an object especially when we are doing it asynchronously.\n\n* good, because it can be easier for us to implement new features\n* bad, because the command handler can work on not synchronized object\n* bad, because it can be problematic when we are using async communication\n* bad, because it can be hard to integrate commands written like that with external systems\n\n### Passing only raw data or identifiers of the object(s) we want to change etc.\n\nBased on the identifier of the object(s) we can easily fetch them from DB which resolves the problem with desynchronizing \nbecause we always make queries to DB for the newest state of an object.\n\n* good, because there is no problem with desynchronizing data while async communication\n* good, because we can easily integrate with external systems\n* good, because it's more consistent with CQRS pattern\n* bad, because we need to always make queries to DB to get objects we want to modify (but we are caching queries from \nDB when we are using doctrine as our ORM)\n\n## Decision outcome\n\nChosen option: **\"Passing only raw data or identifiers of the object(s) we want to change etc.\"**\n\nThis option gives us plenty of advantages with only a small problem with always making queries when we want to work \nwith DB objects.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2022_03_24_remove_flush_from_handlers.md",
+   "identity": "adr/2022_03_24_remove_flush_from_handlers.md",
+   "adr_id": "2022",
+   "title": "Remove flush from handlers",
+   "first_commit": "2022-03-24T12:29:58+01:00",
+   "first_sha": "b19fde4d3aeb55b326500940929cfce541ae2fe2",
+   "last_commit": "2022-03-25T10:30:21+01:00",
+   "author": "Ernest Warwas",
+   "email": "ernest.warwas96@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Remove flush from handlers\n\n* Status: accepted\n* Date: 2022-03-24\n\n## Context and Problem Statement\n\nWhen working with entities and persisting the current state to DB one has to call a flush method on entity manager. \nBy default, it starts and commits transactions to used DB. The other possibility is to start the transaction manually, \nwhich will suspend the auto-commit feature of Doctrine.\n\n## Decision Drivers\n\n* avoid inconsistent data in DB\n* flexibility to rollback changes\n* provide an easy way to interface with object state before committing transaction\n\n## Considered Options\n\n### Flushing in handlers\n\nUsing flush() in command handlers can cause problems with inconsistent DB states if the end-user decides to adjust \nmodels definitions. Implicitly flushing will commit all the changes queued up so far, which may lead to DB error or \ncommitting not consistent data. What is more, we would need an additional feature that would allow adjusting the entity's \nstate before the transaction will close.\n\n* Bad, because implicitly flushing will commit all the changes queued up so far\n* Bad, because we would need an additional feature\n\n### Flushing outside of handlers with the manually triggered transaction\n\nManual setting up of transactions around handlers clearly defines their boundaries. Even tho this may still lead to DB \nerror or committing not consistent data, setting boundaries outside of our code improves DX greatly, as an adjustment \non objects may be made with decorator pattern outside of predefined handler.\n\n* Good, because it improves DX\n* Good, because transactions around handlers clearly define their boundaries\n* Good, because we have flexibility to rollback changes\n* Bad, because it may still lead to errors or committing not consistent data\n\n## Decision Outcome\n\nChosen option: **\"Flushing outside of handlers with the manually triggered transaction\"**\n\nIt is the most straightforward solution which will suspend the auto-commit feature of Doctrine and gives us more control\nand flexibility when working with data.\n\n## References <!-- optional -->\n\n* [Transactions and Concurrency](https://www.doctrine-project.org/projects/doctrine-orm/en/latest/reference/transactions-and-concurrency.html)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.doctrine-project.org/projects/doctrine-orm/en/latest/reference/transactions-and-concurrency.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2021_07_05_api_providing_locales_available_in_active_channel.md",
+   "identity": "adr/2021_07_05_api_providing_locales_available_in_active_channel.md",
+   "adr_id": "2021",
+   "title": "Using data provider for getting available locales in active channel for shop user",
+   "first_commit": "2021-07-02T12:19:58+02:00",
+   "first_sha": "90ceff637e55f24c8ee9870bc55d7ec2f911fed4",
+   "last_commit": "2022-03-15T14:38:47+01:00",
+   "author": "Adam Kasperczak",
+   "email": "adamkasperczak123@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Using data provider for getting available locales in active channel for shop user\n\n* Status: rejected\n* Date: 2021-07-05\n\n## Context and Problem Statement\nCustomer should have access only to locales available in their channel\n\n## Considered Options\n\n### Using Doctrine Collection extension\n\n* Good, because it is consistent with the actual approach to modifying responses content\n* Good, because it works with the rest of API extensions like pagination\n* Bad, because locales don't have relation to channel, so using Doctrine Collection extension is extremely hard.\n\n### Using Data Provider\n\n* Good, because we already have this approach for older resources\n* Good, because it is easy to implement \n* Bad, because using data providers omits extra Doctrine extensions like pagination\n\n## Decision Outcome\n\nChosen option: Using Data Provider\nShops shouldn't have many locales for each channel, so lack of a pagination is smaller problem than creating overcomplicated \nquery in Doctrine Collection extension\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2022_03_15_api_providing_locales_available_in_active_channel.md",
+   "identity": "adr/2022_03_15_api_providing_locales_available_in_active_channel.md",
+   "adr_id": "2022",
+   "title": "Using Doctrine Collection extension for getting available locales in active channel for shop user",
+   "first_commit": "2022-03-15T14:38:47+01:00",
+   "first_sha": "ff3d798411b500ee809ba8941f1fc7ce52d3d041",
+   "last_commit": "2022-03-15T14:38:47+01:00",
+   "author": "Grzegorz Sadowski",
+   "email": "sadowskigp@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Using Doctrine Collection extension for getting available locales in active channel for shop user\n\n* Status: accepted\n* Date: 2022-03-15\n\n## Context and Problem Statement\nCustomer should have access only to locales available in their channel\n\n## Considered Options\n\n### Using Doctrine Collection extension\n\n* Good, because it is consistent with the actual approach of modifying responses content\n* Good, because it works with the rest of API extensions like pagination\n* Bad, because locales don't have relation to channel, so using Doctrine Collection extension is complicated\n\n### Using Data Provider\n\n* Good, because it is easy to implement \n* Bad, because using data providers omits extra Doctrine extensions like pagination\n\n## Decision Outcome\n\nChosen option: **\"Using Doctrine Collection extension\"**\n\nThis option is consistent with current approach and does not omit Doctrine extensions like pagination.\n\n## References\n\n* [Original ADR for this problem](2021_07_05_api_providing_locales_available_in_active_channel.md)\n* [The implementation of changing the approach](https://github.com/Sylius/Sylius/pull/13333)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "Sylius/Sylius#13333",
+     "kind": "pull",
+     "url": "https://github.com/Sylius/Sylius/pull/13333",
+     "number": "13333"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2020_03_03_api_product_option_values.md",
+   "identity": "adr/api/2020-03-03-API-Product-Option-Values.md",
+   "adr_id": "2020",
+   "title": "API - Product Option Value",
+   "first_commit": "2020-03-03T10:19:53+01:00",
+   "first_sha": "0558c47e64fbf557c6b2267db2be44558fc5e1a4",
+   "last_commit": "2022-03-15T11:35:02+01:00",
+   "author": "Mateusz Zalewski",
+   "email": "zaleslaw@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# API - Product Option Value\n\n* Status: accepted\n* Date: 2020-03-03\n\nIn power from version: 1.8.0\n\nRelated PRs: #11136, #11144, #11157\n\n## Description\n\n### Problem to solve\n\nCover with API all `ProductOption`s related functionality provided by the Admin panel. \n\n### Context\n\nDuring the development of a new Sylius API (based on API Platform) for Product Options, we had to decide how we should handle\nProduct Option's values collection, to make it efficient and easy to use.\n\n### Possible solutions\n\nValues from collection could be embedded as objects within a `ProductOption` resource **or** provided by\n[IRIs](https://en.wikipedia.org/wiki/Internationalized_Resource_Identifier)\n\n### Decision and reasoning\n\nProduct option values should always be provided with their IRIs. They can exist outside of the `ProductOption` resource \n(e.g. be [related with](https://github.com/Sylius/Sylius/blob/master/src/Sylius/Component/Product/Model/ProductVariant.php#L44) `ProductVariant`).\nMoreover, values embedded together with their translations in the `ProductOption` that already has its translations would\nresult in a massive and unmanageable response.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#11136",
+     "kind": "hash",
+     "url": "",
+     "number": "11136"
+    },
+    {
+     "key": "#11144",
+     "kind": "hash",
+     "url": "",
+     "number": "11144"
+    },
+    {
+     "key": "#11157",
+     "kind": "hash",
+     "url": "",
+     "number": "11157"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/Sylius/Sylius/blob/master/src/Sylius/Component/Product/Model/ProductVariant.php"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2020_03_03_api_translations.md",
+   "identity": "adr/api/2020-03-03-API-Translations.md",
+   "adr_id": "2020",
+   "title": "API - Translations",
+   "first_commit": "2020-03-03T10:19:53+01:00",
+   "first_sha": "0558c47e64fbf557c6b2267db2be44558fc5e1a4",
+   "last_commit": "2022-03-15T11:35:02+01:00",
+   "author": "Mateusz Zalewski",
+   "email": "zaleslaw@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# API - Translations\n\n* Status: accepted\n* Date: 2020-03-03\n\nIn power from version: 1.8.0\n\nRelated PRs: #11136, #11144, #11157\n\n## Description\n\n### Problem to solve\n\nProvide unified way to manage translations for translatable entities in API. \n\n### Possible solutions\n\nThe translations from collection could be embedded as objects within a `ProductOption`/`ProductOptionValue` resource\n**or** provided by [IRIs](https://en.wikipedia.org/wiki/Internationalized_Resource_Identifier)\n\n### Decision and reasoning\n\nTranslations should always be embedded as the collection of objects. They're irrelevant outside of the main object and\ndo not provide any value alone.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#11136",
+     "kind": "hash",
+     "url": "",
+     "number": "11136"
+    },
+    {
+     "key": "#11144",
+     "kind": "hash",
+     "url": "",
+     "number": "11144"
+    },
+    {
+     "key": "#11157",
+     "kind": "hash",
+     "url": "",
+     "number": "11157"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2020_03_03_feature_coverage_in_api.md",
+   "identity": "adr/2020_03_03_feature_coverage_in_api.md",
+   "adr_id": "2020",
+   "title": "Feature Coverage in API",
+   "first_commit": "2020-03-13T15:20:07+01:00",
+   "first_sha": "f22ae8222222f3b0ae8cf8d19939ed12e780f26e",
+   "last_commit": "2022-03-15T11:35:02+01:00",
+   "author": "Kamil Kokot",
+   "email": "kamil@kokot.me",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Feature Coverage in API\n\n* Status: accepted\n* Date: 2020-03-03\n\n## Context and Problem Statement\n\nWe want our API to cover all the functionalities that are currently implemented in the UI.\n\n## Decision Drivers\n\n* All the functionalities implemented for API should be tested\n* Tracking whether a feature has been covered in the API or not should be easy\n\n## Considered Options\n\n### Using Behat for the feature coverage\n\nBehat allows us to run the same Gherkin scenarios within one or more context. Currently, most of our scenarios are\nrun within UI context (tagged with `@ui`). Adding `@api` tag to those allows to run the scenarios within API context. \n\n* Good, because we can track the coverage easily by comparing scenarios tagged with `@ui` and `@api`\n* Bad, because we don't have any tooling to test API within Behat ecosystem\n\n### Using PHPUnit for the feature coverage\n\nAPI Platform recommends to use PHPUnit in order to cover the functionalities with tests.\n\n* Good, because there is already a recommended tool to test the API within PHPUnit\n* Bad, because it is not easy to track features covered with API compared with Behat\n* Bad, because it creates another system to test business features\n\n## Decision Outcome\n\nChosen *Using Behat for the feature coverage*, because it's the only option, that meets all the decision drivers criteria.\n\nWe will gradually add `@api` tag to the scenarios currently tagged with `@ui` and then implement the API contexts.\nAs a consequence, we will have to create a testing tool to use it in Behat contexts.\n\n## References\n\n* The initial implementation and references to further PRs with improvements: [[API] Product options (with values) creation and index](https://github.com/Sylius/Sylius/pull/11136)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "Sylius/Sylius#11136",
+     "kind": "pull",
+     "url": "https://github.com/Sylius/Sylius/pull/11136",
+     "number": "11136"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2020_11_12_registration_of_handlers_in_message_buses.md",
+   "identity": "adr/2020_11_12_registration_of_handlers_in_message_buses.md",
+   "adr_id": "2020",
+   "title": "Registration of handlers in message buses",
+   "first_commit": "2020-11-12T14:07:26+01:00",
+   "first_sha": "32db781829e80cfa3159f65905f4c36ea0d771f5",
+   "last_commit": "2022-03-15T11:35:02+01:00",
+   "author": "\u0141ukasz Chru\u015bciel",
+   "email": "lchrusciel@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Registration of handlers in message buses\n\n* Status: accepted\n* Date: 2020-11-12\n\n## Context and Problem Statement\n\nWhile defining new handlers, we may define a bus to which particular handler should be assigned to. If not, handler will\nbe added to all existing buses. Right now, we have only one bus in Sylius, so decision will not change current behaviour.\nHowever, we may add additional buses in the future and more than one bus is not uncommon thing.\n\n## Decision Drivers <!-- optional -->\n\n* Driver 1 - easiness of changing default behaviour and usage of the bus\n* Driver 2 - backward compatible possibility of changing behaviour\n\n## Considered Options\n\n### Automatically register handlers in all buses\n\n* Good, because end users does not have to care, which bus is injected.\n* Bad, because it may lead to registration of handlers in buses, where they should not be registered. Furthermore, it would\nbe hard to explicitly remove them from this particular bus.\n* Bad, because changing this behaviour would result in backward compatibility break.\n\n### Explicitly declare, where bus should be registered\n\n* Good, because Sylius will contain its logic in pre-defined place.\n* Good, because user may opt in, if some handler would be needed in another bus (by redeclaring/aliasing existing handler with a new tag).\n* Good, because this behaviour is more predictable (we always sure about intention of which bus should be used).\n* Good, because we can easily change this behaviour in the future, to register handlers everywhere without breaking existing apps.\n* Bad, because end users needs to inject `sylius.default_bus` in order to use Sylius commands. \n\n## Decision Outcome\n\nChosen option: \"[Explicitly declare, where bus should be registered]\", because this options leaves the most options to end user\nwithout forcing him to use them. What is more, we may easily adjust this option in the future\n\n## References <!-- optional -->\n\n* [Symfony documentation about buses](https://symfony.com/doc/current/messenger/multiple_buses.html#restrict-handlers-per-bus)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "symfony.com/doc/current/messenger/multiple_buses.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2020_11_18_sending_emails_via_api.md",
+   "identity": "adr/2020_11_18_sending_emails_via_api.md",
+   "adr_id": "2020",
+   "title": "API - Sending emails",
+   "first_commit": "2020-11-18T11:42:19+01:00",
+   "first_sha": "02ca9e6085e79eb6062abf59ff3a74bcbc0270bd",
+   "last_commit": "2022-03-15T11:35:02+01:00",
+   "author": "SirDomin",
+   "email": "dominik.garbulski@sylius.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# API - Sending emails\n\n* Status: accepted\n* Date: 2020-11-18\n\n## Context and Problem Statement\n\nTo achieve 100% API coverage, we need to handle emails by API.\n\n## Considered Options\n\n### Using events\n\nUsing events allow us to trigger any handler once operation is completed. \n\n* Sylius\\ApiBundle\\Event\\OrderCompleted\n\nOnce this event is triggered we handle it with ```src/Sylius/Bundle/ApiBundle/EventHandler/OrderCompletedHandler.php```\n\nThen command ```src/Sylius/Bundle/ApiBundle/Command/SendOrderConfirmation.php ``` is dispatched, which triggers command handler (```src/Sylius/Bundle/ApiBundle/CommandHandler/SendOrderConfirmationHandler.php```)\n \nSendOrderConfirmationHandler is sending email based on its destination (in this case OrderConfirmation)\n\n```\n$this->emailSender->send(\n    Emails::ORDER_CONFIRMATION_RESENT,\n    [$order->getCustomer()->getEmail()],\n    [\n        'order' => $order,\n        'channel' => $order->getChannel(),\n        'localeCode' => $order->getLocaleCode(),\n    ]\n);\n```\n\n* Good, because it's easy to integrate other logic after the initial command will succeed.\n* Good, because it's easy to trigger the same operation several times.\n* Good, because it's easier to handle mailing server downs gracefully.\n\n* Bad, because adds a lot of abstraction, can be hard to understand.\n\n### Direct email call\n\nin ```src/Sylius/Bundle/ApiBundle/CommandHandler/Checkout/CompleteOrderHandler.php```\nwe create direct call to email\n\n```php\n$this->emailManager->sendConfirmationEmail($cart);\n```\n\n* Good, because its easy to understand.\n\n* Bad, because it can generate a lot of problems in future as it should be sent asynchronously, email manager class should be changed to handle it somehow, hard to implement.\n\n## Decision Outcome\n\nChosen option: \"Using events\", because it allows us to send email using events, commands and handlers. Thanks to this we can queue few messages in async transport.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "src/Sylius/Bundle/ApiBundle/EventHandler/OrderCompletedHandler.php",
+    "src/Sylius/Bundle/ApiBundle/Command/SendOrderConfirmation.php",
+    "src/Sylius/Bundle/ApiBundle/CommandHandler/SendOrderConfirmationHandler.php",
+    "src/Sylius/Bundle/ApiBundle/CommandHandler/Checkout/CompleteOrderHandler.php"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2021_04_15_using_iri_as_api_resource_identifier_in_request_instead_of_code_id.md",
+   "identity": "adr/2021_04_15_using_iri_instead_of_code_id.md",
+   "adr_id": "2021",
+   "title": "Using IRI as API resource identifier in requests instead of code/id",
+   "first_commit": "2021-04-15T12:47:07+02:00",
+   "first_sha": "05a355bf2793da6bbcd7dc15cbef349405d9786b",
+   "last_commit": "2022-03-15T11:35:02+01:00",
+   "author": "Tomanhez",
+   "email": "tomek.sut@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Using IRI as API resource identifier in requests instead of code/id\n\n* Status: accepted\n* Date: 2021-04-15\n\n## Context and Problem Statement\n\nAPI Platform recommends using IRI as an identifier. That identifier gives more clarity than an id because it contains more information - a full endpoint path to the resource and its unique identifier. On resources, API Platform handles IRI out of the box.\nWhile we were designing Sylius new API, we have decided to use commands in many endpoints.\nIn some cases, this solution is more flexible than the default creation approach (as we have control over what we are processing), but it doesn't handle the transformation of IRI to proper `code`/`id`.\nIn the past, we have been using `code`/`id` instead of IRI, then we have been using both approaches.\nNow we are trying to unify the new API and replace codes and ids with IRI everywhere.\nThe main challenge is the usage of IRI in requests, where we want to have IRI in the request but `id`/`code`in its commands and command handlers.\n\n## Considered Options\n\n### Using `id`/`code` instead of IRI\n\nUsing `code`/`id` instead of IRI is easier to implement, but it is not consistent with API Platform and its default behaviour.\n\n* Good, because it is easier to implement\n* Bad, because it is not consistent with others endpoints\n\n### Handling and transforming IRI to `id`/`code`\n\nFor handling IRI we created `Sylius\\Bundle\\ApiBundle\\Serializer\\CommandFieldItemIriToIdentifierDenormalizer` and\n`Sylius\\Bundle\\ApiBundle\\Map\\CommandItemIriArgumentToIdentifierMap`. `CommandFieldItemIriToIdentifierDenormalizer`\ntransforms and denormalizes our command using `CommandItemIriArgumentToIdentifierMap` as a bag with definition for\nsupported denormalize commands. All you have to do for adding command support is add command FQCN as a key\nand field name as a field that will be transformed from IRI to `code`/`id`. All definition are registered in\n`Sylius\\Bundle\\ApiBundle\\Map\\CommandItemIriArgumentToIdentifierMap` service:\n\n````\n        <service id=\"Sylius\\Bundle\\ApiBundle\\Map\\CommandItemIriArgumentToIdentifierMap\">\n            <argument type=\"collection\">\n                <argument key=\"Sylius\\Bundle\\ApiBundle\\Command\\AddProductReview\">product</argument>\n                <argument key=\"Sylius\\Bundle\\ApiBundle\\Command\\Checkout\\ChoosePaymentMethod\">paymentMethod</argument>\n                <argument key=\"Sylius\\Bundle\\ApiBundle\\Command\\Account\\ChangePaymentMethod\">paymentMethod</argument>\n                <argument key=\"NewCommandFQCN\">NewCommandFieldName</argument>\n            </argument>\n        </service>\n````\n\n* Good, because it unifies the API structure\n* Good, because it makes the API easier to use\n* Bad, because it imposes a new abstraction layer for commands\n\n## Decision Outcome\n\nChosen option: \"Handling and transforming IRI to `id`/`code`\". Request that is based on command and needed information like `code`/`id` should get it as IRI\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2022_02_21_using_cart_by_guest_and_logged_in_customer.md",
+   "identity": "adr/2022_02_21_using_cart_by_guest_and_logged_in_customer.md",
+   "adr_id": "2022",
+   "title": "Using cart by guest and logged in customer",
+   "first_commit": "2022-02-22T07:38:32+01:00",
+   "first_sha": "b9c36f7f82ceac18530f786837f70c31c65855d9",
+   "last_commit": "2022-02-23T20:54:49+01:00",
+   "author": "Grzegorz Sadowski",
+   "email": "sadowskigp@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Using cart by guest and logged in customer\n\n* Status: accepted\n* Date: 2022-02-22\n\n## Context and Problem Statement\n\nCart and its processing is one of the key aspects of Sylius. It turned out that it has a vulnerability and there is\npossible for an anonymous user to override the cart of logged in customer by using only its email. This is because \nwhen entering an email, during addressing step, the customer with this email is assigned to the cart and from then, \nthere is no simple way to distinguish between the carts created by the guest and the logged in user. The question is \nhow should we distinguish the carts to solve the vulnerability.\n\n## Decision Drivers\n\nProvided solution should:\n* solve the initial problem with overriding cart of logged in customer by anonymous user\n* not break a backward compatibility, both code and business behaviour\n\n## Considered Options\n\n### Forcing logging in during checkout\n\n* Good, because it solves the initial problem\n* Bad, because it changes the current expected behaviour in checkout\n* Bad, because it breaks a backward compatibility from the business perspective\n\n### Changing priority of cart contexts\n\n* Good, because it solves the initial problem\n* Bad, because it does not solve the case when a logged in customer does not have a cart\n* Bad, because it changes the current expected behaviour with keeping cart after logging in\n* Bad, because it breaks a backward compatibility from the business perspective\n\n### Introducing flag on order entity to mark order created by guest\n\nAdding a flag to order entity allows us to distinguish carts created by guest or by logged in customer. To mark cart \nas soon as possible, to solve all cases of the initial problem, the flag needs to be set in Sylius\\Component\\Core\\Cart\\Context\\ShopBasedCartContext, \nwhere the customer of logged in user is also set on cart. This context is definitely not a proper service to do such operations, \nhowever it is consistent with current approach in Sylius. Setting this value only after logging in would not be enough, \nas it doesn't resolve the situation when the already logged in user creates a cart. It is similar with setting flag after\nthe addressing step, it doesn't resolve the problem as the cart of logged in user is marked too late and before addressing\nthe cart couldn't be distinguished to whom it belongs.\n\n* Good, because it solves the initial problem\n* Good, because it does not break a backward compatibility\n* Good, because it can be used to additional features in the future\n* Bad, because it requires to set the flag in Sylius\\Component\\Core\\Cart\\Context\\ShopBasedCartContext \n\n## Decision Outcome\n\nChosen option: **\"Introducing flag on order entity to mark order created by guest\"**\n\nFor now, it is the most straightforward solution, that resolves the initial problem, does not introduce any BC break\nand it is the solution that could be used to additional features in the future.\n\n## References\n\n* [Approach with changing priorities](https://github.com/Sylius/Sylius/pull/13603)\n* [Chosen approach with introducing flag](https://github.com/Sylius/Sylius/pull/13676)\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "Sylius/Sylius#13603",
+     "kind": "pull",
+     "url": "https://github.com/Sylius/Sylius/pull/13603",
+     "number": "13603"
+    },
+    {
+     "key": "Sylius/Sylius#13676",
+     "kind": "pull",
+     "url": "https://github.com/Sylius/Sylius/pull/13676",
+     "number": "13676"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2021_06_15_api_platform_config_customization.md",
+   "identity": "adr/2021_06_15_api_platform_config_customization.md",
+   "adr_id": "2021",
+   "title": "API - Customization",
+   "first_commit": "2021-06-15T12:58:14+02:00",
+   "first_sha": "e48d14e363a359815f0fc948fbcdc30b303c74b7",
+   "last_commit": "2021-11-17T12:32:24+01:00",
+   "author": "SirDomin",
+   "email": "domin12wsx@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# API - Customization\n\n* Status: accepted\n* Date: 2021-06-15\n\n## Context and Problem Statement\n\nSylius is by design application that will be adjusted to customer needs. \nTherefore each part of it has to be crafted with replaceability or customizability at its core. \nNonetheless, the current state of API Platform integration requires the replacement of the whole config of the whole resource. \nIn terms of the more complicated cases like Order or Customer, this practice may become error-prone and hard to maintain for both maintainers and Sylius users.\n\n## Considered Options\n\n### Overwriting resource configs\n\nFor now, the only way to customize API resources is by overwriting the entire configuration associated with the endpoint.\n\n* Bad, because its not easy to configure.\n* Bad, because it requires to change many files in end application.\n* Bad, because any changes in the new Sylius version will not be applicable to overwritten configs\n\n### Config merging\n\nTo configure endpoint specify mapping file in config.\n\n```yaml\nmapping:\n    paths: ['%kernel.project_dir%/config/api_platform']\n```\n\nin specified directory all we need to do is create config we want to overwrite, for example:\n\n```yaml\n'%sylius.model.zone.class%':\n    collectionOperations:\n        admin_get:\n            enabled: false\n```\n\nThis is example config to remove specific operation, more examples can be found in docs (https://docs.sylius.com/en/latest/customization/api/index.html).\n\n* Good, because it's easy to understand, you can overwrite any endpoint in just a few lines from any place specified in api platform config.\n* Bad, because we need to overwrite and modify services provided by API Platform, differences between API Platform versions can break our application.\n\n## Decision Outcome\n\nChosen option: \"Config merging\", because it allows us easily overwrite any endpoint, without getting deep into api platform resources.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "docs.sylius.com/en/latest/customization/api/index.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2021_05_06_command_bus_unification.md",
+   "identity": "adr/2021_05_06_command_bus_unification.md",
+   "adr_id": "2021",
+   "title": "Unification of buses in sylius",
+   "first_commit": "2021-05-06T00:45:06+02:00",
+   "first_sha": "fb0c807c6713309c07c7b55f7b2210578cac80b5",
+   "last_commit": "2021-05-12T08:19:09+02:00",
+   "author": "Dominik Garbulski",
+   "email": "dominikgarbulski@Dominiks-MacBook-Pro.local",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Unification of buses in sylius\n\n* Status: accepted\n* Date: 2021-05-06\n\n## Context and Problem Statement\n\nSylius and any other following product (like plugins) should utilize `sylius.command_bus` for command dispatching and `sylius.event_bus` for events.\n\nTake into account, that the command bus requires to have one corresponding handler for each message dispatched in contradiction to the event bus (where there is no such requirement). \nIn addition, the command bus will perform command validation and wrap the following handler within a transaction and flush to the database. \n\nAt this moment we are using 2 tags `messenger.message_handler` with support for both `sylius.command_bus` and `sylius_default.bus`\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/2020_09_01_admin_and_shop_split.md",
+   "identity": "adr/2020_09_01_admin_and_shop_split.md",
+   "adr_id": "2020",
+   "title": "Separation of admin and shop routes",
+   "first_commit": "2020-09-01T13:55:32+02:00",
+   "first_sha": "a81ac9ccb7f22b1a5ea48972a165292ef4cdd16d",
+   "last_commit": "2020-09-07T11:32:16+02:00",
+   "author": "\u0141ukasz Chru\u015bciel",
+   "email": "lchrusciel@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Separation of admin and shop routes\n\n* Status: accepted\n* Date: 2020-09-31\n\n## Context and Problem Statement\nWhile developing the new, unified API, there weren't clear guidelines for structuring new API endpoints. The first approach\nwas introducing two different endpoint prefixes, similar to what is currently done in a regular shop. On the 30th of April,\nwe have merged a unification of our endpoints in https://github.com/Sylius/Sylius/pull/11397. This move was dictated by \nthe fact that we wanted to push unification even further. Depending on the currently logged in user, we had to expose different\ndata for available entities in both contexts. Besides, it ought to simplify API usage (as it would reduce the number of endpoints)\nand simplify the relations between resources. However, this change rose a lot of new issues to solve:\n\n * Different serialization for different users is not trivial. Some relations between objects are also contextual, so \nadmin can see many more links than the regular visitor or shop user. \n * Endpoints like \"Product Show\" are resolved differently depending on the context as well. The shop products are determined \nbased on the slug (taking into account the current channel), while the administrator is browsing products by code. This\nseparation blurs the product identifier, and it is not clear which route should be considered as IRI. \n * the split was not complete. Two separate log in endpoints have to be preserved, due to our user architecture and the\ndecision that we want to be explicit, which user is trying to log in.\n \nUsing one unified identifier in both admin and shop panel is a no go as well. In the shop we should use a `slug`, to be able\nto expose product data based on URL (or provide redirect to proper resource based on the channel and locale), while in admin \nresources are channel and locale agnostic, and we should use `codes` instead.\n\n## Decision Drivers\n\n* Driver 1: There is not strict requirement to have a direct 1 to 1 correlation between entities in database and exposed API Resources.\nOne resource in the database may aggregate several API Resources\n* Driver 2: There should be a clear way to determine an IRI for each of exposed API Resources\n* Driver 3: A clear separation of available resources and paths for visitor and admin may be expected\n\n## Considered Options\n\nEvery option will be described considering products example fetched by shop user and administrator:\n\n### Staying with the current solution\n\n`GET /new-api/products/knitted-wool-blend-green-cap` for Visitor (using product slug) which will return\n`{\"id\": 1, \"slug\": 2, \"prices\": {} }`\n`GET /new-api/products/KNITTED_WOOL_BLEND_GREEN_CAP` for admin user (using product code) which will return\n`{\"id\": 1, \"slug\": 2, \"prices\": {}, \"admin_related_information\" : \"\" }`\n\n* Good, because there is only one endpoint for the products.\n* Bad, because depending on the currently logged in user, the IRIs between related products (or on the product list) have been\nchanged (between slug and code).\n* Bad, because it is not clear how to operate on endpoint before jumping into documentation. (For example tax rates \nendpoint is not exposed for shop users).\n* Bad, because we have to declare authorization rules on endpoint basis, while some of them will have really complicated \nrules (different strategies for admin, shop user and guest).\n\n### Adding additional suffix for path\n\n`GET /new-api/products/knitted-wool-blend-green-cap` for Visitor (using product slug) which will return\n`{\"id\": 1, \"slug\": 2, \"prices\": {} }`\n`GET /new-api/products/KNITTED_WOOL_BLEND_GREEN_CAP/admin` for admin user (using product code) which will return\n`{\"id\": 1, \"slug\": 2, \"prices\": {}, \"admin_related_information\" : \"\" }`\n\n* Good, because we can treat two different presentations as two separate resources and generate two different IRIs for both of them.\n* Good, because it is clear which endpoint should be used in admin and shop contexts.\n* Good, because the authorization of admin and shop users is more straightforward.\n* Bad, because there are two endpoints for the products.\n* Bad, because it results with n paths with `admin` prefix only, while on others, we should be cautious which path we are using.\n* Bad, because we have to declare authorization rules on endpoint basis, while some of them will have really complicated \nrules (different strategies for admin, shop user, and guest)\n\n### Moving back to prefixed paths for back-office and shop \n\n`GET /new-api/shop/products/knitted-wool-blend-green-cap` for Visitor (using product slug) which will return\n`{\"id\": 1, \"slug\": 2, \"prices\": {} }`\n`GET /new-api/admin/products/KNITTED_WOOL_BLEND_GREEN_CAP` for admin user (using product code) which will return\n`{\"id\": 1, \"slug\": 2, \"prices\": {}, \"admin_related_information\" : \"\" }`\n\n* Good, because we can treat two different presentations as two separate resources and generate two different IRIs for both of them.\n* Good, because it is clear which endpoint should be used in admin and shop contexts.\n* Good, because the authorization of admin and shop users is more straightforward.\n* Good, because we can take advantage of Symfony firewalls and hide all admin endpoints behind one firewall. \n* Bad, because there are two endpoints for the products.\n\n## Decision Outcome\n\nChosen option: \"Moving back to prefixed paths for back-office and shop\". This option was selected because it allows us to\neasily leverage the Symfony Security component's benefits like firewalls and ACL. The only second and third option provides\npredictable behavior and clear separation of concerns for admin and shop. Still, suffixes on most of the routes seem like\na worse solution compared to the common prefix. The common prefix will indicate that these endpoints are grouped in the \nsame context.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "Sylius/Sylius#11397",
+     "kind": "pull",
+     "url": "https://github.com/Sylius/Sylius/pull/11397",
+     "number": "11397"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/_readme.md",
+   "identity": "adr/_readme.md",
+   "adr_id": "",
+   "title": "Conventions for ADRs:",
+   "first_commit": "2020-03-13T15:20:07+01:00",
+   "first_sha": "f22ae8222222f3b0ae8cf8d19939ed12e780f26e",
+   "last_commit": "2020-03-13T15:20:07+01:00",
+   "author": "Kamil Kokot",
+   "email": "kamil@kokot.me",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "Conventions for ADRs:\n - The filename uses lowercase and underscores. This is a balance of readability and system usability.\n - The filename contains the creation date and the related topic. The format is `YYYY_MM_DD_topic.md`.\n - The content follows the ADR template specified at `_template.md` in this directory.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/_template.md",
+   "identity": "adr/_template.md",
+   "adr_id": "",
+   "title": "[short title of solved problem and solution]",
+   "first_commit": "2020-03-13T15:20:07+01:00",
+   "first_sha": "f22ae8222222f3b0ae8cf8d19939ed12e780f26e",
+   "last_commit": "2020-03-13T15:20:07+01:00",
+   "author": "Kamil Kokot",
+   "email": "kamil@kokot.me",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# [short title of solved problem and solution]\n\n* Status: [proposed | rejected | accepted | deprecated | \u2026 | superseded by [ADR-0005](0005-example.md)]\n* Date: [YYYY-MM-DD when the decision was last updated] <!-- optional -->\n\n## Context and Problem Statement\n\n[Describe the context and problem statement, e.g., in free form using two to three sentences. You may want to articulate the problem in form of a question.]\n\n## Decision Drivers <!-- optional -->\n\n* [driver 1, e.g., a force, facing concern, \u2026]\n* \u2026 <!-- numbers of drivers can vary -->\n\n## Considered Options\n\n### [option 1]\n\n[example | description | pointer to more information | \u2026] <!-- optional -->\n\n* Good, because [argument a]\n* Bad, because [argument b]\n* \u2026 <!-- numbers of pros and cons can vary -->\n\n### [option 2]\n\n[example | description | pointer to more information | \u2026] <!-- optional -->\n\n* Good, because [argument a]\n* Bad, because [argument b]\n* \u2026 <!-- numbers of pros and cons can vary -->\n\n## Decision Outcome\n\nChosen option: \"[option 1]\", because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)].\n\n## References <!-- optional -->\n\n* [Link type] [Link to ADR] <!-- example: Refined by [ADR-0005](0005-example.md) -->\n* \u2026 <!-- numbers of links can vary -->\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/api/2020-03-03-API-Coverage.md",
+   "identity": "adr/api/2020-03-03-API-Coverage.md",
+   "adr_id": "2020",
+   "title": "API - Coverage",
+   "first_commit": "2020-03-03T10:19:53+01:00",
+   "first_sha": "0558c47e64fbf557c6b2267db2be44558fc5e1a4",
+   "last_commit": "2020-03-13T15:20:07+01:00",
+   "author": "Mateusz Zalewski",
+   "email": "zaleslaw@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "Date: 2020-03-03\n\n# API - Coverage\n\nIn power from version: 1.8.0 (?)\n\nRelated PRs: #11136, #11144, #11157\n\n## Description\n\n### Problem to solve\n\nCover with API all functionality provided by the Admin panel. \n\n### Context\n\nNew Sylius API (based on API Platform), should cover in 100% business value provided in Admin panel (and already covered\nby `@ui` Behat scenarios).\n\nTherefore, there are some compromises and decisions already taken (regarding the features themselves), that we need to include\n(or not include) in the new API functionality.\n\n### Possible solutions\n\nInstead of focusing on already described scenarios, the other option was to explore the resources management domains one\nmore time and include all determined cases in the API.\n\n### Decision and reasoning\n\nFor the beginning, we focus on implementing only features already covered with Behat UI scenarios. In the future, it\nwould result in bigger reliability of Behat API tests and allows more straightforward iteration over missing features.\n  \nAs an example - we don't provide `ProductOptionsValue`s deletion feature in API, as it's not yet provided and covered with\nBehat UI scenario (even though there is a value in this feature - and should be implemented separately for both, UI and API).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#11136",
+     "kind": "hash",
+     "url": "",
+     "number": "11136"
+    },
+    {
+     "key": "#11144",
+     "kind": "hash",
+     "url": "",
+     "number": "11144"
+    },
+    {
+     "key": "#11157",
+     "kind": "hash",
+     "url": "",
+     "number": "11157"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "adr/api/2020-02-27-Product-Options.md",
+   "identity": "adr/api/2020-02-27-Product-Options.md",
+   "adr_id": "2020",
+   "title": "Product Options API",
+   "first_commit": "2020-02-27T12:47:52+01:00",
+   "first_sha": "b6e3f20be184ff9e4e19887082ec5fd9d6646424",
+   "last_commit": "2020-03-03T10:19:53+01:00",
+   "author": "Mateusz Zalewski",
+   "email": "zaleslaw@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "Date: 2020-02-27\n\n# Product Options API\n\nIn power from version: 1.8.0 (?)\n\nRelated PRs: #11136, #11144, #11157\n\n## Description\n\n### Problem to solve\n\nCover with API all `ProductOption`s related functionality provided by the Admin panel. \n\n### Context\n\nNew Sylius API (based on API Platform), should cover in 100% or business value provided in Admin panel (and already covered\nby `@ui` Behat scenarios).\n\nTherefore, there are some compromises and decisions already taken (regarding the features themselves), that we need to include\n(or not include) in the new API functionality.\n\n### Possible solutions\n\n- **Business value:** instead of focusing on already described scenarios, the other option was to explore the Product\n   Options management domain one more time and include all determined cases in the API.\n\n- **Translations:** the translations from collection could be embedded as objects within a `ProductOption`/`ProductOptionValue`\n  resource **or** provided by [IRIs](https://en.wikipedia.org/wiki/Internationalized_Resource_Identifier)\n  \n- **Product option values:** similar to the translations, could be embedded as objects or IRIs   \n\n### Decision and reasoning\n\n- **API coverage:** for the beginning, we focus on implementing only features already covered with Behat UI scenarios.\n  In the future, it would result in bigger reliability of Behat API tests and allows more straightforward iteration over missing features.\n  \n  - As an example - we don't provide `ProductOptionsValue`s deletion feature in API, as it's not yet provided and\n    covered with Behat UI scenario (even though there is a value in this feature - and should be implemented separately for both, UI and API).\n  \n- **Translations:** should always be embedded as the collection of objects. They're irrelevant outside of the main object\n  and does not provide any value alone.\n  \n- **Product option values:** should always be provided with their IRIs. They can exist outside of the `ProductOption` resource\n  (e.g. be [related with](https://github.com/Sylius/Sylius/blob/master/src/Sylius/Component/Product/Model/ProductVariant.php#L44) `ProductVariant`).\n  Moreover, values embedded together with their translations in the `ProductOption` that already has its translations would\n  result in a massive and unmanageable response.\n  \n- **Updates of objects:** are defined with the PUT method, to allow embedded objects (like translations) update.\n  The flow of object update should always be: GET (for a response with object data) -> modification -> PUT (with the whole object).\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#11136",
+     "kind": "hash",
+     "url": "",
+     "number": "11136"
+    },
+    {
+     "key": "#11144",
+     "kind": "hash",
+     "url": "",
+     "number": "11144"
+    },
+    {
+     "key": "#11157",
+     "kind": "hash",
+     "url": "",
+     "number": "11157"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/Sylius/Sylius/blob/master/src/Sylius/Component/Product/Model/ProductVariant.php"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "adr/2022_02_09_catalog_promotions_validation.md",
+   "identity": "adr/2022_02_09_catalog_promotions_validation.md",
+   "commit": "6613b088b44554258c59faf3e4d5c0da747fd63b",
+   "date": "2024-11-08T02:20:36+01:00",
+   "old_state": "unknown",
+   "new_state": "deleted",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Remove obsolete catalog promotions validation adr",
+   "renamed": false,
+   "script_label": "no-longer-needed",
+   "script_rule": "deleted-as-obsolete",
+   "author": "Rafikooo",
+   "email": "thecrazyrafik@gmail.com"
+  },
+  {
+   "path": "adr/2022_02_11_declaring_services_in_container.md",
+   "identity": "adr/2022_02_11_declaring_services_in_container.md",
+   "commit": "56a9c40ababea16b9ee80280f999150b0c0f503c",
+   "date": "2024-10-23T12:27:47+02:00",
+   "old_state": "unknown",
+   "new_state": "deleted",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Remove outdated adr",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "deleted-without-replacement-pointer",
+   "author": "Micha\u0142 Pysiak",
+   "email": "mpysiak@gmail.com"
+  },
+  {
+   "path": "adr/2020_03_03_api_product_option_values.md",
+   "identity": "adr/api/2020-03-03-API-Product-Option-Values.md",
+   "commit": "f22ae8222222f3b0ae8cf8d19939ed12e780f26e",
+   "date": "2020-03-13T15:20:07+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "[ADR] Prepare a template and customise existing ones",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Kamil Kokot",
+   "email": "kamil@kokot.me"
+  },
+  {
+   "path": "adr/2020_03_03_api_translations.md",
+   "identity": "adr/api/2020-03-03-API-Translations.md",
+   "commit": "f22ae8222222f3b0ae8cf8d19939ed12e780f26e",
+   "date": "2020-03-13T15:20:07+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "[ADR] Prepare a template and customise existing ones",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Kamil Kokot",
+   "email": "kamil@kokot.me"
+  },
+  {
+   "path": "adr/2021_04_15_using_iri_as_api_resource_identifier_in_request_instead_of_code_id.md",
+   "identity": "adr/2021_04_15_using_iri_instead_of_code_id.md",
+   "commit": "f7b6f2d485fe737427216b8bae4b857010cbcfa6",
+   "date": "2021-04-15T12:56:20+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Add fixes for tests and implementations",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Tomanhez",
+   "email": "tomek.sut@gmail.com"
+  },
+  {
+   "path": "adr/api/2020-03-03-API-Coverage.md",
+   "identity": "adr/api/2020-03-03-API-Coverage.md",
+   "commit": "f22ae8222222f3b0ae8cf8d19939ed12e780f26e",
+   "date": "2020-03-13T15:20:07+01:00",
+   "old_state": "unknown",
+   "new_state": "deleted",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "[ADR] Prepare a template and customise existing ones",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "deleted-without-replacement-pointer",
+   "author": "Kamil Kokot",
+   "email": "kamil@kokot.me"
+  },
+  {
+   "path": "adr/api/2020-02-27-Product-Options.md",
+   "identity": "adr/api/2020-02-27-Product-Options.md",
+   "commit": "0558c47e64fbf557c6b2267db2be44558fc5e1a4",
+   "date": "2020-03-03T10:19:53+01:00",
+   "old_state": "unknown",
+   "new_state": "deleted",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "[ADR] Split ADRs into multiple files",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "deleted-without-replacement-pointer",
+   "author": "Mateusz Zalewski",
+   "email": "zaleslaw@gmail.com"
+  }
+ ],
+ "ai_signals": [
+  {
+   "kind": "file:primary",
+   "name": "AGENTS.md",
+   "date": "2025-06-12T07:56:34+02:00",
+   "commit": "052340fbfc5125a5cb7a99aa7d59a07a59e21ee3",
+   "evidence": "Add AGENTS.md",
+   "official": true,
+   "author": "Micha\u0142 Pysiak",
+   "email": "mpysiak@gmail.com"
+  },
+  {
+   "kind": "file:primary",
+   "name": "CLAUDE.md",
+   "date": "2025-06-12T07:56:34+02:00",
+   "commit": "052340fbfc5125a5cb7a99aa7d59a07a59e21ee3",
+   "evidence": "Add AGENTS.md",
+   "official": true,
+   "author": "Micha\u0142 Pysiak",
+   "email": "mpysiak@gmail.com"
+  },
+  {
+   "kind": "file:primary",
+   "name": ".github/copilot-instructions.md",
+   "date": "2025-06-12T11:05:31+02:00",
+   "commit": "ebcb37053a4818fd1e9f252afe6c28b18ee69d0a",
+   "evidence": "Make reference to global agents file for GitHub Copilot",
+   "official": true,
+   "author": "Francis Hilaire",
+   "email": "Prometee@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+   "date": "2026-10-02T19:06:01+02:00",
+   "commit": "dd7746a1200e678ce7b5bdc550f5664ec2d9a23b",
+   "evidence": "[Core] Collect the order promotion total test that never ran",
+   "official": true,
+   "author": "Dylan Pulver",
+   "email": "dylanryanpulver@gmail.com"
+  }
+ ],
+ "signal_date": "2025-06-12T05:56:34+00:00",
+ "signal_kind": "file:primary",
+ "mentions": {
+  "strict": [
+   {
+    "sha": "ebcb37053a4818fd1e9f252afe6c28b18ee69d0a",
+    "date": "2025-06-12T11:05:31+02:00",
+    "subject": "Make reference to global agents file for GitHub Copilot"
+   },
+   {
+    "sha": "713e3eb29d9d835859865c9b7b99fe1c1f36985a",
+    "date": "2025-06-12T11:13:41+02:00",
+    "subject": "Make reference to global agents file for GitHub Copilot (#18158)"
+   }
+  ],
+  "strict_count": 2,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-eligible",
+ "adr_count_before_signal": 32,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-before-signal",
+ "sources": "sourcegraph:adr_root;buchgeher-2022",
+ "stars": "8567",
+ "ai_file_probe": "yes",
+ "buchgeher_adr_count": "12"
+}

@@ -1,0 +1,68 @@
+{
+ "repo": "wmde/wikidata-wikibase-architecture",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2020-11-12T12:13:04+00:00",
+ "last_commit": "2023-01-10T22:38:28+00:00",
+ "n_commits": 219,
+ "n_authors": 15,
+ "n_files": 124,
+ "n_code_files": 2,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 1,
+ "adrs": [
+  {
+   "path": "docs/decisions/client-repo-mediawiki.md",
+   "identity": "docs/decisions/client-repo-mediawiki.md",
+   "adr_id": "",
+   "title": "Wikibase Client / Wikibase Repository relation to MediaWiki",
+   "first_commit": "2021-01-25T12:29:24+01:00",
+   "first_sha": "d1340ce023131efa617fe883206837f7e68931c9",
+   "last_commit": "2021-08-06T13:54:07+01:00",
+   "author": "Silvan Heintze",
+   "email": "59574251+Silvan-WMDE@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# Wikibase Client / Wikibase Repository relation to MediaWiki\n\n**Decision Date:** January 2021\n\n**Summary:** We will document [Wikibase Repository](../../Glossary.md#wikibase-repository) as a standalone system and [Wikibase Client](../../Glossary.md#wikibase-client) as a subsystem that is embedded into a [MediaWiki](../../Glossary.md#mediawiki) application.\n\n## Details\n\nStarting with documenting early architecture decisions, we noticed that the MediaWiki to Wikibase Client relation on the one hand and the MediaWiki to Wikibase Repository relation on the other hand are of quite different nature: While Wikibase Client is primarily made of \"plugins\" (= extensions) that live inside MediaWiki and adds functionality to another system, Wikibase Repository is a system of its own.\n\nWe decided that the corresponding \"Solution Strategy\" sections of both [WikibaseClient](../../systems/Client/04-Solution_Strategy.md#developing-wikibase-client-as-mediawiki-extensions) and [WikibaseRepo](../../systems/Repository/04-Solution_Strategy.md#developing-wikibase-repository-through-mediawiki-extensions) are the best place to document the reasons why Wikibase was created as a set of MediaWiki extensions.\n\nIn addition to that, we reflect the MediaWiki to Wikibase Client relation in the [Technical Context diagram for Wikibase Client](../../systems/Client/03-Context_and_Scope.md#technical-context) by embedding it as a subsystem into a higher-level MediaWiki application. However, we do not regard MediaWiki as an external system in the [Technical Context diagram for Wikibase Repository](../../systems/Repository/03-Context_and_Scope.md#technical-context).\n\nStill, MediaWiki will be shown as a component in the [Building Block View of Wikibase Repository](../../systems/Repository/05-Building_Block_View.md).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/../Glossary.md",
+    "/../systems/Client/04-Solution_Strategy.md",
+    "/../systems/Repository/04-Solution_Strategy.md",
+    "/../systems/Client/03-Context_and_Scope.md",
+    "/../systems/Repository/03-Context_and_Scope.md",
+    "/../systems/Repository/05-Building_Block_View.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "too-few-adrs",
+ "adr_count_before_signal": 1,
+ "superseded_in_window": 0,
+ "eligibility_reason": "fewer-than-5-adrs",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "7"
+}

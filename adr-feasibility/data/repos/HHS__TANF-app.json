@@ -1,0 +1,85 @@
+{
+ "repo": "HHS/TANF-app",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2020-02-20T10:00:56-08:00",
+ "last_commit": "2026-10-28T12:22:38-04:00",
+ "n_commits": 14668,
+ "n_authors": 83,
+ "n_files": 2222,
+ "n_code_files": 1087,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 0,
+ "adrs": [],
+ "status_changes": [],
+ "ai_signals": [
+  {
+   "kind": "file:primary",
+   "name": "AGENTS.md",
+   "date": "2026-05-01T10:39:05-05:00",
+   "commit": "a05b270223da0b6f35c658f76755e476a2da3399",
+   "evidence": "- Add agents.md and initial context.md files - Add suggested codex config",
+   "official": true,
+   "author": "Eric Lipe",
+   "email": "elipe@teamraft.com"
+  },
+  {
+   "kind": "file:secondary",
+   "name": "GEMINI.md",
+   "date": "2026-09-24T14:45:57-06:00",
+   "commit": "6230d20b06e589c89d8ebc95854e7c48cf1630e4",
+   "evidence": "Adds GEMINI.md file so that it reads AGENTS.md, which it doesn't by default.",
+   "official": false,
+   "author": "\u201cHeiko",
+   "email": "hschwarz@teamraft.com.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>",
+   "date": "2025-06-17T08:13:22-04:00",
+   "commit": "0aa10b1d6f1f34ecc68c454fd4df27be4f14f80b",
+   "evidence": "5109 bugfix files missing versionid fail dac (#5113)",
+   "official": true,
+   "author": "raftmsohani",
+   "email": "97037188+raftmsohani@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Cursor <cursoragent@cursor.com>",
+   "date": "2026-05-01T11:16:20-06:00",
+   "commit": "e478c27447095786554a53e9c00888f705e1b690",
+   "evidence": "Move root sprint summaries into docs/Sprint-Review",
+   "official": true,
+   "author": "kennymcnett",
+   "email": "kmcnett@teamraft.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot Autofix powered by AI <175728472+Copilot@users.noreply.github.com>",
+   "date": "2026-06-24T09:34:16-04:00",
+   "commit": "c4d922ff65295e481d2740692ea420ee5eefdede",
+   "evidence": "5660 modify maintenance page error page (#5884)",
+   "official": true,
+   "author": "Mo S",
+   "email": "97037188+raftmsohani@users.noreply.github.com"
+  }
+ ],
+ "signal_date": "2025-06-17T12:13:22+00:00",
+ "signal_kind": "coauthor",
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-native",
+ "adr_count_before_signal": 0,
+ "superseded_in_window": 0,
+ "eligibility_reason": "ai-native",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "16"
+}

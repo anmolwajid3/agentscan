@@ -1,0 +1,313 @@
+{
+ "repo": "HFAnalyticsLab/HES_pipeline",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2019-09-05T15:21:15+01:00",
+ "last_commit": "2023-03-22T09:48:09+00:00",
+ "n_commits": 67,
+ "n_authors": 5,
+ "n_files": 37,
+ "n_code_files": 0,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 10,
+ "adrs": [
+  {
+   "path": "doc/adr/frailty_score.md",
+   "identity": "doc/adr/frailty_score.md",
+   "adr_id": "",
+   "title": "Definition of the Imperial College frailty score IMPFRAILTY",
+   "first_commit": "2020-04-20T17:16:06+01:00",
+   "first_sha": "8436be27cdddde26db257d681b64e61d939ad614",
+   "last_commit": "2023-03-22T09:48:09+00:00",
+   "author": "fiona-grimm",
+   "email": "fiona.grimm.zh@gmail.com",
+   "status": "accepted",
+   "status_raw": "Implemented in the [HES cleaning pipeline](https://github.com/HFAnalyticsLab/HES_pipeline) used to prepare the raw data for this project (see [src/comorbidities.R](https://github.com/HFAnalyticsLab/HES_pipeline/blob/master/src/comorbidities.R)), potential future optimisation.",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Definition of the Imperial College frailty score IMPFRAILTY\n\n## Context\n\nThis score is intended to be a simple method to identify frailty in Admitted Patient Care records. \n\nThe diagnosis codes used are based on [Soong *et al.*, 2015](https://bmjopen.bmj.com/content/bmjopen/5/10/e008457.full.pdf) and calculated similarly to the \nelectronic Frailty Index (eFI, [Clegg *et al.*, 2016](https://academic.oup.com/ageing/article/45/3/353/1739750)).\n\n## Definition\n\nThe score is based on ICD-10 codes and the following frailty categories were used:\n* Anxiety and depression: F32, F33, F38, F41, F43, F44\n* Delirium: F05\n* Dementia: F00, F01, F02, F03, F04, R41\n* Functional dependence: Z74, Z75\n* Falls and fractures: R55, S32, S33, S42, S43, S62, S72, S73, W00-W99\n  (note: there are a number of fractures causing reduced mobility missing here)\n* Incontinence: R15, R32\n* Mobility problems: R26, Z74\n* Pressure ulcers: L89\n* Senility: R54\n\nFrailty categories are scores as 0 if none of the corresponding codes is found in any of the HES diagnosis columns (DIAG_NN) or as 1 if one ore more of the corresponding codes are found.\n\nThe frailty score is the sum of the scored frailty categories (0-9). The normalised frailty score is the sum of the scored frailty categories divided by the number of categories. \n\n## Status\n\nImplemented in the [HES cleaning pipeline](https://github.com/HFAnalyticsLab/HES_pipeline) used to prepare the raw data for this project (see [src/comorbidities.R](https://github.com/HFAnalyticsLab/HES_pipeline/blob/master/src/comorbidities.R)), potential future optimisation.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "bmjopen.bmj.com/content/bmjopen/5/10/e008457.full.pdf",
+    "src/comorbidities.R",
+    "github.com/HFAnalyticsLab/HES_pipeline/blob/master/src/comorbidities.R"
+   ],
+   "implementation": {
+    "sha": "167d86b9f7e805c21fc8179d20397eebaf1b0a57",
+    "date": "2020-04-20T17:16:58+01:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "src/comorbidities.R"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/storing_dates_in_database.md",
+   "identity": "doc/adr/storing_dates_in_database.md",
+   "adr_id": "",
+   "title": "Storing dates in SQLite database",
+   "first_commit": "2020-02-20T14:48:48+00:00",
+   "first_sha": "9cd55e1ecaddaac3b9fed788377e99a96003996b",
+   "last_commit": "2020-04-20T17:16:19+01:00",
+   "author": "fiona-grimm",
+   "email": "31844347+fiona-grimm@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Implemented, and previous code for date conversion has been rolled back.",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Storing dates in SQLite database\r\n\r\n## Context\r\n\r\nSQLite does not feature a date format data type. As such writing a date format\r\ndata object from R, results in conversion to an integer with no relevance to the\r\noriginal date.\r\n\r\n## Decision\r\n\r\nIncoming raw data will not be converted to date format in R, and instead \r\nmaintained as a string for full dates (Y-m-d) or part dates (Y-m) and as an \r\ninteger for years.\r\n\r\n## Status\r\n\r\nImplemented, and previous code for date conversion has been rolled back.\r\n\r\n## Consequences\r\n\r\nFor date analyses, when using the HES database date columns must be converted to\r\ndate format after performing a query. A handy function has been created to do \r\nthis in a standardised way (see [here](src/clean.R#L28))",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "src/clean.R"
+   ],
+   "implementation": {
+    "sha": "25ed7f7e8acf7221e887dd6fd3b2af030ba38233",
+    "date": "2020-03-09T09:29:38+00:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "src/clean.R"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/creating_continuous_inpatient_spells.md",
+   "identity": "doc/adr/creating_continuous_inpatient_spells.md",
+   "adr_id": "",
+   "title": "Defining an inpatient spell",
+   "first_commit": "2020-04-20T17:16:06+01:00",
+   "first_sha": "8436be27cdddde26db257d681b64e61d939ad614",
+   "last_commit": "2020-04-20T17:16:06+01:00",
+   "author": "fiona-grimm",
+   "email": "fiona.grimm.zh@gmail.com",
+   "status": "accepted",
+   "status_raw": "Implemented (see [spells.R](src/spells.R)).",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Defining an inpatient spell\n\n### Context\n\nA continuous inpatient spell (CIPS) is defined as a sequence of inpatient spells with different hospital \nproviders, from the patients admission to discharge to the usual place of \nresidence. Spells are considered to be part of the same CIPS up to \nthree days, equivalent to two nights, have passed between discharge from one provider and \nadmission to another provider. Each patient can have multiple inpatient\nspells and/or multiple continuous inpatient spells.\n    \n\n### Decision\n\nAll spells within a CIPS have to have the same:\n* ENCRYPTED_HESID\n\nWithin each group of spells belonging to the same ENCRYPTED_HESID, rows are then \nordered by ADMIDATE_FILLED.\n\nA spell is considered to be part of the same CIPS as the previous spell if EPISTART is not more than\n3 days later than EPIEND of the previous spell *and one of the following* is true:\n* The discharge destination of the previous spell is another hospital (DISDEST is 51, 52 or 53)\n* The source of admission of the current spell another hospital (ADMISORC is 51, 52 or 53)\n* The method of admission of the current spell is a transfer (ADMIMETH is 2B, which recoded to 67 during cleaning, or 81)\n\n\nThere are two derived variables correspondong to CIPS information:\n* NEW_CIPS - TRUE if the episode marks the beginning of a new CIPS, FALSE otherwise\n* CIPS_ID - CIPS identifier, unique in combination with ENCRYPTED_HESID\n\nA new CIPS table (APCC) is then created, containing one row per CIPS (or per unique combination of ENCRYPED_HESID and CIPS_ID). This table is populated using \n* information derived from the **first spell** within in each\nCIPS, **excluding** the following columns: EPIEND, DISDATE, DISDEST, DISMETH, DISREADYDATE, EPIKEY,\nEPIDUR, EPIORDER, EPISTAT, MAINSPEF, SPELBGIN, SPELDUR, SPELEND, TRETSPEF, CONSULT_TYPE, ENCRYPTED_HESID_MISSING,PROCODE3_MISSING, TRANSIT, ADMIDATE_MISSING, EPIDUR_CALC, EPI_BAD, EPI_VALID, NEWSPELL, ROWCOUNT, PROCODE3, SUBDATE, SUSCOREHRG, SUSHRG, SUSHRGVERS, SUSRECID.\n* information derived from the **last spell** within each CIPS (where EPIORDER = MAX(EPIORDER)) only **including** the following column: DISDATE, DISDEST, DISMETH, DISREADYDATE, PROCODE (renamed to PROCODE3_LAST_CIPS) and EPIEND. NB if a CIPS only contains one spell, then the first and the last episode are the spell. \n\n\n### Status\n\nImplemented (see [spells.R](src/spells.R)).\n\n### Consequences\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "src/spells.R"
+   ],
+   "implementation": {
+    "sha": "982208b315d5a4259c1a6b140ba8ca129b37fabc",
+    "date": "2020-04-20T17:16:37+01:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "src/spells.R"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/creating_inpatient_spells.md",
+   "identity": "doc/adr/creating_inpatient_spells.md",
+   "adr_id": "",
+   "title": "Defining an inpatient spell",
+   "first_commit": "2020-04-20T17:16:06+01:00",
+   "first_sha": "8436be27cdddde26db257d681b64e61d939ad614",
+   "last_commit": "2020-04-20T17:16:06+01:00",
+   "author": "fiona-grimm",
+   "email": "fiona.grimm.zh@gmail.com",
+   "status": "accepted",
+   "status_raw": "Implemented (see [spells.R](src/spells.R)).",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Defining an inpatient spell\n\n### Context\n\nA hospital spell is defined as a period of care with one hospital provider (trust), \nfrom admission to discharge or transfer. A spell can be made up of one or more \nFinished Consultant Episodes (FCE), which is a continuous period of care under one\nconsultant. Most spells consist of one episode or one row in the APC dataset \nbut some spells contain multiple episodes. Each patient can have multiple \nepisodes and/or multiple spells.\n\n### Decision\n\nAn episode is considered \"valid\" for creating a spell when it is finished (EPISTAT \nequals 3) and the following are not missing:\n* ENCRYPTED_HESID\n* ADMIDATE_FILLED\n* PROCODE3\n* EPIKEY\n* EPISTART\n* EPIEND\n\nAll episodes within a spell have to have the same:\n* ENCRYPTED_HESID\n* PROCODE3\n\nWithin each group of ENCRYPTED_HESID and PROCODE3 combinations, rows are then \nordered by:\n* EPISTART\n* EPIEND\n* EPIORDER\n* TRANSIT\n* EPIKEY\n\nAn episode is considered to be part of the same spell as the previous episode\nif *one of the following* is true:\n* ADMIDATE_FILLED of the current episode is the same as for the previous episode\n* EPISTART of the current episode is the same as for the previous episode\n* The method of discharge of the previuos episode is a tranfer (DISMETH is 8 or 9) \nand the episode start date (EPISTART) of the current episode matches the episode \nend date of the previous episode (EPIEND)\n\nThere are two derived variables correspondong to spells information:\n* NEW_SPELL - TRUE if the episode marks the beginning of a new spell, FALSE otherwise\n* SPELL_ID - Spell identifier, unique in combination with ENCRYPTED_HESID\n\nA new spell table (APCS) is then created, containing one row per spell (or per unique combination of ENCRYPED_HESID and SPELL_ID). This table is populated using \n* information derived from the **first episode** within in each\nspell, **excluding** the following columns: EPIEND, DISDATE, DISDEST, DISMETH, DISREADYDATE, EPIKEY, EPIDUR, EPIORDER, EPISTAT, MAINSPEF, SPELBGIN, SPELDUR, SPELEND, TRETSPEF, CONSULT_TYPE, ENCRYPTED_HESID_MISSING,PROCODE3_MISSING, TRANSIT, ADMIDATE_MISSING, EPIDUR_CALC,\nEPI_BAD, EPI_VALID, NEWSPELL, ROWCOUNT, SUBDATE, SUSCOREHRG, SUSHRG, SUSHRGVERS and SUSRECID.\n* information derived from the **last episode** within each spell (where EPIORDER = MAX(EPIORDER)) only **including** the following column: DISDATE, DISDEST, DISMETH, DISREADYDATE, EPIKEY (renamed to EPIKEY_DIS) and EPIEND. NB if a spell only contains one episode, then the first and the last episode are the same. \n\n### Status\n\nImplemented (see [spells.R](src/spells.R)).\n\n### Consequences\n\nNEW_SPELL and SPELL_ID are set to NA for episodes which are not valid.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "src/spells.R"
+   ],
+   "implementation": {
+    "sha": "982208b315d5a4259c1a6b140ba8ca129b37fabc",
+    "date": "2020-04-20T17:16:37+01:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "src/spells.R"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/hardcoding_variables.md",
+   "identity": "doc/adr/hardcoding_variables.md",
+   "adr_id": "",
+   "title": "Hardcoding variable names",
+   "first_commit": "2020-04-20T17:16:06+01:00",
+   "first_sha": "8436be27cdddde26db257d681b64e61d939ad614",
+   "last_commit": "2020-04-20T17:16:06+01:00",
+   "author": "fiona-grimm",
+   "email": "fiona.grimm.zh@gmail.com",
+   "status": "accepted",
+   "status_raw": "Implemented, with potential further future optimisation.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Hardcoding variable names\n\n## Context\n\nSeveral parts of the pipeline execute operations on specific columns. \n\n## Decision\n\nWhere there was an easy way to do so, we gave users the options to supply variable names:\n* checking whether all expected columns are present\n* coercing data types.\n\nIn other sections of the pipeline, variable names had to be hardcoded:\n* cleaning variables (replacing missing values with NA)\n* deriving variables\n* deriving row quality and flagging duplicates (optional)\n\n## Status\n\nImplemented, with potential further future optimisation.\n\n## Consequences\n\nColumn names currently cannot be dynamically supplied by the user. Adapting the HES pipeline to other HES extracts might require modification of some functions. We expect this only to be an issue if a HES extract has additional variables that need to be processed. If any of the expected variables are not present in a HES \nextract, the pipeline will continue without error. \n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/comparing_arrivaltime_across_days.md",
+   "identity": "doc/adr/comparing_arrivaltime_across_days.md",
+   "adr_id": "",
+   "title": "Comparing ARRIVALTIME across days",
+   "first_commit": "2020-03-06T11:22:01+00:00",
+   "first_sha": "60da32b01f9d04570ccd1b88d90b891333a1868e",
+   "last_commit": "2020-03-06T11:22:01+00:00",
+   "author": "fiona-grimm",
+   "email": "fiona.grimm.zh@gmail.com",
+   "status": "accepted",
+   "status_raw": "Implemented.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Comparing ARRIVALTIME across days\n\n## Context\n\nWhen identifying duplicates in the AE dataset a one of the columns to test \nfor equality between rows is ARRIVALDATE. If this is identical, a difference \nin ARRIVALTIME of <1hr between rows is then used as an indicator of a \nduplicate row. This means when there are two rows with arrival times between \n2330 and 0030, these will not be identified as duplicates as these rows have \nnot passed the test for equality on ARRIVALDATE.\n\n\n## Decision\n\nWe anticipate a very low number of rows matching this issue and have chosen to\nnot further complicate the duplication identification process.\n\n## Status\n\nImplemented.\n\n## Consequences\n\nWhere two rows with arrival times between 2330 and 0030, and all other selected \nrows are identical, these rows will not be identified as duplicates as they have \nnot passed th prior test for equality on ARRIVALDATE.",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/imputing_admission_date.md",
+   "identity": "doc/adr/imputing_admission_date.md",
+   "adr_id": "",
+   "title": "Imputing admission date",
+   "first_commit": "2020-03-06T11:22:01+00:00",
+   "first_sha": "60da32b01f9d04570ccd1b88d90b891333a1868e",
+   "last_commit": "2020-03-06T11:22:01+00:00",
+   "author": "fiona-grimm",
+   "email": "fiona.grimm.zh@gmail.com",
+   "status": "accepted",
+   "status_raw": "Implemented.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Imputing admission date\n\n## Context\n\nAdmission date (ADMIDATE in the APC dataset) can occasionally be missing, \nhowever it can be imputed from other variables.\n\n## Decision\n\nIf ADMIDATE is missing but EPISTART is present (start of hosptial episode),\nis the first episode (EPIORDER = 1) and is not a transfer (ADMIMETH not 67 or \n81 and ADMISORC not 51, 52 or 53), we accept that the date in EPISTART is also\nthe admission date. \n\n## Status\n\nImplemented.\n\n## Consequences\n\nAn additional variable (ADMIDATE_FILLED) is created to differentiate between \nraw admission date and imputed admission date. If EPISTART is also missing, \nADMIDATE_FILLED cannot be imputed. ",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/chunking_large_data_file_optimisation.md",
+   "identity": "doc/adr/chunking_large_data_file_optimisation.md",
+   "adr_id": "",
+   "title": "Chunking large data file optimisation",
+   "first_commit": "2020-01-16T10:53:48+00:00",
+   "first_sha": "0028ce769bf17cc0364e7ee9ea3b85d1392bdf35",
+   "last_commit": "2020-01-16T10:53:48+00:00",
+   "author": "Sebastian Bailey",
+   "email": "Sebastian.Bailey@health.org.uk",
+   "status": "accepted",
+   "status_raw": "Implemented, with potential further future optimisation.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Chunking large data file optimisation\n\n## Context\n\nIn order to process the large HES data, optimisation of the reading in of flat\nfiles and writing out to SQLite was required.\n\n`fread` from the data.table R package, provides reading in of large datasets\nwith the option of chunking the data into smaller, more managable pieces. Chunks\nare defined by row numbers. `fread` will take precise row numbers, or will throw\nan exception if the row number it has been told to delimit by does not exist.\n\n## Decision\n\nTests showed that reading in a chunk whereby the row number to read-in was \noutside the possible number of rows for a file, was slower to throw an \nexception, than first counting the number of rows, by selecting only a single \ncolumn to read-in, and reading every row, and using that count to inform the \nloop function which iterates over the file to be read in.\n\nAs this data is being read-in we have chosen to make use of it, by selecting the\ncolumn to read in as the encrypted HES IDs. A unique list of these IDs will be \ncompiled and will form an initial master patient index.\n\n## Status\n\nImplemented, with potential further future optimisation.\n\n## Consequences\n\nA file is read in an additional time in order to do a row count.\n\nSome data files are small and do not require this row count and chunking, but \nare being treated equally.\n\nA large vector is created and appended to, each time a new file is read in, \nadding to the processing time.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/data_location.md",
+   "identity": "doc/adr/data_location.md",
+   "adr_id": "",
+   "title": "Where is the data stored and updated",
+   "first_commit": "2020-01-16T10:53:48+00:00",
+   "first_sha": "0028ce769bf17cc0364e7ee9ea3b85d1392bdf35",
+   "last_commit": "2020-01-16T10:53:48+00:00",
+   "author": "Sebastian Bailey",
+   "email": "Sebastian.Bailey@health.org.uk",
+   "status": "unknown",
+   "status_raw": "Decided.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Where is the data stored and updated\n\n## Context\n\nIncoming data from NHS is not handled by users of the HES pipeline. This makes \nit harder to control the directory format of the raw data, as well as the \nconsistency of that data and directory structure.\n\nAdditionally the SQLite database needs to be located in a writable environment.\n\n## Decision\n\nThe raw data will be copied manually from the Data directory to the Library\ndirectory. Subsequent updates to the raw data will also require this. This is \nalso where the database will be located and written to.\n\n## Status\n\nDecided.\n\n## Consequences\n\nThe raw data will exist in three locations, using additional space.\n\nA manual step of copying over the new data is required, but can be handled by\nthe same person who will then run the pipeline to process the new data in the \ndatabase.",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/data_storage_and_access.md",
+   "identity": "doc/adr/data_storage_and_access.md",
+   "adr_id": "",
+   "title": "How will data be stored and accessed?",
+   "first_commit": "2020-01-16T10:53:48+00:00",
+   "first_sha": "0028ce769bf17cc0364e7ee9ea3b85d1392bdf35",
+   "last_commit": "2020-01-16T10:53:48+00:00",
+   "author": "Sebastian Bailey",
+   "email": "Sebastian.Bailey@health.org.uk",
+   "status": "unknown",
+   "status_raw": "Decided",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# How will data be stored and accessed?\n\n## Context\n\nThe raw HES data is large, complex, unweildly and potentially dirty. A way to \nclean, store and later easily access the data for analysis required, which means\nthat repeated cleaning and prep of the raw data is avoided.\n\nThere are multiple datasets (with different variables), which once cleaned, will\nbe accompanied by additional derived variables, and additional derived datasets.\n\n## Decision\n\nThe raw data will be read into a SQLite database through R. R is The Health\nFoundation's open-source language of choice, and is well equiped to \nhandle later analysis of said data. An SQLite database is not stored in memory,\navoiding holding very large datasets an R session. It is a standard database\nformat which can be easily queried with SQL which can in turn be written within\nmost other common languagses, including R.\n\nIn an SQLite database the database consistents of all the data, and within that\nthere are tables; here each table corresponds to a HES dataset or a derived \ndataset.\n\n## Status\n\nDecided\n\n## Consequences\n\nSome additional learning is required in how to query an SQLite database. This \nrequires some additional documentation (to come).\n\nAn SQLite database still occupies quite a large amount of storage space.\n\nReading large files into R is always going to somewhat slow, but through testing\nwe have optimised the process using (`fread`)[link to come] from the data.table \npackage, to read in the data in chunks and write directly to SQLite.",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 10,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "10"
+}

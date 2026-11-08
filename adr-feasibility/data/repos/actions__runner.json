@@ -1,0 +1,789 @@
+{
+ "repo": "actions/runner",
+ "clone_ok": true,
+ "error": null,
+ "description": "The Runner for GitHub Actions :rocket:",
+ "first_commit": "2019-10-10T00:52:42-04:00",
+ "last_commit": "2026-11-06T23:04:43+00:00",
+ "n_commits": 1383,
+ "n_authors": 184,
+ "n_files": 1077,
+ "n_code_files": 915,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 17,
+ "adrs": [
+  {
+   "path": "docs/adrs/0276-problem-matchers.md",
+   "identity": "docs/adrs/0276-problem-matchers.md",
+   "adr_id": "276",
+   "title": "ADR 0276: Problem Matchers",
+   "first_commit": "2020-01-14T14:54:04-05:00",
+   "first_sha": "80ac4a89643eb2500c33992cbfbc5740b2cc0241",
+   "last_commit": "2025-05-05T13:45:23-07:00",
+   "author": "eric sciple",
+   "email": "ericsciple@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# ADR 0276: Problem Matchers\n\n**Date** 2019-06-05\n\n**Status** Accepted\n\n## Context\n\nCompilation failures during a CI build should surface good error messages.\n\nFor example, the actual compile errors from the typescript compiler should bubble as issues in the UI. And not simply \"tsc exited with exit code 1\".\n\nVSCode has an extensible model for solving this type of problem. VSCode allows users to configure which [problems matchers](https://code.visualstudio.com/docs/editor/tasks#_defining-a-problem-matcher) to use, when scanning output. For example, a user can apply the `tsc` problem matcher to receive a rich error output experience in VSCode, when compiling their typescript project.\n\nThe problem-matcher concept fits well with \"setup\" actions. For example, the `setup-nodejs` action will download node.js, add it to the PATH, and register the `tsc` problem matcher. For the duration of the job, the `tsc` problem matcher will be applied against the output.\n\n## Decision\n\n### Registration\n\n#### Using `::` command\n\n`::add-matcher::path-to-problem-matcher-config.json`\n\nUsing a `::` command allows for flexibility:\n- Ad hoc scripts can register problem matchers\n- Allows problem matchers to be conditionally registered\n\nNote, if a matcher with the same name is registered a second time, it will clobber the first instance.\n\nNote, at some point the syntax changed from `##` to `::`.\n\n#### Unregister using `::` command\n\nA way out for rare cases where scoping is a problem.\n\n`::remove-matcher::owner`\n\nFor this to be usable, the `owner` needs to be discoverable. Therefore, debug print the owner on registration.\n\n### Single line matcher\n\nConsider the output:\n\n```\n[...]\n\nBuild FAILED.\n\n\"C:\\temp\\problemmatcher\\myproject\\ConsoleApp1\\ConsoleApp1.sln\" (default target) (1) ->\n\"C:\\temp\\problemmatcher\\myproject\\ConsoleApp1\\ConsoleApp1\\ConsoleApp1.csproj\" (default target) (2) ->\n\"C:\\temp\\problemmatcher\\myproject\\ConsoleApp1\\ClassLibrary1\\ClassLibrary1.csproj\" (default target) (3) ->\n(CoreCompile target) -> \n  Class1.cs(16,24): warning CS0612: 'ClassLibrary1.Helpers.MyHelper.Name' is obsolete [C:\\temp\\problemmatcher\\myproject\\ConsoleApp1\\ClassLibrary1\\ClassLibrary1.csproj]\n\n\n\"C:\\temp\\problemmatcher\\myproject\\ConsoleApp1\\ConsoleApp1.sln\" (default target) (1) ->\n\"C:\\temp\\problemmatcher\\myproject\\ConsoleApp1\\ConsoleApp1\\ConsoleApp1.csproj\" (default target) (2) ->\n\"C:\\temp\\problemmatcher\\myproject\\ConsoleApp1\\ClassLibrary1\\ClassLibrary1.csproj\" (default target) (3) ->\n(CoreCompile target) -> \n  Helpers\\MyHelper.cs(16,30): error CS1002: ; expected [C:\\temp\\problemmatcher\\myproject\\ConsoleApp1\\ClassLibrary1\\ClassLibrary1.csproj]\n\n    1 Warning(s)\n    1 Error(s)\n```\n\nThe below match configuration uses a regular expression to discover problem lines. And the match groups are mapped into issue-properties.\n\n```json\n\"owner\": \"msbuild\",\n\"pattern\": [\n  {\n    \"regexp\": \"^\\\\s*([^:]+)\\\\((\\\\d+),(\\\\d+)\\\\): (error|warning) ([^:]+): (.*) \\\\[(.+)\\\\]$\",\n    \"file\": 1,\n    \"line\": 2,\n    \"column\": 3,\n    \"severity\": 4,\n    \"code\": 5,\n    \"message\": 6,\n    \"fromPath\": 7\n  }\n]\n```\n\nThe above output and match configuration produces the following matches:\n\n```\nline:     Class1.cs(16,24): warning CS0612: 'ClassLibrary1.Helpers.MyHelper.Name' is obsolete [C:\\myrepo\\myproject\\ConsoleApp1\\ClassLibrary1\\ClassLibrary1.csproj]\nfile:     Class1.cs\nline:     16\ncolumn:   24\nseverity: warning\ncode:     CS0612\nmessage:  'ClassLibrary1.Helpers.MyHelper.Name' is obsolete\nfromPath: C:\\myrepo\\myproject\\ConsoleApp1\\ClassLibrary1\\ClassLibrary1.csproj\n```\n\n```\nline:     Helpers\\MyHelper.cs(16,30): error CS1002: ; expected [C:\\myrepo\\myproject\\ConsoleApp1\\ClassLibrary1\\ClassLibrary1.csproj]\nfile:     Helpers\\MyHelper.cs\nline:     16\ncolumn:   30\nseverity: error\ncode:     CS1002\nmessage:  ; expected\nfromPath: C:\\myrepo\\myproject\\ConsoleApp1\\ClassLibrary1\\ClassLibrary1.csproj\n```\n\nAdditionally the line will appear red in the web UI (prefix with `::error`).\n\nNote, an error does not imply task failure. Exit codes communicate failure.\n\nNote, strip color codes when evaluating regular expressions.\n\n### Multi-line matcher\n\nConsider the below output from ESLint in stylish mode. The file name is printed once, yet multiple error lines are printed.\n\n```\ntest.js\n  1:0   error  Missing \"use strict\" statement                 strict\n  5:10  error  'addOne' is defined but never used             no-unused-vars\n\u2716 2 problems (2 errors, 0 warnings)\n```\n\nThe below match configuration uses multiple regular expressions, for the multiple lines.\n\nAnd the last pattern of a multiline matcher can specify the `loop` property. This allows multiple errors to be discovered.\n\n```json\n\"owner\": \"eslint-stylish\",\n\"pattern\": [\n  {\n    \"regexp\": \"^([^\\\\s].*)$\",\n    \"file\": 1\n  },\n  {\n    \"regexp\": \"^\\\\s+(\\\\d+):(\\\\d+)\\\\s+(error|warning|info)\\\\s+(.*)\\\\s\\\\s+(.*)$\",\n    \"line\": 1,\n    \"column\": 2,\n    \"severity\": 3,\n    \"message\": 4,\n    \"code\": 5,\n    \"loop\": true\n  }\n]\n```\n\nThe above output and match configuration produces two matches:\n\n```\nline:     1:0   error  Missing \"use strict\" statement                 strict\nfile:     test.js\nline:     1\ncolumn:   0\nseverity: error\nmessage:  Missing \"use strict\" statement\ncode:     strict\n```\n\n```\nline:     5:10  error  'addOne' is defined but never used             no-unused-vars\nfile:     test.js\nline:     5\ncolumn:   10\nseverity: error\nmessage:  'addOne' is defined but never used\ncode:     no-unused-vars\n```\n\nNote, in the above example only the error line will appear red in the web UI. The \\\"file\\\" line will not appear red.\n\n### Other details\n\n#### Configuration `owner`\n\nCan be used to stomp over or remove.\n\n#### Rooting the file\n\nThe goal of the file information is to provide a hyperlink in the UI.\n\nSolving this problem means:\n- Rooting the file when unrooted:\n  - Use the `fromPath` if specified (assume file path)\n  - Use the `github.workspace` (where the repo is cloned on disk)\n- Match against a repository to determine the relative path within the repo\n\nThis is a place where we diverge from VSCode. VSCode task configurations are specific to the local workspace (workspace root is known or can be specified). We're solving a more generic problem, so we need more information - specifically the `fromPath` property - in order to accurately root the path.\n\nIn order to avoid creating inaccurate hyperlinks on the error issues, the agent will verify the file exists and is in the main repository. Otherwise omit the file property from the error issue and debug trace what happened.\n\n#### Supported severity levels\n\nOrdinal ignore case:\n\n- `warning`\n- `error`\n\nCoalesce empty with \\\"error\\\". For any other values, omit logging an issue and debug trace what happened.\n\n#### Default severity level\n\nProblem matchers are unable to interpret severity strings other than `warning` and `error`. The `severity` match group expects `warning` or `error` (case insensitive).\n\nHowever some tools indicate error/warning in different ways. For example `flake8` uses codes like `E100`, `W200`, and `F300` (error, warning, fatal, respectively).\n\nTherefore, allow a property `severity`, sibling to `owner`, which identifies the default severity for the problem matcher. This allows two problem matchers to be registered - one for warnings and one for errors.\n\nFor example, given the following `flake8` output:\n\n```\n./bootcamp/settings.py:156:80: E501 line too long (94 > 79 characters)\n./bootcamp/settings.py:165:5: F403 'from local_settings import *' used; unable to detect undefined names\n```\n\nTwo problem matchers can be used:\n\n```json\n{\n    \"problemMatcher\": [\n        {\n            \"owner\": \"flake8\",\n            \"pattern\": [\n                {\n                    \"regexp\": \"^(.+):(\\\\d+):(\\\\d+): ([EF]\\\\d+) (.+)$\",\n                    \"file\": 1,\n                    \"line\": 2,\n                    \"column\": 3,\n                    \"code\": 4,\n                    \"message\": 5\n                }\n            ]\n        },\n        {\n            \"owner\": \"flake8-warnings\",\n            \"severity\": \"warning\",\n            \"pattern\": [\n                {\n                    \"regexp\": \"^(.+):(\\\\d+):(\\\\d+): (W\\\\d+) (.+)$\",\n                    \"file\": 1,\n                    \"line\": 2,\n                    \"column\": 3,\n                    \"code\": 4,\n                    \"message\": 5\n                }\n            ]\n        }\n    ]\n}\n```\n\n#### Default from path\n\nThe problem matcher can specify a `fromPath` property at the top level, which applies when a specific pattern doesn't provide a value for `fromPath`. This is useful for tools that don't include project file information in their output.\n\nFor example, given the following compiler output that doesn't include project file information:\n\n```\nClassLibrary.cs(16,24): warning CS0612: 'ClassLibrary.Helpers.MyHelper.Name' is obsolete\n```\n\nA problem matcher with a default from path can be used:\n\n```json\n{\n    \"problemMatcher\": [\n        {\n            \"owner\": \"csc-minimal\",\n            \"fromPath\": \"ClassLibrary/ClassLibrary.csproj\",\n            \"pattern\": [\n                {\n                    \"regexp\": \"^(.+)\\\\((\\\\d+),(\\\\d+)\\\\): (error|warning) (.+): (.*)$\",\n                    \"file\": 1,\n                    \"line\": 2,\n                    \"column\": 3,\n                    \"severity\": 4,\n                    \"code\": 5,\n                    \"message\": 6\n                }\n            ]\n        }\n    ]\n}\n```\n\nThis ensures that the file is rooted to the correct path when there's not enough information in the error messages to extract a `fromPath`.\n\n#### Mitigate regular expression denial of service (ReDos)\n\nIf a matcher exceeds a 1 second timeout when processing a line, retry up to two three times total.\nAfter three unsuccessful attempts, warn and eject the matcher. The matcher will not run again for the duration of the job.\n\n### Where we diverge from VSCode\n\n- We added the `fromPath` concept for rooting paths. This is done differently in VSCode, since a task is the scope (root path well known). For us, the job is the scope.\n- VSCode allows additional activation info background tasks that are always running (recompile on files changed). They allow regular expressions to define when the matcher scope begins and ends. This is an interesting concept that we could leverage to help solve our scoping problem.\n\n## Consequences\n\n- Setup actions should register problem matchers\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "add-matcher::path-to-problem-matcher-config.json",
+    "/bootcamp/settings.py",
+    "ClassLibrary/ClassLibrary.csproj"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/1751-runner-job-hooks.md",
+   "identity": "docs/adrs/1751-runner-job-hooks.md",
+   "adr_id": "1751",
+   "title": "ADR: Notification Hooks for Runners",
+   "first_commit": "2022-05-12T15:18:11-04:00",
+   "first_sha": "02b52e8497a98194484c08ec84e0721393a6178a",
+   "last_commit": "2025-02-17T23:24:15+08:00",
+   "author": "Thomas Boop",
+   "email": "52323235+thboop@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR: Notification Hooks for Runners\n\n## Context\n\nThis ADR details the design changes for supporting custom configurable hooks for on various runner events. This has been a long requested user feature [here](https://github.com/actions/runner/issues/1543), [here](https://github.com/actions/runner/issues/699) and [here](https://github.com/actions/runner/issues/1116) for users to have more information on runner observability, and for the ability to run cleanup and teardown jobs. \n\nThis feature is mainly intended for self hosted runner administrators.\n\n**What we hope to solve with this feature**\n1. A runner admininstrator is able to add custom scripts to cleanup their runner environment at the start or end of a job\n2. A runner admininstrator is able to add custom scripts to help setup their runner environment at the beginning of a job, for reasons like [caching](https://github.com/actions/runner/issues/1543#issuecomment-1050346279)\n3. A runner administrator is able to grab custom telemetry of jobs running on their self hosted runner\n\n**What we don't think this will solve**\n- Policy features that require certain steps run at the beginning or end of all jobs\n  - This would be better solved to in a central place in settings, rather then decentralized on each runner. \n  - The Proposed `Notification Hooks for Runners` is limited to self hosted runners, we don't beileve Policy features should be\n- Reuse scenarios between jobs are covered by [composite actions](https://docs.github.com/en/actions/creating-actions/creating-a-composite-action) and [resuable workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows)\n- Security applications, security should be handled on the policy side on the server, not decentralized on each runner\n\n## Hooks\n- We will expose 2 variables that users can set to enable hooks  \n  - `ACTIONS_RUNNER_HOOK_JOB_STARTED`\n  - `ACTIONS_RUNNER_HOOK_JOB_COMPLETED`\n\nYou can set these variables to the **absolute** path of a `.sh` or `.ps1` file.\n\nWe will execute `pwsh` (fallback to `powershell`) or `bash` (fallback to `sh`) as appropriate.\n- `.sh` files will execute with the args `-e {pathtofile}`\n- `.ps1` files will execute with the args `-command \\\". '{pathtofile}'\\\"`\n\nWe will **not** set the [standard flags we typically set](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsshell) for `runs` commands. So, if you want to set `pipefail` on `bash` for example, you will need to do that in your script.\n\n### UI\nWe want to ensure the experience for users invoking workflows is good, if hooks take too long, you may feel your job is delayed or broken. So, much like `Set Up Job`, we will generate two new steps automatically in your job, one for each configured hook: \n- `Set up runner`  \n- `Complete runner` \n\nThese steps will contain all of the output from invoking your hook, so you will have visibility into the runtime. We will also provide information on the path to the hook, and what shell we are invoking it as, much like we do for `run: ` steps.\n\n### Contexts\nWhen running your hooks, some context on your job may be helpful.\n- The scripts will have access to the standard [default environment variables](https://docs.github.com/en/actions/learn-github-actions/environment-variables#default-environment-variables)\n  - Some of these variables are step specific like `GITHUB_ACTION`, in which case they will not be set\n- You can pull the full webhook event payload from `GITHUB_EVENT_PATH`\n\n### Commands\nShould we expose [Commands](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions) and [Environment Files](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#environment-files)\n\n**Yes**. Imagine a scenario where a runner administrator is deprecating a runner pool, and they need to [warn users](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-a-warning-message) to swap to a different pool, we should support them in doing this. However, there are some limitations:\n- [save-state](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#sending-values-to-the-pre-and-post-actions) will **not** be supported, these are not traditional steps with pre and post actions\n- [set-output](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#using-workflow-commands-to-access-toolkit-functions) will **not** be supported, there is no `id` as this is not a traditional step\n\n\n### Environment Files\nWe will also enable [Environment Files](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#environment-files) to support setup scenarios for the runner environment.\n\nWhile a self hosted runner admin can [set env variables](https://docs.github.com/en/actions/hosting-your-own-runners/using-a-proxy-server-with-self-hosted-runners#using-a-env-file-to-set-the-proxy-configuration), these apply to all jobs. By enabling the ability to `add a path` and `set an env` we give runner admins the ability to do this dynamically based on the [workflows environment variables](https://docs.github.com/en/actions/learn-github-actions/environment-variables#default-environment-variables) to empower setup scenarios.\n\n\n### Exit codes\nThese are **synchronous** hooks, so they will block job execution while they are being run. Exit code 0 will indicate a successful run of the hook and we will proceed with the job, any other exit code will fail the job with an appropriate annotation.\n- There will be no support for `continue-on-error`\n\n## Key Decisions\n- We will expose 2 variables that users can set to enable hooks  \n  - `ACTIONS_RUNNER_HOOK_JOB_STARTED`\n  - `ACTIONS_RUNNER_HOOK_JOB_COMPLETED`\n- Users can set these variables to the path of a `.sh` or `.ps1` file, which we will execute when Jobs are started or completed.\n  - Output from these will be added to a new step at the start/end of a job named `Set up runner` or `Complete runner`. \n    - These steps will only be generated on runs with these hooks\n- These hooks `always()` execute if the env variable is set\n- These files will execute as the Runner user, outside of any container specification on the job\n- These are **synchronous** hooks\n  - Runner admins can execute a background process for async hooks if they want\n  - We will fail the job and halt execution on any exit code that is not 0. The Runner admin is responsible for returning the correct exit code and ensuring resilency. \n    - This includes that the runner user needs access to the file in the env and the file must exist\n    - There will be no `continue-on-error` type option on launch\n    - There will be no `timeout` option on launch\n\n## Consequences\n- Runner admins have the ability to tie into the runner job execution to publish their own telemetry or perform their own cleanup or setup\n- New steps will be added to the UI showcasing the output of these hooks\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "actions/runner#1543",
+     "kind": "issue",
+     "url": "https://github.com/actions/runner/issues/1543",
+     "number": "1543"
+    },
+    {
+     "key": "actions/runner#699",
+     "kind": "issue",
+     "url": "https://github.com/actions/runner/issues/699",
+     "number": "699"
+    },
+    {
+     "key": "actions/runner#1116",
+     "kind": "issue",
+     "url": "https://github.com/actions/runner/issues/1116",
+     "number": "1116"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/2494-runner-image-tags.md",
+   "identity": "docs/adrs/2494-runner-image-tags.md",
+   "adr_id": "2494",
+   "title": "ADR 2494: Runner Image Tags",
+   "first_commit": "2023-03-23T17:09:10+01:00",
+   "first_sha": "74eeb82684176b75b2f3646e125bce99c533e365",
+   "last_commit": "2023-03-23T17:09:10+01:00",
+   "author": "Bassem Dghaidi",
+   "email": "568794+Link-@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR 2494: Runner Image Tags\n\n**Date**: 2023-03-17\n\n**Status**: Accepted<!-- |Accepted|Rejected|Superceded|Deprecated -->\n\n## Context\n\nFollowing the [adoption of actions-runner-controller by GitHub](https://github.com/actions/actions-runner-controller/discussions/2072) and the introduction of the new runner scale set autoscaling mode, we needed to provide a basic runner image that could be used off the shelf without much friction.\n\nThe [current runner image](https://github.com/actions/runner/pkgs/container/actions-runner) is published to GHCR. Each release of this image is tagged with the runner version and the most recent release is also tagged with `latest`.\n\nWhile the use of `latest` is common practice, we recommend that users pin a specific version of the runner image for a predictable runtime and improved security posture. However, we still notice that a large number of end users are relying on the `latest` tag & raising issues when they encounter problems.\n\nAdd to that, the community actions-runner-controller maintainers have issued a [deprecation notice](https://github.com/actions/actions-runner-controller/issues/2056) of the `latest` tag for the existing runner images (https://github.com/orgs/actions-runner-controller/packages).\n\n## Decision\n\nProceed with Option 2, keeping the `latest` tag and adding the `NOTES.txt` file to our helm charts with the notice.\n\n### Option 1: Remove the `latest` tag\n\nBy removing the `latest` tag, we have to proceed with either of these options:\n\n1. Remove the runner image reference in the `values.yaml` provided with the `gha-runner-scale-set` helm chart and mark these fields as required so that users have to explicitly specify a runner image and a specific tag. This will obviously introduce more  friction for users who want to start using actions-runner-controller for the first time.\n\n```yaml\n  spec:\n    containers:\n    - name: runner\n      image: \"\"\n      tag: \"\"\n      command: [\"/home/runner/run.sh\"]\n```\n\n1. Pin a specific runner image tag in the `values.yaml` provided with the `gha-runner-scale-set` helm chart. This will reduce friction for users who want to start using actions-runner-controller for the first time but will require us to update the `values.yaml` with every new runner release.\n\n```yaml\n  spec:\n    containers:\n    - name: runner\n      image: \"ghcr.io/actions/actions-runner\"\n      tag: \"v2.300.0\"\n      command: [\"/home/runner/run.sh\"]\n```\n\n### Option 2: Keep the `latest` tag\n\nKeeping the `latest` tag is also a reasonable option especially if we don't expect to make any breaking changes to the runner image. We could enhance this by adding a [NOTES.txt](https://helm.sh/docs/chart_template_guide/notes_files/) to the helm chart which will be displayed to the user after a successful helm install/upgrade. This will help users understand the implications of using the `latest` tag and how to pin a specific version of the runner image.\n\nThe runner image release workflow will need to be updated so that the image is pushed to GHCR and tagged only when the runner rollout has reached all scale units.\n\n## Consequences\n\nProceeding with **option 1** means:\n\n1. We will enhance the runtime predictability and security posture of our end users\n1. We will have to update the `values.yaml` with every new runner release (that can be automated)\n1. We will introduce friction for users who want to start using actions-runner-controller for the first time\n\nProceeding with **option 2** means:\n\n1. We will have to continue to maintain the `latest` tag\n1. We will assume that end users will be able to handle the implications of using the `latest` tag\n1. Runner image release workflow needs to be updated \n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "actions/actions-runner-controller#2056",
+     "kind": "issue",
+     "url": "https://github.com/actions/actions-runner-controller/issues/2056",
+     "number": "2056"
+    }
+   ],
+   "mentioned_paths": [
+    "values.yaml",
+    "home/runner/run.sh"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/1891-container-hooks.md",
+   "identity": "docs/adrs/1891-container-hooks.md",
+   "adr_id": "1891",
+   "title": "ADR 0000: Container Hooks",
+   "first_commit": "2022-06-10T09:35:30-04:00",
+   "first_sha": "0d1e6fd57bc798e14876593ad9aa0e4cb6e5e676",
+   "last_commit": "2022-09-06T07:45:00-07:00",
+   "author": "Thomas Boop",
+   "email": "52323235+thboop@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR 0000: Container Hooks\n\n**Date**: 2022-05-12\n\n**Status**: Accepted\n\n# Background\n\n[Job Hooks](https://github.com/actions/runner/blob/main/docs/adrs/1751-runner-job-hooks.md) have given users the ability to customize how their self hosted runners run a job.\nUsers also want the ability to customize how they run containers during the scope of the job, rather then being locked into the docker implementation we have in the runner. They may want to use podman, kubernetes, or even change the docker commands we run. \nWe should give them that option, and publish examples how how they can create their own hooks.\n\n# Guiding Principles\n- **Extensibility** is the focus, we need to make sure we are flexible enough to cover current and future scenarios, even at the cost of making it harder to utilize these hooks\n- Args should map **directly** to yaml values provided by the user. \n  - For example, the current runner overrides `HOME`, we can do that in the hook, but we shouldn't pass that hook as an ENV with the other env's the user has set, as that is not user input, it is how the runner invokes containers\n\n## Interface\n- You will set the variable `ACTIONS_RUNNER_CONTAINER_HOOKS=/Users/foo/runner/hooks.js` which is the entrypoint to your hook handler.\n  - There is no partial opt in, you must handle every hook \n- We will pass a command and some args via `stdin`\n- An exit code of 0 is a success, every other exit code is a failure\n- We will support the same runner commands we support in [Job Hooks](https://github.com/actions/runner/blob/main/docs/adrs/1751-runner-job-hooks.md)\n- On timeout, we will send a sigint to your process. If you fail to terminate within a reasonable amount of time, we will send a sigkill, and eventually kill the process tree.\n\nAn example input looks like\n```json\n{\n  \"command\": \"job_cleanup\",\n  \"responseFile\": \"/users/thboop/runner/_work/{guid}.json\",\n  \"args\": {},\n  \"state\": \n  {\n      \"id\": \"82e8219701fe096a35941d869cf8d71af1d943b5d3bdd718850fb87ac3042480\"\n  }\n}\n```\n\n`command` is the command we expect you to invoke\n`responseFile` is the file you need to write your output to, if the command has output\n`args` are the specific arguments the command needs\n`state` is a json blog you can pass around to maintain your state, this is covered in more details below.\n\n### Writing responses to a file\nAll text written to stdout or stderr should appear in the job or step logs. With that in mind, we support a few ways to actually return data:\n1. Wrapping the json in some unique tag and processing it like we do commands\n2. Writing to a file\n\nFor 1, users typically view logging information as a safe action, so we worry someone accidentialy logging unsantized information and causing unexpected or un-secure behavior. We eventually plan to move off of stdout/stderr style commands in favor of a runner cli. \nInvesting in this area doesn't make a lot of sense at this time.\n\nWhile writing to a file to communicate isn't the most ideal pattern, its an existing pattern in the runner and serves us well, so lets reuse it.\n\n### Output\nYour output must be correctly formatted json. An example output looks like:\n\n```\n{\n  \"state\": {},\n  \"context\"\n  {\n    \"container\" : \n    {\n      \"id\": \"82e8219701fe096a35941d869cf8d71af1d943b5d3bdd718850fb87ac3042480\"\n      \"network\": \"github_network_53269bd575974817b43f4733536b200c\"\n    }\n    \"services\": {\n      \"redis\": {\n        \"id\": \"60972d9aa486605e66b0dad4abb638dc3d9116f566579e418166eedb8abb9105\",\n        \"ports\": {\n          \"8080\": \"8080\"\n        },\n      \"network\": \"github_network_53269bd575974817b43f4733536b200c\"\n    }\n  }\n  \"alpine: true,\n}\n```\n\n`state` is a unique field any command can return. If it is not empty, we will store the state for you and pass it into all future commands. You can overwrite it by having the next hook invoked return a unique state.\n\nOther fields are dependent upon the command being run.\n\n### Versioning\nWe will not version these hooks at launch. If needed, we can always major version split these hooks in the future. We will ship in Beta to allow for breaking changes for a few months.\n\n### The Job Context\nThe [job context](https://docs.github.com/en/actions/learn-github-actions/contexts#example-contents-of-the-job-context) currently has a variety of fields that correspond to containers. We should consider allowing hooks to populate new fields in the job context. That is out of scope for this original release however.\n\n## Hooks\nHooks are to be implemented at a very high level, and map to actions the runner does, rather then specific docker actions like `docker build` or `docker create`. By mapping to runner actions, we create a very extensible framework that is flexible enough to solve any user concerns in the future. By providing first party implementations, we give users easy starting points to customize specific hooks (like `docker build`) without having to write full blown solutions.\n\nThe other would be to provide hooks that mirror every docker call we make, and expose more hooks to help support k8s users, with the expectation that users may have to no-op on multiple hooks if they don't correspond to our use case.\n\nWhy we don't want to go that way\n- It feels clunky, users need to understand which hooks they need to implement and which they can ignore, which isn't a great UX\n- It doesn't scale well, I don't want to build a solution where we may need to add more hooks, by mapping to runner actions, updating hooks is a painful experience for users\n- Its overwhelming, its easier to tell users to build 4 hooks and track data themselves, rather then 16 hooks where the runner needs certain information and then needs to provide that information back into each hook. If we expose `Container Create`, you need to return the container you created, then we do `container run` which uses that container. If we just give you an image and say create and run this container, you don't need to store the container id in the runner, and it maps better to k8s scenarios where we don't really have container ids.\n\n### Prepare_job hook\nThe `prepare_job` hook is called when a job is started. We pass in any job or service containers the job has. We expect that you:\n- Prune anything from previous jobs if needed\n- Create a network if needed\n- Pull the job and service containers\n- Start the job container\n- Start the service containers\n- Write to the response file some information we need\n  - Required: if the container is alpine, otherwise x64\n  - Optional: any context fields you want to set on the job context, otherwise they will be unavailable for users to use\n- Return 0 when the health checks have succeeded and the job/service containers are started\n\nThis hook will **always** be called if you have container hooks enabled, even if no service or job containers exist in the job. This allows you to fail the job or implement a default job container if you want to and no job container has been provided.\n\n\n<details>\n<summary>Example Input</summary>\n<br>\n  \n```\n{\n  \"command\": \"prepare_job\",\n  \"responseFile\": \"/users/thboop/runner/_work/{guid}.json\",\n  \"state\": {},\n  \"args\": \n  {\n    \"jobContainer\": {\n      \"image\": \"node:14.16\",\n      \"workingDirectory\": \"/__w/thboop-test2/thboop-test2\",\n      \"createOptions\": \"--cpus 1\",\n      \"environmentVariables\": {\n        \"NODE_ENV\": \"development\"\n      },\n      \"userMountVolumes:[\n        {\n          \"sourceVolumePath\": \"my_docker_volume\",\n          \"targetVolumePath\": \"/volume_mount\",\n          \"readOnly\": false\n        },\n      ],\n      \"mountVolumes\": [\n        {\n          \"sourceVolumePath\": \"/home/thomas/git/runner/_layout/_work\",\n          \"targetVolumePath\": \"/__w\",\n          \"readOnly\": false\n        },\n        {\n          \"sourceVolumePath\": \"/home/thomas/git/runner/_layout/externals\",\n          \"targetVolumePath\": \"/__e\",\n          \"readOnly\": true\n        },\n        {\n          \"sourceVolumePath\": \"/home/thomas/git/runner/_layout/_work/_temp\",\n          \"targetVolumePath\": \"/__w/_temp\",\n          \"readOnly\": false\n        },\n        {\n          \"sourceVolumePath\": \"/home/thomas/git/runner/_layout/_work/_actions\",\n          \"targetVolumePath\": \"/__w/_actions\",\n          \"readOnly\": false\n        },\n        {\n          \"sourceVolumePath\": \"/home/thomas/git/runner/_layout/_work/_tool\",\n          \"targetVolumePath\": \"/__w/_tool\",\n          \"readOnly\": false\n        },\n        {\n          \"sourceVolumePath\": \"/home/thomas/git/runner/_layout/_work/_temp/_github_home\",\n          \"targetVolumePath\": \"/github/home\",\n          \"readOnly\": false\n        },\n        {\n          \"sourceVolumePath\": \"/home/thomas/git/runner/_layout/_work/_temp/_github_workflow\",\n          \"targetVolumePath\": \"/github/workflow\",\n          \"readOnly\": false\n        }\n      ],\n      \"registry\": {\n        \"username\": \"foo\",\n        \"password\": \"bar\",\n        \"serverUrl\": \"https://index.docker.io/v1\"\n      },\n      \"portMappings\": [ \"8080:80/tcp\", \"8080:80/udp\" ]\n    },\n    \"services\": [\n      {\n        \"contextName\": \"redis\",\n        \"image\": \"redis\",\n        \"createOptions\": \"--cpus 1\",\n        \"environmentVariables\": {},\n        \"mountVolumes\": [],\n        \"portMappings\": [ \"8080:80/tcp\", \"8080:80/udp\" ]\n        \"registry\": {\n          \"username\": \"foo\",\n          \"password\": \"bar\",\n          \"serverUrl\": \"https://index.docker.io/v1\"\n        }\n      }\n    ]\n  }\n}\n```\n\n</details>\n\n<details>\n<summary>Field Descriptions</summary>\n<br>\n\n```\nArg Fields:\n\njobContainer: **Optional** An Object containing information about the specified job container\n  \"image\": **Required** A string containing the docker image\n  \"workingDirectory\": **Required** A string containing the absolute path of the working directory\n  \"createOptions\": **Optional** The optional create options specified in the [YAML](https://docs.github.com/en/actions/using-jobs/running-jobs-in-a-container#example-running-a-job-within-a-container)\n  \"environmentVariables\": **Optional** A map of key value env's to set\n  \"userMountVolumes: ** Optional** an array of user mount volumes set in the [YAML](https://docs.github.com/en/actions/using-jobs/running-jobs-in-a-container#example-running-a-job-within-a-container)\n    \"sourceVolumePath\": **Required** The source path to the volume to be mounted into the docker container\n    \"targetVolumePath\": **Required** The target path to the volume to be mounted into the docker container\n    \"readOnly\": false **Required** whether or not the mount should be read only\n  \"mountVolumes\": **Required** an array of mounts to mount into the container, same fields as above\n    \"sourceVolumePath\": **Required** The source path to the volume to be mounted into the docker container\n    \"targetVolumePath\": **Required** The target path to the volume to be mounted into the docker container\n    \"readOnly\": false **Required** whether or not the mount should be read only\n  \"registry\" **Optional** docker registry credentials to use when using a private container registry\n    \"username\": **Optional** the username\n    \"password\": **Optional** the password\n    \"serverUrl\": **Optional** the registry url\n  \"portMappings\": **Optional** an array of source:target ports to map into the container\n \n\"services\": an array of service containers to spin up\n  \"contextName\": **Required** the name of the service in the Job context\n  \"image\": **Required** A string containing the docker image\n  \"createOptions\": **Optional** The optional create options specified in the [YAML](https://docs.github.com/en/actions/using-jobs/running-jobs-in-a-container#example-running-a-job-within-a-container)\n  \"environmentVariables\": **Optional** A map of key value env's to set\n  \"mountVolumes\": **Required** an array of mounts to mount into the container, same fields as above\n    \"sourceVolumePath\": **Required** The source path to the volume to be mounted into the docker container\n    \"targetVolumePath\": **Required** The target path to the volume to be mounted into the docker container\n    \"readOnly\": false **Required**",
+   "truncated_text": true,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "ACTIONS_RUNNER_CONTAINER_HOOKS=/Users/foo/runner/hooks.js",
+    "runner/temp/abc123.sh"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/0354-runner-machine-info.md",
+   "identity": "docs/adrs/0354-runner-machine-info.md",
+   "adr_id": "354",
+   "title": "ADR 354: Expose runner machine info",
+   "first_commit": "2020-03-10T15:45:35-04:00",
+   "first_sha": "d34afb54b1e9c6f1bccd09c2bee5d17ea32ee091",
+   "last_commit": "2022-01-21T11:35:14-05:00",
+   "author": "Tingluo Huang",
+   "email": "tingluohuang@github.com",
+   "status": "proposed",
+   "status_raw": "Pending",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR 354: Expose runner machine info\n\n**Date**: 2020-03-02\n\n**Status**: Pending\n\n## Context\n\n- Provide a mechanism in the runner to include extra information in `Set up job` step's log.\n  Ex: Include OS/Software info from Hosted image.\n\n## Decision\n\nThe runner will look for a file `.setup_info` under the runner's root directory, The file can be a JSON with a simple schema.\n```json\n[\n  {\n    \"group\": \"OS Detail\",\n    \"detail\": \"........\"\n  },\n  {\n    \"group\": \"Software Detail\",\n    \"detail\": \"........\"\n  }\n]\n```\nThe runner will use `::group` and `::endgroup` to fold all detail info into an expandable group.\n\nBoth [virtual-environments](https://github.com/actions/virtual-environments) and self-hosted runners can use this mechanism to add extra logging info to the `Set up job` step's log.\n\n## Consequences\n\n1. Change the runner to best effort read/parse `.extra_setup_info` file under runner root directory.\n2. [virtual-environments](https://github.com/actions/virtual-environments) generate the file during image generation.\n3. Change MMS provisioner to properly copy the file to runner root directory at runtime.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/1438-conditional-composite.md",
+   "identity": "docs/adrs/1438-conditional-composite.md",
+   "adr_id": "1438",
+   "title": "ADR 1438: Support Conditionals In Composite Actions",
+   "first_commit": "2021-10-29T15:45:42+02:00",
+   "first_sha": "67ba8a7d429d953396c08550d8590af9889c4efe",
+   "last_commit": "2021-10-29T15:45:42+02:00",
+   "author": "Ferenc Hammerl",
+   "email": "31069338+fhammerl@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR 1438: Support Conditionals In Composite Actions\n\n**Date**: 2021-10-13\n\n**Status**: Accepted\n\n## Context\n\nWe recently shipped composite actions, which allows you to reuse individual steps inside an action. \nHowever, one of the [most requested features](https://github.com/actions/runner/issues/834) has been a way to support the `if` keyword.\n\n### Goals\n- We want to keep consistent with current behavior\n- We want to support conditionals via the `if` keyword\n- Our built in functions like `success` should be implementable without calling them, for example you can do `job.status == success` rather then `success()` currently.\n\n### How does composite currently work?\n\nCurrently, we have limited conditional support in composite actions for `pre` and `post` steps. \nThese are based on the `job status`, and support keywords like `always()`, `failed()`, `success()` and `cancelled()`. \nHowever, generic or main steps do **not** support conditionals.\n\nBy default, in a regular workflow, a step runs on the `success()` condition. Which looks at the **job** **status**, sees if it is successful and runs.\n\nBy default, in a composite action, main steps run until a single step fails in that composite action, then the composite action is halted early. It does **not** care about the job status.\nPre, and post steps in composite actions use the job status to determine if they should run.\n\n### How do we go forward?\n\nWell, if we think about what composite actions are currently doing when invoking main steps, they are checking if the current composite action is successful. \nLets formalize that concept into a \"real\" idea.\n\n- We will add an `action_status` field to the github context to mimic the [job's context status](https://docs.github.com/en/actions/learn-github-actions/contexts#job-context).\n  - We have an existing concept that does this `action_path` which is only set for composite actions on the github context.\n- In a composite action during a main step, the `success()` function will check if `action_status == success`, rather then `job_status == success`. Failure will work the same way. \n  - Pre and post steps in composite actions will not change, they will continue to check the job status.\n\n\n### Nested Scenario\nFor nested composite actions, we will follow the existing behavior, you only care about your current composite action, not any parents. \nFor example, lets imagine a scenario with a simple nested composite action\n\n```\n- Job\n  - Regular Step\n  - Composite Action\n    - runs: exit 1\n    - if: always()\n      uses: A child composite action\n        - if: success()\n          runs: echo \"this should print\"\n        - runs: echo \"this should also print\"\n    - if: success()\n      runs: echo \"this will not print as the current composite action has failed already\"\n      \n```\nThe child composite actions steps should run in this example, the child composite action has not yet failed, so it should run all steps until a step fails. This is consistent with how a composite action currently works in production if the main job fails but a composite action is invoked with `if:always()` or `if: failure()`\n\n### Other options explored\nWe could add the `current_step_status` to the job context rather then `__status` to the steps context, however this comes with two major downsides:\n- We need to support the field for every type of step, because its non trivial to remove a field from the job context once it has been added (its readonly)\n  - For all actions besides composite it would only every be `success`\n  - Its weird to have a `current_step` value on the job context\n- We also explored a `__status` on the steps context.\n  - The `__` is required to prevent us from colliding with a step with id: status\n  - This felt wrong because the naming was not smooth, and did not fit into current conventions.\n\n### Consequences\n- github context has a new field for the status of the current composite action.\n- We support conditional's in composite actions\n- We keep the existing behavior for all users, but allow them to expand that functionality.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "actions/runner#834",
+     "kind": "issue",
+     "url": "https://github.com/actions/runner/issues/834",
+     "number": "834"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/1144-composite-actions.md",
+   "identity": "docs/adrs/1144-composite-actions.md",
+   "adr_id": "1144",
+   "title": "Context",
+   "first_commit": "2021-07-27T09:29:50-04:00",
+   "first_sha": "5281434f3f9005c11a366409b24d9470b166fdfe",
+   "last_commit": "2021-07-27T09:29:50-04:00",
+   "author": "Thomas Boop",
+   "email": "52323235+thboop@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "**Date**: 2021-06-10\n\n**Status**: Accepted\n\n## Context\n\nWe released [composite run steps](https://github.com/actions/runner/pull/554) last year which started our journey of reusing steps across different workflow files. To continue that journey, we want to expand composite run steps into composite actions.\n\nWe want to support the `uses` steps from workflows in composite actions, including:\n  - Container actions\n  - Javascript actions\n  - Other Composite actions (up to a limit of course!)\n  - The pre and post steps these actions can generate\n\n## Guiding Principles\n\n- Composite Actions should function as a single step or action, no matter how many steps it is composed of or how many levels of recursion it has\n  - In the future we may add a configurable option to make this no longer the case\n- A workflow author should not need to understand the inner workings of a composite action in order to use it\n- Composite actions should leverage inputs to get values they need, they will not have full access to the `context` objects. The secrets context will **not** be available to composite actions, users will need to pass these values in as an input.\n- Other Actions should **just work** inside a composite action, without any code changes\n\n## Decisions\n\n### Composite Recursion Limit\n\n- We will start with supporting a recursion limit of `10` composite actions deep\n- We are free to bump this limit in the future, the code will be written to just require updating a variable. If the graph evaluates beyond the recursion limit, the job will fail in the pre-job phase (The `Set up job` step).\n- A composite actions interface is its inputs and outputs, nothing else is carried over when invoking recursively.\n\n### Pre/Post Steps in nested Actions\n\n- We do not plan on adding the ability to configure a customizable pre or post step for composite actions at this time. However, we will execute the pre and post steps of any actions referenced in a composite action.\n- Composite actions will generate a single pre-step and post-step for the entire composite action, even if there are multiple pre-steps and post-steps in the referenced actions.\n  - These steps will execute following the same ordering rules we have today, first to run has their pre step run first and their post step run last.\n  - For example, if you had a composite action with two pre steps and two posts steps:\n\n  ```\n  - uses: action1\n  - uses: composite1\n  - uses: action2\n  ```\n\n  The order of execution would be:\n\n  ```\n  - prestep-action1\n  - prestep-composite1\n    - prestep-composite1-first-action-referenced\n    - prestep-composite1-second-action-referenced\n  - prestep-action2\n  - the job steps\n  - poststep-action2\n  - poststep-composite1\n    - poststep-composite1-the-second-action-referenced\n    - poststep-composite1-first-action-referenced\n  - poststep-action1\n  ```\n\n#### Set-state\n\n- While the composite action has an individual combined pre/post action, the `set-state` command will not be shared.\n- If the `set-state` command is used during a composite step, only the action that originally called `set-state` will have access to the env variable during the post run step.\n  - This prevents multiple actions that set the same state from interfering with the execution of another action's post step.\n\n### Resolve Action Endpoint changes\n\n- The resolve actions endpoint will now validate policy to ensure that the given workflow run has access to download that action.\n  - Older GHES/GHAE customers with newer runners will be locked out of composite uses steps until they upgrade their instance.\n\n### Local actions\n- Local actions will expand the tree, perform policy checks, and download actions Just in Time when the step is running.\n- Like current local actions, we will not support presteps. If an action is running local, by the time we know that, the time to run presteps have already passed.\n\n### If, continue-on-error, timeout-minutes - Not being considered at this time\n\n- `if`, `continue-on-error`, `timeout-minutes` could be supported in composite run/uses steps. These values were not originally supported in our composite run steps implementation.\n  - Browsing the community forums and runner repo, there hasn't been a lot of noise asking for these features, so we will hold off on them.\n- These values passed as input into the composite action will **not** be carried over as input into the individual steps the composite action runs.\n\n### Defaults - Not being considered at this time\n\n- In actions, we have the idea of [defaults](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#defaultsrun) , which allow you to specify a shell and working directory in one location, rather then on each step.\n- However, `shell` is currently required in composite run steps\n  - In regular run steps, it is optional, and defaults to a different value based on the OS.\n- We want to prioritize the right experience for the consumer, and make the action author continue to explicitly set these values. We can consider improving this experience in the future.\n\n## Consequences\n\n- Workflows are now more reusable across multiple workflow files\n- Composite actions implement most of the existing workflow run steps, with room to expand these in the future\n- Feature flags will control this rollout\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "actions/runner#554",
+     "kind": "pull",
+     "url": "https://github.com/actions/runner/pull/554",
+     "number": "554"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/0277-run-action-shell-options.md",
+   "identity": "docs/adrs/0277-run-action-shell-options.md",
+   "adr_id": "277",
+   "title": "ADR 0277: Run action shell option",
+   "first_commit": "2020-01-14T14:54:20-05:00",
+   "first_sha": "b19e5d7924c0ed8480916e79d69d9e90d25a5070",
+   "last_commit": "2021-05-26T06:04:38-04:00",
+   "author": "eric sciple",
+   "email": "ericsciple@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# ADR 0277: Run action shell option\n\n**Date** 2019-07-09\n\n**Status** Accepted\n\n## Context\nrun-actions run scripts using a platform specific shell:\n`bash -eo pipefail` on non-windows, and `cmd.exe /c /d /s` on windows\n\nThe `shell` option overrides this to allow different flags or completely different shells/interpreters\n\nA small example is:\n```yml\njobs:\n  bash-job:\n    actions:\n    - run: echo \"Hello\"\n      shell: bash\n  python-job:\n    actions:\n    - run: print(\"Hello\")\n      shell: python {0}\n```\n\n## Decision\n\n___\n\n### Shell option\nThe keyword being used is `shell` \n\n`shell` can be either:\n\n1. Builtins / Explicitly supported keywords. It is useful to support at least `cmd`, and `powershell` on Windows. Because `cmd my_cmd_script` and `powershell my_ps1_script` are not valid the same way many Linux/cross-platform interpreters are, e.g. `bash myscript` or `python myscript`. Those tools (and potentially others) also require the correct file extension to run, or must be run in a particular way to get the exit codes consistently, so we must have first class knowledge about them. We provide default templates for these keywords as follows:\n    - `cmd`: Default is: `%ComSpec% /D /E:ON /V:OFF /S /C \"CALL \"{0}\"\"` where the script name is automatically appended with `.cmd` and substituted for `{0}`\n        - Note this is equivalent to the default Windows behavior if no shell option is given\n    - `pwsh`: Default is: `pwsh -command \"& '{0}'\"` where the script is automatically appended with `.ps1`\n    - `powershell`: Default is: `powershell -command \"& '{0}'\"` where the script is automatically appended with `.ps1`\n    - `bash`: Uses `bash --noprofile --norc -eo pipefail {0}`\n        - The default behavior on non-Windows if no shell is given is to attempt this first\n    - `sh`: Uses `sh -e {0}`\n        - This is the default behavior on non-Windows if no shell is given, AND `bash` (see above) was not located on the PATH\n    - `python`: `python {0}`\n    - **NOTE**: The exact command ran may vary by machine. We only provide default arguments and command format for the listed shell. While the above behavior is expected on hosted machines, private runners may vary. For example, `sh` (or other commands) may actually be a link to `/bin/dash`, `/bin/bash`, or other\n\n1. A template string: `command [...options] {0} [...more_options]`\n    - As above, the file name of the temporary script will be templated in. This gives users more control to have options at any location relative to the script path\n    - The first whitespace-delimited word of the string will be interpreted as the command\n    - e.g. `python {0} arg1 arg2` or similar can be used if passing args is needed. Some shells will require other options after the filename for various reasons\n\nNote that (1) simply provides defaults that are executed with the same mechanism as (2). That is:\n- A temporary script file is generated, and the path to that file is templated into the string at `{0}`\n- The first word of the formatted string is assumed to be a command, and we attempt to locate its full path\n- The fully qualified path to the command, plus the remaining arguments, is executed\n    - e.g. `shell: bash` expands to `/bin/bash --noprofile --norc -eo pipefail /runner/_layout/_work/_temp/f8d4fb2b-19d9-47e6-a786-4cc538d52761.sh` on my private runner\n\nAt this time, **THE LIST OF WELL-KNOWN SHELL OPTIONS IS**:\n- cmd - Windows (hosted vs2017, vs2019) only\n- powershell - Windows (hosted vs2017, vs2019) only\n- sh - All hosted platforms\n- pwsh - All hosted platforms\n- bash - All hosted platforms\n- python - All hosted platforms. Can use setup-python to configure which python will be used\n___\n\n### Containers\nFor container jobs, `shell` should just work the same as above, transparently. We will simply `exec` the command in the job container, passing the same arguments in\n\n___\n\n### Exit codes / Error action preference\n\nFor builtin shells, we provide defaults that make the most sense for CI, running within Actions, and being executed by our runner\n\nbash/sh:\n- Fail-fast behavior using `set -e o pipefail` is the default for `bash` and `shell` builtins, and by default when no option is given on non-Windows platforms\n- Users can opt out of fail-fast and take full control easily by providing a template string to the shell options, eg: `bash {0}`.\n- sh-like shells exit with the exit code of the last command executed in a script, and is our default behavior. Thus the runner reports the status of the step as fail/succeed based on this exit code\n\npowershell/pwsh\n- Fail-fast behavior when possible. For `pwsh` and `powershell` builtins, we will prepend `$ErrorActionPreference = 'stop'` to script contents\n- We append `if ((Test-Path -LiteralPath variable:\\LASTEXITCODE)) { exit $LASTEXITCODE }` to powershell scripts to get Action statuses to reflect the script's last exit code\n- Users can always opt out by not using the builtins, and providing a shell option like: `pwsh -File {0}`, or `powershell -Command \"& '{0}'\"`, depending on need\n\ncmd\n- There doesn't seem to be a way to fully opt in to fail-fast behavior other than writing your script to check each error code and respond accordingly, so we can't actually provide that behavior by default, it will be completely up to the user to write this behavior into their script\n- cmd.exe will exit (return the error code to the runner) with the errorlevel of the last program it executed. This is internally consistent with the previous default behavior (sh, pwsh) and is the cmd.exe default, so we keep that behavior\n\n## Consequences\nValid `shell` options will depend on the hosted images. We will need to maintain tight image compat\n\nFirst class support for a shell will require a major version schema change to modify. We cannot remove or modify the behavior of a well-known supported option, However, adding first class support for new shells is backwards compatible. For instance, we can add a well-known `python` option, because non-well-known options would have always needed to include `{0}`, e.g. `python {0}`\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/bin/dash",
+    "/bin/bash"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/0279-hashFiles-expression-function.md",
+   "identity": "docs/adrs/0279-hashFiles-expression-function.md",
+   "adr_id": "279",
+   "title": "ADR 0279: HashFiles Expression Function",
+   "first_commit": "2020-01-14T14:54:37-05:00",
+   "first_sha": "d6179242ca92823bda0bcfc0aa9a75bbbc6ae618",
+   "last_commit": "2021-05-26T06:04:24-04:00",
+   "author": "eric sciple",
+   "email": "ericsciple@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR 0279: HashFiles Expression Function\n\n**Date**: 2019-09-30\n\n**Status**: Accepted\n\n## Context\nFirst party action `actions/cache` needs a input which is an explicit `key` used for restoring and saving the cache. For packages caching, the most common `key` might be the hash result of contents from all `package-lock.json` under `node_modules` folder.\n  \nThere are serval different ways to get the hash `key` input for `actions/cache` action.\n\n1. Customer calculate the `key` themselves from a different action, customer won't like this since it needs extra step for using cache feature\n```yaml\n  steps:\n  - run: |\n      hash=some_linux_hash_method(file1, file2, file3)\n      echo ::set-output name=hash::$hash\n    id: createHash\n  - uses: actions/cache@v1\n    with:\n      key: ${{ steps.createHash.outputs.hash }}\n``` \n\n2. Make the `key` input of `actions/cache` follow certain convention to calculate hash, this limited the `key` input to a certain format customer may not want.\n```yaml\n  steps:\n  - uses: actions/cache@v1\n    with:\n      key: ${{ runner.os }}|${{ github.workspace }}|**/package-lock.json\n```\n\n## Decision\n\n### Add hashFiles() function to expression engine for calculate files' hash\n\n`hashFiles()` will only allow on runner side since it needs to read files on disk, using `hashFiles()` on any server side evaluated expression will cause runtime errors.\n\n`hashFiles()` will only support hashing files under the `$GITHUB_WORKSPACE` since the expression evaluated on the runner, if customer use job container or container action, the runner won't have access to file system inside the container.\n\n`hashFiles()` will only take 1 parameters:\n - `hashFiles('**/package-lock.json')`  // Search files under `$GITHUB_WORKSPACE` and calculate a hash for them\n\n**Question: Do we need to support more than one match patterns?**  \nEx: `hashFiles('**/package-lock.json', '!toolkit/core/package-lock.json', '!toolkit/io/package-lock.json')`  \nAnswer: Only support single match pattern for GA, we can always add later.\n\nThis will help customer has better experience with the `actions/cache` action's input.\n```yaml\n  steps:\n  - uses: actions/cache@v1\n    with:\n      key: ${{hashFiles('**/package-lock.json')}}-${{github.ref}}-${{runner.os}}\n```\n\nFor search pattern, we will use basic globbing (`*`, `?`, and `[]`) and globstar (`**`).\n\nAdditional pattern details:\n- Root relative paths with `github.workspace` (the main repo)\n- Make `*` match files that start with `.`\n- Case insensitive on Windows\n- Accept `\\` or `/` path separators on Windows\n\nHashing logic:\n1. Get all files under `$GITHUB_WORKSPACE`.\n2. Use search pattern filter all files to get files that matches the search pattern. (search pattern only apply to file path not folder path)\n3. Sort all matched files by full file path in alphabet order.\n4. Use SHA256 algorithm to hash each matched file and store hash result.\n5. Use SHA256 to hash all stored files' hash results to get the final 64 chars hash result.\n\n**Question: Should we include the folder structure info into the hash?**  \nAnswer: No\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "actions/cache",
+    "package-lock.json",
+    "hashFiles('**/package-lock.json')"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/0361-wrapper-action.md",
+   "identity": "docs/adrs/0361-wrapper-action.md",
+   "adr_id": "361",
+   "title": "ADR 361: Wrapper Action",
+   "first_commit": "2020-03-31T10:11:02-04:00",
+   "first_sha": "0e8777ebda3e9aa9a26fe22900b7131ae8bbd34d",
+   "last_commit": "2021-05-26T06:02:54-04:00",
+   "author": "Tingluo Huang",
+   "email": "tingluohuang@github.com",
+   "status": "proposed",
+   "status_raw": "Pending",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR 361: Wrapper Action\n\n**Date**: 2020-03-06\n\n**Status**: Pending\n\n## Context\n\nIn addition to action's regular execution, action author may wants their action to have a chance to participate in:\n- Job initialization\n  My Action will collect machine resource usage (CPU/RAM/Disk) during a workflow job execution, we need to start perf recorder at the beginning of the job.\n- Job cleanup\n  My Action will dirty local workspace or machine environment during execution, we need to cleanup these changes at the end of the job.  \n  Ex: `actions/checkout@v2` will write `github.token` into local `.git/config` during execution, it has post job cleanup defined to undo the changes.\n\n## Decision\n\n### Add `pre` and `post` execution to action\n\nNode Action Example:\n\n```yaml\n name: 'My action with pre'\n description: 'My action with pre'\n runs:\n   using: 'node12'\n   pre: 'setup.js'\n   pre-if: 'success()' // Optional\n   main: 'index.js'\n   post: 'cleanup.js'\n   post-if: 'success()' // Optional\n```\n\nContainer Action Example:\n\n```yaml\n name: 'My action with pre'\n description: 'My action with pre'\n runs:\n   using: 'docker'\n   image: 'mycontainer:latest'\n   pre-entrypoint: 'setup.sh'\n   pre-if: 'success()' // Optional\n   entrypoint: 'entrypoint.sh'\n   post-entrypoint: 'cleanup.sh'\n   post-if: 'success()' // Optional\n```\n\nBoth `pre` and `post` will have default `pre-if/post-if` set to `always()`.  \nSetting `pre` to `always()` will make sure no matter what condition evaluate result the `main` gets at runtime, the `pre` has always run already.   \n`pre` executes in order of how the steps are defined.  \n`pre` will always be added to job steps list during job setup.  \n> Action referenced from local repository (`./my-action`) won't get `pre` setup correctly since the repository haven't checked-out during job initialization.\n> We can't use GitHub api to download the repository since there is about a 3 minute delay between `git push` and the new commit available to download using GitHub api.\n\n`post` will be pushed into a `poststeps` stack lazily when the action's `pre` or `main` execution passed `if` condition check and about to run, you can't have an action that only contains a `post`, we will pop and run each `post` after all `pre` and `main` finished.\n> Currently `post` works for both repository action (`org/repo@v1`) and local action (`./my-action`)\n\nValid action:\n- only has `main`\n- has `pre` and `main`\n- has `main` and `post`\n- has `pre`, `main`, and `post`\n\nInvalid action:\n- only has `pre`\n- only has `post`\n- has `pre` and `post`\n\nPotential downside of introducing `pre`:\n\n- Extra magic wrt step order. Users should control the step order. Especially when we introduce templates.  \n- Eliminates the possibility to lazily download the action tarball, since `pre` always run by default, we have to download the tarball to check whether action defined a `pre`  \n- `pre` doesn't work with local action, we suggested customer use local action for testing their action changes, ex CI for their action, to avoid delay between `git push` and GitHub repo tarball download api.  \n- Condition on the `pre` can't be controlled using dynamic step outputs. `pre` executes too early.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "actions/checkout@v2",
+    "git/config",
+    "pre-if/post-if",
+    "/my-action",
+    "org/repo@v1"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/0397-runner-registration-labels.md",
+   "identity": "docs/adrs/0397-runner-registration-labels.md",
+   "adr_id": "397",
+   "title": "ADR 0397: Support adding custom labels during runner config",
+   "first_commit": "2020-03-30T17:46:32-04:00",
+   "first_sha": "a5f06b3ec2c138a4a3a03b674e87fa262e1f766f",
+   "last_commit": "2021-05-26T06:01:52-04:00",
+   "author": "Bryan MacFarlane",
+   "email": "bryanmacfarlane@github.com",
+   "status": "accepted",
+   "status_raw": "Approved",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR 0397: Support adding custom labels during runner config\n**Date**: 2020-03-30\n\n**Status**: Approved\n\n## Context\n\nSince configuring self-hosted runners is commonly automated via scripts, the labels need to be able to be created during configuration.  The runner currently registers the built-in labels (os, arch) during registration but does not accept labels via command line args to extend the set registered.\n\nSee Issue: https://github.com/actions/runner/issues/262\n\nThis is another version of [ADR275](https://github.com/actions/runner/pull/275)\n\n## Decision\n\nThis ADR proposes that we add a `--labels` option to the `config`, which could be used to add custom additional labels to the configured runner.\n\nFor example, to add a single additional label the operator could run:\n```bash\n./config.sh --labels mylabel\n```\n> Note: the current runner command line parsing and envvar override algorithm only support a single argument (key).\n\nThis would add the label `mylabel` to the runner, and enable users to select the runner in their workflow using this label:\n```yaml\nruns-on: [self-hosted, mylabel]\n```\n\nTo add multiple labels the operator could run:\n```bash\n./config.sh --labels mylabel,anotherlabel\n```\n> Note: the current runner command line parsing and envvar override algorithm only supports a single argument (key).\n\nThis would add the label `mylabel` and `anotherlabel` to the runner, and enable users to select the runner in their workflow using this label:\n```yaml\nruns-on: [self-hosted, mylabel, anotherlabel]\n```\n\nIt would not be possible to remove labels from an existing runner using `config.sh`, instead labels would have to be removed using the GitHub UI.\n\nThe labels argument will split on commas, trim and discard empty strings.  That effectively means don't use commas in unattended config label names.  Alternatively, we could choose to escape commas but it's a nice to have.\n\n## Replace\n\nIf an existing runner exists and the option to replace is chosen (interactively or via unattended as in this scenario), then the labels will be replaced/overwritten (not merged).\n\n## Overriding built-in labels\n\nNote that it is possible to register \"built-in\" hosted labels like `ubuntu-latest` and is not considered an error.  This is an effective way for the org/runner admin to dictate by policy through registration that this set of runners will be used without having to edit all the workflow files now and in the future.\n\nWe will also not make other restrictions such as limiting explicitly adding os/arch labels and validating.  We will assume that explicit labels were added for a reason and not restricting offers the most flexibility and future-proofing / compatibility.\n\n## Consequences\n\nThe ability to add custom labels to a self-hosted runner would enable most scenarios where job runner selection based on runner capabilities or characteristics are required.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "actions/runner#262",
+     "kind": "issue",
+     "url": "https://github.com/actions/runner/issues/262",
+     "number": "262"
+    },
+    {
+     "key": "actions/runner#275",
+     "kind": "pull",
+     "url": "https://github.com/actions/runner/pull/275",
+     "number": "275"
+    }
+   ],
+   "mentioned_paths": [
+    "/config.sh"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/0549-composite-run-steps.md",
+   "identity": "docs/adrs/0549-composite-run-steps.md",
+   "adr_id": "549",
+   "title": "ADR 0549: Composite Run Steps",
+   "first_commit": "2020-07-13T12:30:31-04:00",
+   "first_sha": "6c3958f365c3cbefec28e5b71933831e5ac6496f",
+   "last_commit": "2021-05-26T06:01:02-04:00",
+   "author": "Ethan Chiu",
+   "email": "17chiue@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 9,
+   "text": "# ADR 0549: Composite Run Steps\n\n**Date**: 2020-06-17\n\n**Status**: Accepted\n\n## Context\n\nCustomers want to be able to compose actions from actions (ex: https://github.com/actions/runner/issues/438)\n\nAn important step towards meeting this goal is to build functionality for actions where users can simply execute any number of steps. \n\n### Guiding Principles\n\nWe don't want the workflow author to need to know how the internal workings of the action work. Users shouldn't know the internal workings of the composite action (for example, `default.shell` and `default.workingDir` should not be inherited from the workflow file to the action file). When deciding how to design certain parts of composite run steps, we want to treat it as one logical step for the consumer.\n\nA composite action is treated as **one** individual job step (this is known as encapsulation).\n\n## Decision\n\n**In this ADR, we only support running multiple run steps in an Action.** In doing so, we build in support for mapping and flowing the inputs, outputs, and env variables (ex: All nested steps should have access to their parents' input variables and nested steps can overwrite the input variables).\n\n### Composite Run Steps Features\nThis feature supports at the top action level:\n- name\n- description\n- inputs\n- runs\n- outputs\n\nThis feature supports at the run step level:\n- name\n- id\n- run\n- env\n- shell\n- working-directory\n\nThis feature **does not support** at the run step level:\n- timeout-minutes\n- secrets\n- conditionals (needs, if, etc.)\n- continue-on-error\n\n### Steps\n\nExample `workflow.yml`\n\n```yaml\njobs:\n  build:\n    runs-on: self-hosted\n    steps:\n    - id: step1\n      uses: actions/setup-python@v1\n    - id: step2\n      uses: actions/setup-node@v2\n    - uses: actions/checkout@v2\n    - uses: user/composite@v1\n    - name: workflow step 1\n      run: echo hello world 3\n    - name: workflow step 2\n      run: echo hello world 4\n```\n\nExample `user/composite/action.yml`\n\n```yaml\nruns:\n  using: \"composite\"\n  steps:\n    - run: pip install -r requirements.txt\n      shell: bash\n    - run: npm install\n      shell: bash\n```\n\nExample Output\n\n```yaml\n[npm installation output]\n[pip requirements output]\necho hello world 3\necho hello world 4\n```\n\nWe add a token called \"composite\" which allows our Runner code to process composite actions. By invoking \"using: composite\", our Runner code then processes the \"steps\" attribute, converts this template code to a list of steps, and finally runs each run step sequentially. If any step fails and there are no `if` conditions defined, the whole composite action job fails. \n\n### Defaults\n\nWe will not support \"defaults\" in a composite action. \n\n### Shell and Working-directory\n\nFor each run step in a composite action, the action author can set the `shell` and `working-directory` attributes for that step. The shell attribute is **required** for each run step because the action author does not know what the workflow author is using for the operating system so we need to explicitly prevent unknown behavior by making sure that each run step has an explicit shell **set by the action author.** On the other hand, `working-directory` is optional. Moreover, the composite action author can map in values from the `inputs` for its `shell` and `working-directory` attributes at the step level for an action. \n\nFor example,\n\n`action.yml`\n\n\n```yaml\ninputs:\n  shell_1:\n    description: 'Your name'\n    default: 'pwsh'\nsteps:\n  - run: echo 1\n    shell: ${{ inputs.shell_1 }}\n```\n\nNote, the workflow file and action file are treated as separate entities. **So, the workflow `defaults` will never change the `shell` and `working-directory` value in the run steps in a composite action.** Note, `defaults` in a workflow only apply to run steps not \"uses\" steps (steps that use an action).\n\n### Running Local Scripts\n\nExample 'workflow.yml':\n```yaml\njobs:\n  build:\n    runs-on: self-hosted\n    steps:\n    - uses: user/composite@v1\n```\n\nExample `user/composite/action.yml`:\n\n```yaml\nruns:\n  using: \"composite\"\n  steps: \n    - run: chmod +x ${{ github.action_path }}/test/script2.sh\n      shell: bash\n    - run: chmod +x $GITHUB_ACTION_PATH/script.sh\n      shell: bash\n    - run: ${{ github.action_path }}/test/script2.sh\n      shell: bash\n    - run: $GITHUB_ACTION_PATH/script.sh\n      shell: bash\n```\nWhere `user/composite` has the file structure:\n```\n.\n+-- action.yml\n+-- script.sh\n+-- test\n|   +-- script2.sh\n```\n\n\nUsers will be able to run scripts located in their action folder by first prepending the relative path and script name with `$GITHUB_ACTION_PATH` or `github.action_path` which contains the path in which the composite action is downloaded to and where those \"files\" live. Note, you'll have to use `chmod` before running each script if you do not git check in your script files into your github repo with the executable bit turned on.\n\n### Inputs\n\nExample `workflow.yml`:\n\n```yaml\nsteps: \n  - id: foo\n    uses: user/composite@v1\n    with:\n      your_name: \"Octocat\"\n```\n\nExample `user/composite/action.yml`:\n\n```yaml\ninputs:\n  your_name:\n    description: 'Your name'\n    default: 'Ethan'\nruns:\n  using: \"composite\"\n  steps: \n    - run: echo hello ${{ inputs.your_name }}\n      shell: bash\n```\n\nExample Output:\n\n```\nhello Octocat\n```\n\nEach input variable in the composite action is only viewable in its own scope.\n\n### Outputs\n\nExample `workflow.yml`:\n\n```yaml\n...\nsteps: \n  - id: foo\n    uses: user/composite@v1\n  - run: echo random-number ${{ steps.foo.outputs.random-number }} \n    shell: bash\n```\n\nExample `user/composite/action.yml`:\n\n```yaml\noutputs:\n  random-number: \n    description: \"Random number\"\n    value: ${{ steps.random-number-generator.outputs.random-id }}\nruns:\n  using: \"composite\"\n  steps: \n    - id: random-number-generator\n      run: echo \"::set-output name=random-id::$(echo $RANDOM)\"\n      shell: bash\n```\n\nExample Output:\n\n```\n::set-output name=my-output::43243\nrandom-number 43243\n```\n\nEach of the output variables from the composite action is viewable from the workflow file that uses the composite action. In other words, every child's action output(s) are only viewable by its parent using dot notation (ex `steps.foo.outputs.random-number`).\n\nMoreover, the output ids are only accessible within the scope where it was defined. Note that in the example above, in our `workflow.yml` file, it should not have access to output id (i.e. `random-id`). The reason why we are doing this is that we don't want to require the workflow author to know the internal workings of the composite action.\n\n### Context\n\nSimilar to the workflow file, the composite action has access to the [same context objects](https://help.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#contexts) (ex: `github`, `env`, `strategy`). \n\n### Environment\n\nIn the Composite Action, you'll only be able to use `::set-env::` to set environment variables just like you could with other actions.\n\n### Secrets\n\n**We will not support \"Secrets\" in a composite action for now. This functionality will be focused on in a future ADR.**\n\nWe'll pass the secrets from the composite action's parents (ex: the workflow file) to the composite action. Secrets can be created in the composite action with the secrets context. In the actions yaml, we'll automatically mask the secret. \n\n\n### If-Condition\n\n** `If` and `needs` conditions will not be supported in the composite run steps feature. It will be supported later on in a new feature. **\n\nOld reasoning:\n\nExample `workflow.yml`:\n\n```yaml\nsteps:\n  - run: exit 1\n  - uses: user/composite@v1  # <--- this will run, as it's marked as always running\n    if: always()\n```\n\nExample `user/composite/action.yml`:\n\n```yaml\nruns:\n  using: \"composite\"\n  steps:\n    - run: echo \"just succeeding\"\n      shell: bash\n    - run: echo \"I will run, as my current scope is succeeding\"\n      shell: bash\n      if: success()\n    - run: exit 1\n      shell: bash\n    - run: echo \"I will not run, as my current scope is now failing\"\n      shell: bash\n```\n\n**We will not support \"if-condition\" in a composite action for now. This functionality will be focused on in a future ADR.**\n\nSee the paragraph below for a rudimentary approach (thank you to @cybojenix for the idea, example, and explanation for this approach):\n\nThe `if` statement in the parent (in the example above, this is the `workflow.yml`) shows whether or not we should run the composite action. So, our composite action will run since the `if` condition for running the composite action is `always()`.\n\n**Note that the \"if-condition\" on the parent does not propagate to the rest of its children though.**\n\nIn the child action (in this example, this is the `action.yml`), it starts with a clean slate (in other words, no imposing if-conditions). Similar to the logic in the paragraph above, `echo \"I will run, as my current scope is succeeding\"` will run since the `if` condition checks if the previous steps **within this composite action** have not failed. `run: echo \"I will not run, as my current scope is now failing\"` will not run since the previous step resulted in an error and by default, the if expression is set to `success()` if the if-condition is not set for a step.\n\n\nWhat if a step has `cancelled()`? We do the opposite of our approach above if `cancelled()` is used for any of our composite run steps. We will cancel any step that has this condition if the workflow is cancelled at all.\n    \n### Timeout-minutes\n\nExample `workflow.yml`:\n\n```yaml\nsteps: \n  - id: bar\n    uses: user/test@v1\n    timeout-minutes: 50\n```\n\nExample `user/composite/action.yml`:\n\n```yaml\nruns:\n  using: \"composite\"\n  steps: \n    - id: foo1\n      run: echo test 1\n      timeout-minutes: 10\n      shell: bash\n    - id: foo2\n      run: echo test 2\n      shell: bash\n    - id: foo3\n      run: echo test 3\n      timeout-minutes: 10\n      shell: bash\n```\n\n**We will not support \"timeout-minutes\" in a composite action for now. This functionality will be focused on in a future ADR.**\n\nA composite action in its entirety is a job. You can set both timeout-minutes for the whole composite action or its steps as long as the sum of the `timeout-minutes` for each composite action step that has the attribute `timeout-minutes` is less than or equals to `timeout-minutes` for the composite action. There is no default timeout-minutes for each composite action step. \n\nIf the time taken for any of the steps in combination or individually exceeds the whole composite action `timeout-minutes` attribute, the whole job will fail (1). If an individual step exceeds its own `timeout-minutes` attribute but the total time that has been used including this step is below the overall composite action `timeout-minutes`, the individual step will fail but the rest of the steps will run based on their own `timeout-minutes` attribute (they will still abide by condition (1) though).\n\nFor reference, in the example above, if the composite step `foo1` takes 11 minutes to run, that step will fail but the rest of the steps, `foo1` and `foo2`, will proceed as long as their total runtime with the previous failed `foo1` action is less than the composite action's `timeout-minutes` (50 minutes). If the composite step `foo2` takes 51 minutes to run, it will cause the whole composite action job to fail.\n\nThe rationale behind this is that users can configure their steps with the `if` condition to conditionally set how steps rely on each other. Due to the additional capabilities that are offered with combining `timeout-minutes` and/or `if`, we wanted the `timeout-minutes` condition to be as dumb as possible and not affect other steps. \n\n[Usage limits still apply](https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions?query=if%28%29#usage-limits)\n\n\n### Continue-on-error\n\nExample `workflow.yml`:\n\n```yaml\nsteps: \n  - run: exit 1\n  - id: bar\n    uses: user/test@v1\n    continue-on-error: false\n  - id: foo\n    run: echo \"Hello World\" <------- This step will not run\n```\n\n",
+   "truncated_text": true,
+   "discussion_refs": [
+    {
+     "key": "actions/runner#438",
+     "kind": "issue",
+     "url": "https://github.com/actions/runner/issues/438",
+     "number": "438"
+    }
+   ],
+   "mentioned_paths": [
+    "workflow.yml",
+    "user/composite/action.yml",
+    "action.yml",
+    "test/script2.sh",
+    "GITHUB_ACTION_PATH/script.sh",
+    "user/composite"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/0263-proxy-support.md",
+   "identity": "docs/adrs/0263-proxy-support.md",
+   "adr_id": "263",
+   "title": "ADR 263: Self-Hosted Runner Proxies",
+   "first_commit": "2020-01-09T11:52:04-05:00",
+   "first_sha": "e15414eb5e20e98d8ffb6d8d6176a4410b410cc6",
+   "last_commit": "2021-05-25T10:42:50-04:00",
+   "author": "Bryan MacFarlane",
+   "email": "bryanmacfarlane@github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# ADR 263: Self-Hosted Runner Proxies\n\n**Date**: 2019-11-13\n\n**Status**: Accepted\n\n## Context\n\n- Proxy support is required for some enterprises and organizations to start using their own self-hosted runners\n- While there is not a standard convention, many applications support setting proxies via the environment variables `http_proxy`, `https_proxy`, `no_proxy`, such as curl, wget, perl, python, docker, git, and R\n  - Some of these applications use `HTTPS_PROXY` versus `https_proxy`, but most understand or primarily support the lowercase variant\n\n## Decision\n\nWe will update the Runner to use the conventional environment variables for proxies: `http_proxy`, `https_proxy`, and `no_proxy` if they are set.\nThese are described in detail below:\n- `https_proxy` a proxy URL for all https traffic. It may contain basic authentication credentials. For example:\n  - http://proxy.com\n  - http://127.0.0.1:8080\n  - http://user:password@proxy.com\n- `http_proxy` a proxy URL for all http traffic. It may contain basic authentication credentials. For example:\n  - http://proxy.com\n  - http://127.0.0.1:8080\n  - http://user:password@proxy.com\n- `no_proxy` a comma-separated list of hosts that should not use the proxy. An optional port may be specified. For example:\n  - `google.com`\n  - `yahoo.com:443`\n  - `google.com,bing.com`\n\nWe won't use `http_proxy` for https traffic when `https_proxy` is not set, this behavior lines up with any libcurl based tools (curl, git) and wget.\nOtherwise, action authors and workflow users need to adjust to differences between the runner proxy convention, and tools used by their actions and scripts.  \n\nExample:  \n  Customer sets `http_proxy=http://127.0.0.1:8888` and configures the runner against `https://github.com/owner/repo`, with the `https_proxy` -> `http_proxy` fallback, the runner will connect to the server without any problem. However, if a user runs `git push` to `https://github.com/owner/repo`, `git` won't use the proxy since it requires `https_proxy` to be set for any https traffic.\n\n> `golang`, `node.js`, and other dev tools from the Linux community use `http_proxy` for both http and https traffic based on my research.\n\nA majority of our users are using Linux where these variables are commonly required to be set by various programs. By reading these values, we simplify the process for self-hosted runners to set up a proxy and expose it in a way users are already familiar with.\n\nA password provided for a proxy will be masked in the logs.\n\nWe will support the lowercase and uppercase variants, with lowercase taking priority if both are set.\n\n### No Proxy Format\n\nWhile exact implementations are different per application on handling `no_proxy` env, most applications accept a comma-separated list of hosts. Some accept wildcard characters (`*`). We are going to do exact case-insensitive matches, and not support wildcards at this time.\nFor example:\n- `example.com` will match `example.com`, `foo.example.com`, and `foo.bar.example.com`\n- `foo.example.com` will match `bar.foo.example.com` and `foo.example.com`\n\nWe will not support IP addresses for `no_proxy`, only hostnames.\n\n## Consequences\n\n1. Enterprises and organizations needing proxy support will be able to embrace self-hosted runners\n2. Users will need to set these environment variables before configuring the runner in order to use a proxy when configuring\n3. The runner will read from the environment variables during config and runtime and use the provided proxy if it exists\n4. Users may need to pass these environment variables into other applications if they do not natively take these variables\n5. Action authors may need to update their workflows to react to these environment variables\n6. We will document the way of setting environment variables for runners using the environment variables and how the runner uses them\n7. Like all other secrets, users will be able to relatively easily figure out the proxy password if they can modify a workflow file running on a self-hosted machine\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "node.js"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/0297-base64-masking-trailing-characters.md",
+   "identity": "docs/adrs/0297-base64-masking-trailing-characters.md",
+   "adr_id": "297",
+   "title": "ADR 0297: Base64 Masking Trailing Characters",
+   "first_commit": "2020-01-27T21:38:01-05:00",
+   "first_sha": "b676ab3d331ca518a15befdccabe2b64e676260d",
+   "last_commit": "2021-02-06T02:29:43+08:00",
+   "author": "Thomas Boop",
+   "email": "52323235+thboop@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR 0297: Base64 Masking Trailing Characters\n\n**Date** 2020-01-21\n\n**Status** Proposed\n\n## Context\n\nThe Runner registers a number of Value Encoders, which mask various encodings of a provided secret. Currently, we register a 3 base64 Encoders:\n- The base64 encoded secret\n- The secret with the first character removed then base64 encoded\n- The secret with the first two characters removed then base64 encoded\n\nThis gives us good coverage across the board for secrets and secrets with a prefix (i.e. `base64($user:$pass)`).\n\nHowever, we don't have great coverage for cases where the secret has a string appended to it before it is base64 encoded (i.e.: `base64($pass\\n))`). \n\nMost notably we've seen this as a result of user error where a user accidentally appends a newline or space character before encoding their secret in base64.\n\n## Decision\n\n### Trim end characters\n\nWe are going to modify all existing base64 encoders to trim information before registering as a secret.\nWe will trim:\n- `=` from the end of all base64 strings. This is a padding character that contains no information. \n  - Based on the number of `=`'s at the end of a base64 string, a malicious user could predict the length of the original secret modulo 3. \n    - If a user saw `***==`, they would know the secret could be 1,4,7,10... characters.\n- If a string contains `=` we will also trim the last non-padding character from the base64 secret.\n  - This character can change if a string is appended to the secret before the encoding.\n\n\n### Register a fourth encoder\n\nWe will also add back in the original base64 encoded secret encoder for four total encoders:\n- The base64 encoded secret\n- The base64 encoded secret trimmed\n- The secret with the first character removed then base64 encoded and trimmed\n- The secret with the first two characters removed then base64 encoded and trimmed\n\nThis allows us to fully cover the most common scenario where a user base64 encodes their secret and expects the entire thing to be masked.\nThis will result in us only revealing length or bit information when a prefix or suffix is added to a secret before encoding. \n\n## Consequences\n\n- In the case where a secret has a prefix or suffix added before base64 encoding, we may now reveal up to 20 bits of information and the length of the original string modulo 3, rather then the original 16 bits and no length information\n- Secrets with a suffix appended before encoding will now be masked across the board. Previously it was only masked if it was a multiple of 3 characters\n- Performance will suffer in a negligible way\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/0274-step-outcome-and-conclusion.md",
+   "identity": "docs/adrs/0274-step-outcome-and-conclusion.md",
+   "adr_id": "274",
+   "title": "ADR 0274: Step outcome and conclusion",
+   "first_commit": "2020-03-16T14:56:07-04:00",
+   "first_sha": "aa9f5bf0700f22fa50b8b08f318658b54a2a2f38",
+   "last_commit": "2020-03-16T14:56:07-04:00",
+   "author": "eric sciple",
+   "email": "ericsciple@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR 0274: Step outcome and conclusion\n\n**Date**: 2020-01-13\n\n**Status**: Accepted\n\n## Context\n\nThis ADR proposes adding `steps.<id>.outcome` and `steps.<id>.conclusion` to the steps context.\n\nThis allows downstream a step to run based on whether a previous step succeeded or failed.\n\nReminder, currently the steps contains `steps.<id>.outputs`.\n\n## Decision\n\nFor steps that have completed, populate `steps.<id>.outcome` and `steps.<id>.conclusion` with one of the following values:\n\n- `success`\n- `failure`\n- `cancelled`\n- `skipped`\n\nWhen a continue-on-error step fails, the outcome will be `failure` even though the final conclusion is `success`.\n\n### Example\n\n```yaml\nsteps:\n\n  - id: experimental\n    continue-on-error: true\n    run: ./build.sh experimental\n\n  - if: ${{ steps.experimental.outcome == 'success' }}\n    run: ./publish.sh experimental\n```\n\n### Terminology\n\nThe runs API uses the term `conclusion`.\n\nTherefore we use a different term `outcome` for the value prior to continue-on-error.\n\nThe following is a snippet from the runs API response payload:\n\n```json\n      \"steps\": [\n        {\n          \"name\": \"Set up job\",\n          \"status\": \"completed\",\n          \"conclusion\": \"success\",\n          \"number\": 1,\n          \"started_at\": \"2020-01-09T11:06:16.000-05:00\",\n          \"completed_at\": \"2020-01-09T11:06:18.000-05:00\"\n        },\n```\n\n## Consequences\n\n- Update runner\n- Update [docs](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/contexts-and-expression-syntax-for-github-actions#steps-context)",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/build.sh",
+    "/publish.sh"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/0278-env-context.md",
+   "identity": "docs/adrs/0278-env-context.md",
+   "adr_id": "278",
+   "title": "ADR 0278: Env Context",
+   "first_commit": "2020-01-14T14:54:29-05:00",
+   "first_sha": "0da38a6924837fc1f834aedef91bf398ae86bc89",
+   "last_commit": "2020-01-22T20:09:09-05:00",
+   "author": "eric sciple",
+   "email": "ericsciple@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# ADR 0278: Env Context\n\n**Date**: 2019-09-30\n\n**Status**: Accepted\n\n## Context\n\nUser wants to reference workflow variables defined in workflow yaml file for action's input, displayName and condition.  \n\n## Decision\n\n### Add `env` context in the runner\n\nRunner will create and populate the `env` context for every job execution using following logic:\n1. On job start, create `env` context with any environment variables in the job message, these are env defined in customer's YAML file's job/workflow level `env` section.\n2. Update `env` context when customer use `::set-env::` to set env at the runner level.\n3. Update `env` context with step's `env` block before each step runs.\n\nThe `env` context is only available in the runner, customer can't use the `env` context in any server evaluation part, just like the `runner` context\n\nExample yaml:\n```yaml\n\nenv:\n  env1: 10\n  env2: 20\n  env3: 30\njobs:\n  build:\n    env:\n      env1: 100\n      env2: 200\n    runs-on: ubuntu-latest\n    steps:\n      - run: |\n          echo ${{ env.env1 }}  // 1000\n          echo $env1            // 1000\n          echo $env2            // 200\n          echo $env3            // 30\n        if: env.env2 == 200     // true\n        name: ${{ env.env1 }}_${{ env.env2 }}   //1000_200\n        env:\n          env1: 1000\n```\n\n### Don't populate the `env` context with environment variables from runner machine. \n\nWith job container and container action, the `env` context may not have the right value customer want and will cause confusion.  \nEx:\n```yaml\nbuild:\n  runs-on: ubuntu-latest   <- $USER=runner in hosted machine\n  container: ubuntu:16.04   <- $USER=root in container\n  steps:\n  - run: echo ${{env.USER}}    <- what should customer expect this output?  runner/root\n  - uses: docker://ubuntu:18.04\n    with:\n      args: echo ${{env.USER}}  <- what should customer expect this output? runner/root\n```\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adrs/0280-command-input-echoing.md",
+   "identity": "docs/adrs/0280-command-input-echoing.md",
+   "adr_id": "280",
+   "title": "ADR 0280: Echoing of Command Input",
+   "first_commit": "2020-01-14T14:55:17-05:00",
+   "first_sha": "53d632706dc8316a1cf8bbaf98833e0912afcbbd",
+   "last_commit": "2020-01-14T14:55:17-05:00",
+   "author": "eric sciple",
+   "email": "ericsciple@users.noreply.github.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# ADR 0280: Echoing of Command Input\n\n**Date**: 2019-11-04  \n\n**Status**: Accepted\n\n## Context\n\nCommand echoing as a default behavior tends to clutter the user logs, so we want to swap to a system where users have to opt in to see this information.\n\nCommand outputs will still be echoed in the case there are any errors processing such commands. This is so the end user can have more context on why the command failed and help with troubleshooting.\n\nEcho output in the user logs can be explicitly controlled by the new commands `::echo::on` and `::echo::off`. By default, echoing is enabled if `ACTIONS_STEP_DEBUG` secret is enabled, otherwise echoing is disabled.\n\n## Decision\n- The only commands that currently echo output are\n  - `remove-matcher`\n  - `add-matcher`\n  - `add-path`\n- These will no longer echo the command, if processed successfully\n- All commands echo the input when any of these conditions is fulfilled:\n  1. When such commands fail with an error\n  2. When `::echo::on` is set\n  3. When the `ACTIONS_STEP_DEBUG` is set, and echoing hasn't been explicitly disabled with `::echo::off`\n- There are a few commands that won't be echoed, even when echo is enabled. These are (as of 2019/11/04):\n   - `add-mask`\n   - `debug`\n   - `warning`\n   - `error`\n- The three commands above will not echo, either because echoing the command would leak secrets (e.g. `add-mask`), or it would not add any additional troubleshooting information to the logs (e.g. `debug`). It's expected that future commands would follow these \"echo-suppressing\" guidelines as well. Echo-suppressed commands are still free to output other information to the logs, as deemed fit.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/adrs/0549-composite-run-steps.md",
+   "identity": "docs/adrs/0549-composite-run-steps.md",
+   "commit": "e4267b8434791d1e2055768577210c8467dfcb34",
+   "date": "2020-07-15T19:57:22-04:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "Update 0549-composite-run-steps.md",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "eric sciple",
+   "email": "ericsciple@users.noreply.github.com"
+  }
+ ],
+ "ai_signals": [
+  {
+   "kind": "file:primary",
+   "name": ".github/copilot-instructions.md",
+   "date": "2025-05-05T00:17:20-04:00",
+   "commit": "a3a7b6a77e40fe181d5fe97471d5921be8eec4cd",
+   "evidence": "Add copilot-instructions.md (#3810)",
+   "official": true,
+   "author": "Patrick Ellis",
+   "email": "319655+pje@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-01-06T14:06:47-05:00",
+   "commit": "3f1dd45172b30fd97e48dd82bd6ea4efe17eb3a9",
+   "evidence": "Set ACTIONS_ORCHESTRATION_ID as env to actions. (#4178)",
+   "official": true,
+   "author": "Tingluo Huang",
+   "email": "tingluohuang@github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-03-23T14:02:15+00:00",
+   "commit": "e17e7aabbf56b2bf486ab46bad3cae57d000ace3",
+   "evidence": "Add DAP server (#4298)",
+   "official": true,
+   "author": "Francesco Renzi",
+   "email": "rentziass@github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-04-10T12:40:28+01:00",
+   "commit": "182a4337823fd2c1c44fa8797b02e54b3ca8aebe",
+   "evidence": "Bump System.Formats.Asn1, Cryptography.Pkcs, ProtectedData, ServiceController, CodePages, Threading.Channels, @actions/glob, @typescript-eslint/parser, lint-staged, picomatch (#4333)",
+   "official": true,
+   "author": "Copilot",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-04-20T10:45:12-04:00",
+   "commit": "fad1253513a0c4f76c5df12e22f624788404799a",
+   "evidence": "Bump Docker version to 29.4.0 (#4352)",
+   "official": true,
+   "author": "Copilot",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-07-16T16:00:37-04:00",
+   "commit": "c5480235c45c69ce4f0ffc8473b45a03211b3f6f",
+   "evidence": "Recreate session on RunnerSessionInvalid from broker (#4556)",
+   "official": true,
+   "author": "Luke Tomlinson",
+   "email": "luketomlinson@github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-08-03T10:49:43+02:00",
+   "commit": "35bcfea33674a41329abdd8925b255a9e4c97148",
+   "evidence": "Add regression tests for DAP debugger secret masking (#4579)",
+   "official": true,
+   "author": "Francesco Renzi",
+   "email": "rentziass@github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-08-06T14:07:30+02:00",
+   "commit": "2009b20729fdf49c50a88e0ca368906c16a3129c",
+   "evidence": "Report an infrastructure failure when the debugger Dev Tunnel fails (#4610)",
+   "official": true,
+   "author": "Francesco Renzi",
+   "email": "rentziass@github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-08-23T12:43:00-04:00",
+   "commit": "760d2cfe38fbc3bd6aadecdd86695b21765b5aa2",
+   "evidence": "Allow independent Docker and Buildx updates (#4596)",
+   "official": true,
+   "author": "Luke Tomlinson",
+   "email": "luketomlinson@github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-08-24T09:33:07+00:00",
+   "commit": "f031d2dded5b6a46ae3a0b3fb8dfe3d534f824ee",
+   "evidence": "Bump @typescript-eslint/eslint-plugin from 8.59.0 to 8.63.0 in /src/Misc/expressionFunc/hashFiles (#4544)",
+   "official": true,
+   "author": "dependabot[bot]",
+   "email": "49699333+dependabot[bot]@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-08-24T11:01:16+00:00",
+   "commit": "6eeb561f082b56d124d6c2cb7ce40e231949013a",
+   "evidence": "Bump System.Text.Encoding.CodePages from 10.0.10 to 10.0.11 (#4630)",
+   "official": true,
+   "author": "dependabot[bot]",
+   "email": "49699333+dependabot[bot]@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-08-24T14:06:55+01:00",
+   "commit": "e3ccfc1c4fd17af55b0f3f4b6baf6e24299babec",
+   "evidence": "Bump System.Security.Cryptography.ProtectedData from 10.0.3 to 10.0.11 (#4629)",
+   "official": true,
+   "author": "dependabot[bot]",
+   "email": "49699333+dependabot[bot]@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>",
+   "date": "2026-08-25T06:47:19-04:00",
+   "commit": "6a65670776511d80df690cf7ee02b64ca49fdb83",
+   "evidence": "Bump System.Threading.Channels from 10.0.3 to 10.0.10 (#4585)",
+   "official": true,
+   "author": "dependabot[bot]",
+   "email": "49699333+dependabot[bot]@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-09-14T16:26:04+01:00",
+   "commit": "2da0d828a7079218b001f79918f0fb97dd2c15a1",
+   "evidence": "Bump System.Text.Encoding.CodePages from 10.0.11 to 10.0.12 (#4701)",
+   "official": true,
+   "author": "dependabot[bot]",
+   "email": "49699333+dependabot[bot]@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-10-16T15:49:00+01:00",
+   "commit": "9abfe11d2abd9de09d3a8d933d7ed701ea0518a3",
+   "evidence": "Bump System.Security.Cryptography.ProtectedData from 10.0.11 to 10.0.13 (#4780)",
+   "official": true,
+   "author": "dependabot[bot]",
+   "email": "49699333+dependabot[bot]@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-11-02T19:39:58+00:00",
+   "commit": "1ddb758ed014660b5d2220a5dc6b0e9957a9f96b",
+   "evidence": "Bump @typescript-eslint/eslint-plugin from 8.72.0 to 8.72.1 in /src/Misc/expressionFunc/hashFiles (#4827)",
+   "official": true,
+   "author": "dependabot[bot]",
+   "email": "49699333+dependabot[bot]@users.noreply.github.com"
+  },
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-11-03T14:29:35+00:00",
+   "commit": "01e888680892c6f31f5f9617c606505db6b4cfc7",
+   "evidence": "Bump System.Threading.Channels from 10.0.10 to 10.0.14 (#4825)",
+   "official": true,
+   "author": "dependabot[bot]",
+   "email": "49699333+dependabot[bot]@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "Copilot <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-04-10T12:40:28+01:00",
+   "commit": "182a4337823fd2c1c44fa8797b02e54b3ca8aebe",
+   "evidence": "Bump System.Formats.Asn1, Cryptography.Pkcs, ProtectedData, ServiceController, CodePages, Threading.Channels, @actions/glob, @typescript-eslint/parser, lint-staged, picomatch (#4333)",
+   "official": true,
+   "author": "Copilot",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "Copilot <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-04-20T10:45:12-04:00",
+   "commit": "fad1253513a0c4f76c5df12e22f624788404799a",
+   "evidence": "Bump Docker version to 29.4.0 (#4352)",
+   "official": true,
+   "author": "Copilot",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  }
+ ],
+ "signal_date": "2025-05-05T04:17:20+00:00",
+ "signal_kind": "file:primary",
+ "mentions": {
+  "strict": [
+   {
+    "sha": "a3a7b6a77e40fe181d5fe97471d5921be8eec4cd",
+    "date": "2025-05-05T00:17:20-04:00",
+    "subject": "Add copilot-instructions.md (#3810)"
+   }
+  ],
+  "strict_count": 1,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "ai-eligible",
+ "adr_count_before_signal": 17,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-before-signal",
+ "sources": "sourcegraph:docs_adrs;buchgeher-2022",
+ "stars": "6381",
+ "ai_file_probe": "yes",
+ "buchgeher_adr_count": "14"
+}

@@ -1,0 +1,1077 @@
+{
+ "repo": "eclipse/winery",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2014-03-27T19:43:58+01:00",
+ "last_commit": "2026-09-26T15:19:51+02:00",
+ "n_commits": 2113,
+ "n_authors": 71,
+ "n_files": 3209,
+ "n_code_files": 1923,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 34,
+ "adrs": [
+  {
+   "path": "docs/adr/0031-reuse-refinement-code-for-pattern-detection.md",
+   "identity": "docs/adr/0031-reuse-refinement-code-for-pattern-detection.md",
+   "adr_id": "31",
+   "title": "Reuse the pattern refinement implementation for pattern detection",
+   "first_commit": "2021-05-27T20:39:07+02:00",
+   "first_sha": "7c3d302189a7bcc357f622d2611f945998e65776",
+   "last_commit": "2021-05-27T20:39:07+02:00",
+   "author": "Adrian Wersching",
+   "email": "awersching@posteo.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "<!---~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n  ~ Copyright (c) 2021 Contributors to the Eclipse Foundation\n  ~\n  ~ See the NOTICE file(s) distributed with this work for additional\n  ~ information regarding copyright ownership.\n  ~\n  ~ This program and the accompanying materials are made available under the\n  ~ terms of the Eclipse Public License 2.0 which is available at\n  ~ http://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\n  ~ which is available at https://www.apache.org/licenses/LICENSE-2.0.\n  ~\n  ~ SPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->\n\n\n# Reuse the pattern refinement implementation for pattern detection\n\n## Context and Problem Statement\n\nTo create an executable deployment model, the pattern refinement process replaces a matching subgraph with the Refinement Structure of a PRM.\nTo create a PbDCM, the pattern detection process replaces a matching subgraph with the Detector of a PRM.\nThe replacement procedure is identical for both processes, only the structures used for the replacement differ.\nTherefore, the implementation of the pattern refinement process should be reused to implement the pattern detection process.\n\n## Decision Drivers\n\n* Avoid duplicate code\n* Avoid introducing errors and inconsistencies during reimplementation\n\n## Considered Options\n\n* Swap the Detector of all PRMs with their Refinement Structures\n* Reimplementation\n* Use common interface\n\n## Decision Outcome\n\nChosen option: \"Swap the Detector of all PRMs with their Refinement Structures\", because reimplementation introduces too much duplicate code and a common interface requires a lot of boilerplate code while also decreasing readability.\n\n### Positive Consequences <!-- optional -->\n\n* Complete pattern refinement implementation can be reused\n\n### Negative consequences <!-- optional -->\n\n* Readability and understandability decreases\n\n## Pros and Cons of the Options\n\n### Swap the Detector of all PRMs with their Refinement Structures\n\nIn the backend, the elements of the PRMs retrieved from the repository are swapped, .i.e, the Detector of each PRM is set to its Refinement Structure, its Refinement Structure is set to its Detector, and all mappings are adapted accordingly.\n\n* Good, because complete refinement code can be reused\n* Bad, because decreases readability and understandability\n\n### Reimplementation\n\nThe complete pattern refinement code is reimplemented for pattern detection, i.e., the reimplemented code considers the Detector during the replacement, redirection of Relations using the Relation Mappings, and retaining elements using the Stay Mappings.\n\n* Good, because better readability\n* Bad, because results in a lot of duplicate code\n* Bad, because the reimplemented code can contain errors and inconsistencies already fixed in the refinement implementation\n\n### Use common interface\n\nImplement an interface which returns the Refinement Structure of a PRM for the replacement procedure of the pattern refinement process and returns the Detector of a PRM during the pattern detection process.\n\n* Good, because refinement code can be reused\n* Bad, because requires a lot of boilerplate code\n* Bad, because it decreases readability\n\n## License\n\nCopyright (c) 2021 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0002-filesystem-folder-structure-using-type-namespace-id-structure.md",
+   "identity": "docs/adr/0002-filesystem-folder-structure-using-type-namespace-id-structure.md",
+   "adr_id": "2",
+   "title": "File system folder structure using type-namespace-id structure",
+   "first_commit": "2017-07-21T01:13:09+02:00",
+   "first_sha": "6437a2c9286b57779b2cc61ca077ef04334c2a92",
+   "last_commit": "2020-05-19T08:01:31+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# File system folder structure using type-namespace-id structure\n\nWinery's data is stored in a a file system [ADR-0001](0001-use-filesystem-as-backend.md).\nThe contents of the repository should be\n\n- human readable\n- machine processable\n\n## Considered Alternatives\n\n* Folder structure using type-namespace-id\n* Everything in one folder. Hash-based storing similar to git.\n\n## Decision Outcome\n\n*Chosen Alternative: Folders subdivided in type-namespace-id*\n\nThe final file system layout itself is documented at [RepositoryLayout](../dev/repository-layout.md).\n\n### human readable\n\nEverything in one directory causes many files listed and thus humans will have difficulties to find the right file.\n\nThe folders in the *top level* are the TOSCA \"components\", e.g., Node Type, Relationship Type, Service Template, ...\n\nThe *second structuring element* are namespaces.\n[Namespaces are an established method to avoid naming conflicts](https://www.w3schools.com/xml/xml_namespaces.asp) and are a structuring element.\nTOSCA is an open system and everyone can create Node Types.\nOne has no global control which names are given to Node Types.\nThus, there might be two different Node Types with the same name.\nThe namespaces provide a natural structuring and Winery reuses this idea.\n\nThe *third structuring element* are the ids of the respective definitions child (type, template, ...):\nEach element has an id contained in the respective namespace.\nThis id can be directly used as folder name.\n\nWithin each folder, the component-specific information is stored.\n\n### machine processable\n\nWindows cannot create directories named `http://www.example.com`.\nTherefore, the names have to be [encoded](https://en.wikipedia.org/wiki/Character_encoding) so that an appropriate folder can be generated.\n\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/dev/repository-layout.md",
+    "www.w3schools.com/xml/xml_namespaces.asp",
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0003-double-encoded-urls.md",
+   "identity": "docs/adr/0003-double-encoded-urls.md",
+   "adr_id": "3",
+   "title": "Double Encoded URLs",
+   "first_commit": "2017-08-26T10:19:45+02:00",
+   "first_sha": "c4e5cd8c0bd8cd3a335fc11579a9f64801e84833",
+   "last_commit": "2020-05-19T08:01:31+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# Double Encoded URLs\n\nURLs should be human-readable, slashes are not allowed.\nEncoded slahes are not enabled as default due to security reasons.\n\nMore information about encoding is available at [dev/Encoding.md](../dev/encoding.md).\n\n## Considered Alternatives\n\n* Using namespace prefixes in the URLs\n* Single-encoded URLs and forcing the environment to be reconfigered\n* Double-encoded URLs\n\n## Decision Outcome\n\n* *Chosen Alternative: Double-encoded URLs*\n\n## Pros and Cons of the Alternatives\n\n### Using namespace prefixes in the URLs\n\n* `+` No encoding issues\n* `-` Not globally unique: The URLs will change if the user reconfigures the namespace prefix\n\n### Single-encoded URLs\n\n* `+` Nice URLs\n* `-` All hosting environments have to be configured accordingly. This can lead to security issues when running other applications in parallel.\n\n### Double-encoded URLs\n\n* `+` Nearly-nice URLs\n* `+` Hosting-environments do not have to be reconfigured\n* `-` Double-encoding might cause headaches during the implementation\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "dev/Encoding.md",
+    "/dev/encoding.md",
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0015-copy-source-to-files.md",
+   "identity": "docs/adr/0015-copy-source-to-files.md",
+   "adr_id": "15",
+   "title": "Offer copying files from the source to the files folder",
+   "first_commit": "2017-10-25T18:26:39+02:00",
+   "first_sha": "8afbbb61b245986ca0de2ab685fb33f01e6e5da1",
+   "last_commit": "2020-05-19T08:01:31+02:00",
+   "author": "Lukas Balzer",
+   "email": "balzer814_dev@web.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Offer copying files from the source to the files folder\n\nForces:\n\n- Source code needs to be versioned in Winery\n- Support for scripting languages do not need any processing and only need to be copied as they are\n- Support for compiled languages need to be processed before copying\n\n## Considered Alternatives\n\n* Copying the sources to files as they are\n* Require external tooling to go from source to files\n\n## Decision Outcome\n* Chosen Alternative: Copying the sources as they are\n* For supporting compiled languages, it is relied on an external IDE (see [ADR-0014]).\n  This IDE stores the files in the \"source\" folder and manages the copying to the files folder.\n  Thus, the only left support is for scripting languages.\n  In that case, the source can be directly used as files (\"binary\") in an artifact template.\n\n## Pros and Cons of the Alternatives\n\n### Just copying the sources as they are\n* `+` Easy to implement\n* `+` Sufficient for scripts/files that do not need compilation\n* `+` Intuitive for the user, since the source == target\n* `-` More User interaction required if IDE does not support upload to files. That means, java files must first be downloaded than compiled and than uploaded to files.\n\n### Require external tooling to go from source to files\n* `+` With one click the user can copy and compile the files\n* `-` Needs a runtime/compiler\n* `-` See [ADR-0014]\n\n[ADR-0014]: 0014-use-eclipse-orion-as-editor.md\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0016-reflection-test-for-tosca-yaml-builder.md",
+   "identity": "docs/adr/0016-reflection-test-for-tosca-yaml-builder.md",
+   "adr_id": "16",
+   "title": "Reflection test for TOSCA YAML builder",
+   "first_commit": "2017-12-01T12:27:07+01:00",
+   "first_sha": "bdd72268e34b89fef6247a43c2c716dce5ed07b4",
+   "last_commit": "2020-05-11T16:58:04+02:00",
+   "author": "Christoph Kleine",
+   "email": "kleinech.github@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Reflection test for TOSCA YAML builder\n\nThe TOSCA YAML builder converts Java Objects to instances of TOSCA YAML classes. To get clean an good instances validation is needed. Reflection test are Junit5 test which take yaml service templates with metadata that describes what assertions should be made for the resulting TOSCA YAML class instances. \n\n```\n...\nmetadata:\n  assert: |\n    repositories.rp1.url = http://github.com/kleinech\n    node_types.ntp1.requirements.0.rqr1.capability = cbt1\n...\n```\nEach assert line contains a keyname and a value.\n*[context and problem statement]*\n*[decision drivers | forces]* <!-- optional -->\n\n## Considered Alternatives\n\n* *reflection tests*\n* *manual test*\n\n## Decision Outcome\n\n* Chosen Alternative: *reflection tests*\n* Only alternative, which meets simplifies the effort to make complete tests \n## Pros and Cons of the Alternatives <!-- optional -->\n\n### *reflection tests*\nA reflection tests contains all information that is needed in the metadata of the test file.\n\nExample:\n```\ntosca_definitions_version: tosca_simple_yaml_1_3\n\nmetadata:\n  description: This test contains a valid service template (Not Complete)\n  targetNamespace: http://www.example.org/ns/simple/yaml/1.3/test\n  tosca.version: 1.1\n  exception: None\n  assert-typeof: |\n      repositories.rp1 = TRepositoryDefinition \n  assert: |\n    metadata.description = This test contains a valid service template (Not Complete)\n    metadata.targetNamespace = http://www.example.org/ns/simple/yaml/1.3/test\n    description = Description of service template\n    repositories.rp1.url = http://github.com/kleinech\n\ndescription: Description of service template\n\nrepositories:\n  rp1: http://github.com/kleinech\n```\nThe example above is converted from the yaml representation to the TOSCA YAML data model \nand the result is has one `typeof` assert and four `value` asserts. \n\nIf one assert fails the test for this file fails but all other asserts are tested too.   \n\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.example.org/ns/simple/yaml/1.3",
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0028-semantics-in-the-model.md",
+   "identity": "docs/adr/0028-semantics-in-the-model.md",
+   "adr_id": "28",
+   "title": "Semantics in the Model",
+   "first_commit": "2019-02-07T17:33:33+01:00",
+   "first_sha": "87d46cc03ed6931909d25ffe1ec45cc48c1f9571",
+   "last_commit": "2020-03-26T14:41:46-05:00",
+   "author": "Lukas Harzenetter",
+   "email": "lharzenetter@gmx.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Semantics in the Model\n\n* Status: [accepted ] <!-- optional -->\n* Deciders: Karoline Saatkamp, Lukas Harznetter, <!-- optional -->\n* Date: 2018-02-07 <!-- optional -->\n\nTechnical Story: In order to solve solutions detected by [ToPS](https://github.com/OpenTOSCA/ToPS), we must have semantics.\nThese semantics must be known for the algorithms.\n\n## Context and Problem Statement\n\nIn the problem detection and solving approach by Saatkamp et al., detected problems in a topology are solved by specific algorithms.\nThese algorithms must know some semantics in order to perform correctly.\n\nTherefore, collection of predefined and known elements which the algorithms can work on is required.\n\n## Considered Options\n\n* Predefined elements in constants\n* Predefined elements from configuration\n\n## Decision Outcome\n\nChosen option: \"Predefined elements in constants\".\nHowever, in near future, we could make this configurable by using the new configuration which is currently implemented by some students.\n\n## License\n\nCopyright (c) 2019 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0030-multiple-repositories.md",
+   "identity": "docs/adr/0030-multiple-repositories.md",
+   "adr_id": "30",
+   "title": "Support of multiple repositories",
+   "first_commit": "2019-08-05T09:05:41+02:00",
+   "first_sha": "b9e838ad331a17610497a345b4721a23e314cbea",
+   "last_commit": "2019-08-05T09:05:41+02:00",
+   "author": "Sascha Zeller",
+   "email": "zeller.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Support of multiple repositories\n\n* Status: pending\n* Deciders: [Lukas Harzenetter](https://github.com/lharzenetter), [Sascha Zeller](https://github.com/zesaro)\n* Date: 2019-04-18\n\nTechnical Story: [Pull Request 124](https://github.com/OpenTOSCA/winery/pull/124) <!-- optional -->\n\n## Context and Problem Statement\nTo help developers obtain TOSCA elements in a more practical way, an approach to supporting multiple repositories distributed across different servers is presented here.\nThe result provides the ability to define a set of URLs and load them into the current winery-repository.\n\n## Considered Options\n\n* Merge the content of the repositories inside the winery-repository\n* Use a similar approach like npm and declare each repository as a module\n\n## Decision Outcome\n\nOption 2 was chosen to manage each repository individually. This makes it possible to use existing version control systems in the individual repositories.\n\nThe repositories are structured as follows.\n![Repository Structure](graphics/repo-structure.png)\n### Positive Consequences <!-- optional -->\n\n* User can search for elements online and load a repository using the url\n* It's enough to send a URL instead of a CSAR\n* Manage each repository independently\n* The origin and the version history of a repository can be checked\n* The possibility to contribute directly to the development of a repository\n\n### Negative consequences <!-- optional -->\n\n* User is forced to define namespaces in Namespaces.json.\n* Additional configuration file (repositories.json)\n\n\n## Usage\n1. Make sure the winery-repository is empty (or move existing files into a new folder called \"workspace\")\n2. Create a repositories.json in the root directory of the repository\n    1. Create a new object inside the json file\n    2. For each repository you want to add\n        1. Use the URL of the repository as a String element\n        2. Use the Branch name as a value for the element (also as String)\n        3. Separate each element with a comma\n    3. Example:\n        \n     ```json\n     {\n        \"https://github.com/OpenTOSCA/tosca-definitions-public\" : \"master\",\n        \"https://github.com/winery/test-repository\" : \"master\"\n     }\n     ```\n 3. Start Server and UI\n\n\n## License\n\nCopyright (c) 2019 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "OpenTOSCA/winery#124",
+     "kind": "pull",
+     "url": "https://github.com/OpenTOSCA/winery/pull/124",
+     "number": "124"
+    }
+   ],
+   "mentioned_paths": [
+    "graphics/repo-structure.png",
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0030-deployable-docker-components.md",
+   "identity": "docs/adr/0030-deployable-docker-components.md",
+   "adr_id": "30",
+   "title": "Context and Problem Statement",
+   "first_commit": "2019-07-13T20:29:42+02:00",
+   "first_sha": "1cc1eb60ad5cddee6d692f764e5a11554bea1e6e",
+   "last_commit": "2019-07-13T20:29:42+02:00",
+   "author": "Marcel Zeller",
+   "email": "schnapper4@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "## Context and Problem Statement\n\nThe execution time of an online crawler of the DeployableComponents project can not be foreseen, because it depends on the accessed online service.\nAn architecture, which considers this problem, is needed.\n\n## Considered Options\n\n* Sequential execution of crawler and analyzer\n* Asynchronous execution with defined execution time\n* Asynchronous execution with defined number of dockerfiles\n* Asynchronous round-based background execution\n\n## Decision Outcome\n\nChosen option: \"Asynchronous round-based background execution\", because best performance with best fitting execution procedure to the expected use case.\n\n### Positive Consequences <!-- optional -->\n\n* good performance\n* use case of hugh source data set is fulfilled\n\n### Negative consequences <!-- optional -->\n\n* more complex architecture\n\n## Pros and Cons of the Options <!-- optional -->\n\n### Sequential execution of crawler and analyzer\n\n* Good, because simple architecture\n* Bad, because bad performance (synchronous)\n\n### Asynchronous execution with defined execution time\n\nAsynchronous execution, which terminates after a predefined time.\n\n* Good, because good performance\n* Bad, because does not fulfill the expected use case of hugh amount of dockerfiles, which should be crawled (needs to be called several times)\n* Bad, because can't not provide intermediate results\n\n### Asynchronous execution with defined number of dockerfiles\n\nAsynchronous execution, which terminates after a predefined number of dockerfiles is crawled.\n\n* Good, because good performance\n* Bad, because does not fulfill the expected use case of hugh amount of dockerfiles, which should be crawled (needs to be called several times). The actual number is irrelevant, it just needs to be hugh.\n\n### Asynchronous round-based background execution\n\nAsynchronous execution, which never terminates by it's own (must be terminated from outside). Provides intermediate results after every round. Round length (number of crawled dockerfiles) can be defined.\n\n* Good, because good performance\n* Good, because fulfills the expected use case of hugh amount of dockerfiles, which should be crawled. Round length can be high for best performance or lower for more frequent intermediate results.\n* Bad, because complex architecture\n\n## License\n\nCopyright (c) 2019 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0029-IPSec-algorithm-application.md",
+   "identity": "docs/adr/0029-IPSec-algorithm-application.md",
+   "adr_id": "29",
+   "title": "IPSec Algorithm Implementation",
+   "first_commit": "2019-02-07T17:33:33+01:00",
+   "first_sha": "87d46cc03ed6931909d25ffe1ec45cc48c1f9571",
+   "last_commit": "2019-02-07T17:33:33+01:00",
+   "author": "Lukas Harzenetter",
+   "email": "lharzenetter@gmx.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# IPSec Algorithm Implementation\n\n* Status: [accepted ]\n* Deciders: Lukas Harzenetter\n* Date: 2019-02-07\n\n\n\n## Context and Problem Statement\n\nIn the problem detection and solving approach by Saatkamp et al., detected problems in a topology are solved by specific algorithms.\nThese algorithms must know some semantics in order to perform correctly.\n\nConcretely: The IPSec algorithm must know some kind of abstract Virtual Machine (VM) Node Type, since it replaces unsecure VMs with secure VMs that open a secure connection on the IP level.\n\n## Considered Options for VM Nodes\n\n* VMs collected in a special namespace\n* Abstract VM Node Type\n\n## Decision Outcome for VM Nodes\n\nChosen option: \"Abstract VM Node Type\" since TOSCA allows inheritance and inheritance creates mor semantic meaning.\n\n## Considered Option for Secure VMs\n\n* Secure VMs collected in a special namespace\n* Abstract Secure VM Node Type\n* Annotate Secure Types with a Tag\n\n## Decision Outome for Secure VMs\n\nChosen option: \"Secure VMs collected in a special namspace\" since they are special kinds of the \"normal\" VMs, they should inherit from them (and consequently from the abstract VM type mentioned above) to create a meaningful semantics.\nHowever, instead of creating a special namespace, this should be changed to \"Annotate Secure Types with a Tag\" in near future.\n\n\n## License\n\nCopyright (c) 2019 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0028-use-hardcoded-namespaces-for-threat-modeling.md",
+   "identity": "docs/adr/0028-use-hardcoded-namespaces-for-threat-modeling.md",
+   "adr_id": "28",
+   "title": "Use hardcoded namespaces for threat modeling",
+   "first_commit": "2018-12-19T21:59:45+01:00",
+   "first_sha": "b23988b0c1ba0c4d9e1d9c5bb4eff4695ff53eee",
+   "last_commit": "2018-12-19T21:59:45+01:00",
+   "author": "Julian Sudendorf",
+   "email": "julian.sudendorf@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use hardcoded namespaces for threat modeling\n\n## Context and Problem Statement\n\nThe threat modeling approach relies on pairs of threats and mitigations.\nEach \"threat\" should be referenced by one particular \"mitigation\".\n\n## Considered Options\n\n* hardcoding the namespaces, default node types and properties.\n* dynamic namespaces similar to \"pattern namespaces\" for threats and mitigations\n\n## Decision Outcome\n\nChosen option: hardcoded namespaces, due to ease of implementation and static nature of the problem\n\n### Positive Consequences\nIn the context of threat modeling multiple different types of threats/mitigations are not necesaary so a minimal base type that carries the required properties (reference) can be used and extended\n\n\n## License\n\nCopyright (c) 2018 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0027-use-dasherization-for-filenames.md",
+   "identity": "docs/adr/0027-use-dasherization-for-filenames.md",
+   "adr_id": "27",
+   "title": "Use dasherization for filenames",
+   "first_commit": "2018-07-13T08:15:41+02:00",
+   "first_sha": "db784cf56351cbbc176a563869e80dc85abfc0dc",
+   "last_commit": "2018-08-06T18:33:42+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Use dasherization for filenames\n\n## Context and Problem Statement\n\nGraphics files have to take a consistent file name\n\n## Decision Drivers <!-- optional -->\n\n* Easy to process by Jekyll\n* No WTFs at the creators\n\n## Considered Options\n\n* [Dasherization](https://softwareengineering.stackexchange.com/a/104476/52607) (e.g., `architecture-bpmn4tosca.png`)\n* Camel Case (e.g., `ArchitectureBPMN4TOSCA.png`)\n\n## Decision Outcome\n\nChosen option: \"Dasherization\", because\n\n* clear separation of parts of the name\n* consistent to other URLs (which are typically lowercase)\n\n## Links\n\n* GADR: https://github.com/adr/gadr-misc/blob/master/gadr--filename-convention.md\n\n## License\n\nCopyright (c) 2018 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0001-use-filesystem-as-backend.md",
+   "identity": "docs/adr/0001-use-filesystem-as-backend.md",
+   "adr_id": "1",
+   "title": "Use filesystem as backend",
+   "first_commit": "2017-07-21T01:13:09+02:00",
+   "first_sha": "6437a2c9286b57779b2cc61ca077ef04334c2a92",
+   "last_commit": "2018-07-11T09:52:44+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# Use filesystem as backend\n\nWinery needs to store its contents.\nThese contents need to be shared.\n\n## Considered Alternatives\n\n* Filesystem\n* Database\n\n## Decision Outcome\n\n* *Chosen Alternative: Filesystem*\n\n## Pros and Cons of the Alternatives \n\n### Filesystem\n\n* `+` Easy to manually change values\n* `+` No need to educate students on a certain database system\n* `+` Allows to use git as distributed version control system\n* `-` Consistency check is hard to implement\n* `-` Not transaction safe (concurrency)\n\n### Database\n\n* `+` Transaction safety\n* `+` Scalability\n* `-` Not (directly) possible to use git as distributed version control system\n* `-` Higher skills required\n\n## License\n\nCopyright (c) 2017-2018 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0011-use-builder-pattern-for-model-classes.md",
+   "identity": "docs/adr/0011-use-builder-pattern-for-model-classes.md",
+   "adr_id": "11",
+   "title": "Use Builder Pattern for Model Classes",
+   "first_commit": "2017-10-13T16:52:46+02:00",
+   "first_sha": "7e4b4371781b4f08885093c6b9a210d65d2c61e4",
+   "last_commit": "2018-07-10T08:50:12+02:00",
+   "author": "Christoph Kleine",
+   "email": "kleinech.github@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Use Builder Pattern for Model Classes\n\nModel classes should be instantiable simple without using large constructors.\n\n## Considered Alternatives\n\n* [Builders]\n* Setters, getters and default constructor \n* Large constructors\n* Factories\n\n## Decision Outcome\n\n* Chosen Alternative: *Builders*\n* Flexible\n* Simple for complex objects\n* Extensions cause problems (solved with generic builders) \n\n### Generic Builders\n\nGeneric Builders are used to enable safe method chaining for Builders with extend other Builders.\nAnother discussion is made at [stackoverflow].\n\nThe method `self()` is necessary because all setter methods should return the Builder used for instantiation and not the builder that is extended. `self()` cannot be replace by `this` because the expected type is `<T>` and casting to `<T>` results in warnings.\n\nBuilders which are not abstract and are extended by other builders are generic and implement the `self()` method by casting `this` to `<T>`. To reduce warnings this casting is only used in this case.\n\nExample:\n```java\n// part of ExtensibleElements.Builder\npublic abstract static class Builder<T extends Builder<T>> {\n    private List<TDocumentation> documentation;\n    \n    // setter returns generic <T> \n    public T setDocumentation(List<TDocumentation> documentation) {\n        this.documentation = documentation;\n        // return this; => IncompatibleType exception either cast with warnings or use self() method\n        return self();\n    }\n    \n    // overwritten method\n    public abstract T self();\n}\n\n// part of TEntityType.Builder\npublic abstract static class Builder<T extends Builder<T>> extends TExtensibleElements.Builder<T> {\n\t\n}\n\n// part of TNodeType.Builder\npublic static class Builder extends TEntityType.Builder<Builder> {\n    @Override\n    public Builder self() {\n        return this;\n    }\n}\n```\n\n[Builders]: https://en.wikipedia.org/wiki/Builder_pattern\n[stackoverflow]: https://stackoverflow.com/a/5818701/8235252\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0026-store-license-and-readme-in-entity-root-folder-in-csar.md",
+   "identity": "docs/adr/0026-store-license-and-readme-in-entity-root-folder-in-csar.md",
+   "adr_id": "26",
+   "title": "Store `LICENSE` and `README.md` in respective entity's root folder in a CSAR",
+   "first_commit": "2018-07-06T14:34:23+02:00",
+   "first_sha": "788a46a7daebb57abd4078a76b0f7215eda5e04a",
+   "last_commit": "2018-07-06T14:34:23+02:00",
+   "author": "Vladimir Yussupov",
+   "email": "v.yussupov@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Store `LICENSE` and `README.md` in respective entity's root folder in a CSAR\n\n## Context and Problem Statement\n\n`LICENSE` and `README.md` have to be stored in a standardized location when CSARs are exported.\n\n## Decision Drivers\n\n- Standardized CSAR structure\n\n## Considered Options\n\n* Store these files in a root folder of a respective entity\n* Store these files in separate folders in a root folder of a respective entity\n\n## Decision Outcome\n\nChosen option: \"Store these files in a root folder of a respective entity\", because\n\n- Less visual clutter\n- In repository, these files are not separated and stored together with the definition file\n\n### Positive Consequences\n\n- Standardized access to `LICENSE` and `README.md` files in any Winery-exported CSAR \n\n## Negative Consequences\n\n- Puts additional restrictions on the CSAR's structure\n\n## License\n\nCopyright (c) 2018 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0024-use-travis-for-continuous-integration.md",
+   "identity": "docs/adr/0024-use-circleci-for-continuous-integration.md",
+   "adr_id": "24",
+   "title": "Use TravisCI for Continuous Integration",
+   "first_commit": "2018-06-21T17:52:42+02:00",
+   "first_sha": "101290d04bc84abe14890219ded4cf4d0d37af77",
+   "last_commit": "2018-06-28T07:12:14+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Use TravisCI for Continuous Integration\n\n* Status: Accepted\n* Date: 2018-06-27\n\n## Context and Problem Statement\n\nWinery needs to be build using continuous integration.\n\n## Decision Drivers\n\n* Easy to configure CI solution\n* For free CI solution\n* Only important output should be logged\n\n## Considered Options\n\n* [TravisCI](https://docs.travis-ci.com/)\n* [CircleCI](https://circleci.com/docs/2.0/)\n* [Eclipse Common Build Infrastructure - Jenkins](https://wiki.eclipse.org/Jenkins)\n\n## Decision Outcome\n\nChosen option: \"TravisCI\", because\n\n- The build worklfow on Jenkins is hard to configure\n- Even though CircleCI offers to use a Docker image as basis and then executing arbitrary commands\n- Even though CircleCI offers to collect test results and presents them in aggregated form\n- Even though CircleCI offers to collect build artifacts and offers them to logged in users\n- Even though TravisCI sometimes throttles down builds (due to heavy load in the Eclipse organization)\n- [CircleCI cannot be used at Eclipse projects](https://bugs.eclipse.org/bugs/show_bug.cgi?id=536180)\n\n## License\n\nCopyright (c) 2018 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "circleci.com/docs/2.0",
+    "bugs.eclipse.org/bugs/show_bug.cgi",
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0025-use-same-logback-test-xml-for-each-sub-project.md",
+   "identity": "docs/adr/0025-use-same-logback-test-xml-for-each-sub-project.md",
+   "adr_id": "25",
+   "title": "Use same `logback-test.xml` for each sub project",
+   "first_commit": "2018-06-21T17:52:42+02:00",
+   "first_sha": "101290d04bc84abe14890219ded4cf4d0d37af77",
+   "last_commit": "2018-06-21T17:52:42+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use same `logback-test.xml` for each sub project\n\n## Context and Problem Statement\n\nWhen executing tests, logback is loaded as logging framework.\nLogback in testing mode is configured using `logback-test.xml`.\nIn case logback is not configured, it does not output anything.\n\n## Decision Drivers\n\n- Ease of use for developers\n\n## Considered Options\n\n* Same `logback-test.xml` for each sub project\n* Different, individually configured `logback-test.xml` files for each sub project\n\n## Decision Outcome\n\nChosen option: \"Use same `logback-test.xml` for each sub project\", because\n\n- During development, the \"local\" `logback-test.xml` file can be adjusted to the needs\n- During continuous integration, the output should contain warnings and errors only and not any debug information\n\n### Positive Consequences\n\n- When modifying `logback-test.xml`, a developer just has to copy it over to the other sub projects without thinking which change to propagate to which sub project.\n\n## Negative Consequences\n\n- There are log level configurations for unused classes in some sub projects.\n  For instance `com.sun.jersey` is configured in all projects, but is only used in the REST API project.\n\n## License\n\nCopyright (c) 2018 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "logback-test.xml",
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0000-use-architectural-decision-records.md",
+   "identity": "docs/adr/0000-use-architectural-decision-records.md",
+   "adr_id": "0",
+   "title": "Use Markdown Architectural Decision Records",
+   "first_commit": "2017-07-18T10:47:40+02:00",
+   "first_sha": "8167723c1c9a4187e2b72dfd728993effa895a1a",
+   "last_commit": "2018-06-21T16:29:36+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 8,
+   "text": "# Use Markdown Architectural Decision Records\n\n## Context and Problem Statement\n\nWe want to record architectural decisions made in this project.\nWhich format and structure should these records follow?\n\n## Considered Options\n\n* [MADR](https://adr.github.io/madr/) 2.1.0 - The Markdown Architectural Decision Records\n* [Michael Nygard's template](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions) - The first incarnation of the term \"ADR\"\n* [Sustainable Architectural Decisions](https://www.infoq.com/articles/sustainable-architectural-design-decisions) - The Y-Statements\n* Other templates listed at <https://github.com/joelparkerhenderson/architecture_decision_record>\n* Formless - No conventions for file format and structure\n\n## Decision Outcome\n\nChosen option: \"MADR 2.1.0\", because\n\n* Implicit assumptions should be made explicit.\n  Design documentation is important to enable people understanding the decisions later on.\n  See also [A rational design process: How and why to fake it](https://doi.org/10.1109/TSE.1986.6312940).\n* The MADR format is lean and fits our development style.\n* The MADR structure is comprehensible and facilitates usage & maintenance.\n* The MADR project is vivid.\n* Version 2.1.0 is the latest one available when starting to document ADRs.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "doi.org/10.1109/TSE.1986.6312940"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0009-manual-tosca-yaml-serialisation.md",
+   "identity": "docs/adr/0009-manual-tosca-yaml-serialisation.md",
+   "adr_id": "9",
+   "title": "Manual serialization of SnakeYAML",
+   "first_commit": "2017-10-13T16:52:46+02:00",
+   "first_sha": "7e4b4371781b4f08885093c6b9a210d65d2c61e4",
+   "last_commit": "2018-06-18T10:20:33+02:00",
+   "author": "Christoph Kleine",
+   "email": "kleinech.github@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# Manual serialization of SnakeYAML\n\nThe TOSCA YAML files have to be read into a Java model (deserialized) and written from the Java model into files (serialized).\n\n## Considered Alternatives\n\n* Manual serialization\n* [SnakeYAML](https://bitbucket.org/asomov/snakeyaml)\n* [jackson-dataformat-yaml](https://github.com/FasterXML/jackson-dataformat-yaml)\n\n## Decision Outcome\n\n* Chosen Alternative: *Manual serialization*\n* SnakeYAML does not support annotations for serialization\n* jackson-dataformat-yaml seems not to support annotations, such as [jackson-annotations](https://github.com/FasterXML/jackson-annotations)\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0018-version-identifier.md",
+   "identity": "docs/adr/0018-version-identifier.md",
+   "adr_id": "18",
+   "title": "Version Identifier in a Debian-like Form",
+   "first_commit": "2018-04-18T10:30:39+02:00",
+   "first_sha": "be2287fc5f96c5f9879e638a9be3613da27c4420",
+   "last_commit": "2018-06-18T10:20:33+02:00",
+   "author": "Lukas Harzenetter",
+   "email": "lharzenetter@gmx.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Version Identifier in a Debian-like Form\n\nThe version identifier must be defined with its parts and meanings.\n\nThe version must support three parts:\n\n1. The part of which specifies the version of the modeled component\n2. A management version specifying the TOSCA version (`w`)\n3. A work-in-progress (`wip`) version to clearly identify development steps\n\n## Considered Options\n\n* Debian like schema\n* Fedora like schema\n* OpenSUSE like schema\n\n## Decision Outcome\n\nChosen Option: \"Debian like schema\", because it supports \"pre-versions\" such as the required `wip` version\n\n### Positive Consequences\n\n* `wip` version is always smaller than the actual release: `example_1.0-w2-wip4 < example_1.0-w2`\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0023-use-maven-as-build-tool.md",
+   "identity": "docs/adr/0023-use-maven-as-build-tool.md",
+   "adr_id": "23",
+   "title": "Use Maven as build tool",
+   "first_commit": "2018-06-18T10:20:33+02:00",
+   "first_sha": "e63ce12d3706a32a69a5917e9067717c2647ad88",
+   "last_commit": "2018-06-18T10:20:33+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use Maven as build tool\n\n## Context and Problem Statement\n\nWhich build tool should be used?\n\n## Considered Options\n\n* [Maven](https://maven.apache.org/)\n* [Gradle](https://gradle.org/)\n* [Ant](https://ant.apache.org/)\n\n## Decision Outcome\n\nChosen option: \"Maven\", because\n\n* None of Gradle's customizability and the overhead in setup that comes with that is required.\n* The structure the comes with Maven makes the build files easier to understand compared to ANT.\n\n## Pros and Cons of the Options\n\n### Maven\n\n* Good, because most of Eclipse projects use Maven for building.\n* Good, because [there is a plugin for almost everything](https://www.slant.co/versus/2107/11592/~apache-maven_vs_gradle)\n* Good, because [it has good integration with third party tools](http://pages.zeroturnaround.com/rs/zeroturnaround/images/java-build-tools-part-2.pdf)\n* Good, because [it has robust performance](http://pages.zeroturnaround.com/rs/zeroturnaround/images/java-build-tools-part-2.pdf)\n* Good, because [it has a high popularity](http://pages.zeroturnaround.com/rs/zeroturnaround/images/java-build-tools-part-2.pdf)\n* Good, [if one favors declarative over imperative](https://www.slant.co/versus/2107/11592/~apache-maven_vs_gradle)\n* Bad, because [getting a dependency list is not straight forward](https://stackoverflow.com/q/1677473/873282)\n* Bad, because [it based on a fixed and linear model of phases](https://dzone.com/articles/gradle-vs-maven)\n* Bad, because [it is hard to customize](https://www.slant.co/versus/2107/11592/~apache-maven_vs_gradle)\n* Bad, because [it needs plugins for everything](https://www.slant.co/versus/2107/11592/~apache-maven_vs_gradle)\n* Bad, because [it is verbose leading to huge build files](https://technologyconversations.com/2014/06/18/build-tools/)\n\n### Gradle\n\n* Good, because [its build scripts are short](https://technologyconversations.com/2014/06/18/build-tools/)\n* Good, because [it follows the convention over configuration approach](https://www.safaribooksonline.com/library/view/building-and-testing/9781449306816/ch04.html)\n* Good, because [it offers a graph-based task dependencies](https://dzone.com/articles/gradle-vs-maven)\n* Good, because [it is easy to customize](http://pages.zeroturnaround.com/rs/zeroturnaround/images/java-build-tools-part-2.pdf)\n* Good, because [it offers custom dependency scopes](https://gradle.org/maven-vs-gradle/)\n* Good, because [it has good community support](https://linuxhint.com/ant-vs-maven-vs-gradle/)\n* Good, because [its performance can be 100 times more than maven's performance](https://gradle.org/gradle-vs-maven-performance/).\n* Bad, because [not that many plugins are available/maintained yet](https://blog.philipphauer.de/moving-back-from-gradle-to-maven/)\n* Bad, because [it lacks a wide variety of application server integrations](http://pages.zeroturnaround.com/rs/zeroturnaround/images/java-build-tools-part-2.pdf)\n* Bad, because [it has a medium popularity](http://pages.zeroturnaround.com/rs/zeroturnaround/images/java-build-tools-part-2.pdf)\n* Bad, because [it allows custom build scripts which need to be debugged](https://www.softwareyoga.com/10-reasons-why-we-chose-maven-over-gradle/)\n\n### Ant\n\n* Good, because [it offers a lot of control over the build process](https://technologyconversations.com/2014/06/18/build-tools/)\n* Good, because [it has an agile dependency manager](https://blog.alejandrocelaya.com/2014/02/22/dependency-management-in-java-projects-with-ant-and-ivy/)\n* Good, because [it has a low learning curve](https://technologyconversations.com/2014/06/18/build-tools/)\n* Bad, because [build scripts can quickly become huge](https://technologyconversations.com/2014/06/18/build-tools/)\n* Bad, because [everything has to be written from scratch](http://www.baeldung.com/ant-maven-gradle)\n* Bad, because [no conventions are enforced which can make it hard to understand someone else's build script](http://www.baeldung.com/ant-maven-gradle)\n* Bad, because [it has nearly no community support](http://pages.zeroturnaround.com/rs/zeroturnaround/images/java-build-tools-part-2.pdf)\n* Bad, because [it has a low popularity](http://pages.zeroturnaround.com/rs/zeroturnaround/images/java-build-tools-part-2.pdf)\n* Bad, because [it offers too much freedom](https://www.slant.co/versus/2106/2107/~apache-ant_vs_apache-maven)\n\n## Links\n\n* GADR: <https://github.com/adr/gadr-java/blob/master/gadr-java--build-tool.md>\n\n## License\n\nCopyright (c) 2018 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "pages.zeroturnaround.com/rs/zeroturnaround/images/java-build-tools-part-2.pdf",
+    "www.safaribooksonline.com/library/view/building-and-testing/9781449306816/ch04.html",
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0022-tosca-model-is-more-relaxed-than-the-xsd.md",
+   "identity": "docs/adr/0022-tosca-model-is-more-relaxed-than-the-xsd.md",
+   "adr_id": "22",
+   "title": "tosca.model is more relaxed than the XSD",
+   "first_commit": "2018-06-12T10:18:22+02:00",
+   "first_sha": "477f994045d4cab4336922067be752f35d4eb711",
+   "last_commit": "2018-06-12T10:18:22+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# tosca.model is more relaxed than the XSD\n\n* Status: Accepted\n* Date: 2018-06-06\n\n## Context and Problem Statement\n\nThere is a data model for a) serializing/deserializing the XML contents, b) internal backend handling, c) working with algorithms, d) communicating with the REST service.\nCurrently, this is the same model.\nThe UI might generate non-valid XML files (in the sence of not passing the XSD validation).\nFor instance, if a user creates a service template, that service template does not contain a topology template.\nFurthermore, a topolgoy template needs to have at least one node template.\n\n## Considered Options\n\n* Keep one model and allow non-XSD validating models in `org.eclipse.winery.model.tosca`\n* Only allow (XSD-) validating models\n* Develop two models\n\n## Decision Outcome\n\nChosen option: \"Keep one model and allow non-XSD validating models in `org.eclipse.winery.model.tosca`\", because \n\n- XSD is meant for \"executable\" TOSCA definitions, not for intermediate modeling results\n- currently too much effort to develop two models  \n\n## License\n\nCopyright (c) 2018 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0021-use-logback-for-logging.md",
+   "identity": "docs/adr/0021-use-logback-for-logging.md",
+   "adr_id": "21",
+   "title": "Use logback for logging",
+   "first_commit": "2018-06-06T14:18:44+02:00",
+   "first_sha": "96a389347e896c2b6f493b2e42a2df56eab15ddc",
+   "last_commit": "2018-06-06T14:18:44+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use logback for logging\n\n* Status: Accepted\n* Date: 2018-06-04\n\n## Context and Problem Statement\n\nEach application should log.\n\n## Considered Options\n\n* [Logback](https://logback.qos.ch/)\n\n## Decision Outcome\n\nChosen option: \"Logback\", because it\n1) natively implements SLF4J and\n2) SLF4J [offers bridging legacy APIs](https://www.slf4j.org/legacy.html) and thus allows to unify logging.\n\nPositive Consequences:\n\n* Single point for logging configuration\n* Logging over SLF4J API\n\nNegative consequences:\n\n* Developers have to include following dependencies in their `pom.xml`, because the concrete logging framework should be chosen at the project executed by a user (or on a server).\n  Tests still require logging and thus the concrete logging framework has to be included for tests.\n\n    <dependency>\n        <groupId>org.slf4j</groupId>\n        <artifactId>slf4j-api</artifactId>\n        <version>1.7.25</version>\n        <scope>compile</scope>\n    </dependency>\n    <dependency>\n        <groupId>ch.qos.logback</groupId>\n        <artifactId>logback-classic</artifactId>\n        <version>1.2.3</version>\n        <scope>test</scope>\n    </dependency>\n    <dependency>\n        <groupId>org.slf4j</groupId>\n        <artifactId>jcl-over-slf4j</artifactId>\n        <version>1.7.25</version>\n        <scope>test</scope>\n    </dependency>\n\n* [For easy logging, it is enough to include logback libraries at `WEB-INF/lib`](https://logback.qos.ch/manual/loggingSeparation.html#easy).\n  Thus, following dependency has to be included at REST services:\n\n    <dependency>\n        <groupId>ch.qos.logback</groupId>\n        <artifactId>logback-classic</artifactId>\n        <version>1.2.3</version>\n        <scope>compile</scope>\n    </dependency>\n\n* Any logging wrapper has also has to be included at \"user-facing\" ends (CLI or WAR).\n  Note that it cannot be included at libraries, because it [leads to an infinite loop](https://www.slf4j.org/legacy.html#jclRecursion).\n\n    <dependency>\n        <groupId>org.slf4j</groupId>\n        <artifactId>jcl-over-slf4j</artifactId>\n        <version>1.7.25</version>\n        <scope>compile</scope>\n    </dependency>\n\n* Legacy/old libraries depending on a certain logging framework have to be loaded with an exclusion of the logging framework.\n\n* The documentation of Winery has to state that slf4j was chosen and that the logging has to be configured accordingly.\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.slf4j.org/legacy.html",
+    "pom.xml",
+    "WEB-INF/lib",
+    "logback.qos.ch/manual/loggingSeparation.html",
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0020-TOSCA-definitions-contain-extactly-one-element.md",
+   "identity": "docs/adr/0020-TOSCA-definitions-contain-extactly-one-element.md",
+   "adr_id": "20",
+   "title": "TOSCA Definitions contain excaly one element",
+   "first_commit": "2018-05-04T10:14:52+02:00",
+   "first_sha": "b88d513a758ceb2d894bc58b6ffc79b772a9a953",
+   "last_commit": "2018-05-04T10:14:52+02:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# TOSCA Definitions contain excaly one element\n\n## Context and Problem Statement\n\nHow should TOSCA data be stored?\n\n## Considered Options\n\n* Allow exactly one TOSCA Definitions child in a definition\n* Allow multiple TOSCA Definitions children in a definition\n\n## Decision Outcome\n\nChosen option: \"Allow exactly one TOSCA Definitions child in a definition\", because\n- Definitions are not modeled as explicit element. Only the nested elements are handled by Winery.\n- That means, it is not possible to specify custom definitions bundling a customized subset of available elements.\n\n## License\n\nCopyright (c) 2018 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0019-version-in-the-name.md",
+   "identity": "docs/adr/0019-version-in-the-name.md",
+   "adr_id": "19",
+   "title": "Versions of TOSCA elements in the name",
+   "first_commit": "2018-04-18T10:30:39+02:00",
+   "first_sha": "be2287fc5f96c5f9879e638a9be3613da27c4420",
+   "last_commit": "2018-04-19T09:00:42+02:00",
+   "author": "Lukas Harzenetter",
+   "email": "lharzenetter@gmx.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Versions of TOSCA elements in the name\n\nIn order to enable the versioning of TOSCA elements, the version corresponding to one element\nmust be saved in a TOSCA compliant way. \n\nForces:\n- TOSCA compliant\n- The version identifier must be detectable in the XML file\n\n\n## Considered Options\n\n* Version in the name\n* Version in the namespace\n* Save version externally\n\n## Decision Outcome\n\n* Chosen Option: version in the name/id because it is compliant to the TOSCA specification and shows the version \n  directly in the XML file.\n* Easiest and best fit regarding compliance\n\n## Pros and Cons of the Options\n\n### Version in the name\n\n* Good, because it is consistent to the TOSCA specification\n* Good, because even from outside of the winery, definitions can be detected in the specific version on first sight\n* Good and bad, because it requires a deep copy of all files and definitions on creating a new version*\n* Bad, because Introduces naming conventions to the naming of components: '_' are not allowed anymore*\n\n### Version in the namespace\n\n* Good, because it is easy and well established method in XML\n* Good, because the definition\u2019s name/id stays intact\n* Bad, because it implies that all elements in the corresponding namespace have the same version\n* Bad, because it is usually used to specify the version of the XML\u2019s vocabulary only\n\n### Save version externally\n\n* Good, because it requires less disk space than\n* Bad, because the version is not detectable in the XML\n\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0017-modify-jax-b-generated-classes.md",
+   "identity": "docs/adr/0017-modify-jax-b-generated-classes.md",
+   "adr_id": "17",
+   "title": "Modify JAX-B generated classes",
+   "first_commit": "2018-02-05T09:28:56+01:00",
+   "first_sha": "987795cc627ecc7ea8bc2597c1c4d4117a5cddc1",
+   "last_commit": "2018-02-05T09:28:56+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Modify JAX-B generated classes\n\n| Date | Status |\n| -- | -- |\n| 2018-02-05 | Accepted |\n\n- OASIS provides an XSD file, where Java classes can be generated from.\n- There are extension to TOSCA, which should made available easily.\n\n## Considered Options\n\n* Modify the generated classes\n* Add a wrapper model based an a separate package with generated classes only.\n\n## Decision Outcome\n\nChosen option: \"Modfiy the generated classes\", because\n- The JAX-B code generation was not updated to fit modern Java 8 code style\n- Allows modifications added easily\n- TOSCA XSD is not likely to be updated quickly. And if it is updated, there is a huge update, where the whole model code has to be adapted.\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0007-custom-URI-for-lifecycle-interface.md",
+   "identity": "docs/adr/0007-custom-URI-for-lifecycle-interface.md",
+   "adr_id": "7",
+   "title": "Custom URI for lifecycle interface",
+   "first_commit": "2017-09-27T07:15:03+02:00",
+   "first_sha": "b9a1de938d59440b6f46495175b8ba0a718e7950",
+   "last_commit": "2018-01-18T23:22:35+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Custom URI for lifecycle interface\n\nWinery can generate a lifecycle interface.\nThat interface has to take a URI for a name\n\n## Considered Alternatives\n\n* `http://opentosca.org/interfaces/lifecycle`\n* `http://www.example.com/interfaces/lifecycle` (from http://docs.oasis-open.org/tosca/tosca-primer/v1.0/tosca-primer-v1.0.html)\n* `tosca.interfaces.node.lifecycle.Standard` (from http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/TOSCA-Simple-Profile-YAML-v1.1.html)  \n\n## Decision Outcome\n\n* Chosen Alternative: `http://www.example.com/interfaces/lifecycle`\n* Although the alternative is not standardized, it is the one consistent with the primer for TOSCA 1.0.\n\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "docs.oasis-open.org/tosca/tosca-primer/v1.0/tosca-primer-v1.0.html",
+    "docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/TOSCA-Simple-Profile-YAML-v1.1.html",
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0010-tosca-yaml-deserialisation-using-snakeyaml.md",
+   "identity": "docs/adr/0010-tosca-yaml-deserialisation-using-snakeyaml.md",
+   "adr_id": "10",
+   "title": "TOSCA YAML deserialization using SnakeYAML",
+   "first_commit": "2017-10-13T16:52:46+02:00",
+   "first_sha": "7e4b4371781b4f08885093c6b9a210d65d2c61e4",
+   "last_commit": "2018-01-18T22:00:50+01:00",
+   "author": "Christoph Kleine",
+   "email": "kleinech.github@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# TOSCA YAML deserialization using SnakeYAML\n\nThe TOSCA YAML files have to be read into a Java model (deserialized) and written from the Java model into files (serialized).\n\n## Considered Alternatives\n\n* [SnakeYAML](https://bitbucket.org/asomov/snakeyaml) writing into intermediate model consisting of default Java types\n* SnakeYAML writing into final Java model\n* Manual reading\n\n## Decision Outcome\n\n* Chosen Alternative: *SnakeYAML writing into intermediate model consisting of default Java types*\n\n# Pros and Cons of the Alternatives\n  \n### SnakeYAML writing into intermediate model consisting of default Java types\n  \n* `+` Basic YAML parsing can be done using SnakeYAML\n* `+` TOSCA Java classes can be filled directly\n* `-` Programming effort for conversion\n\n### SnakeYAML writing into final Java model\n\n* `+` Established library\n* `+` Less error prone \n* `-` SnakeYAML has to be adapted to be able to convert YAML into TOSCA models\n* `-` SnakeYAML is not well-prepared for adaptions\n* `-` SnakeYAML has issues to write into complex Java classes (which are not Java base types). E.g., List of Maps. - see <https://bitbucket.org/asomov/snakeyaml/issues/361/list-does-not-create-property-objects>\n* `-` huge effort, first attempt did not result in a working converter\n\n### Manual reading\n\n* `+` Can write directly into Java model\n* `-` Special cases of YAML have to be handled manually\n* `-` Error prone\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0013-routes-in-Angular.md",
+   "identity": "docs/adr/0013-routes-in-Angular.md",
+   "adr_id": "13",
+   "title": "Routes in the Repository Angular App",
+   "first_commit": "2017-10-23T09:25:19+02:00",
+   "first_sha": "f976008111a364afccd7c702fe882c404560d05c",
+   "last_commit": "2018-01-18T22:00:20+01:00",
+   "author": "Lukas Harzenetter",
+   "email": "lharzenetter@gmx.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Routes in the Repository Angular App\n\n## Considered Alternatives\n* Using Wildcards for the `ToscaTypes`\n* Explicitly Define the Routes for Each `ToscaType`\n\n## Decision Outcome\n* Chosen Alternative: *Explicitly Define the Routes for Each `ToscaType`*\n* By choosing this alternative, the whole project gets more type save by the (lightweight) trade-off\n of maintaining a list of all available `MainRoutes` in the `ToscaTypes` enum. It is now harder to add\n new main routes, because you need to add extra `Modules` and `RoutingModules` for each type. However,\n because of this decision, it is easier to define invalid routes which lead to a `404 - Not Found` error page.\n\n## Pros and Cons of the Alternatives\n\n### Using Wildcards for the `ToscaTypes`\n* `+` Easy to add new `MainRoutes` and `SubRoutes` for multiple `ToscaTypes` at once\n* `+` All available sub-routes come \"for free\" in each component\n* `-` Invalid routes can be reached\n* `-` More difficult to understand\n\n### Explicitly Define the Routes for Each `ToscaType`\n* `+` Easier to understand and therefore eases the start for new developers\n* `+` Clear responsibilities\n* `+` Implicit better type safety\n* `+` Only valid routes are available for each `ToscaType`\n* `-` More files need to be extended/created in order to add new routes\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0004-oauth.md",
+   "identity": "docs/adr/0004-oauth.md",
+   "adr_id": "4",
+   "title": "OAuth with GitHub",
+   "first_commit": "2017-08-26T10:24:10+02:00",
+   "first_sha": "5b11421ab38c2902d1574ebe3f6209c2b958b44e",
+   "last_commit": "2017-12-19T08:59:30+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# OAuth with GitHub\n\n**UserStory:**\n\nIn order to use (private) repositories instead of uploading all files into a Artifact Template, it is necessary to log in into GitHub.\n  Therefore, the OAuth flow is implented as follows:\n  \n1. By clicking the `Login with GitHub` button, the browser gets redirected to GitHub for authentication.\n    1. Login and authorize the Application to access the private repositories.\n    1. Or, if the application was already been authorized, GitHub automatically continues with step 2\n1. GitHub answers with the `status` and `code` parameters which are parsed and send to our server to get the access token.\n1. Our server responses with the access token.\n\n![OAuth flow diagram](graphics/oauth-flow.png)  \n\n## Considered Alternatives\n* *[ALTERNATIVE 1]* Perform the whole login process in the browser\n* *[ALTERNATIVE 2]* Perform the whole login process in the backend\n* *[ALTERNATIVE 3]* Mix both, frontend and backend to get the access token\n\n## Decision Outcome\n* *Chosen Alternative: [ALTERNATIVE 3]*\n   because we can easily protect our client secret on the server, store the token safely in the clients local storage and \n   do not need to keep the state at the server. Further, it is possible to save additional user information in the local\n   storage without the need for getting it every time from the server.\n\n## Pros and Cons of the Alternatives\n\n### [ALTERNATIVE 1]\n* *+ good separation of concerns*\n* *+ fast and direct communication between client and OAuth provider*\n* *- the client secret must be stored in the javascript code* \n\n### [ALTERNATIVE 2]\n* *+ the client secret can be stored safely*\n* *- the server needs to maintain a state to remember the current state*\n\n### [ALTERNATIVE 3]\n* *+ pro arguments of both alternatives*\n* *- more communication needed to perform the login*\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "graphics/oauth-flow.png",
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0005-XML-editor-does-not-enforce-validation.md",
+   "identity": "docs/adr/0005-XML-editor-does-not-enfore-validation.md",
+   "adr_id": "5",
+   "title": "XML editor does not enforce validation",
+   "first_commit": "2017-09-07T11:26:55+02:00",
+   "first_sha": "2754065a4195fd2b35e7044fc580863082cabf7c",
+   "last_commit": "2017-12-19T08:59:30+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# XML editor does not enforce validation\n\n**UserStory:** Winery offers editing the stored XML of the TOSCA definitions. What to do with validation?\n\n## Considered Alternatives\n\n* Winery never creates an non-schema-conforming XML. For instance, the user has to create a topology template first before he is allowed to save the service template\n* Winery generate random data to gain schema-conforming XML\n* Winery generates non-schema-conforming XML, but assumes that the user makes it eventually valid. In casea the user uses the XML tab, the user knows what he does. Winery forces the user to generate schema-conforming in the XML editor.\n* Winery generates non-schema-conforming XML and warns the user when the user uses the XML editor. Winery does NOT force the user to generate schema-conforming XML in the XML editor.\n\n## Decision Outcome\n\n* *Chosen Alternative: D*\n* This is in line with other editors: They allow to save, but warn if the file has compile errors, validation errors, ...\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0006-wrap-properties-in-tosca-properties-element.md",
+   "identity": "docs/adr/0006-wrap-properties-in-tosca-properties-element.md",
+   "adr_id": "6",
+   "title": "Wrap properties in TOSCA properties element",
+   "first_commit": "2017-10-03T19:32:26+02:00",
+   "first_sha": "da237fa9767575f8f80dd633978594de746f3305",
+   "last_commit": "2017-11-01T22:49:43+01:00",
+   "author": "Niko Stadelmaier",
+   "email": "nstadelmaier.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Wrap properties in TOSCA properties element\n\nWhen GETting/PUTting the properties of an entitty template, the content has to be serialized somehow.\n\n## Considered Alternatives\n\n* Wrap properties in TOSCA properties element\n* Use nested XML element (`getAny()`)\n\n## Decision Outcome\n\n* Chosen Alternative: Wrap properties in TOSCA properties element\n* Receiving an XML element is not possible with JAX-B/JAX-RS as that setting relies on strong typing.\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0008-no-support-for-local-git-source-clones.md",
+   "identity": "docs/adr/0008-no-support-for-local-git-source-clones.md",
+   "adr_id": "8",
+   "title": "No support for local git source clones",
+   "first_commit": "2017-09-29T19:22:51+02:00",
+   "first_sha": "0234f8fb1c41d17934d5a27599083e5f824ac79a",
+   "last_commit": "2017-11-01T22:49:43+01:00",
+   "author": "Lukas Balzer",
+   "email": "balzer814_dev@web.de",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# No support for local git source clones\n\nA user wants to edit source files locally in his favourite IDE.\nTherefore, he wants to use the usual ways to retrieve source files.\nTypically, this is a `git clone` from a git repository having the respective source files.\n\nA user does not want to clone the whole winery repository, as this might a) be too large b) not focused enough.\nIt would be beneficial to have the source of an artifact template available as git checkout.\n\nThe source files of an artifact implementation are currently directly editable in the winery once they are uploaded. \nThe only way to edit sources locally is to download and upload them again.\nThe solution for the user should be:\n- easy to use\n- scalable in terms of storage required in Winery's repository\n\n\n## Considered Alternatives\n\n* No support for local clones\n* Git repositories as submodules\n* Using filter-branch (https://help.github.com/articles/splitting-a-subfolder-out-into-a-new-repository/)\n* Using git sparse-checkout to create a local clone (https://gist.github.com/sumardi/5559896)\n\n## Decision Outcome\n\n* Chosen Alternative: no support for local edit\n\nSince all alternatives require either too many additional git repositories or are very inconvenient to apply for the user,\nwe decided to not support any clone/push functionality.\n\n\n## Pros and Cons of the Alternatives \n\n### No support for local edit\n* `+` no changes needed\n* `-` no local edit support\n\n### Git repositories as submodules\n* `+` simple git cloning possible\n* `+` additional repositories can be cloned into winery-repository as submodules\n* `+` separate version history\n* `-` one repository for each implementation\n* `-` each separate repository has to be created on the git remote of winery (e.g., GitHub)\n\n### Using filter-branch on sever's side\n* `+` no changes needed in the existing repositories\n* `+` `git filter-branch --prune-empty --subdirectory-filter` allows to skip any subdirectory\n* `-` server needs to execute very large filter commands for each user for each requested artifact template\n* `-` the mapping back from the filtered repository to the full repository is cumbersome.\n* `-` merge conflicts are not resolved by git tooling automatically\n\n### Using filter-branch on user's side\n* `+` no changes needed in the existing repositories\n* `+` `git filter-branch --prune-empty --subdirectory-filter` allows to skip any subdirectory\n* `-` user needs to execute very large filter commands\n* `-` the mapping back from the filtered repository to the full repository is cumbersome.\n* `-` requires the user to type the commands manually\n\n### git sparse checkout\n* `+` no changes needed in the existing repositories\n* `-` requires the user to type the commands manually\n\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0012-provide-support-for-custom-kv-properties.md",
+   "identity": "docs/adr/0012-provide-support-for-custom-kv-properties.md",
+   "adr_id": "12",
+   "title": "Provide Support for Custom Key-Value Properties",
+   "first_commit": "2017-10-17T22:50:44+02:00",
+   "first_sha": "b121cf977fb26c51aa990133d879bc4b09d6586d",
+   "last_commit": "2017-11-01T22:49:43+01:00",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Provide Support for Custom Key-Value Properties\n\nMost properties are key/value\n\n## Considered Alternatives\n\n* Provide support for custom key-value properties\n* Support XML-only\n\n## Decision Outcome\n\n* Chosen Alternative: Provide support for custom key-value properties\n* Nice UI experience\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/0014-use-eclipse-orion-as-editor.md",
+   "identity": "docs/adr/0014-use-eclipse-orion-as-editor.md",
+   "adr_id": "14",
+   "title": "Use Eclipse Orion as Editor",
+   "first_commit": "2017-10-23T01:39:46+02:00",
+   "first_sha": "be6497b7af2c8c6898065d5bf8492d9dde248094",
+   "last_commit": "2017-11-01T22:49:43+01:00",
+   "author": "Niko Stadelmaier",
+   "email": "nstadelmaier.dev@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Use Eclipse Orion as Editor\n\nEditor should provide syntax highlighting and work in browser.\n\n## Considered Alternatives\n\n* [Eclipse Orion](https://wiki.eclipse.org/Orion)\n* [Eclipse Che](https://www.eclipse.org/che/)\n* [Codeanywhere](https://codeanywhere.com)\n* [Cloud9](https://c9.io/)\n* [Codiad](http://codiad.com/)\n* [Theia](https://github.com/theia-ide/theia)\n\n## Decision Outcome\n\n* Chosen Alternative: Eclipse Orion\n* Reasons: \n  * Extension of other IDEs either too time consuming or not possible.\n  * Communication between other IDEs and Winery unclear.\n  * Eclipse Orion was already used in the project.\n  \nFor more details see the [ultimate comparison](https://github.com/ultimate-comparisons/ultimate-webIDE-comparison).\n\n## License\n\nCopyright (c) 2017 Contributors to the Eclipse Foundation\n\nSee the NOTICE file(s) distributed with this work for additional\ninformation regarding copyright ownership.\n\nThis program and the accompanying materials are made available under the\nterms of the Eclipse Public License 2.0 which is available at\nhttp://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0\nwhich is available at https://www.apache.org/licenses/LICENSE-2.0.\n\nSPDX-License-Identifier: EPL-2.0 OR Apache-2.0\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.eclipse.org/legal/epl-2.0",
+    "www.apache.org/licenses/LICENSE-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/adr/0024-use-travis-for-continuous-integration.md",
+   "identity": "docs/adr/0024-use-circleci-for-continuous-integration.md",
+   "commit": "dda1954b9246f65ee8e25d3a742d06b3319ebb5b",
+   "date": "2018-06-27T11:24:47+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Switch back to TravisCI",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  },
+  {
+   "path": "docs/adr/0005-XML-editor-does-not-enforce-validation.md",
+   "identity": "docs/adr/0005-XML-editor-does-not-enfore-validation.md",
+   "commit": "23dc06da16b84373246c3ea6e78151533c0593a1",
+   "date": "2017-10-19T23:26:03+02:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename 0005-XML-editor-does-not-enfore-validation.md to 0005-XML-editor-does-not-enforce-validation.md",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Oliver Kopp",
+   "email": "kopp.dev@gmail.com"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 34,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "34"
+}

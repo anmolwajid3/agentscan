@@ -1,0 +1,353 @@
+{
+ "repo": "bbc/react-transcript-editor",
+ "clone_ok": true,
+ "error": null,
+ "description": "A React component to make correcting automated transcriptions of audio and video easier and faster. By BBC News Labs. - Work in progress",
+ "first_commit": "2018-11-01T14:33:03+00:00",
+ "last_commit": "2021-06-28T13:35:10+01:00",
+ "n_commits": 531,
+ "n_authors": 20,
+ "n_files": 248,
+ "n_code_files": 120,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 11,
+ "adrs": [
+  {
+   "path": "docs/adr/2018-01-24-frequency-of-local-storage-save.md",
+   "identity": "docs/adr/2018-01-24-frequency-of-local-storage-save.md",
+   "adr_id": "2018",
+   "title": "Frequency of local storage save",
+   "first_commit": "2019-01-24T00:16:29+00:00",
+   "first_sha": "dd3d6f4e1b0d9c3fed41b0b06ed7bab6a62029db",
+   "last_commit": "2019-01-24T00:16:29+00:00",
+   "author": "Pietro",
+   "email": "pietro.passarelli@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Frequency of local storage save\n\n* Status: **accepted** <!-- optional -->\n* Deciders: Pietro <!-- optional -->\n* Date: 2019-01-24 <!-- optional -->\n\n<!-- Technical Story: [description | ticket/issue URL]  -->\n\n## Context and Problem Statement\n\n<!-- [Describe the context and problem statement, e.g., in free form using two to three sentences. You may want to articulate the problem in form of a question.] -->\n\nThe issue is how often to save to local storage when a user types, previous implementation saved every 5 characters. But that caused issues [#86](https://github.com/bbc/react-transcript-editor/issues/86)\n\n\n\n## Decision Drivers <!-- optional -->\n\n<!-- * [driver 1, e.g., a force, facing concern, \u2026] -->\n* A simple and straight forward way to save to local storage\n* saving on a good frequency \n* without introducing performance issues especially on less performant devices\n* if possible without introducing third party dependencies \n\n## Considered Options\n\n* [loadash debounce](https://lodash.com/docs/4.17.11#debounce)\n* using a js timer \n\n##\u00a0Notes on debounce option \n\nWhat is a debounce function?\n\n> debounce function does, it limits the rate at which a function can fire.\n> [...] You'll pass the debounce function the function to execute and the fire rate limit in milliseconds\n\nfrom https://john-dugan.com/javascript-debounce/ \n\nIn more detail\n\nhttps://davidwalsh.name/javascript-debounce-function\n\nwith examples\n\nhttps://css-tricks.com/debouncing-throttling-explained-examples/ \n\n\nhttps://lodash.com/docs/4.17.11#debounce\n\n## Decision Outcome\n\nChosen option: **using a js timer**. \n\nIt uses a timer that can be consolidated into one final one rather then having a lot of saves being delayed, we just have one final save once after user has stopped typing for more then 5 seconds.\n\nThe timer is cleared before being called so that there is only the final one left. Leaving only one final save at the end. As a performance optimization.\n\n```js\nif (this.saveTimer!== undefined) {\n    clearTimeout(this.saveTimer);\n}\nthis.saveTimer = setTimeout(() => {\n    this.localSave(this.props.mediaUrl);\n}, 5000);\n```\n\n\n <!-- because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)]. -->\n\n\n<!-- \n### Positive Consequences\n\n* [e.g., improvement of quality attribute satisfaction, follow-up decisions required, \u2026]\n* \u2026\n\n### Negative consequences \n\n* [e.g., compromising quality attribute, follow-up decisions required, \u2026]\n* \u2026\n\n## Pros and Cons of the Options \n\n### [option 1]\n\n[example | description | pointer to more information | \u2026] \n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n\n### [option 2]\n\n[example | description | pointer to more information | \u2026]\n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n\n\n### [option 3]\n\n[example | description | pointer to more information | \u2026] \n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n\n\n## Links \n\n* [Link type] [Link to ADR]  -->",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#86",
+     "kind": "hash",
+     "url": "",
+     "number": "86"
+    },
+    {
+     "key": "bbc/react-transcript-editor#86",
+     "kind": "issue",
+     "url": "https://github.com/bbc/react-transcript-editor/issues/86",
+     "number": "86"
+    }
+   ],
+   "mentioned_paths": [
+    "lodash.com/docs/4.17.11"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/2018-12-06-analytics.md",
+   "identity": "docs/adr/2018-12-06-analytics.md",
+   "adr_id": "2018",
+   "title": "Analytics",
+   "first_commit": "2018-12-06T11:20:22+00:00",
+   "first_sha": "51a6f3cae0d2b836aa6a00712a7fd3e3a1089a12",
+   "last_commit": "2019-01-03T14:26:35+01:00",
+   "author": "Pietro Passarelli - News Labs",
+   "email": "pietro.passarelli@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Analytics\n\n* Status: being evaluated\n* Deciders: Pietro, Luke, James\n* Date: 2018-12-06\n\n## Context and Problem Statement\n\nIt be great to be able to track some component level analytics in a way that is agnostic to the tracking provider (eg piwik/[matomo](https://developer.matomo.org/api-reference/tracking-javascript#using-the-tracker-object), google analytics etc..)\n\n## Decision Drivers\n\n* easy to reason around\n* clean interface\n* flexible to integrate with variety of analytics providers\n* un-opinionated in regards to the API end point and how to make that request\n\n## Considered Options\n\n1. [npm analytics](https://www.npmjs.com/package/analytics) module.\n> This is a pluggable event driven analytics library designed to work with any third party analytics tool.\n\n2. Making one from scratch - a class that takes in an option and handles the logic to call the end points\n\n3. just raise events to the top parent component - see [notes here](../notes/2018-12-06-analytics-raise-events.md) then parent component can decide how to handle depending on the library in use for analytics.\n\n## Decision Outcome\n\n\nOption 3 - as suggested by Luke, raise event to parent component.\n\n\n## Other\n\n- [Working With Events in React](https://css-tricks.com/working-with-events-in-react/)",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/notes/2018-12-06-analytics-raise-events.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/2018-12-10-re-aligning-timed-text.md",
+   "identity": "docs/adr/2018-12-10-re-aligning-timed-text.md",
+   "adr_id": "2018",
+   "title": "Re-aligning Timed Text",
+   "first_commit": "2018-12-12T10:52:02+00:00",
+   "first_sha": "c47babc97330bfa45c1642eff66da793d4001237",
+   "last_commit": "2018-12-12T10:52:02+00:00",
+   "author": "Pietro Passarelli - News Labs",
+   "email": "pietro.passarelli@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Re-aligning Timed Text\n\n* Status: being evaluated \n* Deciders: Pietro, James\n* Date: 2018-12-10\n\n## Context and Problem Statement\n\n<!-- [Describe the context and problem statement, e.g., in free form using two to three sentences. You may want to articulate the problem in form of a question.] -->\n\nWhen the user edits the timed text the transcriptions might lose the timecodes information over time after a number of edits. Eg if deleting a paragraph or line and re-writing it from scratch these words might not have time information associated with it.\n\nCan we find a straightforward way to either preserve or restore the time information associated with the words of the corrected transcription?\n\n## Decision Drivers <!-- optional -->\n\n* easy to reason around \n* not too computational intensive\n* the re-alignment operation can be performed on the client side\n* Approach with a flexible granularity, eg re-align the whole text or just a paragraph or sentence\n\n## Considered Options\n\n\n1. re-sync using audio waveform (TTS)\n2. Transpose time-codes from STT transcript \n3. Interpolate time-codes (words within a sentence)\n4. Use Levenshtein distance (sentence level)\n\n* \u2026 <!-- numbers of options can vary -->\n\n## Decision Outcome\n\n_still being evaluated_\n\n<!-- Chosen option: \"[option 1]\", because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)].\n\n### Positive Consequences \n\n* [e.g., improvement of quality attribute satisfaction, follow-up decisions required, \u2026]\n* \u2026\n\n### Negative consequences \n\n* [e.g., compromising quality attribute, follow-up decisions required, \u2026]\n* \u2026\n\n## Pros and Cons of the Options  -->\n\n### re-sync using audio waveform (TTS)\n\n[example | description | pointer to more information | \u2026] <!-- optional -->\n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n* \u2026 <!-- numbers of pros and cons can vary -->\n\n### [option 2]\n\n[example | description | pointer to more information | \u2026] <!-- optional -->\n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n* \u2026 <!-- numbers of pros and cons can vary -->\n\n### [option 3]\n\n[example | description | pointer to more information | \u2026] <!-- optional -->\n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n* \u2026 <!-- numbers of pros and cons can vary -->\n\n## Links <!-- optional -->\n\n* [Link type] [Link to ADR] <!-- example: Refined by [ADR-0005](0005-example.md) -->\n* \u2026 <!-- numbers of links can vary -->\n\n\n\n<!-- \n- Docs ReactTranscriptEditor\n\t- Confluence Page \n\t- Guide\n\n\n\t- ADR + Notes on alignement \n\thttps://github.com/bbc/stt-align\n\thttps://github.com/bbc/alignment-from-stt\n\t\n\thttps://github.com/chrisbaume/webaligner\n\tAeneas\n\n\thttps://github.com/pietrop/srtParserComposer\n\n\n- Show / hide speakers/timecodes \n\n\n\n- ad atJson to ADR on textEditor\n\n\n\n\n\n -->",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/2018-11-20-save-to-server.md",
+   "identity": "docs/adr/2018-11-20-save-to-server.md",
+   "adr_id": "2018",
+   "title": "Save to server",
+   "first_commit": "2018-11-20T14:47:43+00:00",
+   "first_sha": "073bb6bcdb860cb33b89a249c057671c63df3183",
+   "last_commit": "2018-12-12T10:50:25+00:00",
+   "author": "Pietro Passarelli - News Labs",
+   "email": "pietro.passarelli@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Save to server\n\n* Status: accepted\n* Deciders: Pietro, James\n* Date: 2018-11-20\n\n## Context and Problem Statement\n\nHow should the system handle saving the data to a server API end point?\nshould it be a responsibility fo the component or not?\n\n## Decision Drivers\n\n* easy to reason around\n* clean interface\n* flexible to integrate and use component on variety of settings\n* un-opinionated in regards to the API end point and how to make that request\n\n## Considered Options\n\n* Inside component\n* Outside component\n\n## Decision Outcome\n\n- component returns content in default draftJS format or in variety of supported adapters/converters\n- saving to server is done outside of the component to allow more flexible integration within other contexts\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/2018-10-01-timed-editor-choice.md",
+   "identity": "docs/adr/2018-10-01-timed-editor-choice.md",
+   "adr_id": "2018",
+   "title": "Timed Text Editor Choice  - draft",
+   "first_commit": "2018-11-06T14:13:01+00:00",
+   "first_sha": "465aee9c9d23b06b169f8dc2f818066c752e65da",
+   "last_commit": "2018-12-10T12:22:55+00:00",
+   "author": "Pietro",
+   "email": "pietro.passarelli@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Timed Text Editor Choice  - draft\n\n* Status: **accepted** <!-- optional -->\n* Deciders: Pietro, James <!-- optional -->\n* Date: 2018-10-01 <!-- optional -->\n\n<!-- Technical Story: [description | ticket/issue URL]  -->\n\n## Context and Problem Statement\n\n<!-- [Describe the context and problem statement, e.g., in free form using two to three sentences. You may want to articulate the problem in form of a question.] -->\n\nTo build a timed text editor, for editing audio or video transcriptions it can be useful to use an open source text editor and add functionalities to it.\n\n\n## Decision Drivers <!-- optional -->\n\n<!-- * [driver 1, e.g., a force, facing concern, \u2026] -->\n* A simple and straight forward way to keep words and time in sync, during playback and text editing.\n\n## Considered Options\n\n* [Draft.js](https://draftjs.org/)\n* [Quill.js](https://quilljs.com/)\n* [Prose mirror](https://prosemirror.net/) + [NY times article \"Building a Text Editor for a Digital-First Newsroom\"](https://open.nytimes.com/building-a-text-editor-for-a-digital-first-newsroom-f1cb8367fc21)\n* [atJson](https://github.com/CondeNast-Copilot/atjson)\n\n\n## Decision Outcome\n\nChosen option: **Draft.js**, because there is previous work in this space that has explored and stressed tests this editor. \n\nAltho Quilljs has a straight forward API, despite [a quircky data model internal  representation](https://quilljs.com/docs/delta). And has been used to quickly make [text based prototypes](https://github.com/pietrop/annotated_article_generator) (see [demo](http://pietropassarelli.com/annotated_article_generator/)) even with multi user collaboration support [through togetherjs](https://togetherjs.com/). \n\nIt's hard  to tell whether Quilljs is going to be around long term, while draft.js being core part of facebook is starting to see more of a community around it,  and a growing number of plugins.\n\nThere also other more advanced features, like adding speakers label, timed text, and other non timed text in the transcription that has workarounds in Draftjs but is not immediatly obvious how it would be implemented in Quilljs.\n\n\n <!-- because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)]. -->\n\n\n<!-- \n### Positive Consequences\n\n* [e.g., improvement of quality attribute satisfaction, follow-up decisions required, \u2026]\n* \u2026\n\n### Negative consequences \n\n* [e.g., compromising quality attribute, follow-up decisions required, \u2026]\n* \u2026\n\n## Pros and Cons of the Options \n\n### [option 1]\n\n[example | description | pointer to more information | \u2026] \n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n\n### [option 2]\n\n[example | description | pointer to more information | \u2026]\n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n\n\n### [option 3]\n\n[example | description | pointer to more information | \u2026] \n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n\n\n## Links \n\n* [Link type] [Link to ADR]  -->",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/2018-11-20-local-storage-save.md",
+   "identity": "docs/adr/2018-11-20-local-storage-save.md",
+   "adr_id": "2018",
+   "title": "Local storage save",
+   "first_commit": "2018-11-20T14:47:43+00:00",
+   "first_sha": "073bb6bcdb860cb33b89a249c057671c63df3183",
+   "last_commit": "2018-11-20T16:13:24+00:00",
+   "author": "Pietro Passarelli - News Labs",
+   "email": "pietro.passarelli@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Local storage save\n\n* Status: being evaluated \n* Deciders: Pietro, James\n* Date: 2018-11-20\n\n\n## Context and Problem Statement\n\nIt be good to be able to save in local storage as the user is editing the text.\nSome things to define\n- Is this done inside the component? or does the component return the data and the parent component handles saving to local storage?\n- how to be able to save multiple transcript for the same editor? eg with a unique id?\n- perhaps adding time stamps to the saving for versioning?\n- When loading transcript from server, if it's in local storage should we resume from that one instead?\n- ignoring multi users scenarios for now.\n\nHow often to save\n- save button?\n- save on each new char?\n- save on time interval?\n\n## Decision Drivers <!-- optional -->\n\n* simple to reason around\n* [driver 2, e.g., a force, facing concern, \u2026]\n* \u2026 <!-- numbers of drivers can vary -->\n\n## Considered Options\n\n* inside component TimedTextEditor\n* outside React TranscriptEditor component\n* Debouncing on save (Lodash helper function)\n\n## Decision Outcome\n\n- Save inside component TimedTextEditor\n- Save button for local storage\n- Save on each new char | switch to timer if it effects performance for users\n- Save on char / multiple of char inputs\n- Can use \"save-on-char\" together with time intervals\n- using url of media as id to save to local storage\n- add time stamps\n- When loading transcript from server, if it's in local storage should resume from that one instead\n\n\n[See separate ADR for saving to server.](./2018-11-20-save-to-server.md)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/2018-11-20-save-to-server.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/2018-10-12-keyboard-shortcuts-in-react-notes.md",
+   "identity": "docs/adr/2018-10-12-keyboard-shortcuts-in-react-notes.md",
+   "adr_id": "2018",
+   "title": "Keyboard Shortcuts in React",
+   "first_commit": "2018-11-12T14:04:31+00:00",
+   "first_sha": "e11a47104e8d6858facbe5bf65dec918b117537c",
+   "last_commit": "2018-11-12T14:04:31+00:00",
+   "author": "Pietro Passarelli - News Labs",
+   "email": "pietro.passarelli@bbc.co.uk",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Keyboard Shortcuts in React\n\n# React components communication strategy\n\n* Status: being evaluated <!-- optional -->\n* Deciders: Pietro <!-- optional -->\n* Date: 2018-10-12 <!-- when the decision was last updated] optional -->\n\n\n## Context and Problem Statement\n\nDeciding how to implement customizable keyboard shortcuts in React.\n\n## Decision Drivers <!-- optional -->\n\n* Simple and straightforward way to reason around adding global keyboard shortcuts to a React app\n* Possibility for user to customize keyboard shortcuts with their own preferences.\n\n\n## Considered Options\n\n- Mouse trap\n- Doing it manually (setting event listeners on keys manually - search for blog post)\n- draftJs events\n- Elliot oTranscribe \n- React keyboard shortcut lib\n\n## Decision Outcome\n\n<!-- Chosen option: \"[option 1]\", because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)]. -->\n\nStill evaluating, leaning torwards _React keyboard shortcut lib_. Possibly briging code inside app for re-factor and better integration, eg possibility to update the shortcuts.\n\n<!-- ### Positive Consequences \n\n* [e.g., improvement of quality attribute satisfaction, follow-up decisions required, \u2026]\n* \u2026\n\n### Negative consequences \n\n* [e.g., compromising quality attribute, follow-up decisions required, \u2026]\n* \u2026 -->\n\n## Pros and Cons of the Options <!-- optional -->\n\n### MouseTrap\n\n[MouseTrap](https://craig.is/killing/mice ) - [npm](https://www.npmjs.com/package/react-mousetrap)\n\n\n- Good, popular library for handling keyboard shortcuts, used it before in autoEdit2\n\n- Bad, DraftJs does not seem to recognize mouse trap shortcuts \n\n\n\n### Vanilla JS\n\n[Blog post](https://hackernoon.com/add-keyboard-shortcuts-to-your-web-app-ba358016ff05) - [JS keyboard shortcuts key codes](https://css-tricks.com/snippets/javascript/javascript-keycodes/)\n\n[stackoverlow - how to detect if multiple keys are pressed at once using javascript](https://stackoverflow.com/questions/5203407/how-to-detect-if-multiple-keys-are-pressed-at-once-using-javascript)\n- Good, granular control \n\n- Bad, need to ensure cross browser compatibility \n- Bad, possibly solving a problem that has already been solved\n\n\n\n```js\n keyboard shortcuts \n    // cross browser compatibility https://medium.com/@uistephen/keyboardevent-key-for-cross-browser-key-press-check-61dbad0a067a\n    document.onkeydown = (evt) =>{\n      // Escape key\n      if(evt.keyCode === 27){\n        this.playMedia();\n      }\n      if(evt.keyCode ===  91 && evt.keyCode === 75){\n        console.log('set timecode');\n      }\n    }\n```\n\n```js\ncomponentDidMount(){\n    const self = this;\n     // explained here\n    // https://stackoverflow.com/questions/5203407/how-to-detect-if-multiple-keys-are-pressed-at-once-using-javascript\n    // TODO: should remove in component un-mount?\n const map = {}; // You could also use an array\n    onkeydown = onkeyup = function(e){\n        // e = e || event; // to deal with IE\n        map[ e.keyCode ] = e.type == 'keydown';\n        /* insert conditional here */\n        // Jump to Timecode  - command + k\n        if( (map[ 91 ] && map[ 75 ])){ // 91 Command Key - 75 k key\n          console.log('promptSetCurrentTime')\n          self.promptSetCurrentTime();\n          map[ 91 ] = true;\n          map[ 75 ] = false;\n        }\n        //Play/Payuse - esc \n        if( map[ 27 ]){ // 91 Command Key - 75 k key\n          console.log('playMedia')\n          self.playMedia();\n          map[ 27 ] = false;\n        }\n        // Speed Up - increase playbackRate -  ctrl + 3 | f3\n        if( (map[ 17 ] && map[ 51 ])){ //ctrl 17 - 3 key 51\n          console.log('Speed Up - increase playbackRate')\n\n          console.log(map)\n          map[ 17 ] = true;\n          map[ 51 ] = false;\n        }\n        // Speed Down - Decrease playbackRate - ctrl + 4 | f4\n        if( (map[ 17 ] && map[ 52 ])){ //ctrl 17 -  4 key 52\n          console.log('Speed Down - Decrease playbackRate ')\n\n          console.log(map)\n          map[ 17 ] = true;\n          map[ 52 ] = false;\n        }\n\n        // RollBack Down - ctrl + 5 | f5\n        if( (map[ 17 ] && map[ 53 ])){ //ctrl 17 - 5 key  53\n          console.log('rollBack')\n          self.rollBack();\n          console.log(map)\n          map[ 17 ] = true;\n          map[ 53 ] = false;\n        }\n        // show hide shortcuts - ctrl + /\n        if( (map[ 17 ] && map[ 191 ])){ //ctrl 17 - forward slash / key  191\n          console.log('show hide shortcuts')\n      \n          console.log(map)\n          map[ 17 ] = true;\n          map[ 191 ] = false;\n        }\n        //  save (local+server?) - ctrl + s\n\n        // Skip Forward? - ctrl + 1\n\n        // Skip Backward?- ctrl + 2\n\n    }\n```\n\n\n### DraftJS\n\n[DraftJs events issue](https://github.com/facebook/draft-js/issues/1549) - [DraftJS Key bindings](https://draftjs.org/docs/advanced-topics-key-bindings)\n\n\n* Good, would integrate more closely with TimedEditor\n\n* Bad, the keyboard shortcuts need to mostly trigger the MediaPlayer component, so extra wiring plumbing would be needed to connect the two\n\n### oTranscribe \n\nWorth looking at how oTranscribe implemented costumizable keyboard shortcuts \n\n\n### React keyboard shortcut lib\n\n\n[npm](https://www.npmjs.com/package/react-keyboard-shortcuts)\n - [Repo code ](https://github.com/CurtisHumphrey/react-keyboard-shortcuts/blob/master/src/hotkeys.js]\n\n* Good, seems like a straigth forward implementation \n* Good, uses MouseTrap under the hood\n\n* Bad, does not seem to allow to update keyboard shortcuts once component instantiated\n\n[`react-keyboard-shortcuts` - `hotkeys.js`](https://github.com/CurtisHumphrey/react-keyboard-shortcuts/blob/master/src/hotkeys.js)\n\n\n```js\nimport React from 'react'\nimport Mousetrap from 'mousetrap'\nimport _ from 'lodash'\n\nMousetrap.prototype.stopCallback = () => false\n\nconst default_options = {\n  hot_key_property_name: 'hot_keys',\n}\n\nconst global_hotkeys = {\n}\n\nconst hotkey_get_handler = (hotkey) => (e, combo) => {\n  const handlers = global_hotkeys[hotkey]\n  let propagate = true\n  _.forEach(handlers, ({handler}) => {\n    if (!propagate) return\n    propagate = handler(e, combo)\n  })\n  return propagate\n}\n\nconst load_hotkeys = (handlers) => {\n  _.forEach(handlers, (response, hotkey) => {\n    if (global_hotkeys[hotkey] == null) {\n      global_hotkeys[hotkey] = [response]\n      Mousetrap.bind(hotkey, hotkey_get_handler(hotkey))\n    } else {\n      global_hotkeys[hotkey].push(response)\n      global_hotkeys[hotkey] = _.sortBy(global_hotkeys[hotkey], 'priority').reverse()\n    }\n  })\n}\nconst unload_hotkeys = (handlers) => {\n  _.forEach(handlers, (response, hotkey) => {\n    _.remove(global_hotkeys[hotkey], response)\n    if (global_hotkeys[hotkey].length === 0) {\n      global_hotkeys[hotkey] = null\n      Mousetrap.unbind(hotkey)\n    }\n  })\n}\n\nexport const hotkeys = (Component, overwrites = {}) => {\n  const options = {\n    ...default_options,\n    ...overwrites,\n  }\n\n  class HotKeysWrapper extends React.PureComponent {\n    componentDidMount () {\n      const handlers = this.wrapped_component[options.hot_key_property_name]\n      if (handlers == null) {\n        console.warn(`Component: ${Component.displayName} did not provide hotkey handlers`)\n        return\n      }\n      load_hotkeys(handlers)\n    }\n    componentWillUnmount () {\n      const handlers = this.wrapped_component[options.hot_key_property_name]\n      if (handlers == null) return\n      unload_hotkeys(handlers)\n    }\n\n    getWrappedComponent = () => this.wrapped_component\n\n    on_ref_update = (ref) => {\n      this.wrapped_component = ref\n    }\n\n    render () {\n      return <Component ref={this.on_ref_update} {...this.props} />\n    }\n  }\n\n  return HotKeysWrapper\n}\n\nexport default hotkeys\n\nexport const hotkey_display = (shortcut) => {\n  const am_mac = window.navigator.appVersion.indexOf('Mac') !== -1\n  if (!am_mac) return shortcut\n  let mac_shortcut = shortcut.replace('alt', 'option')\n  return mac_shortcut.replace('meta', '\u2318')\n}\n```",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "facebook/draft-js#1549",
+     "kind": "issue",
+     "url": "https://github.com/facebook/draft-js/issues/1549",
+     "number": "1549"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/CurtisHumphrey/react-keyboard-shortcuts/blob/master/src/hotkeys.js",
+    "hotkeys.js"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/2018-10-02-component-fonts.md",
+   "identity": "docs/adr/2018-10-02-component-fonts.md",
+   "adr_id": "2018",
+   "title": "Fonts fo the component",
+   "first_commit": "2018-11-06T14:13:01+00:00",
+   "first_sha": "465aee9c9d23b06b169f8dc2f818066c752e65da",
+   "last_commit": "2018-11-06T14:13:01+00:00",
+   "author": "Pietro",
+   "email": "pietro.passarelli@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Fonts fo the component\n\n* Status: **accepted** <!-- optional -->\n* Deciders: Pietro <!-- optional -->\n* Date: 2018-10-02 <!-- optional -->\n\n<!-- Technical Story: [description | ticket/issue URL]  -->\n\n## Context and Problem Statement\n\n<!-- [Describe the context and problem statement, e.g., in free form using two to three sentences. You may want to articulate the problem in form of a question.] -->\n\nShould the component come with it's own font? or just inherit from the app/enviroment it has been used in?\n\n\n<!--\n## Decision Drivers\n\n * [driver 1, e.g., a force, facing concern, \u2026] -->\n\n<!-- \n## Considered Options\n\n*  -->\n\n\n\n## Decision Outcome\n\n\nLooking into mono or duo space fonts can help with readability, [see this article](https://ia.net/topics/in-search-of-the-perfect-writing-font\n)\n\n\nDefault system stack,  covers most monospaced ones in various systems\n```\n/* Monospace stack */\nfont-family: Consolas, \"Andale Mono WT\", \"Andale Mono\", \"Lucida Console\", \"Lucida Sans Typewriter\", \"DejaVu Sans Mono\", \"Bitstream Vera Sans Mono\", \"Liberation Mono\", \"Nimbus Mono L\", Monaco, \"Courier New\", Courier, monospace;\n```\n\nfall-backs\n```\nfont-family: Helvetica Neue, Helvetica, Arial, sans-serif;\n```\n\nhttps://www.cssfontstack.com/Helvetica\n\n\nAs it is a component, concluded it should not enforce anything in css.\n\n\n\n <!-- because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)]. -->\n\n\n<!-- \n### Positive Consequences\n\n* [e.g., improvement of quality attribute satisfaction, follow-up decisions required, \u2026]\n* \u2026\n\n### Negative consequences \n\n* [e.g., compromising quality attribute, follow-up decisions required, \u2026]\n* \u2026\n\n## Pros and Cons of the Options \n\n### [option 1]\n\n[example | description | pointer to more information | \u2026] \n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n\n### [option 2]\n\n[example | description | pointer to more information | \u2026]\n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n\n\n### [option 3]\n\n[example | description | pointer to more information | \u2026] \n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n\n\n## Links \n\n* [Link type] [Link to ADR]  -->",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/2018-10-02-css-setup.md",
+   "identity": "docs/adr/2018-10-02-css-setup.md",
+   "adr_id": "2018",
+   "title": "CSS setup - draft",
+   "first_commit": "2018-11-06T14:13:01+00:00",
+   "first_sha": "465aee9c9d23b06b169f8dc2f818066c752e65da",
+   "last_commit": "2018-11-06T14:13:01+00:00",
+   "author": "Pietro",
+   "email": "pietro.passarelli@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# CSS setup - draft\n\n* Status: **accepted** <!-- optional -->\n* Deciders: Pietro, James <!-- optional -->\n* Date: 2018-10-02 <!-- optional -->\n\n<!-- Technical Story: [description | ticket/issue URL]  -->\n\n## Context and Problem Statement\n\n<!-- [Describe the context and problem statement, e.g., in free form using two to three sentences. You may want to articulate the problem in form of a question.] -->\n\nDecision around how to setup css on the project.\n\n## Decision Drivers <!-- optional -->\n\n<!-- * [driver 1, e.g., a force, facing concern, \u2026] -->\n* A simple and straight forward way to work with CSS, keep scope of selectors at module level to insulate the component if used as part of another app.\n* A simple way to organise the layout of the component.\n\n## Considered Options\n\n* [Bootstrap 4](https://getbootstrap.com)\n* [CSS Flex Box](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox)\n* [CSS Grid Layout](https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Grids) \n\n\n## Decision Outcome\n\nDecided to use CSS Grid-layout and CSS Flexbox, as the two can be combined.\n\nBootstrap is familiar, convenient and easy to use, but it's bulky and might introduce un-necessary dependencies and weight to the project file size.\n\nFollowed [this article](https://medium.com/samsung-internet-dev/common-responsive-layouts-with-css-grid-and-some-without-245a862f48df) (_\"The Holy Grail Layout (with no set heights!)\"_) for CSS Grid-layout introduction and [example](https://glitch.com/edit/#!/card-layout?path=README.md:1:0), [demo](https://grid-grail.glitch.me/).\n\nSee also \n\n- [Gridlayout tutorial](https://css-tricks.com/snippets/css/complete-guide-grid/)\n- [Flex Box tutorial](https://css-tricks.com/snippets/css/a-guide-to-flexbox/)\n\n <!-- because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)]. -->\n\n\n<!-- \n### Positive Consequences\n\n* [e.g., improvement of quality attribute satisfaction, follow-up decisions required, \u2026]\n* \u2026\n\n### Negative consequences \n\n* [e.g., compromising quality attribute, follow-up decisions required, \u2026]\n* \u2026\n\n## Pros and Cons of the Options \n\n### [option 1]\n\n[example | description | pointer to more information | \u2026] \n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n\n### [option 2]\n\n[example | description | pointer to more information | \u2026]\n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n\n\n### [option 3]\n\n[example | description | pointer to more information | \u2026] \n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n\n\n## Links \n\n* [Link type] [Link to ADR]  -->",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/2018-10-05-component-development-setup.md",
+   "identity": "docs/adr/2018-10-05-component-development-setup.md",
+   "adr_id": "2018",
+   "title": "Component Development Setup  - draft",
+   "first_commit": "2018-11-06T14:13:01+00:00",
+   "first_sha": "465aee9c9d23b06b169f8dc2f818066c752e65da",
+   "last_commit": "2018-11-06T14:13:01+00:00",
+   "author": "Pietro",
+   "email": "pietro.passarelli@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Component Development Setup  - draft\n\n* Status: **accepted** <!-- optional -->\n* Deciders: Pietro, James <!-- optional -->\n* Date: 2018-10-05 <!-- optional -->\n\n<!-- Technical Story: [description | ticket/issue URL]  -->\n\n## Context and Problem Statement\n\n<!-- [Describe the context and problem statement, e.g., in free form using two to three sentences. You may want to articulate the problem in form of a question.] -->\n\nDeveloping a React component to be published as a standalone npm module can pose a few challenges, if it's left as an after thought while using `create-react-app`. Eg identifying the boundaries between the component and the rest of the application.\n\n## Decision Drivers <!-- optional -->\n\n<!-- * [driver 1, e.g., a force, facing concern, \u2026] -->\n* A simple and straight forward way to develop a React component \n* Easy to work and update\n* Easy to build and package the component\n* Close to none learning curve for newcomers to the project.\n* Able to see a preview of the component, in a \"demo environment\"\n\n## Considered Options\n\n* [Storybook](https://storybook.js.org/)\n* [Bit](https://bitsrc.io/)\n* [`create-component-lib`](https://www.npmjs.com/package/create-component-lib) as explaied in this [blog post](https://hackernoon.com/creating-a-library-of-react-components-using-create-react-app-without-ejecting-d182df690c6b) \n\n\nConsulted this article [React tools you need to use in your components development](https://hackernoon.com/tools-you-need-to-use-in-your-react-components-development-26c3de4f81d2)\n\n## Decision Outcome\n\nStorybook and bit, seemed great if you are defining a style guide, and want a tool that gives you a fair bit of functionality to help with that, but they might have a bit of a learning curve, and might put new people off in getting involved if it requires familiarizing with those systems to get up to speed.\n\n`create-component-lib` seemed straight forward to use, simple and transparent in its implementation with the accompanying blog post. It's built on top of create-react-app, and that can used to create demo application to showcase the component in action.\n\nSo decided to use `create-component-lib` module.\n\nAnd updated it to [Create React App 2.0](https://reactjs.org/blog/2018/10/01/create-react-app-v2.html) to be able to use CSS modules. \n\nAs well as updated `babel-cli` to transpile the code of the component, see [notes](../notes/2018-10-05-babel-setup.md) for more details on this setup.\n\n\n<!-- \nSetup \n```\nnpm i react react-dom react-scripts  @babel/core @babel/cli @babel/preset-react rimraf --save-dev\n```\n\nPackage.json to build component \n\n\"build:component\": \"rimraf dist && NODE_ENV=production babel src/lib --out-dir dist --copy-files --ignore __tests__,spec.js,test.js,__snapshots__\",\n\n -->\n\n\n <!-- because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)]. -->\n\n\n<!-- \n### Positive Consequences\n\n* [e.g., improvement of quality attribute satisfaction, follow-up decisions required, \u2026]\n* \u2026\n\n### Negative consequences \n\n* [e.g., compromising quality attribute, follow-up decisions required, \u2026]\n* \u2026\n\n## Pros and Cons of the Options \n\n### [option 1]\n\n[example | description | pointer to more information | \u2026] \n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n\n### [option 2]\n\n[example | description | pointer to more information | \u2026]\n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n\n\n### [option 3]\n\n[example | description | pointer to more information | \u2026] \n\n* Good, because [argument a]\n* Good, because [argument b]\n* Bad, because [argument c]\n\n\n## Links \n\n* [Link type] [Link to ADR]  -->",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "reactjs.org/blog/2018/10/01/create-react-app-v2.html",
+    "/notes/2018-10-05-babel-setup.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/adr/2018-10-05-components-comunication.md",
+   "identity": "docs/adr/2018-10-05-components-comunication.md",
+   "adr_id": "2018",
+   "title": "React components communication strategy",
+   "first_commit": "2018-11-06T14:13:01+00:00",
+   "first_sha": "465aee9c9d23b06b169f8dc2f818066c752e65da",
+   "last_commit": "2018-11-06T14:13:01+00:00",
+   "author": "Pietro",
+   "email": "pietro.passarelli@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# React components communication strategy\n\n* Status: being evaluated <!-- optional -->\n* Deciders: Pietro, James <!-- optional -->\n* Date: 2018-10-05 <!-- when the decision was last updated] optional -->\n\n\n## Context and Problem Statement\n\nDeciding how to have the internal components of the Transcript Editor communicate with each other.\n\n## Decision Drivers <!-- optional -->\n\n* Simple and straightforward way to reason around passing data between components\n* Extensible anticipating use cases when using the component \"in the wild\" and having internal info accessible/when if needed.\n\n\n## Considered Options\n\n* Parent component \n* Flux / Redux\n* Event driven eg `pubsub-js`\n\n## Decision Outcome\n\n<!-- Chosen option: \"[option 1]\", because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | \u2026 | comes out best (see below)]. -->\n\nStill evaluating, leaning torwards some light refactoring to enable parent component, option 1 to keep things simple.\n\n<!-- ### Positive Consequences \n\n* [e.g., improvement of quality attribute satisfaction, follow-up decisions required, \u2026]\n* \u2026\n\n### Negative consequences \n\n* [e.g., compromising quality attribute, follow-up decisions required, \u2026]\n* \u2026 -->\n\n## Pros and Cons of the Options <!-- optional -->\n\n### Parent component \n\n[example | description | pointer to more information | \u2026]\n\npointer to more information - see [Blog post - \"8 no-Flux strategies for React component communication\"](https://www.javascriptstuff.com/component-communication/)\n\n* Good, because With some light refactor, if needed, could be the most straightforward and lightweight implementation \n * Good, because It might make the component easier to test with automated testing \n<!-- * Good, because [argument b]\n* Bad, because [argument c] -->\n\n* Bad, because it might not extend well for use case when you need to have insights on what's happening inside the component, eg use selecting text, or clicking on words, playing media etc..\n\n### Flux / Redux\n\n pointer to more information - [Flux](https://facebook.github.io/flux/)/[Redux](https://redux.js.org/introduction)\n\n* Good, Allows to have single source of truth in a store and not communication from sibling to sibling,\n\n* Bad, Might be overkill for what we are trying to do, keeping things simple and limiting the learning curve for newcomers to the project.\n\n\n### Event driven eg `pubsub-js`\n\nPointer to more information - [`pubsub-js`](https://www.npmjs.com/package/pubsub-js)\n\n* Good, could provide a clean interface for other components when used in other applications. Eg if you want to be notified every-time some text is selected in the editor, or video is playing etc.. \n\n* Bad, Might be difficult to test \n* Bad, might cause issues with keeping track of local state\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 2,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 11,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "sourcegraph:docs_adr;buchgeher-2022",
+ "stars": "624",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "11"
+}

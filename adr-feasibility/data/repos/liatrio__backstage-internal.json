@@ -1,0 +1,502 @@
+{
+ "repo": "liatrio/backstage-internal",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2020-01-25T09:16:32+01:00",
+ "last_commit": "2021-02-12T10:20:06-08:00",
+ "n_commits": 10129,
+ "n_authors": 309,
+ "n_files": 3153,
+ "n_code_files": 2226,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 12,
+ "adrs": [
+  {
+   "path": "docs/architecture-decisions/adr011-plugin-package-structure.md",
+   "identity": "docs/architecture-decisions/adr011-plugin-package-structure.md",
+   "adr_id": "11",
+   "title": "Context",
+   "first_commit": "2021-01-26T15:40:14+01:00",
+   "first_sha": "fb118a6cf25c32a5a6e38f804a47299385fd3a59",
+   "last_commit": "2021-01-26T15:40:14+01:00",
+   "author": "Oliver Sand",
+   "email": "oliver.sand@sda-se.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "---\nid: adrs-adr011\ntitle: ADR011: Plugin Package Structure\ndescription: Architecture Decision Record (ADR) for Plugin Package Structure\n---\n\n## Context\n\nA core feature of Backstage is the extensibility via plugins. The Backstage\nrepository is open for contributions of plugins. Even most of the core features\nare implemented as plugins. A plugin consists of one or multiple packages in the\n`plugins/` directory. Up till now, we have a simple conventions for naming\nplugin packages: Plugins are named `x`, with the option of having a related\nbackend plugin called `x-backend` (where `x` is the plugin name, like `catalog`\nor `techdocs`). There is a need for sharing code between the frontend and\nbackend of a plugin, between backend plugins, or components and hooks between\ndifferent frontend plugins\n([some examples](https://github.com/backstage/backstage/issues/3655#issuecomment-758166746)).\nThis results in emerging plugin packages with shared code, like\n`packages/catalog-client` or `packages/techdocs-common`.\n\n> There is a common phrase in software development:\n> [Naming things is hard](https://martinfowler.com/bliki/TwoHardThings.html)\n\nTo keep the contributed plugins consistent, this Architecture Decision Record\nprovides rules for naming plugin packages.\n\n## Decision\n\nWe will place all plugin related code in the `plugins/` directory. The\n`packages/` directory is reserved for core package of Backstage.\n\nWe follow this structure for plugin packages (where `x` is the plugin name, for\nexample `catalog` or `techdocs`):\n\n- `x`: Contains the main frontend code of the plugin.\n- `x-backend`: Contains the main backend code of the plugin.\n- `x-react`: Contains shared widgets, hooks and similar that both the plugin\n  itself (`x`) and third-party frontend plugins can depend on.\n- `x-node`: Contains utilities for backends that both the plugin backend itself\n  (`x-backend`) and third-party backend plugins can depend on.\n- `x-common`: An isomorphic package with platform agnostic models, clients, and\n  utilities that all packages above or any third-party plugin package can depend\n  on.\n\nWe prefix the package names with `@backstage/plugin-`.\n\nThis structure is based on a\n[suggestion in issue #3655](https://github.com/backstage/backstage/issues/3655#issuecomment-758166746).\n\n## Consequences\n\nWe will actively migrate existing packages that are part of a plugin to the\n`plugins/` folder. This affects packages like:\n\n- `packages/techdocs-common` which should be moved to `plugins/techdocs-node`\n  and named `@backstage/plugin-techdocs-node`.\n- `packages/catalog-client` which will be part of a future\n  `plugins/catalog-common` and named `@backstage/plugin-catalog-common`.\n- While the new location of `packages/catalog-model` should be\n  `plugins/catalog-common` we might want to do an exception here, as it's a very\n  central package.\n\nThe limited set of rules might not be sufficient in the future. If additional\npackages are required, we will revisit this decision and extend the pattern.\n\nIf possible, we will add tools, such as lint rules, to help enforce the package\nnames and dependencies between them or CLI commands to generate these packages.\n\nThe distinction between core packages and plugins helps us to setup\n[CODEOWNERS](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/about-code-owners)\nin the repository. We can set the code owners for the `packages/` folder to the\ncore team and create additional rules (like `plugins/x*`) for plugin\nmaintainers.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "backstage/backstage#3655",
+     "kind": "issue",
+     "url": "https://github.com/backstage/backstage/issues/3655",
+     "number": "3655"
+    },
+    {
+     "key": "#3655",
+     "kind": "hash",
+     "url": "",
+     "number": "3655"
+    }
+   ],
+   "mentioned_paths": [
+    "plugins/",
+    "packages/catalog-client",
+    "packages/techdocs-common",
+    "martinfowler.com/bliki/TwoHardThings.html",
+    "packages/",
+    "@backstage/plugin-",
+    "plugins/techdocs-node",
+    "@backstage/plugin-techdocs-node",
+    "plugins/catalog-common",
+    "@backstage/plugin-catalog-common",
+    "packages/catalog-model",
+    "plugins/x*"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture-decisions/adr000-template.md",
+   "identity": "docs/architecture-decisions/0000-template.md",
+   "adr_id": "0",
+   "title": "Context",
+   "first_commit": "2021-01-09T19:54:44+01:00",
+   "first_sha": "3a03a4100a14174999e401adf50d044702f66d42",
+   "last_commit": "2021-01-26T10:54:06+01:00",
+   "author": "blam",
+   "email": "ben@blam.sh",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 8,
+   "text": "---\nid: adrs-adr000\ntitle: ADR000: [TITLE]\ndescription: Architecture Decision Record (ADR) for [TITLE] [DESCRIPTION]\n---\n\n<!-- These documents have names that are short noun phrases. For example, \"ADR001: Deployment on Ruby on Rails 3.0.10\" or \"ADR009: LDAP for Multitenant Integration\" -->\n\n## Context\n\n<!--\nThis section describes the forces at play, including technological, political, social, and project local. These forces are probably in tension, and should be called out as such. The language in this section is value-neutral. It is simply describing facts. -->\n\n## Decision\n\n<!-- This section describes our response to these forces. It is stated in full sentences, with active voice. \"We will ...\" -->\n\n## Consequences\n\n<!-- This section describes the resulting context, after applying the decision. All consequences should be listed here, not just the \"positive\" ones. A particular decision may have positive, negative, and neutral consequences, but all of them affect the team and project in the future. -->\n\n<!-- This template is taken from a blog post by Michael Nygard http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions -->\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture-decisions/adr010-luxon-date-library.md",
+   "identity": "docs/architecture-decisions/adr010-luxon-date-library.md",
+   "adr_id": "10",
+   "title": "Context",
+   "first_commit": "2021-01-17T21:12:55-05:00",
+   "first_sha": "e58af307f077f36243f97b1bc6b9c0d8530f920a",
+   "last_commit": "2021-01-26T10:54:06+01:00",
+   "author": "Andrew Thauer",
+   "email": "6507159+andrewthauer@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 7,
+   "text": "---\nid: adrs-adr010\ntitle: ADR010: Use the Luxon Date Library\ndescription: Architecture Decision Record (ADR) for Luxon Date Library\n---\n\n## Context\n\nDate formatting (e.g. `a day ago`) and calculations are common within Backstage.\nSome of these useful features are not supported by the standard JavaScript\n`Date` object. The popular [Moment.js](https://momentjs.com/) library has been\ncommonly used to fill this gap but suffers from large bundle sizes and mutable\nstate issues. On top of this, `momentjs` is\n[being sunset](https://momentjs.com/docs/#/-project-status/) and the project\nrecommends using one of the more modern alternative libraries.\n\nSee\n[[RFC] Standardized Date & Time Library](https://github.com/backstage/backstage/issues/3401).\n\n## Decision\n\nWe will use [Luxon](https://moment.github.io/luxon/index.html) as the standard\ndate library within Backstage.\n\n`Luxon` provides a similar feature set and API to `Moment.js`, but improves on\nits design through immutability and the usage of modern JavaScript APIs (e.g.\n`Intl`). This results in smaller bundle sizes while providing a full feature set\nand avoids the need for using additional libraries for common date & time tasks.\n\n## Consequences\n\n- All core packages and plugins within Backstage should use `Luxon` for any date\n  manipulation or formatting that cannot be easily accomplished with the native\n  JavaScript `Date` object.\n- Using a single date library avoids having to learn multiple library APIs\n- Having a single date library will reduce bundle sizes\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "backstage/backstage#3401",
+     "kind": "issue",
+     "url": "https://github.com/backstage/backstage/issues/3401",
+     "number": "3401"
+    }
+   ],
+   "mentioned_paths": [
+    "moment.github.io/luxon/index.html",
+    "Moment.js"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture-decisions/adr006-avoid-react-fc.md",
+   "identity": "docs/architecture-decisions/adr006-avoid-react-fc.md",
+   "adr_id": "6",
+   "title": "Context",
+   "first_commit": "2020-06-30T16:10:57+02:00",
+   "first_sha": "9f475bacd3253faa9cb38d5618606c608d45a1f0",
+   "last_commit": "2021-01-19T10:36:27+01:00",
+   "author": "ellieseastream",
+   "email": "67265053+ellieseastream@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 12,
+   "text": "---\nid: adrs-adr006\ntitle: ADR006: Avoid React.FC and React.SFC\ndescription: Architecture Decision Record (ADR) log on Avoid React.FC and React.SFC\n---\n\n## Context\n\nFacebook has removed `React.FC` from their base template for a TypeScript\nproject. The reason for this was that it was found to be an unnecessary feature\nwith next to no benefits in combination with a few downsides.\n\nThe main reasons were:\n\n- **children props** were implicitly added\n- **Generic Type** was not supported on children\n\nRead more about the removal in\n[this PR](https://github.com/facebook/create-react-app/pull/8177).\n\n## Decision\n\nTo keep our codebase up to date, we have decided that `React.FC` and `React.SFC`\nshould be avoided in our codebase when adding new code.\n\nHere is an example:\n\n```typescript\n/* Avoid this: */\ntype BadProps = { text: string };\nconst BadComponent: FC<BadProps> = ({ text, children }) => (\n  <div>\n    <div>{text}</div>\n    {children}\n  </div>\n);\n\n/* Do this instead: */\ntype GoodProps = { text: string; children?: React.ReactNode };\nconst GoodComponent = ({ text, children }: GoodProps) => (\n  <div>\n    <div>{text}</div>\n    {children}\n  </div>\n);\n\n/* Or as a shorthand, if no specifc child type is required */\ntype GoodProps = PropsWithChildren<{ text: string }>;\nconst GoodComponent = ({ text, children }: GoodProps) => (\n  <div>\n    <div>{text}</div>\n    {children}\n  </div>\n);\n```\n\n## Consequences\n\nWe will gradually remove the current usage of `React.FC` and `React.SFC` from\nour codebase.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "facebook/create-react-app#8177",
+     "kind": "pull",
+     "url": "https://github.com/facebook/create-react-app/pull/8177",
+     "number": "8177"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture-decisions/adr001-add-adr-log.md",
+   "identity": "docs/architecture-decisions/adr001-add-adr-log.md",
+   "adr_id": "1",
+   "title": "Decision",
+   "first_commit": "2020-04-29T10:25:44+02:00",
+   "first_sha": "9ccf3b06232aca3e1c6d0acb631d231b1c840dfa",
+   "last_commit": "2021-01-19T09:55:11+01:00",
+   "author": "eywoon",
+   "email": "eth114@hi.is",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 8,
+   "text": "---\nid: adrs-adr001\ntitle: ADR001: Architecture Decision Record (ADR) log\ndescription: Architecture Decision Record (ADR) logs as a reference point for the team\n---\n\n## Decision\n\nA decision was made to store ADRs in a log in the project repository\n\n## Discussion\n\nThere is a need to store big decisions made in a log as a reference point for\nthe team, help with onboarding new members and give context to others interested\nin the project.\n\n## Risks\n\nPeople stop adding ADRs to the log and context gets lost\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture-decisions/adr002-default-catalog-file-format.md",
+   "identity": "docs/architecture-decisions/adr002-default-catalog-file-format.md",
+   "adr_id": "2",
+   "title": "Background",
+   "first_commit": "2020-05-17T20:21:17+02:00",
+   "first_sha": "86bb6cc6a8d3424a7f75393a05ebe225f9f68d55",
+   "last_commit": "2021-01-19T09:55:11+01:00",
+   "author": "Fredrik Adel\u00f6w",
+   "email": "freben@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 12,
+   "text": "---\nid: adrs-adr002\ntitle: ADR002: Default Software Catalog File Format\ndescription: Architecture Decision Record (ADR) log on Default Software Catalog File Format\n---\n\n## Background\n\nBackstage comes with a software catalog functionality, that you can use to track\nall your software components and more. It can be powered by data from various\nsources, and one of them that is included with the package, is a custom database\nbacked catalog. It has the ability to keep itself updated automatically based on\nthe contents of little descriptor files in your version control system of\nchoice. Developers create these files and maintain them side by side with their\ncode, and the catalog system reacts accordingly.\n\nThis ADR describes the default format of these descriptor files.\n\n### Inspiration\n\nInternally at Spotify, a homegrown software catalog system is used heavily and\nforms a core part of Backstage and other important pieces of the infrastructure.\nThe user experience, learnings and certain pieces of metadata from that catalog\nare being carried over to the open source effort.\n\nThe file format described herein, also draws heavy inspiration from the\n[kubernetes object format](https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/).\n\n### Core Concepts\n\nThere are a number of descriptor files, all of whose locations (e.g. within a\nversion control system) are registered with the software catalog. The method of\nregistration is not covered in this document; it could happen either manually\ninside Backstage, or by push events from a CI/CD pipelines, or by webhook\ntriggers from the version control system, etc.\n\nEach file describes one or more entities in accordance with the\n[Backstage System Model](https://github.com/backstage/backstage/issues/390). All\nof these entities have a common structure and nomenclature, and they are stored\nin the software catalog from which they then can be queried.\n\nEntities have distinct names, and they may reference each other by those names.\n\n## Format\n\nDescriptor files use the [YAML](https://yaml.org/spec/1.2/spec.html) format.\nThey may be written by hand, or created using automated tools. Each file may\nconsist of several YAML documents (separated by `---`), where each document\ndescribes a single entity.\n\nThis is an example entity definition with some mocked data.\n\n```yaml\n---\napiVersion: backstage.io/v1alpha1\nkind: Component\nmetadata:\n  name: frobs-awesome\n  description: |\n    Backend service that implements the Frobs API, as defined\n    in [the Frobs RFC](https://example.com/spec/frob.html).\n  labels:\n    system: frobs\n    lifecycle: production\n    example.com/service-discovery-name: frobsawesome\n  annotations:\n    circleci.com/project-slug: github/example-org/frobs-awesome\nspec:\n  type: service\n```\n\nThe root fields `apiVersion`, `kind`, `metadata`, and `spec` are part of the\n_envelope_, defining the overall structure of all kinds of entity. Likewise, the\n`name`, `namespace`, `labels`, and `annotations` metadata fields are of special\nsignificance and have reserved purposes and distinct shapes.\n\nSee below for details about these fields.\n\n## Envelope\n\nThe root envelope object has the following structure.\n\n### `apiVersion` and `kind`\n\nThe `kind` is the high level entity type being described, typically from the\n[Backstage system model](https://github.com/backstage/backstage/issues/390). The\nfirst versions of the catalog will focus on the `Component` kind.\n\nThe `apiVersion`is the version of specification format for that particular\nentity that this file is written against. The version is used for being able to\nevolve the format, and the tuple of `apiVersion` and `kind` should be enough for\na parser to know how to interpret the contents of the rest of the document.\n\nBackstage specific entities have an `apiVersion` that is prefixed with\n`backstage.io/`, to distinguish them from other types of object that share the\nsame type of structure. This may be relevant when co-hosting these\nspecifications with e.g. kubernetes object manifests.\n\nEarly versions of the catalog will be using alpha/beta versions, e.g.\n`backstage.io/v1alpha1`, to signal that the format may still change. After that,\nwe will be using `backstage.io/v1` and up.\n\n### `metadata`\n\nA structure that contains metadata about the entity, i.e. things that aren't\ndirectly part of the entity specification itself. See below for more details\nabout this structure.\n\n### `spec`\n\nThe actual specification data that describes the entity.\n\nThe precise structure of the `spec` depends on the `apiVersion` and `kind`\ncombination, and some kinds may not even have a `spec` at all. See further down\nin this document for the specification structure of specific kinds.\n\n## Metadata\n\nThe `metadata` root field has the following nested structure.\n\n### `name`\n\nThe name of the entity. This name is both meant for human eyes to recognize the\nentity, and for machines and other components to reference the entity (e.g. in\nURLs or from other entity specification files).\n\nNames must be unique per kind, within a given namespace (if specified), at any\npoint in time. Names may be reused at a later time, after an entity is deleted\nfrom the registry.\n\nNames are required to follow a certain format. Entities that do not follow those\nrules will not be accepted for registration in the catalog. The ruleset is\nconfigurable to fit your organization's needs, but the default behavior is as\nfollows.\n\n- Strings of length at least 1, and at most 63\n- Must consist of sequences of `[a-z0-9A-Z]` possibly separated by one of\n  `[-_.]`\n\nExample: `visits-tracking-service`, `CircleciBuildsDs_avro_gcs`\n\nIn addition to this, names are passed through a normalization function and then\ncompared to the same normalized form of other entity names and made sure to not\ncollide. This rule of uniqueness exists to avoid situations where e.g. both\n`my-component` and `MyComponent` are registered side by side, which leads to\nconfusion and risk. The normalization function is also configurable, but the\ndefault behavior is as follows.\n\n- Strip out all characters outside of the set `[a-zA-Z0-9]`\n- Convert to lowercase\n\nExample: `CircleciBuildsDs_avro_gcs` -> `circlecibuildsdsavrogcs`\n\n### `namespace`\n\nThe `name` of a namespace that the entity belongs to. This field is optional,\nand currently has no special semantics apart from bounding the name uniqueness\nconstraint if specified. It is reserved for future use and may get broader\nsemantic implication.\n\nNamespaces may also be part of the catalog, and are `v1` / `Namespace` entities,\ni.e. not Backstage specific but the same as in Kubernetes.\n\n### `description`\n\nA human readable description of the entity, to be shown in Backstage. Should be\nkept short and informative, suitable to give an overview of the entity's purpose\nat a glance. More detailed explanations and documentation should be placed\nelsewhere.\n\n### `labels`\n\nLabels are optional key/value pairs of that are attached to the entity, and\ntheir use is identical to\n[kubernetes object labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/).\n\nTheir main purpose is for references to other entities, and for information that\nis in one way or another classifying for the current entity. They are often used\nas values in queries or filters.\n\nBoth the key and the value are strings, subject to the following restrictions.\n\nKeys have an optional prefix followed by a slash, and then the name part which\nis required. The prefix must be a valid lowercase domain name, at most 253\ncharacters in total. The name part must be sequences of `[a-zA-Z0-9]` separated\nby any of `[-_.]`, at most 63 characters in total.\n\nThe `backstage.io/` prefix is reserved for use by Backstage core components.\nSome keys such as `system` also have predefined semantics.\n\nValues are strings that follow the same restrictions as `name` above.\n\n### `annotations`\n\nAn object with arbitrary non-identifying metadata attached to the entity,\nidentical in use to\n[kubernetes object annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/).\n\nTheir purpose is mainly, but not limited, to reference into external systems.\nThis could for example be a reference to the git ref the entity was ingested\nfrom, to monitoring and logging systems, to pagerduty schedules, etc.\n\nBoth the key and the value are strings, subject to the following restrictions.\n\nKeys have an optional prefix followed by a slash, and then the name part which\nis required. The prefix must be a valid lowercase domain name, at most 253\ncharacters in total. The name part must be sequences of `[a-zA-Z0-9]` separated\nby any of `[-_.]`, at most 63 characters in total.\n\nThe `backstage.io/` prefix is reserved for use by Backstage core components.\n\nValues can be of any length, but are limited to being strings.\n\n## Component\n\n| Field        | Value                   |\n| ------------ | ----------------------- |\n| `apiVersion` | `backstage.io/v1alpha1` |\n| `kind`       | `Component`             |\n\nThe `spec` object for this kind is as follows:\n\n| Field  | Type   | Required | Description                            |\n| ------ | ------ | -------- | -------------------------------------- |\n| `type` | String | Yes      | The type of component, e.g. `service`. |\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "backstage/backstage#390",
+     "kind": "issue",
+     "url": "https://github.com/backstage/backstage/issues/390",
+     "number": "390"
+    }
+   ],
+   "mentioned_paths": [
+    "yaml.org/spec/1.2/spec.html",
+    "example.com/spec/frob.html",
+    "backstage.io/",
+    "backstage.io/v1alpha1",
+    "backstage.io/v1"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture-decisions/adr003-avoid-default-exports.md",
+   "identity": "docs/architecture-decisions/adr003-avoid-default-exports.md",
+   "adr_id": "3",
+   "title": "Context",
+   "first_commit": "2020-05-19T16:28:34+02:00",
+   "first_sha": "7fac93feea279d4a42b49a3a1f17c9ceebc597f4",
+   "last_commit": "2021-01-19T09:55:11+01:00",
+   "author": "Fredrik Adel\u00f6w",
+   "email": "freben@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 7,
+   "text": "---\nid: adrs-adr003\ntitle: ADR003: Avoid Default Exports and Prefer Named Exports\ndescription: Architecture Decision Record (ADR) log on Avoid Default Exports and Prefer Named Exports\n---\n\n## Context\n\nWhen CommonJS was the primary authoring format, the best practice was to export\nonly one thing from a module using the `module.exports = ...` format. This\naligned with the\n[UNIX philosophy](https://en.wikipedia.org/wiki/Unix_philosophy) of \"Do one\nthing well\". The module would be consumed\n(`const localName = require('the-module');`) without having to know the internal\nstructure.\n\nNow, ESModules are the primary authoring format. They have numerous benefits,\nsuch as compile-time verification of exports, and standards-defined semantics.\nThey have a similar mechanism known as \"default exports\", which allows for a\nconsumer to `import localName from 'the-module';`. This is implicitly the same\nas `import { default as localName } from 'the-module';`.\n\nHowever, there are numerous reasons to avoid default exports, as documented by\nothers before:\n\n- https://humanwhocodes.com/blog/2019/01/stop-using-default-exports-javascript-module/\n\nA summary:\n\n- They add indirection by encouraging a developer to create local names for\n  modules, increasing cognitive load and slowing down code comprehension:\n  `import TheListThing from 'not-a-list-thing';`.\n- They thwart tools, such as IDEs, that can automatically rename and refactor\n  code.\n- They promote typos and mistakes, as the imported member is completely up to\n  the consuming developer to define.\n- They are ugly in CommonJS interop, as the default property must be manually\n  specified by the consumer. This is often hidden by Babel's module interop.\n- They break re-exports due to name conflicts, forcing the developer to manually\n  name each.\n\nUsing named exports helps prevent needing to rename symbols, which has myriad\nbenefits. A few are:\n\n- IDE tools like \"Find All References\" and \"Go To Definition\" function\n- Manual codebase searching (\"grep\", etc) is easier with a unique symbol\n\n## Decision\n\nWe will stop using default exports except when absolutely necessary (such as\n[`React.lazy`](https://reactjs.org/docs/code-splitting.html#reactlazy) modules).\nA workaround exists for those that would prefer to never use `default`:\n\n```ts\nconst Component = React.lazy(() =>\n  import('../path/to/Component').then(m => ({ default: m.Component })),\n);\n```\n\n## Consequences\n\nWe will actively work to remove them from our codebases, being as explicit as\npossible. Have a connected component?\n`export const ConnectedComponent = connect(Component)`.\n\nWe will add tools, such as lint rules, to help migrate away from default\nexports.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "reactjs.org/docs/code-splitting.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture-decisions/adr004-module-export-structure.md",
+   "identity": "docs/architecture-decisions/adr004-module-export-structure.md",
+   "adr_id": "4",
+   "title": "Context",
+   "first_commit": "2020-05-27T18:20:51+02:00",
+   "first_sha": "582f63677678205956dbb6b69f563dc2934cfd65",
+   "last_commit": "2021-01-19T09:55:11+01:00",
+   "author": "Patrik Oldsberg",
+   "email": "poldsberg@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 9,
+   "text": "---\nid: adrs-adr004\ntitle: ADR004: Module Export Structure\ndescription: Architecture Decision Record (ADR) log on Module Export Structure\n---\n\n## Context\n\nWith a growing number of exports of packages like `@backstage/core`, it is\nbecoming more and more difficult to answer questions such as\n\n> Is the export in this module also exported by the package?\n\nor\n\n> What is exported from this directory?\n\nWe currently do not use any pattern for how to structure exports. There is a mix\nof package-level re-exports deep into the directory tree, shallow re-exports for\neach directory, exports using `*` and explicit lists of each symbol, etc. The\nmix and lack of predictability make it difficult to reason about the boundaries\nof a module, and for example knowing whether it is safe to export a symbol in a\ngiven file.\n\n## Decision\n\nWe will make each exported symbol traceable through index files all the way down\nto the root of the package, `src/index.ts`. Each index file will only re-export\nfrom its own immediate directory children, and only index files will have\nre-exports. This gives a file tree similar to this:\n\n```text\nindex.ts\ncomponents/index.ts\n          /ComponentX/index.ts\n                     /ComponentX.tsx\n                     /SubComponentY.tsx\nlib/index.ts\n   /UtilityX/index.ts\n            /UtilityX.ts\n            /helper.ts\n```\n\nTo check whether for example `SubComponentY` is exported from the package, it\nshould be possible to traverse the index files towards the root, starting at the\nadjacent one. If there is any index file that doesn't export the previous one,\nthe symbol is not publicly exported. For example, if\n`components/ComponentX/index.ts` exports `SubComponentY`, but\n`components/index.ts` does not re-export `./ComponentX`, one should be certain\nthat `SubComponentY` is not exported outside the package. This rule would be\nbroken if for example the root `index.ts` re-exports `./components/ComponentX`\n\nIn addition, index files that are re-exporting other index files should always\nuse wildcard form, that is:\n\n```ts\n// in components/index.ts\nexport * from './ComponentX';\n```\n\nIndex files that are re-exporting symbols from non-index files should always\nenumerate all exports, that is:\n\n```ts\n// in components/ComponentX/index.ts\nexport { ComponentX } from './ComponentX';\nexport type { ComponentXProps } from './ComponentX';\n```\n\nInternal cross-directory imports are allowed from non-index modules to index\nmodules, for example:\n\n```ts\n// in components/ComponentX/ComponentX.tsx\nimport { UtilityX } from '../../lib/UtilityX';\n```\n\nImports that bypass an index file are discouraged, but may sometimes be\nnecessary, for example:\n\n```ts\n// in components/ComponentX/ComponentX.tsx\nimport { helperFunc } from '../../lib/UtilityX/helper';\n```\n\n## Consequences\n\nWe will actively work to rework the export structure in our codebase,\nprioritizing the library packages such as `@backstage/core` and\n`@backstage/backend-common`.\n\nIf possible, we will add tools, such as lint rules, to help enforce the export\nstructure.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "@backstage/core",
+    "src/index.ts",
+    "components/index.ts",
+    "ComponentX/index.ts",
+    "lib/index.ts",
+    "UtilityX/index.ts",
+    "components/ComponentX/index.ts",
+    "/ComponentX",
+    "index.ts",
+    "/components/ComponentX",
+    "components/ComponentX/ComponentX.tsx",
+    "@backstage/backend-common"
+   ],
+   "implementation": {
+    "sha": "52f909e1eca8a2fd509c4dbec87f3227f4261fd6",
+    "date": "2020-05-28T16:08:55+02:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "packages/core/src/index.ts",
+     "packages/core/src/layout/BottomLink/index.ts",
+     "packages/core/src/layout/Content/index.ts",
+     "packages/core/src/layout/ContentHeader/index.ts",
+     "packages/core/src/layout/ErrorBoundary/index.ts",
+     "packages/core/src/layout/ErrorPage/index.ts",
+     "packages/core/src/layout/Header/index.ts",
+     "packages/core/src/layout/HeaderActionMenu/index.ts",
+     "packages/core/src/layout/HeaderLabel/index.ts",
+     "packages/core/src/layout/HomepageTimer/index.ts",
+     "packages/core/src/layout/InfoCard/index.ts",
+     "packages/core/src/layout/Page/index.ts"
+    ]
+   }
+  },
+  {
+   "path": "docs/architecture-decisions/adr005-catalog-core-entities.md",
+   "identity": "docs/architecture-decisions/adr005-catalog-core-entities.md",
+   "adr_id": "5",
+   "title": "Context",
+   "first_commit": "2020-05-29T10:23:01+02:00",
+   "first_sha": "1312d34147af604355117ee85ed913e7a9460092",
+   "last_commit": "2021-01-19T09:55:11+01:00",
+   "author": "Marc Bruggmann",
+   "email": "marcbr@spotify.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 10,
+   "text": "---\nid: adrs-adr005\ntitle: ADR005: Catalog Core Entities\ndescription: Architecture Decision Record (ADR) log on Catalog Core Entities\n---\n\n## Context\n\nWe want to standardize on a few core entities that we are tracking in the\nBackstage catalog. This allows us to build specific plugins around them.\n\n## Decision\n\nBackstage should eventually support the following core entities:\n\n- **Components** are individual pieces of software\n- **APIs** are the boundaries between different components\n- **Resources** are physical or virtual infrastructure needed to operate a\n  component\n\n![Catalog Core Entities](../assets/architecture-decisions/catalog-core-entities.png)\n\nFor now, we'll start by only implementing support for the Component entity in\nthe Backstage catalog. This can later be extended to APIs, Resources and other\npotentially useful entities.\n\n### Component\n\nA component is a piece of software, for example a mobile application feature,\nweb site, backend service or data pipeline (list not exhaustive). A component\ncan be tracked in source control, or use some existing open source or commercial\nsoftware. It can implement APIs for other components to consume. In turn it\nmight depend on APIs implemented by other components, or resources that are\nattached to it at runtime.\n\nComponent entities are typically defined in YAML descriptor files next to the\ncode of the component, and could look like this (actual schema will evolve):\n\n```yaml\napiVersion: backstage.io/v1alpha1\nkind: Component\nmetadata:\n  name: my-component-name\nspec:\n  type: service\n```\n\n### API\n\nAPIs form an abstraction that allows large software ecosystems to scale. Thus,\nAPIs are a first class citizen in the Backstage model and the primary way to\ndiscover existing functionality in the ecosystem.\n\nAPIs are implemented by components and make their boundaries explicit. They\nmight be defined using an RPC IDL (e.g. in Protobuf, GraphQL or similar), a data\nschema (e.g. in Avro, TFRecord or similar), or as code interfaces (e.g.\nframework APIs in Swift, Kotlin, Java, C++, TypeScript etc). In any case, APIs\nexposed by components need to be in a known machine-readable format so we can\nbuild further tooling and analysis on top.\n\nAPIs are typically indexed from existing definitions in source control and thus\nwouldn't need their own descriptor files, but would be stored in the catalog\nsomewhat like this (actual schema will evolve):\n\n```yaml\napiVersion: backstage.io/v1alpha1\nkind: API\nmetadata:\n  name: my-component-api\nspec:\n  type: grpc\n  definition: >\n    service HelloService {\n      rpc SayHello (HelloRequest) returns (HelloResponse);\n    }\n\n    message HelloRequest {\n      string greeting = 1;\n    }\n\n    message HelloResponse {\n      string reply = 1;\n    }\n```\n\n### Resource\n\nResources are the infrastructure your software needs to operate at runtime like\nBigtable databases, Pub/Sub topics, S3 buckets or CDNs. Modelling them together\nwith components and APIs will allow us to visualize and create tooling around\nthem in Backstage.\n\nResources are typically indexed from declarative definitions (e.g. Terraform,\nGCP Config Connector, AWS Cloud Formation) and/or inventories from cloud\nproviders (e.g. GCP Asset Inventory) and thus wouldn't need their own descriptor\nfiles, but would be stored in the catalog somewhat like this (actual schema will\nevolve):\n\n```yaml\napiVersion: backstage.io/v1alpha1\nkind: Resource\nmetadata:\n  name: my-component-db\nspec:\n  type: gcp-spanner\n  url: spanner.googleapis.com/projects/prj/instances/my-component-db/databases/my-db\n```\n\n## Consequences\n\nWe will continue fleshing out support for the Component entity in the Backstage\ncatalog.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/assets/architecture-decisions/catalog-core-entities.png"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture-decisions/adr007-use-msw-to-mock-service-requests.md",
+   "identity": "docs/architecture-decisions/adr007-use-msw-to-mock-service-requests.md",
+   "adr_id": "7",
+   "title": "Context",
+   "first_commit": "2020-07-14T21:16:00+02:00",
+   "first_sha": "c1e2a8dcc530b20ef65f90cc26857a0a20632dba",
+   "last_commit": "2020-11-03T10:37:24+01:00",
+   "author": "blam",
+   "email": "ben@blam.sh",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "---\nid: adrs-adr007\ntitle: ADR007: Use MSW to mock http requests\ndescription: Architecture Decision Record (ADR) log on Use MSW to mock http requests\n---\n\n## Context\n\nNetwork request mocking can be a total pain sometimes, in all different types of\ntests, unit tests to e2e tests always have their own implementation of mocking\nthese requests. There's been traction in the outer community towards using this\nlibrary to mock network requests by using an express style declaration for\nroutes. react-testing-library suggests using this library instead of mocking\nfetch directly whether this be in a browser or in node.\n\nhttps://github.com/mswjs/msw\n\n## Decision\n\nMoving forward, we have decided that any `fetch` or `XMLHTTPRequest` that\nhappens, should be mocked by using `msw`.\n\nHere is an example:\n\n```ts\nimport { setupWorker, rest } from 'msw';\n\nconst worker = setupWorker(\n  rest.get('*/user/:userId', (req, res, ctx) => {\n    return res(\n      ctx.json({\n        firstName: 'John',\n        lastName: 'Maverick',\n      }),\n    );\n  }),\n);\n\n// Start the Mock Service Worker\nworker.start();\n```\n\nand in a more real life scenario, taken from\n[CatalogClient.test.ts](https://github.com/backstage/backstage/blob/f3245c4f8f0b6b2625c4a6d5d50161b612fb4757/plugins/catalog/src/api/CatalogClient.test.ts)\n\n```ts\nbeforeEach(() => {\n  server.use(\n    rest.get(`${mockApiOrigin}${mockBasePath}/entities`, (_, res, ctx) => {\n      return res(ctx.json(defaultResponse));\n    }),\n  );\n});\n\nit('should entities from correct endpoint', async () => {\n  const entities = await client.getEntities();\n  expect(entities).toEqual(defaultResponse);\n});\n```\n\n## Consequences\n\n- A little more code to write\n- Gradually will replace the codebase with `msw`\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/backstage/backstage/blob/f3245c4f8f0b6b2625c4a6d5d50161b612fb4757/plugins/catalog/src/api/CatalogClient.test.ts",
+    "${mockApiOrigin}${mockBasePath}/entities"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture-decisions/adr008-default-catalog-file-name.md",
+   "identity": "docs/architecture-decisions/adr008-default-catalog-file-name.md",
+   "adr_id": "8",
+   "title": "Background",
+   "first_commit": "2020-08-05T13:43:06+01:00",
+   "first_sha": "7db913e36b5a7f84a2b96d71622f48d01fd76220",
+   "last_commit": "2020-11-03T10:37:24+01:00",
+   "author": "David Tuite",
+   "email": "github@davidtuite.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "---\nid: adrs-adr008\ntitle: ADR008: Default Catalog File Name\ndescription: Architecture Decision Record (ADR) log on Default Catalog File Name\n---\n\n## Background\n\nWhile the spec for the catalog file format is well described in\n[ADR002](./adr002-default-catalog-file-format.md), guidance was not provided as\nto the name of the catalog file.\n\nFollowing discussion in\n[Issue 1822](https://github.com/backstage/backstage/pull/1822#pullrequestreview-461253670),\na decision was made.\n\n## Name\n\nThe catalog file should be named\n\n```shell\ncatalog-info.yaml\n```\n\nThis name is a default, **not a requirement**. The catalog file will work with\nBackstage regardless of its name.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "backstage/backstage#1822",
+     "kind": "pull",
+     "url": "https://github.com/backstage/backstage/pull/1822",
+     "number": "1822"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "docs/architecture-decisions/adr009-entity-references.md",
+   "identity": "docs/architecture-decisions/adr009-entity-references.md",
+   "adr_id": "9",
+   "title": "Background",
+   "first_commit": "2020-09-21T13:33:36+02:00",
+   "first_sha": "0222279021d3ed0f3d83652c36abea64a37ac9a4",
+   "last_commit": "2020-11-03T10:37:24+01:00",
+   "author": "Fredrik Adel\u00f6w",
+   "email": "freben@gmail.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "---\nid: adrs-adr009\ntitle: ADR009: Entity References\ndescription: Architecture Decision Record (ADR) log on Entity References\n---\n\n## Background\n\nWhile the spec for the catalog file format is well described in\n[ADR002](./adr002-default-catalog-file-format.md), guidance was not provided as\nto how one is expected to express references to other entities in the catalog.\nThere was also some confusion on how to reference entities in URLs in the\nBackstage frontend.\n\nFollowing discussion in\n[Issue 1947](https://github.com/backstage/backstage/issues/1947), a decision was\nmade.\n\n## Entity References in YAML files\n\nThe textual format, as written by humans, to reference entities by name is on\nthe following form, where square brackets denote optionality:\n\n```\n[<kind>:][<namespace>/]<name>\n```\n\nThat is, it is composed of between one and three parts in this specific order,\nwithout any additional encoding, with those exact separator characters.\nOptionality of `kind` and `namespace` are contextual, and they may or may not\nhave default contextual fallback values.\n\nWhen that format is insufficient or when machine made interchange formats wish\nto express such relations in a more expressive form, a nested structure on the\nfollowing form can be used:\n\n```yaml\nkind: <kind>\nnamespace: <namespace>\nname: <name>\n```\n\nOf these, only `name` is always required. Optionality of `kind` and `namespace`\nare contextual, and they may or may not have default contextual fallback values.\nAll other possible key values in this structure are reserved for future use.\n\nA system or user wanting to express a full entity name that is always valid,\nshall supply the entire triplet whether using the string form or the compound\nform.\n\nA full description of the format can be found\n[in the documentation](https://backstage.io/docs/features/software-catalog/references).\n\n## Entity References in URLs\n\nWhere entities are referenced by name in the Backstage frontend, the URL\ncontaining the reference shall take the following form:\n\n```\n:namespace/:kind/:name\n```\n\nAll three parts are required under all circumstances. The default value for the\n`namespace` in the catalog is the string `\"default\"`, if the entity does not\nspecify one explicitly in `metadata.namespace`.\n\nThis means that we do not encourage the string form of entity references to be\nused as a single URL segment, due to the use of URL-unsafe characters leading to\npossible risk, confusion, and uglier URLs.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "backstage/backstage#1947",
+     "kind": "issue",
+     "url": "https://github.com/backstage/backstage/issues/1947",
+     "number": "1947"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "docs/architecture-decisions/adr000-template.md",
+   "identity": "docs/architecture-decisions/0000-template.md",
+   "commit": "6cd4a99261add9032e2815f9f2d3ee47fd14f325",
+   "date": "2021-01-09T23:18:14+01:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "chore: update documentation around ADR and the template skeleton",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "blam",
+   "email": "ben@blam.sh"
+  },
+  {
+   "path": "docs/architecture-decisions/adr010-luxon-date-library.md",
+   "identity": "docs/architecture-decisions/adr010-luxon-date-library.md",
+   "commit": "8bf638945d38ffd866ad7289fd560363a078d5da",
+   "date": "2021-01-18T16:31:17-05:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "change date lib adr status to accepted",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Andrew Thauer",
+   "email": "6507159+andrewthauer@users.noreply.github.com"
+  },
+  {
+   "path": "docs/architecture-decisions/adr010-luxon-date-library.md",
+   "identity": "docs/architecture-decisions/adr010-luxon-date-library.md",
+   "commit": "6878af026e51bdd7eba3c4c3ece92beb794f5186",
+   "date": "2021-01-19T10:09:02-05:00",
+   "old_state": "accepted",
+   "new_state": "unknown",
+   "old_raw": "Accepted",
+   "new_raw": "",
+   "replacement": null,
+   "message": "remove adr status header",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Andrew Thauer",
+   "email": "6507159+andrewthauer@users.noreply.github.com"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 12,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "11"
+}

@@ -1,0 +1,275 @@
+{
+ "repo": "slior/adrflow",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2017-06-16T00:00:26+03:00",
+ "last_commit": "2018-12-27T21:49:15+02:00",
+ "n_commits": 174,
+ "n_authors": 2,
+ "n_files": 52,
+ "n_code_files": 35,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 8,
+ "adrs": [
+  {
+   "path": "doc/adr/8-Remove_ADR_Util_Sync_Module.md",
+   "identity": "doc/adr/8-Remove_ADR_Util_Sync_Module.md",
+   "adr_id": "",
+   "title": "Remove ADR Util Sync Module",
+   "first_commit": "2018-12-10T00:16:09+02:00",
+   "first_sha": "9f5eb59488103f3c5775b234f366bfba3c77baf7",
+   "last_commit": "2018-12-10T00:18:50+02:00",
+   "author": "slior",
+   "email": "lior.schejter@gmail.com",
+   "status": "proposed",
+   "status_raw": "Proposed 2018-12-09 Accepted 2018-12-10 supersedes [5](5-Utility_Context_Lazily_Initialized.md) mentions [6](6-Centralize_Definition_of_Filename.md)",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 8 Remove ADR Util Sync Module\n\n## Status\n\nProposed 2018-12-09\n\nAccepted 2018-12-10\n\nsupersedes [5](5-Utility_Context_Lazily_Initialized.md)\n\nmentions [6](6-Centralize_Definition_of_Filename.md)\n\n## Context\n\nThe ADR Util module grew as an attempt to centralize a list of utility functions that require the context of the ADR file and directory.  \nThe resulting module was very central to the logic of the entire program, but resulted in a module that had too much differing concerns (too many responsibilities/reasons to change).\n\nThis has eventually resulted in tangled code, and sometimes to (unintentional) circular dependencies, e.g. as when trying to isolate the handling of links.\n\nAt the same time, the usage of the shared context - ADR files and directory - hasn't proved that useful in most case.  \nIn the cases where it should be used, it can be defined and cached.\n\n## Decision\n\nDivide the utilities defined in this module to other, more focused modules (under `core` directory):\n1. `files.js`: handles all file reading and writing\n2. `adrobj.js`: handles all ADR logical-level operations. Essentially linking the ID to the file.\n3. `links.js`: handles logic around linking ADRs\n\nIn cases where caching the ADR files is needed, e.g. in `adrobj.js`, it is done in that module.\n\n## Consequences\n\nIn some cases, the API has to change - instead of the API defined at the logical ADR level (the ADR ID), it is defined at the file level, and client modules (namely commands) need to bridge the gap.  \nIn cases we see that this repeats itself, we can add a wrapping in the `adrobj` module to bridge the gap; e.g. as it is done for the `contentOf` function.\n\n\n    ",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "files.js",
+    "adrobj.js",
+    "links.js"
+   ],
+   "implementation": {
+    "sha": "9f5eb59488103f3c5775b234f366bfba3c77baf7",
+    "date": "2018-12-10T00:16:09+02:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "src/core/files.js",
+     "src/core/links.js"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/3-Allow_More_Permissive_File_Names.md",
+   "identity": "doc/adr/3-Allow_More_Permissive_File_Names.md",
+   "adr_id": "",
+   "title": "Allow More Permissive File Names",
+   "first_commit": "2017-07-26T23:09:33+03:00",
+   "first_sha": "6ee94ba60bfdc957e74d12e7c5888eb63d358cb7",
+   "last_commit": "2017-12-31T22:53:35+02:00",
+   "author": "slior",
+   "email": "lior.schejter@gmail.com",
+   "status": "proposed",
+   "status_raw": "Proposed 2017-07-26 Accepted 2017-07-26 generalized_by [7](7-Defining_Customizations.md)",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 3 Allow More Permissive File Names\n\n## Status\n\nProposed 2017-07-26  \nAccepted 2017-07-26\n\ngeneralized_by [7](7-Defining_Customizations.md)\n\n## Context\nGiven that the ADR flow tool is intended to be a drop-in tool, and integrate well with other tools and repositories, we should aim also for ADR files created outside the tool, not with the same naming convention.  \nThe tool generally works with the file system - looking for the ADR dir, enumerating files, etc.\n\nThe existing naming convention is rather strict, so the functions looking for files rely on the same regular expression that's used to create it.  \nWe would like to extend the file enumeration to more options for file names.\n\n## Decision\nChange the regular expression that's used to enumerate files to include more options (hypens, spaces).  \nFile should still be with a `.md` extension, and reside in the ADR dir (the directory identified by `.adr` file).\n\nThe file template itself still remains the same.\n\n## Consequences\nMore file names will be recognized as ADR files.\nFunctions relying on `withAllADRFiles` will be affected.\n\n    ",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/7-Defining_Customizations.md",
+   "identity": "doc/adr/7-Defining_Customizations.md",
+   "adr_id": "",
+   "title": "Defining Customizations",
+   "first_commit": "2017-12-30T23:12:39+02:00",
+   "first_sha": "c3d44657159073209fe928976e589b1f5191f537",
+   "last_commit": "2017-12-31T22:53:35+02:00",
+   "author": "slior",
+   "email": "lior.schejter@gmail.com",
+   "status": "proposed",
+   "status_raw": "Proposed 2017-12-28 Accepted 2017-12-30 extends [3](3-Allow_More_Permissive_File_Names.md)",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 7 Defining Customizations\n\n## Status\n\nProposed 2017-12-28\n  \nAccepted 2017-12-30\n\nextends [3](3-Allow_More_Permissive_File_Names.md)\n\n## Context\nThe need to customize different features in the tool raises the question of how to specify the customization.\n\nOn the one hand, there's a need to offer flexibility and expressive power. Assuming the average user is a competent developer, the most obvious way to achieve this  is to enable\nsome kind of a programming interface/definition.  \nGiven that the tool is written in JS, it's reasonable to assume a definition that will be done in JS as well.  \nThis might be too much power, resulting in potential performance/bugs/security issues.\n\nOn the other hand, there's the motivation to keep the tool simple enough, so configuration is minimal, but still expressive.\n\nWe can always start with a limited definition, but with an eye for further extensions. In any case, we'd like customizations to happen in a consistent and uniform manner.\n\nThis in a sense extends/generalizes the [decision to allow more permissive file names](3-Allow_More_Permissive_File_Names.md) by simply allowing any kind of customized file names, when working with the file name customization.\n\n## Decision\nIn order to enable future extensions, we'll choose a customization method based on JS-based extensions.  \nWe'll define a file called `adr_custom.js` which will contain customization done to the tool. This file will need to reside in the ADR directory (the directory with the `.adr` file).\n\nThe customization code will be simple JS code, w/ predefined objects, depending on the API as defined by the tool. To be documented separately.  \nFor example, for defining the file name pattern, we'll probably require some JS object, with a predefined name, to be in that file.\n\nThe customization file (`adr_custom.js`) will be in a module form (using `module.export` etc.), so it can be easily consumed in the tool's code.\n\nWe assume that a user customizing the tool is competent enough to handle simple scripting.  \nLimitations on customizations, resulting in easier customization, are left to specific features.\n\n## Consequences\n\nFeatures in the tool that require customization will need to read this file, and document the necessary expected objects in it.\n\n\n    ",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "adr_custom.js"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/6-Centralize_Definition_of_Filename.md",
+   "identity": "doc/adr/6-Centralize_Definition_of_Filename.md",
+   "adr_id": "",
+   "title": "Centralize Definition of Filename",
+   "first_commit": "2017-12-26T23:12:37+02:00",
+   "first_sha": "0f8a3083e7436f94ac2e4d0b523bdde4ec15d19b",
+   "last_commit": "2017-12-26T23:12:37+02:00",
+   "author": "slior",
+   "email": "lior.schejter@gmail.com",
+   "status": "proposed",
+   "status_raw": "Proposed 2017-12-26 Accepted 2017-12-26",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 6 Centralize Definition of Filename\n\n## Status\n\nProposed 2017-12-26\n  \nAccepted 2017-12-26\n\n## Context\nWith the evolution of the tool, several places in the code need to somehow relate to how the format/template of the ADR file name.  \nThis immediately means that a change to the template has to take into account these different places.\n\nAn example for a feature that suffers from this is customizing the ADR file name template, e.g. in [issue #17](https://github.com/slior/adrflow/issues/17).  \n\nCurrently identified places that refer to the file name:\n1. The `new` command (`new.js`)\n2. The `adr_util.js` file, in several functions.\n3. The `adr_util_sync.js` file.\n\n## Decision\nWe will centralize the definition of the ADR file name template, so it can be easily changed and configured.\n\nGiven that we want shared code to be more in `adr_util_sync` we will probably centralize the definition there.\n\n## Consequences\nGiven that the file name template is centralized, all code places that refer to the file name template will need to reuse the same place.   \nFunctionality shouldn't be harmed otherwise.\n\n\n    ",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#17",
+     "kind": "hash",
+     "url": "",
+     "number": "17"
+    },
+    {
+     "key": "slior/adrflow#17",
+     "kind": "issue",
+     "url": "https://github.com/slior/adrflow/issues/17",
+     "number": "17"
+    }
+   ],
+   "mentioned_paths": [
+    "new.js",
+    "adr_util.js",
+    "adr_util_sync.js"
+   ],
+   "implementation": {
+    "sha": "9f5eb59488103f3c5775b234f366bfba3c77baf7",
+    "date": "2018-12-10T00:16:09+02:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "src/adr_util_sync.js"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/5-Utility_Context_Lazily_Initialized.md",
+   "identity": "doc/adr/5-Utility_Context_Lazily_Initialized.md",
+   "adr_id": "",
+   "title": "Utility Context Lazily Initialized",
+   "first_commit": "2017-12-07T23:11:43+02:00",
+   "first_sha": "66452ffb095af0ebe2382f04facde0b16479c678",
+   "last_commit": "2017-12-07T23:11:43+02:00",
+   "author": "slior",
+   "email": "lior.schejter@gmail.com",
+   "status": "proposed",
+   "status_raw": "Proposed 2017-12-07 Accepted 2017-12-07 mentions [1](1-ADR_directory_identified_by_marker_file.md)",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 5 Utility Context Lazily Initialized\n\n## Status\n\nProposed 2017-12-07\n\nAccepted 2017-12-07\n\nmentions [1](1-ADR_directory_identified_by_marker_file.md)\n\n## Context\n\nThe [synchronous utils](../../src/adr_util_sync.js) are intended to be used by commands to work on ADRs, with the given context of the project, e.g. the [adr marker file](1-ADR_directory_identified_by_marker_file.md).  \nSince the context is mandatory (the ADR directory, existing ADRs), it is initialized at the beginning, in the object's constructor.\n\nSeveral commands (scripts) already include that script, and initialize the object on the script loading, as part of the `require` statement.  \nThis resulted in loading the context whenever a command is loaded.  \n\nThis might have performance implications, but the more immediate functional lacuna is that this then assumes that the context *can* be loaded every time.  \nOf course, this assumption breaks - when running the `init` command, where by definition there is no context to load - the `init` command creates that.\n\nThis resulted in trying to run the `init` command, on an existing directory, in an error.\n\n## Decision\nThe ADR project context will be loaded lazily, only when needed.  \nThis assumes the `init` command doesn't require it, and hence will not invoke any commands that require that context (e.g. the existing files).  \nSo any command that is loaded can still create the context object and create an instance of, but the actual context will be loaded easily.\n\nThis assumption seems safe enough since `init` command indeed creates the context (the `.adr` file).  \nAnd this will probably hold for similar commands.  \nCommands that will require the ADR context, will continue to use it as today, and it will be loaded lazily.\n\nWe need of course to make sure that the context isn't created/calculated every time it is called; e.g. searching for the ADR dir every time one of the utility functions is called. In other words - memoize the context-creating functions.\n\n## Consequences\nADR context will be created when necessary, and cached to be used throughout the command execution.\n\n\n    ",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "/../src/adr_util_sync.js"
+   ],
+   "implementation": {
+    "sha": "9f5eb59488103f3c5775b234f366bfba3c77baf7",
+    "date": "2018-12-10T00:16:09+02:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "src/adr_util_sync.js"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/4-Allow_Overriding_Configuration_with_Local_Configuration.md",
+   "identity": "doc/adr/4-Allow_Overriding_Configuration_with_Local_Configuration.md",
+   "adr_id": "",
+   "title": "Allow Overriding Configuration with Local Configuration",
+   "first_commit": "2017-08-08T11:35:21+03:00",
+   "first_sha": "81e264faa4f4cfa10449b4d0453b542ffca84aa3",
+   "last_commit": "2017-08-08T11:37:40+03:00",
+   "author": "slior",
+   "email": "lior.schejter@gmail.com",
+   "status": "proposed",
+   "status_raw": "Proposed 2017-08-08 Accepted 2017-08-08 mentions 1",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 4 Allow Overriding Configuration with Local Configuration\n\n## Status\n\nProposed 2017-08-08\n  \nAccepted 2017-08-08\n\nmentions 1\n\n## Context\n\nThe ADR flow tool is a command line tool for managing ADR files. It is aimed to be used in command line, in MS-Windows primarily, but also other platforms.\n\nAs a guiding principle, and in order to preserve simplicity, we don't want to introduce a separate data store. Data is stored and managed in files. This includes configuration, which should be explicit and easily identifiable and editable.\n\nGiven this, in [ADR 1](1-ADR_directory_identified_by_marker_file.md), we decided that the ADR directory is identified by a file called `.adr`. This file will also contain configuration of the tool. This is to reduce the number of moving parts; so the marker file (`.adr`) is used also as a configuration file.  \n\nPart of the value statement is for these files to be available in source control, and easily shared and collaborated on by a team. This means the marker file needs to be version-controlled as well.  \n\nAt the same time, the configuration may change on a per-developer basis. For example, the location of the editor used to edit ADRs.\n\n### Alternative 1: Introduce a Separate Configuration File\nThis means that we, by definition, and always will have a separate configuraton file, on top of an empty marker file.\nThis makes sharing configuration slightly harder, and makes it hard to share some of the configuration and customize others.\n\n### Alternative 2: Use Environment Variables\nWith this approach we configure the system using environment variables.\nThis is OS-dependenet, and makes the configuration somewhat less explicit. It's also harder to share across a team where necessary.\n\n## Decision\nWe will keep the `.adr` file, with its current dual role - a marker file, and a *shared* configuration file.  \n\nIn addition, we'll add the option to supply a `local.adr` file, with the same format as the `.adr` file, and allow a developer to specify properties to override there.\n\nProperties that are specified only in `.adr` will have their values taken from there.\n\n## Consequences\n\nDevelopers will need to specify a separate `local.adr` file for local configuration (overriding `.adr`).\n\nIn order to avoid overriding each other's configuration, the `local.adr` will need to ignored by the version control system used, e.g. added to `.gitignore` if git is used.\n\n    ",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/2-Create_ADR_Object.md",
+   "identity": "doc/adr/2-Create_ADR_Object.md",
+   "adr_id": "",
+   "title": "Create ADR Object",
+   "first_commit": "2017-07-08T22:12:47+03:00",
+   "first_sha": "1c6805467e89bc9dd629608568741c62c4bf9bff",
+   "last_commit": "2017-07-29T00:31:57+03:00",
+   "author": "slior",
+   "email": "lior.schejter@gmail.com",
+   "status": "proposed",
+   "status_raw": "Proposed 2017-07-08 Accepted 2017-07-12",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 2 Create ADR Object\n\n## Status\n\nProposed 2017-07-08  \nAccepted 2017-07-12\n\n## Context\n\nDifferent commands in the ADR utility require manipulating the content of an ADR.  \nFor example, changing its status.\n\nInstead of spreading the structure and management of ADR *content* into different commands, it would be better to centralize this related piece of knowledge into one file.\n\nAlso, we may want to change how manipulate content, or export it. Centralizing it in one place will encapsulate that aspect of the tool into one place.\n\n## Decision\n\nAll ADR content manipulation is to be written and centralized in a single ADR object, under the `core` directory.\n\n## Consequences\n\nAll commands that need to manipulate the content of an ADR will need to import this file and use its functions.  \nAll ADR content management will abstracted in this file.\n\n\n    ",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/1-ADR_directory_identified_by_marker_file.md",
+   "identity": "doc/adr/1-ADR_directory_identified_by_marker_file.md",
+   "adr_id": "",
+   "title": "ADR directory identified by marker file",
+   "first_commit": "2017-07-01T22:10:22+03:00",
+   "first_sha": "24f0c7e7beadefb4b0a83b3dcc84f50a83bf5d22",
+   "last_commit": "2017-07-22T19:32:50+03:00",
+   "author": "slior",
+   "email": "lior.schejter@gmail.com",
+   "status": "proposed",
+   "status_raw": "Proposed 2017-07-01 Accepted 2017-07-11",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 1 ADR directory identified by marker file\n\n## Status\n\nProposed 2017-07-01  \nAccepted 2017-07-11\n\n## Context\n\nThe ADR utility is meant to be run inside a project, and initialize the ADR management in that project's file system.  \nWe would like to rely only on the project's file system, and make it versionable in traditional version control tools, e.g. git.  \n\nTo this end, all scripts in this utility must rely solely on the file system to find the correct location of the ADR files and relevant configurations.  \nIn order not to rely on some environment setting, we decided to opt for a special marker file, named specifically `.adr`, that will mark the location of the ADRs.\n\nOther options include to have an environment variable, rely on a naming convention, or specify it in a configuration in the root.  \nThe option of the marker file seems safest and at the same time simplest, with the least number of assumptions or conventions made by the user.\n\nThe downside is of course that moving the file will potentially lead to malfunctioning scripts.  \nAt the same time, moving the marker file, with the ADRs to a new place is easy - just move the files.\n\nThe only remaining assumption is that the ADR utility with a working directory that is a parent of the ADR. This is usually not a problem if the user is working on a specific project.\n\n## Decision\n\nThe `init` command will create the marker `.adr` file which will be used to identify the ADR directory.\n\nIn addition, this file will be a simple properties file which will maintain other program configuration, and allows users to modify it for different features; e.g. configuration an editor.\n\n## Consequences\n\nSee above:\n1. The ADR utility must be invoked in some ancestor directory of the ADR directory.\n2. Loss of this file will prevent the ADR directory from working properly\n3. The configuration of the ADR will be part of the versioned sources.\n   This might prevent different users from having different configurations easily (can be worked around by changing it locally and not committing this file)/\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 8,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "8"
+}

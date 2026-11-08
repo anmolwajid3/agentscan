@@ -1,0 +1,667 @@
+{
+ "repo": "ESIPFed/science-on-schema.org",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2018-07-20T14:14:37-04:00",
+ "last_commit": "2025-11-20T12:55:48-05:00",
+ "n_commits": 902,
+ "n_authors": 25,
+ "n_files": 148,
+ "n_code_files": 2,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 14,
+ "adrs": [
+  {
+   "path": "decisions/77-temporalCoverageGuidance.md",
+   "identity": "decisions/77-temporalCoverageGuidance.md",
+   "adr_id": "",
+   "title": "Recommendations for documenting temporal coverage of dataset #",
+   "first_commit": "2021-07-07T14:16:43-07:00",
+   "first_sha": "506b14f2c55cc8990bb380ea61d38337b5ca6b9f",
+   "last_commit": "2022-06-06T14:19:53-07:00",
+   "author": "Stephen Richard",
+   "email": "513380+smrgeoinfo@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 27,
+   "text": "# Recommendations for documenting temporal coverage of dataset #\n\nDiscussion: [Add OWL-Time and chronometric age extension guidance](https://github.com/ESIPFed/science-on-schema.org/issues/77)\n\n## Status ##\nAccepted\n\n## Decision ##\nUpdate the guidance for temporalCoverage description.  Main recommendations:\n1. Use http://www.w3.org/2006/time# classes and properties from W3C OWL Time ([Cox and Little, editors draft](https://w3c.github.io/sdw/time/)) to document temporalCoverages that can not be expressed using schema:DateTime.\n1. Use https://vocabs.gsq.digital/object?uri=http://linked.data.gov.au/def/trs temporal reference systems (TRS) with the http://www.w3.org/2006/time#hasTRS property. \n1. Provide numeric age positions, if possible. Use the appropriate time unit abbreviations from https://geoschemas.org/extensions/temporal.html for the dating method(s) and geologic date(s)/age(s) (BP, BP-CAL, ka, Ma, Ga). Include [age uncertainties](https://geoschemas.org/extensions/temporal.html#Uncertainty) when known.\n1. If age is specified based on a time scale, provide nearest subsuming age from the [International Chronostratigraphic Chart](https://stratigraphy.org/chart). Note that the ICS chart is updated on an ad hoc basis, annually or more frequently. It would be useful to cite the specific version used if you are doing precision chronology.\n\n\n## Context ##\nTemporal coverage is defined as \"the time period during which data was collected or observations were made; or a time period that an activity or collection is linked to intellectually or thematically (for example, 1997 to 1998; the 18th century)\" ([ARDC RIF-CS](https://documentation.ardc.edu.au/display/DOC/Temporal+coverage)). For documentation of Earth Science, Paleobiology, Paleontology, Archeology, etc. datasets, we are interested in the second case -- the time period that data are linked to thematically. \n\n[Current guidance for temporal coverage](https://github.com/ESIPFed/science-on-schema.org/blob/master/guides/Dataset.md#temporal-coverage) accounts for [ISO8601 DateTime and DateTime ranges](https://en.wikipedia.org/wiki/ISO_8601), and this guidance is sufficient to account for temporal coverages that are in the range of the [Gregorian calendar](https://en.wikipedia.org/wiki/Gregorian_calendar). \n\nThe schema:temporalCoverage properties includes schema:Text, schema:DateTime, and schema:URL. Specifying temporalCoverage as text would probably be useful for someone reading the metadata record, but as far as interoperability, it wouldn't be useful unless there were detailed conventions about the text that would be used (controlled vocabulary and syntax that could be validated). The same problem holds for specifying temporalCoverage with a URL. Aggregators would have to understand the semantics of the URL to integrate the information in a search interface. Also, there is no way to express a temporalCoverage with the beginning and end of a time interval unless it can be expressed as an ISO8601 DateTime range. \n\n### Solution\nFor temporal extents that can not be expressed using schema:DateTime, use W3C OWL time elements from the http://www.w3.org/2006/time# namespace. Science-on-Schema.org (SOSO) is already recommending use of elements from some other namespaces, and OWL time is widely recognized and vetted. A variaty of Temporal Reference Systems are availabe at the Queensland Department of Natural Resources, Mines and Energy: https://vocabs.gsq.digital/object?uri=http://linked.data.gov.au/def/trs and date/age uncertainies can be described using Named Individuals at geoschemas.org: https://geoschemas.org/extensions/temporal.html.  \n\nFor user-friendliness, include a text statement of the temporal coverage;\n\n1. The dataset's temporalCoverage is described using ProperInterval, hasBeginning, and hasEnd elements from [OWL Time](http://www.w3.org/2006/time). The human readable description can be found in the description field: \"Eruptive activity at Mt. St. Helens, Washington, March 1980 - January 1981\".\n\n  *Example*: \n\n```\n{    \"@context\": {\n        \"@vocab\": \"http://schema.org/\",\n        \"time\": \"http://www.w3.org/2006/time#\"\n    },\n    \"@type\": \"Dataset\",\n        \"description\": \"Eruptive activity at Mt. St. Helens, Washington, March 1980 - January 1981\",\n        \"temporalCoverage\": [\n            {\n                \"@type\": \"time:ProperInterval\",\n                \"time:hasBeginning\": {\n                     \"@type\": \"time:Instant\",\n                     \"time:inXSDDateTimeStamp\": \"1980-03-27T19:36:00Z\"\n                 },\n                 \"time:hasEnd\": {\n                      \"@type\": \"time:Instant\",\n                    \"time:inXSDDateTimeStamp\": \"1981-01-03T00:00:00Z\"\n                 }\n            }]\n}\n```\n\n2. The dataset's temporalCoverage is described using Instant, inTimePosition, hasTRS, and numericPosition elements for a single geological date/age without uncertainties from [OWL Time](http://www.w3.org/2006/time).  Use a decimal value with appropriate timescale temporal reference system (TRS) and date/age unit abbreviation. Also provide a text form of the temporalCoverage (here \"760 ka\"). The human readable description can be found in the description field: \"Eruption of Bishop Tuff, about 760,000 years ago\".\n\n   *Example*:\n\n```\n{    \"@context\": {\n        \"@vocab\": \"http://schema.org/\",\n        \"gsqtime\": \"https://vocabs.gsq.digital/object?vocab_id=trs&https://vocabs.gsq.digital/object?uri=http://linked.data.gov.au/def/trsuri=http://linked.data.gov.au/def/trs/\",\n        \"time\": \"http://www.w3.org/2006/time#\",\n        \"xsd\": \"https://www.w3.org/TR/2004/REC-xmlschema-2-20041028/datatypes.html\"\n    },\n    \"@type\": \"Dataset\",\n    \"description\": \"Eruption of Bishop Tuff, about 760,000 years ago\",\n    \"temporalCoverage\": [\n        {\n            \"@type\": \"time:Instant\",\n            \"time:inTimePosition\": {\n\t\t\t\t\"@type\": \"time:TimePosition\",\n                \"time:hasTRS\": {\n                    \"@id\": \"gsqtime:MillionsOfYearsAgo\"\n                },\n                \"time:numericPosition\": {\n                    \"@type\": \"xsd:decimal\",\n                    \"value\": 0.76\n                },\n                \"gstime:GeologicTimeUnitAbbreviation\": {\n                    \"@type\": \"xsd:string\",\n                    \"value\": \"Ma\"\n                }\n            }\n        }]    \n}\n```\n\n3. The dataset's temporalCoverage is described using the Instant, inTimePosition, TimePosition, numericPosition from [OWL Time](http://www.w3.org/2006/time) with a geological date/age with uncertainties. Use a decimal value with appropriate timescale temporal reference system(TRS), date/age unit abbreviation, the uncertainty value and specify at what sigma. Also provide a text form of the temporalCoverage (here \"4.404 +/-+/- 0.008 Ga\"). \"+/-+/-\" indicates the uncertainty is given at 2-sigma. The human readable description can be found in the description field: \"Very old zircons from the Jack Hills formation Australia 4.404 +- 0.008 Ga (2-sigma)\".\n \n   *Example*:\n\n```\n{    \"@context\": {\n        \"@vocab\": \"http://schema.org/\",\n        \"gsqtime\": \"https://vocabs.gsq.digital/object?uri=http://linked.data.gov.au/def/trs\",\n        \"gstime\": \"http://schema.geoschemas.org/contexts/temporal#\",\n        \"time\": \"http://www.w3.org/2006/time#\",\n        \"xsd\": \"https://www.w3.org/TR/200 (from [OWL Time](http://www.w3.org/2006/time))4/REC-xmlschema-2-20041028/datatypes.html\"\n    },  \n    \"@type\": \"Dataset\",\n    \"description\": \"Very old zircons from the Jack Hills formation Australia 4.404 +- 0.008 Ga (2-sigma)\",\n    \"temporalCoverage\": [\n        {\n            \"@type\": \"time:Instant\",\n            \"time:inTimePosition\": {\n                \"@type\": \"time:TimePosition\",\n                \"time:hasTRS\": {\n                    \"@id\": \"gsqtime:BillionsOfYearsAgo\"\n                },\n                \"time:numericPosition\": {\n                    \"@type\": \"xsd:decimal\",\n                    \"value\": 4.404 \n                },      \n                \"gstime:GeologicTimeUnitAbbreviation\": {\n                    \"@type\": \"xsd:string\",\n                    \"value\": \"Ma\"\n                },      \n                \"gstime:Uncertainty\": {\n                    \"@type\": \"xsd:decimal\",\n                    \"value\": 0.008\n                },\n                \"gstime:UncertaintySigma\": {\n                    \"@type\": \"xsd:decimal\",\n                    \"value\": 2.0\n                }       \n            }       \n        }]          \n}\n```\n4. The dataset's temporalCoverage is described using the ProperInterval, hasBeginning, hasEnd, Instant, inTimePosition, TimePosition, and hasTRS elements from [OWL Time](http://www.w3.org/2006/time) with a geological date/age range with uncertainties. Use a decimal value with appropriate timescale temporal reference system(TRS), date/age unit abbreviation, uncertainty value and at what sigma. Also provide a text form of the temporalCoverage (here \"17.1 +/- 0.15 to 15.7 +/- 0.14 Ma\"). \"+/-\" indicates the uncertainty is given at 1-sigma. The human readable description can be found in the description field: \"Isotopic ages determined at the bottom and top of a stratigraphic section in the Columbia River Basalts\".\n\n   *Example*:\n\n```\n{    \n    \"@context\": {\n        \"@vocab\": \"http://schema.org/\",\n        \"gsqtime\": \"https://vocabs.gsq.digital/object?uri=http://linked.data.gov.au/def/trs\",\n        \"gstime\": \"http://schema.geoschemas.org/contexts/temporal#\",\n        \"rdfs\": \"https://www.w3.org/2001/sw/RDFCore/Schema/200212/\",\n        \"time\": \"http://www.w3.org/2006/time#\",\n        \"xsd\": \"https://www.w3.org/TR/2004/REC-xmlschema-2-20041028/datatypes.html\"\n    },\n    \"@type\": \"Dataset\",\n    \"description\": \"Isotopic ages determined at the bottom and top of a stratigraphic section in the Columbia River Basalts\",\n    \"temporalCoverage\": [\n        {\n            \"@type\": \"time:ProperInterval\",\n            \"time:hasBeginning\": {\n                \"@type\": \"time:Instant\",\n                 \"time:inTimePosition\": {\n                    \"@type\": \"time:TimePosition\",\n                    \"rdfs:comment\": \"beginning is older bound of age envelop\",\n                    \"time:hasTRS\": {\n                        \"@id\": \"gsqtime:MillionsOfYearsAgo\"\n                    },\n                    \"time:numericPosition\": {\n                        \"@type\": \"xsd:decimal\",\n                        \"value\": 17.1\n                    },\n                    \"gstime:GeologicTimeUnitAbbreviation\": {\n                        \"@type\": \"xsd:string\",\n                        \"value\": \"Ma\"\n                    }\n                },\n                \"gstime:Uncertainty\": {\n                    \"@type\": \"xsd:decimal\",\n                    \"value\": 0.15\n                },\n                \"gstime:UncertaintySigma\": {\n                    \"@type\": \"xsd:decimal\",\n                    \"value\": 1.0\n                }\n            },\n            \"time:hasEnd\": {\n                \"@type\": \"time:Instant\",\n                \"time:inTimePosition\": {\n                    \"@type\": \"time:TimePosition\",\n                    \"rdfs:comment\": \"ending is younger bound of age envelop\",\n                    \"time:hasTRS\": {\n                        \"@id\": \"gsqtime:MillionsOfYearsAgo\"\n                    },\n                    \"time:numericPosition\": {\n                        \"@type\": \"xsd:decimal\",\n                        \"value\": 15.7\n                    },\n                    \"gstime:GeologicTimeUnitAbbreviation\": {\n                        \"@type\": \"xsd:string\",\n                        \"value\": \"Ma\"\n                    }\n                },\n                \"gstime:Uncertainty\": {\n                    \"@type\": \"xsd:decimal\",\n                    \"value\": 0.14\n                },\n                \"gstime:UncertaintySigma\": {\n                    \"@type\": \"xsd:decimal\",\n                     \"value\": 2.0\n                }\n            }\n        }]\n}\n```\n5. The dataset's temporalCoverage is described using the Instant, inTimePosition, TimePosition, and hasTRS elements from [OWL Time](http://www",
+   "truncated_text": true,
+   "discussion_refs": [
+    {
+     "key": "ESIPFed/science-on-schema.org#77",
+     "kind": "issue",
+     "url": "https://github.com/ESIPFed/science-on-schema.org/issues/77",
+     "number": "77"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/ESIPFed/science-on-schema.org",
+    "geoschemas.org/extensions/temporal.html",
+    "github.com/ESIPFed/science-on-schema.org/blob/master/guides/Dataset.md",
+    "www.w3.org/TR/2004/REC-xmlschema-2-20041028/datatypes.html",
+    "4/REC-xmlschema-2-20041028/datatypes.html",
+    "eml.ecoinformatics.org/schema/eml-coverage_xsd.html",
+    "eml.ecoinformatics.org/eml-schema.html",
+    "usgin.github.io/usginspecs/USGIN_ISO_Metadata.htm",
+    "docs.opengeospatial.org/is/16-008/16-008.html"
+   ],
+   "implementation": {
+    "sha": "a445ebe5ae47f1c757f6d7ce26ae19396e4a8fcd",
+    "date": "2021-08-02T16:10:13-04:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "guides/Dataset.md"
+    ]
+   }
+  },
+  {
+   "path": "decisions/27-measuredVariable.md",
+   "identity": "decisions/27-measuredVariable.md",
+   "adr_id": "",
+   "title": "Describe variables in Dataset",
+   "first_commit": "2021-06-03T13:39:05-07:00",
+   "first_sha": "c79d9fcc78eab97ff4c7e4396dd765535b402831",
+   "last_commit": "2022-05-02T10:30:39-07:00",
+   "author": "Stephen Richard",
+   "email": "513380+smrgeoinfo@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Describe variables in Dataset \n\nDiscussion: https://github.com/ESIPFed/science-on-schema.org/issues/27\n\n## Status ##\nAccepted\n\n## Decision ##\nUpdate the Variable section in the Science on Schema.org Dataset.md document, replacing text between lines 328 to 379 in Dataset.md with a description of three Tiers of variableMeasured: text only, adding PropertyValue/PropertyID, and adding additional structured properties.\n\n### Specific recommendations for schema.org usage\n\n1. Textual names and descriptions are minimally acceptable but not preferred\n\n1. Multiple `so:propertyID` values could be used to indicate different levels of granularity/detail for the property associated with an attribute. For example there might be a propertyID for 'water temperature', 'sea surface water temperature', 'sea surface water temperature measured with protocol X, daily average, Kelvins, xsd:decimal'.  Each of these description approaches addresses different use cases. Communities can define standard reference resources that provide variable definitions with identifiers that can be used for information interchange.\n\n1. use of other `schema:PropertyValue` properties recommended, including `schema:unitText`, `schema:unitCode`, `qudt:dataType`, and others.\n\n### Recommended additions in Science on Schema.org vocabulary:\n- Use [Quantity, Units of Measure,Dimensions and Types (QUDT) ontology](http://qudt.org/) (qudt:) property `qudt:dataType` with values from `schema:DataType` to document basic data types for `schema:PropertyValue`, and other [xml schema](https://www.w3.org/TR/xmlschema-2/#built-in-primitive-datatypes)[  RDF](https://www.w3.org/TR/rdf11-concepts/#xsd-datatypes), or [QUDT quantity kinds](http://qudt.org/doc/2019/12/DOC_VOCAB-QUANTITY-KINDS-ALL-v2.1.html) for more complex data types. Specific types mentioned in the revised text are: `qudt:MultiDimensionalDataFormatType`, `qudtschema:TupleType`, `qudtschema:DimensionalDatatype`, `qudtschema:ReferenceDatatype`, and `qudtschema:CompositeDataStructure`. (prefix qudtschema: <http://qudt.org/schema/qudt/>)\n\n\n## Context ##\nOriginal issue question: which is the best way to represent ontological terms representing observation types of a measuredVariable.  This has evolved into a wider discussion of what needs to be represented in schema.org documents to document dataset variables.  See [discussion document](https://github.com/ESIPFed/science-on-schema.org/blob/issue27-measuredVariable/guides/DiscussionVariableMeasured.md)\n\nOther more advanced definitions of variables within an Observational data context using `schema:Observation` were explored but only described in a new Experimental.md document as we determined that more work would be needed to reach agreeement on a consistent and logically consistent approach.\n\n## Consequences ##\n- inclusion of description of variables included in a dataset will enhance search capabilities, allowing users to find datasets that contain the specific kinds of information they need.\n- More in depth information about variable will allow more meaningful assessment of whether a dataset is fit for purpose before accessing the data. This information migh include how variables were determined (measurement technique), the range of values in data, what vocabularies are used, or what data type is used to quantify a variable.\n\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "ESIPFed/science-on-schema.org#27",
+     "kind": "issue",
+     "url": "https://github.com/ESIPFed/science-on-schema.org/issues/27",
+     "number": "27"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/ESIPFed/science-on-schema.org",
+    "qudt.org/doc/2019/12/DOC_VOCAB-QUANTITY-KINDS-ALL-v2.1.html",
+    "github.com/ESIPFed/science-on-schema.org/blob/issue27-measuredVariable/guides/DiscussionVariableMeasured.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/109-funding.md",
+   "identity": "decisions/109-funding.md",
+   "adr_id": "109",
+   "title": "Provide funding using the inverse of fundedItem with @reverse",
+   "first_commit": "2021-05-05T13:54:47-08:00",
+   "first_sha": "9f96e9e9b4ebc19aea01648ebb69470ad6fbb950",
+   "last_commit": "2022-03-07T20:27:37-05:00",
+   "author": "Matt Jones",
+   "email": "gitcode@magisa.org",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# Provide funding using the inverse of fundedItem with @reverse\n\nDiscussion: https://github.com/ESIPFed/science-on-schema.org/issues/109\n\n## Status ##\n\n__Accepted__\n\n## Decision ##\n\nProvide funding information about one or more grants through the `schema:MonetaryGrant`, linking it to `schema:Dataset` using the `schema:funding` property that can now be used from a schema:CreativeWork.\n\n## Context ##\n\nBefore the `schema:funding` property existed, the `schema:MonetaryGrant` could only be linked to started from a `Dataset` by using the  JSON-LD `@reverse` keyword on the `Grant` property called `fundedItem`. `schema.org` has now created a `funding` property and defined it as the `inverseOf` the `fundedItem`. See https://github.com/schemaorg/schemaorg/issues/3056.\n\n## Consequences ##\n\n- With the `funding` property accepted into the core schema.org vocabulary, there are no consequences to no longer using the JSON-LD `@reverse` keyword.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "ESIPFed/science-on-schema.org#109",
+     "kind": "issue",
+     "url": "https://github.com/ESIPFed/science-on-schema.org/issues/109",
+     "number": "109"
+    },
+    {
+     "key": "schemaorg/schemaorg#3056",
+     "kind": "issue",
+     "url": "https://github.com/schemaorg/schemaorg/issues/3056",
+     "number": "3056"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/ESIPFed/science-on-schema.org"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/52-namespace-consistency.md",
+   "identity": "decisions/52-namespace-consistency.md",
+   "adr_id": "",
+   "title": "Namespace Consistency for http://schema.org/",
+   "first_commit": "2020-07-17T13:10:39-08:00",
+   "first_sha": "9497cc853a49dce9262fc0042efbf4ba4d9e9ad6",
+   "last_commit": "2022-01-28T19:31:42-09:00",
+   "author": "Matt Jones",
+   "email": "gitcode@magisa.org",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Namespace Consistency for http://schema.org/\n\nDiscussion:\n  - https://github.com/ESIPFed/science-on-schema.org/issues/52\n  - https://github.com/ESIPFed/science-on-schema.org/issues/151\n\n## Status ##\n_Pick one of:_ Proposed, Accepted, Rejected, Deprecated, Superseded\n\nAccepted\n\n## Decision ##\nWe recommend that the namespace URI for the schema.org vocabulary be consistently set to the value `http://schema.org/`.\n\n## Context ##\nWhile the schema.org vocabulary is resolvable at both the original http address and the newer `https` address, changing the namespace to https references would also effectively change the namespace of the terms to a new namespace. While schema.org maintainers have clarified that both namespaces have been actively recommended for 5 years, and are considered synonomous,\nthe official context file that is retrieved from both `https://schema.org/` and `http://schema.org` define the namespace URI for the vocabulary as `http://schema.org/`. See the discussion and pointers in issue #151. For consistency, we recommend using a `http`-based namespace so that term URIs stay comparable over time, but also that harvesters consumers treat the http and https namespaced terms as logical synonyms. In some cases, importing the aligment axioms from schema.org-provided files (like OWL files) may provide sufficient rules for determining that equivalence.\n\nOne consistent mechanism to use the `http`-based namespace is to load the context from the context file maintained by schema.org. This can be accomplished using:\n\n```json\n{\n    \"@context\": \"https://schema.org/\",\n    \"@type\": \"Dataset\",\n    \"name\": \"Example dataset title\"\n}\n```\n\nWhile the context is loaded from the `https` address above, the resulting JSON-LD fragment uses the `http` namespace when it is expanded:\n\n```json\n[\n  {\n    \"@type\": [\n      \"http://schema.org/Dataset\"\n    ],\n    \"http://schema.org/name\": [\n      {\n        \"@value\": \"Example dataset title\"\n      }\n    ]\n  }\n]\n```\n\nIn addition to the `http`, we also need the trailing slash to be consistently applied, so that term URIs that are constructed become properly expanded. For example, `schema:Dataset` should expand to `http://schema.org/Dataset`. Without the trailing slash, it would expand to the incorrect `http://schema.orgDataset`.\n\n## Consequences ##\n\n- Providers should modify documents to use the https-based URI with a trailing slash for retrieving the context document\n- The actual namespace used is precisely `http://schema.org/`\n- Harvesters should treat the http and https-based namespaces as equivalent\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "ESIPFed/science-on-schema.org#52",
+     "kind": "issue",
+     "url": "https://github.com/ESIPFed/science-on-schema.org/issues/52",
+     "number": "52"
+    },
+    {
+     "key": "ESIPFed/science-on-schema.org#151",
+     "kind": "issue",
+     "url": "https://github.com/ESIPFed/science-on-schema.org/issues/151",
+     "number": "151"
+    },
+    {
+     "key": "#151",
+     "kind": "hash",
+     "url": "",
+     "number": "151"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/ESIPFed/science-on-schema.org"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/66-checksum.md",
+   "identity": "decisions/66-checksum.md",
+   "adr_id": "",
+   "title": "Represent checksum values as instances of `identifier`",
+   "first_commit": "2021-06-15T14:39:44-08:00",
+   "first_sha": "18cbc58dd8ba53fce4918c4e8eed5e390c611281",
+   "last_commit": "2021-06-15T15:23:31-08:00",
+   "author": "Matt Jones",
+   "email": "gitcode@magisa.org",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Represent checksum values as instances of `identifier`\n\nDiscussion: https://github.com/ESIPFed/science-on-schema.org/issues/66\n\n## Status ##\n\n__Approved__\n\n## Decision ##\n\nProvide checksum values for individual digital objects within a Dataset by using `spdx:checksum`, with a `checksumValue` property that contains the unqualified hash value, and a `checksumAlgorithm` property that refers to the identifier of an SPDX named individual identifying the algorithms class.\n\n## Context ##\nBecause schema.org does not contain a class for representing checksum values, by convention we recommend using the [`spdx:checksum`](http://spdx.org/rdf/terms#checksum) property, which points at an `spdx:Checksum` instance that provides both the value of the checksum and the algorithm that was used to calculate the checksum.\n\n## Consequences ##\n\n- Because we are using the SPDX vocabulary, it's prefix must be defined in the `@context`\n- Because we are using an external vocabulary, some schema.org validators may show errors, but they won't stop processing by Google and related indexers\n- This use of `spdx:checksum` is meant to solely provide the checksum for its merits, and not as an identifier. If users also want the checksum to be used as an alternate identifier, they should provide a proper serialization of the value as an identifier string. For example, some providers may want to list the Hash URI serialized format of the identifier in the identifier array as well. For example: `\"identifier\": \"hash://sha256/39ae639d33cea4a287198bbcdca5e6856e6607a7c91dc4c54348031be2ad4c51\"`\n- Because the example does not include an `@id` for the Checksum object, a blank node will be generated. It can be avoided by providing an `@id` for the checksum, such as `\"@id\": \"hash://sha256/39ae639d33cea4a287198bbcdca5e6856e6607a7c91dc4c54348031be2ad4c51\"`, but note that means the hash would represent the linked data identifier of the `Checksum`, rather than of the `DataDownload` object.\n\n\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "ESIPFed/science-on-schema.org#66",
+     "kind": "issue",
+     "url": "https://github.com/ESIPFed/science-on-schema.org/issues/66",
+     "number": "66"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/ESIPFed/science-on-schema.org"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/101-spatialExtent.md",
+   "identity": "decisions/101-spatialExtent.md",
+   "adr_id": "101",
+   "title": "Title - Clarify Spatial Extent encoding.",
+   "first_commit": "2021-01-28T12:22:49-07:00",
+   "first_sha": "c5197362860b03b512cbfd76ec5d056c75cea480",
+   "last_commit": "2021-01-28T12:22:49-07:00",
+   "author": "Stephen Richard",
+   "email": "513380+smrgeoinfo@users.noreply.github.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Title - Clarify Spatial Extent encoding.\n\nGeoShape box format unclear #\n\nDiscussion: https://github.com/ESIPFed/science-on-schema.org/issues/101\nhttps://github.com/ESIPFed/science-on-schema.org/pull/104\n\n## Status ##\n Proposed\n \n## Decision ##\nper PR #104:\nIn full.jsonld Example:\n - Fix Duplicate person problem in the JSON. \n - update the  spatialCoverage content\n\nin guides/Dataset.md\n - edits in the Spatial section, introduction, point location discussion, \n - edits in geoshape location section, add additional discussion of problems and approaches: bounding box coordinate specification (coordinate order), how to deal with extents that include the poles, \n\n## Context ##\nQuestions about coordinate ordering and syntax for describing bounding boxes, and how to describe spatiale extents. Try to clarify behavior of Google Dataset search with spatial extent. \n\n## Consequences ##\nMetadata harvesters should be able to systematically index geolocation specified in schema:spatialCoverage.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "ESIPFed/science-on-schema.org#101",
+     "kind": "issue",
+     "url": "https://github.com/ESIPFed/science-on-schema.org/issues/101",
+     "number": "101"
+    },
+    {
+     "key": "ESIPFed/science-on-schema.org#104",
+     "kind": "pull",
+     "url": "https://github.com/ESIPFed/science-on-schema.org/pull/104",
+     "number": "104"
+    },
+    {
+     "key": "#104",
+     "kind": "pull",
+     "url": "",
+     "number": "104"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/ESIPFed/science-on-schema.org",
+    "guides/Dataset.md"
+   ],
+   "implementation": {
+    "sha": "1655b5f94729e30615bc91d78b5a1f457a639199",
+    "date": "2021-03-30T14:05:47-06:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "guides/Dataset.md"
+    ]
+   }
+  },
+  {
+   "path": "decisions/72-provenance.md",
+   "identity": "decisions/72-provenance.md",
+   "adr_id": "",
+   "title": "Use PROV-O, isBasedOn, and ProvONE for provenance information",
+   "first_commit": "2020-07-24T19:13:07-08:00",
+   "first_sha": "a11553a799f4e28147321b99800e2b69499f96f3",
+   "last_commit": "2021-01-21T20:35:08-09:00",
+   "author": "Matt Jones",
+   "email": "gitcode@magisa.org",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# Use PROV-O, isBasedOn, and ProvONE for provenance information\n\nDiscussion: https://github.com/ESIPFed/science-on-schema.org/issues/72\n\n## Status ##\n\n__Accepted__\n\n## Decision ##\n\nProvide provenance information about data processing workflows, data derivation relationships, and versioning information using PROV-O, ProvONE, and schema.org predicates.\n\n- [`schema:isBasedOn`](https://schema.org/isBasedOn).\n- `PROV-O` namespace (http://www.w3.org/ns/prov#) predicates, including `prov:wasDerivedFrom`, `prov:wasRevisionOf`, `prov:used`, and `prov:generatedBy`\n- [ProvONE](https://purl.dataone.org/provone-v1-dev), which specializes PROV for reproducible software workflows, can be used to specify `provone:Program` and `provone:Execution` that create derived products\n\n## Context ##\nHigh level relationships that link datasets based on their processing workflows and versioning relationships are critical for consumers to differentiate versions of a [schema:Dataset](https://schema.org/Dataset), to clarify when a dataset is derived from one or more source Datasets, and to specify linkages to the software that created these derived Datasets. The [PROV-O](https://www.w3.org/TR/prov-o/) recommendation provides the widely-adopted vocabulary for representing this type of information, and should be used within Dataset descriptions, as most relevant properties are missing from schema.org. The main exception is [`schema:isBasedOn`](https://schema.org/isBasedOn), which provides a predicate for indicating that a Dataset was derived from one or more source Datasets. Producers and consumers should interpret `schema:isBasedOn` to be an equivalent property to `prov:wasDerivedFrom` (in the `owl:equivalentProperty` sense). Either is acceptable for representing derivation relationships, but there is utility in expressing the relationship with both predicates. When other `PROV` predicates are used, it is preferred to use `prov:wasDerivedFrom`. Workflow relationships among processing software and both source and derived data files shoudl be described with `prov:used` and `prov:generatedBy` predicates, and by using workflow classes from ProvONE.\n\n## Consequences ##\n\n- Versioning and derivation relationships will be clearer\n- Aggregators and search systems should use these properties to cluster versions of Datasets, and to provide bi-directional linkages to derived data products\n- Software processing and other processing relationships can be provided via linkages to `prov:Activity`, and particularly `provone:Execution` and `provone:Program` for specifying software processes that create derived products. However, these relationships get complicated as multi-step software workflows can be complex. Providing these relationships is useful when researchers strive to describe reproducible research through software workflows.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "ESIPFed/science-on-schema.org#72",
+     "kind": "issue",
+     "url": "https://github.com/ESIPFed/science-on-schema.org/issues/72",
+     "number": "72"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/ESIPFed/science-on-schema.org"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/13-schemaorg-identifier-as-PropertyValue.md",
+   "identity": "decisions/schemaorg-identifier_as_PropertyValue.md",
+   "adr_id": "",
+   "title": "Represent persistent identifiers (schema:identifier) using schema:PropertyValue instead of Text or URL #",
+   "first_commit": "2018-09-17T11:20:59-04:00",
+   "first_sha": "90682b67e313bf5f95115e8780285467584c6aa0",
+   "last_commit": "2020-03-26T14:37:30-08:00",
+   "author": "Adam Shepherd",
+   "email": "ashepherd@whoi.edu",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 7,
+   "text": "# Represent persistent identifiers (schema:identifier) using schema:PropertyValue instead of Text or URL #\n\nDiscussion: https://github.com/ESIPFed/science-on-schema.org/issues/13\n\n## Status ##\n_Proposed_\n\n## Decision ##\nWe will encourage the use of [schema.org/PropertyValue](https://schema.org/PropertyValue) when describing persistent identifiers (PIDs).\n\n## Context ##\n* PropertyValue is more expressive than the Text or URL, and this is helpful when trying to query across data publishers for the same PID. \nFor example, while schema.org/identifier does force the [value to be a resource](https://json-ld.org/playground/#startTab=tab-nquads&json-ld=%7B%22%40context%22%3A%22http%3A%2F%2Fschema.org%2F%22%2C%22%40type%22%3A%22Dataset%22%2C%22name%22%3A%22Test%20Dataset%22%2C%22identifier%22%3A%22https%3A%2F%2Fdoi.org%2F10.1234%2F56789%22%7D&frame=%7B%7D&context=%7B%7D) (see N-Quads tab at the JSON-LD Playground), there isn't consistent use of the same resource URI to define a PID. For example, https://doi.org/<value>, http://dx.doi.org/<value>, http://doi.org/<value> are all valid RDF Resource URIs for the same DOI. But in RDF linked data space, these resource URIs are different making querying for linkages and relationships problematic. To encourage this approach would mean that harvesters would need to recognize PIDs and normalize those PIDs for appropriate, effective querying.\nUsing a PropertyValue enables publishers to express the identifier scheme and the value separately while also expressing them together if desired.\n\n### 1) We recognize that most identifiers have common properties ###\n\n- a **value**, \n- a **domain** or **scheme** (in which the value is guaranteed to be unique),\n- (optionally) a **resolvable URL** (where the thing being identified can be found),\n- (optionally) a **domain prefix** (a token string of characters succeeded by a colon ':' that represents the domain or scheme).\n\n### 2) The identifiers.org Registry is a comprehensive and good resource for disambiguating the identifier scheme ###\n\nWith almost 700 different registered URIs, identifiers.org does a great job of explaining the values of the fields above. Some examples:\n\n- DOI: https://registry.identifiers.org/registry/doi\n- ARK: https://registry.identifiers.org/registry/ark\n- PubMed: https://registry.identifiers.org/registry/pubmed\n- PaleoDB: https://registry.identifiers.org/registry/paleodb\n- Protein Data Bank: https://registry.identifiers.org/registry/pdb\n\n### 3) These map to `schema:PropertyValue` fields as:\n\n- **value** - `schema:value` as the identifier value, \n- **scheme** - `schema:propertyID` as a URI for the identifier scheme,\n- **resolvable URL** - `schema:url` as a resolvable url for that identifier,\n- no good standalone field for the **prefix**.\n\n### 4) Include the **prefix** of an identifier in `schema:value` to help disambiguate the identifier in a single field. ###\n\n2a) Most researchers recognize identifiers that are preceeded by its well known prefix\n- a DOI of value `10.5066/F7VX0DMQ` is more readily recognized as `doi:10.5066/F7VX0DMQ`. \n\n2b) URLs do not do a good job of uniquely disambiguating an identifier - multiple working variants from the resolving service, and publishers may mistakenly use the resulting redirect URL instead of the desired resolving URL.\n\n### Example ###\n\n<pre>\n\"identifier\": [\n      {\n        \"@type\": \"PropertyValue\",\n        \"propertyID\": \"https://registry.identifiers.org/registry/ark\",\n        \"name\": \"ARK: 13030/c7833mx7t\",\n        \"value\": \"ark:13030/c7833mx7t\",\n        \"url\": \"https://n2t.net/ark:13030/c7833mx7t\"\n      },{\n        \"@type\": \"PropertyValue\",\n        \"propertyID\": \"https://registry.identifiers.org/registry/pubmed\",\n        \"name\": \"Pubmed ID #16333295\",\n        \"value\": \"pubmed:16333295\",\n        \"url\": \"http://www.ncbi.nlm.nih.gov/pubmed/16333295\"\n      },\n     {\n        \"@type\": \"PropertyValue\",\n        \"propertyID\": \"https://registry.identifiers.org/registry/paleodb\",\n        \"name\": \"Paleo Database ID #83088\",\n        \"value\": \"paleodb:83088\",\n        \"url\": \"https://identifiers.org/paleodb:83088\"\n      },\n     {\n        \"@type\": \"PropertyValue\",\n        \"propertyID\": \"https://registry.identifiers.org/registry/pdb\",\n        \"name\": \"Protein Data Bank 2gc4\",\n        \"value\": \"pdb:2gc4\",\n        \"url\": \"https://identifiers.org/pdb:2gc4\"\n      }\n]\n</pre>\n\n## Consequences ##\n* Without the identifier scheme, it is difficult to accurately query how identifiers are used and linked across repositories and resources.\n\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "ESIPFed/science-on-schema.org#13",
+     "kind": "issue",
+     "url": "https://github.com/ESIPFed/science-on-schema.org/issues/13",
+     "number": "13"
+    },
+    {
+     "key": "#16333295",
+     "kind": "hash",
+     "url": "",
+     "number": "16333295"
+    },
+    {
+     "key": "#83088",
+     "kind": "hash",
+     "url": "",
+     "number": "83088"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/ESIPFed/science-on-schema.org",
+    "10.5066/F7VX0DMQ",
+    "doi:10.5066/F7VX0DMQ"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/74-schemaorg-additionalType-vs-RDF-typing.md",
+   "identity": "decisions/schemaorg-additionalType_vs_RDF-typing.md",
+   "adr_id": "",
+   "title": "schema.org/additionalType vs. re-using '@type' #",
+   "first_commit": "2018-09-17T10:15:44-04:00",
+   "first_sha": "0d87adb7976346fbfe6085ff6fa51079e27dcf5f",
+   "last_commit": "2020-03-03T08:35:00-05:00",
+   "author": "Adam Shepherd",
+   "email": "ashepherd@whoi.edu",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# schema.org/additionalType vs. re-using '@type' #\n\nDiscussion: https://github.com/ESIPFed/science-on-schema.org/issues/74 \n\n## Status ##\n*Adopted*\n\n## Decision ##\nWe will recommend the use of '@type' (or rdf:type) when typing resources to classes outside of the core schema.org vocabulary.\n\n## Context ##\n* schema.org/additionalType does not provide the semantics that using '@type' or rdf:type does. '@type' or rdf:type provides proper RDF typing making RDF querying across these data easier withot having to mix checking for rdf:type and schema/additionalType without forcing the harvester to pre-process schema.org/additionalType.\n* schema.org/additionalType is defined as a URL and not an RDF resource making the use of prefixed URIs problematic. Prefixed URIs in schema.org/additionalType will not expand to the full URI when harvested. This might be problematic where different publishers use different prefixes ( e.g. a typical issue when prefixing Dublin Core, Dublin Core Terms, DCAT with 'dc', 'dct', 'dcterms' getting mixed usage across publishers)\n\n\n## Consequences ##\n\n* Google Structured Data Testing Tool throws errors for anything that isn't using the schema.org vocabulary, and this may cause questions for some schema.org publishers\n* Benefit to using proper typing makes querying easier by not having to check two fields each time a class type is mentioned in a query.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "ESIPFed/science-on-schema.org#74",
+     "kind": "issue",
+     "url": "https://github.com/ESIPFed/science-on-schema.org/issues/74",
+     "number": "74"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/ESIPFed/science-on-schema.org"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/30-release-workflow.md",
+   "identity": "decisions/30-release-workflow.md",
+   "adr_id": "",
+   "title": "Use Release Process Based on GitFlow",
+   "first_commit": "2020-01-08T15:07:49-05:00",
+   "first_sha": "9f265e35aef76bdb56c704a31fcc71d743fe8a31",
+   "last_commit": "2020-01-21T16:56:52-09:00",
+   "author": "Matt Jones",
+   "email": "gitcode@magisa.org",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 7,
+   "text": "# Use Release Process Based on GitFlow\n\nDiscussion: https://github.com/ESIPFed/science-on-schema.org/issues/30\n\n## Status ##\n_Accepted_\n\n## Decision ##\n\nWe will use a [GitFlow](https://nvie.com/posts/a-successful-git-branching-model/)-inspired release model to track proposed changes, their implementation, and the associated Architectural Decision Record.\n\n## Context ##\nBecause people will review our guidance documents online, it will be helpful to be explicit about versioning and releases of the guidance and other documents.  In particular, in GitHub, users will normally see the `master` branch, which therefore should reflect the current stable release of the documentation (rather than confusing people with in-progress proposed changes that are not yet released).\n\nConsequently, we will use a [GitFlow](https://nvie.com/posts/a-successful-git-branching-model/)-inspired release model in which the `master` branch always reflects the current stable release, a `develop` branch is used for merging finished proposals being prepared for release, and `feature` branches are used for creating changes to implement specific proposals that are reflected in an Architectural Decision Record.  For changes that do not require a formal decision via an ADR, such as spelling corrections, grammatical rewording, etc., maintainers can commit changes directly to the `develop` branch, and other contributors can do a pull request directly against the `develop` branch.  The use of feature branches is really focused on managing proposals that need discussion, review, and a decision through an ADR. Maintainers will make judgement calls on whether an ADR is needed, and might convert contributed pull requests to a feature branch if they determine that an ADR is needed.\n\nThe release workflow that we propose is described in detail in the `CONTRIBUTING.md` document. Some highlights:\n\n- The `master` branch of the GitHub repository always reflects the most current release\n- A `develop` branch is used for development work to extend the guidelines for each of the ADRs and for other more minor changes \n- Each ADR is associated with a pull request against the `develop` branch, and the PR should reference the issue number for the ADR in the template\n    - Any PRs should be merged into the `develop` branch when they have been approved as a good implementation of the ADR\n- The `develop` branch is merged into master and tagged to create a new release when it has been approved for release\n- Pull requests should be based on a separate `feature` branch that is appropriately named for the feature and include the issue # that is being addressed for the feature (e.g., `feature_30_release_workflow`)\n- Discussion of the proposed ADR should occur in the associated GitHub issue\n- When agreement has been reached, the proposed changes and the ADR should be updated in the `feature` branch, and then merged into the `develop` branch.\n- When the set of features targeted for a release are complete and review has been finished, the `develop` branch will be merged into the `master` branch and tagged as a release.\n- Release tags will follow semantic versioning, and should be used to create an associated release on GitHub that allows files to be downloaded.\n\n## Consequences ##\n\n- People can easily follow the current stable release guidelines on the GitHub page\n- The community can easily propose changes through pull requests against the development branch\n- Minor changes that don't require a decision happen easily and directly on `develop`\n- There are clear linkages between github issues, the ADR decision process, and the release process\n- Development for core committers is somewhat more complicated as people need to understand and use the branching model, but this doesn't affect third-party contributors\n- Some contributors might accidentally submit pull requests against the `master` branch, which will need to be retargeted by a maintainer against the `develop` branch before it can be merged\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "ESIPFed/science-on-schema.org#30",
+     "kind": "issue",
+     "url": "https://github.com/ESIPFed/science-on-schema.org/issues/30",
+     "number": "30"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/ESIPFed/science-on-schema.org"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/47-use-spdx-licenses.md",
+   "identity": "decisions/47-use-spdx-licenses.md",
+   "adr_id": "",
+   "title": "Use SPDX license vocabulary for URIs",
+   "first_commit": "2020-01-08T22:52:04-05:00",
+   "first_sha": "9a192b893ba45fdfec5ece21a259265451926a5a",
+   "last_commit": "2020-01-21T16:52:36-09:00",
+   "author": "Matt Jones",
+   "email": "gitcode@magisa.org",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 5,
+   "text": "# Use SPDX license vocabulary for URIs\n\nDiscussion: https://github.com/ESIPFed/science-on-schema.org/issues/47\n\n## Status ##\n_Accepted_\n\n## Decision ##\n\nUse SPDX license URIs to unambiguously specify the license for data and metadata use.\n\n## Context ##\n\nLink a Dataset to its license to document legal constraints by adding a [schema:license](https://schema.org/license) property. The [guide](https://developers.google.com/search/docs/data-types/dataset) recommends providing a URL that unambiguously identifies a specific version of the license used, but for many licenses it is hard to determine what that URL should be. Thus, we recommend that the license URL be drawn from the [SPDX license list](https://spdx.org/licenses/), which provides a curated list of licenses and their properties that is well maintained. For each SPDX entry, SPDX provides a canonical URL for the license (e.g., `http://spdx.org/licenses/CC0-1.0`), a unique `licenseId` (e.g., `CC0-1.0`), and other metadata about the license. Here's an example using the SPDX license URI for the Creative Commons CC-0 license:\n\n<pre>\n{\n  \"@context\": {\n    \"@vocab\": \"https://schema.org/\",\n  },\n  \"@id\": \"http://www.sample-data-repository.org/dataset/123\",\n  \"@type\": \"Dataset\",\n  \"name\": \"Removal of organic carbon by natural bacterioplankton communities as a function of pCO2 from laboratory experiments between 2012 and 2016\",\n  <strong>\"license\": \"http://spdx.org/licenses/CC0-1.0\"</strong>\n  ...\n}\n</pre>\n\nWhile many licenses are ambiguous about the license URI for the license, the Creative Commons licenses are an exception in that they provide consistent URIs for each license, and these are in widespread use.  While we recommend using the SPDX URI, it is acceptable to use the CC license URIs directly if preferred.  Here's an example using the traditional CC URI for the license.\n<pre>\n{\n  \"@context\": {\n    \"@vocab\": \"https://schema.org/\",\n  },\n  \"@id\": \"http://www.sample-data-repository.org/dataset/123\",\n  \"@type\": \"Dataset\",\n  \"name\": \"Removal of organic carbon by natural bacterioplankton communities as a function of pCO2 from laboratory experiments between 2012 and 2016\",\n  <strong>\"license\": \"https://creativecommons.org/publicdomain/zero/1.0\"</strong>\n  ...\n}\n</pre>\n\nOne issue is that SPDX URIs currently resolve to a HTML landing page describing a license, rather than a machine-readable version of the license through content negotiation. However, the web page that is returned does contain structured markup in RDFa format indicating the structured license properties.  For example, the HTML page for the [Apache-2.0 license](http://spdx.org/licenses/Apache-2.0) contains property attributes for structured data for `spdx:License`, `spdx:deprecated`, `spdx:name`, `spdx:licenseId`, `rdfs:seeAlso`, `spdx:isOsiApproved`, and `spdx:licenseText`, among others. For example, here is the web snippet for the Apache-2.0 license:\n\n<pre>\n&lt;h1 property=\"dc:title\"&gt;Apache License 2.0&lt;/h1&gt;\n&lt;div style=\"display:none;\"&gt;&lt;code property=\"spdx:deprecated\"&gt;false&lt;/code&gt;&lt;/div&gt;\n&lt;h2&gt;Full name&lt;/h2&gt;\n    &lt;p style=\"margin-left: 20px;\"&gt;&lt;code property=\"spdx:name\"&gt;Apache License 2.0&lt;/code&gt;&lt;/p&gt;\n\n&lt;h2&gt;Short identifier&lt;/h2&gt;\n    &lt;p style=\"margin-left: 20px;\"&gt;&lt;code property=\"spdx:licenseId\"&gt;Apache-2.0&lt;/code&gt;&lt;/p&gt;\n\n&lt;h2&gt;Other web pages for this license&lt;/h2&gt;\n    &lt;div style=\"margin-left: 20px;\"&gt;\n      &lt;ul&gt;\n       &lt;li&gt;&lt;a href=\"http://www.apache.org/licenses/LICENSE-2.0\" rel=\"rdfs:seeAlso\"&gt;http://www.apache.org/licenses/LICENSE-2.0&lt;/a&gt;&lt;/li&gt;\n       &lt;li&gt;&lt;a href=\"https://opensource.org/licenses/Apache-2.0\" rel=\"rdfs:seeAlso\"&gt;https://opensource.org/licenses/Apache-2.0&lt;/a&gt;&lt;/li&gt;\n     &lt;/ul&gt;\n    &lt;/div&gt;\n          \n&lt;div property=\"spdx:isOsiApproved\" style=\"display: none;\"&gt;true&lt;/div&gt;\n\n&lt;h2 id=\"notes\"&gt;Notes&lt;/h2&gt;\n    &lt;p style=\"margin-left: 20px;\"&gt;This license was released January 2004&lt;/p&gt;\n\n&lt;h2 id=\"licenseText\"&gt;Text&lt;/h2&gt;\n\n&lt;div property=\"spdx:licenseText\" class=\"license-text\"&gt;\n      \n&lt;div class=\"optional-license-text\"&gt;\n   &lt;p&gt;Apache License\n  &lt;br /&gt;\n\nVersion 2.0, January 2004\n  &lt;br /&gt;\n...\n</pre>\n\nFinally, the SPDX project provides structured data files of the [SPDX license data](https://github.com/spdx/license-list-data) in machine readable formats, including turtle and json-ld.  These could be imported into COR or other vocabulary servers to provide a queryable graph of the license data.\n\n## Consequences ##\n\n- We gain a comprehensive, maintained, unambiguous vocabulary for licenses, increasing consistency across repositories\n- We gain compatibility with the software packaging world like Debian and Python\n- Licenses that have well-known URIs (e.g., Creative Commons) may be less recognizable by their SPDX URI\n- SPDX license URIs only resolve to HTML pages with machine-readable RDFa embedded, but machine-readable representations in other formats do not seem to be available through content negotiation\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "ESIPFed/science-on-schema.org#47",
+     "kind": "issue",
+     "url": "https://github.com/ESIPFed/science-on-schema.org/issues/47",
+     "number": "47"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/ESIPFed/science-on-schema.org",
+    "spdx.org/licenses/CC0-1.0",
+    "creativecommons.org/publicdomain/zero/1.0",
+    "spdx.org/licenses/Apache-2.0",
+    "www.apache.org/licenses/LICENSE-2.0",
+    "opensource.org/licenses/Apache-2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/4-dataset-metadata-distributions.md",
+   "identity": "decisions/4-dataset-metadata-distributions.md",
+   "adr_id": "",
+   "title": "Specific Recommendations for Metadata Distribution Information",
+   "first_commit": "2020-01-08T14:39:31-05:00",
+   "first_sha": "36dc54fa26e1a8291fa4ea65914cb903152eca44",
+   "last_commit": "2020-01-08T21:11:24-05:00",
+   "author": "Adam Shepherd",
+   "email": "ashepherd@whoi.edu",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# Specific Recommendations for Metadata Distribution Information\n\nDiscussion: https://github.com/ESIPFed/science-on-schema.org/issues/4\n\n## Status ##\n_Proposed_\n\n## Decision ##\n\n1. Link metadata documents to a dataset by using `schema:subjectOf`. Or if a schema.org snippet describes the metadata, link to the Dataset it describes using `schema:about`.\n2. Describe the encoding format(s) of the metadata file by using the `schema:encodingFormat` with multiple values to specify more detail about any profiles the media type conforms to.\n\n### 1. Linking Metadata docs to Datasets: Use `schema:subjectOf` or `schema:about` ###\n\t\n  ```<Dataset> schema:subjectOf <Metadata>```\n  \n  or inversely\n  \n  ```<Metadata> schema:about <Dataset>```\n  \n  <pre>\n  {\n    \"@context\": \"https://schema.org/\",\n    \"@type\": \"Dataset\",\n    \"name\": \"Example Dataset\",\n    \"distribution\": {\n      \"@type\": \"DataDownload\",\n      ...\n    },\n    <strong>\"subjectOf\": {\n      \"@type\": \"DataDownload\",\n      \"name\": \"EML file that describes the Example Dataset\",\n      \"description\": \"We use the DataDownload class for Metadata files so that we can use the schema:MediaObject properties for describing bytesize, encoding, etc.\",\n      ...\n    }</strong>\n  }\n  </pre>\n  \n  inversely\n  \n  <pre>\n  {\n    \"@context\": \"https://schema.org/\",\n    \"@type\": \"DataDownload\",\n    \"name\": \"EML file that describes the Example Dataset\",\n    \"description\": \"We use the DataDownload class for Metadata files so that we can use the schema:MediaObject properties for describing bytesize, encoding, etc.\",\n    ...\n    <strong>\"about\": {\n      \"@type\": \"Dataset\",\n      \"name\": \"Example Dataset\",\n      \"distribution\": {\n        \"@type\": \"DataDownload\",\n        ...\n      },\n    }</strong>\n  }\n  </pre>\n  \n### 2. Describing the encoding format of the metadata file ###\n\nSome metadata files have an encodingFormat of 'application/xml' but follow a certain profile such as 'ISO 19115-2' or 'EML 2.2.' \n\nSince `schema:encodingFormat` allows for Text and URL values, we can specify both the MIME type and the profile inside an array:\n\n <pre>\n  {\n    \"@context\": \"https://schema.org/\".\n    \"@type\": \"Dataset\",\n    \"name\": \"Example Dataset\",\n    \"distribution\": {\n      \"@type\": \"DataDownload\",\n      ...\n    },\n    \"subjectOf\": {\n      \"@type\": \"DataDownload\",\n      \"name\": \"EML file that describes the Example Dataset\",\n      <strong>\"encodingFormat\": [\"application/xml\", \"https://eml.ecoinformatics.org/eml-2.2.0\"],</strong>\n      \"description\": \"We use the DataDownload class for Metadata files so that we can use the schema:MediaObject properties for describing bytesize, encoding, etc.\",\n      ...\n    }\n  </pre>\n  \nHowever, experience has shown that in order to use the values within strings like encodingFormat, a controlled vocabulary is required.  \n\n## Context ##\n\nIt isn't obvious how to build a package of related files for a Dataset. To include metadata files in the schema.org description of a Dataset, reusing the `schema:distribution` property doesn't seem correct as it should serialize the actual data. As a result this issue only addresses how to use core schema.org properties to create a link between Metadata files and Datasets.\n\n- https://github.com/ESIPFed/science-on-schema.org/issues/4\n- Decision discussed at ESIP Winter Meeting. Notes here: https://docs.google.com/document/d/1ycG9Dlt6xRr9wxjqkQrPkJQJvm83E34eue_cxkrSGUI/edit?ts=5e1503e3#\n- https://schema.org/subjectOf and https://schema.org/about\n- https://schema.org/encodingFormat\n\n## Consequences ##\n\n1. `schema:subjectOf` and `schema:about` are very broad and may be alongside other resources that aren't necessarily metadata-dataset relationships. We need a SHACL shape to help define what conformance to the pattern looks like.  Best practices in implementing this guidance is also needed.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "ESIPFed/science-on-schema.org#4",
+     "kind": "issue",
+     "url": "https://github.com/ESIPFed/science-on-schema.org/issues/4",
+     "number": "4"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/ESIPFed/science-on-schema.org",
+    "eml.ecoinformatics.org/eml-2.2.0"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/ADR_TEMPLATE.md",
+   "identity": "decisions/ADR_template.md",
+   "adr_id": "",
+   "title": "Title - Short present tense imperative phrase, less than 50 characters, like a git commit message #",
+   "first_commit": "2018-09-17T09:53:24-04:00",
+   "first_sha": "7d22c61118556a4bba87c7b919405c3c0ff95c57",
+   "last_commit": "2020-01-08T21:11:24-05:00",
+   "author": "Adam Shepherd",
+   "email": "ashepherd@whoi.edu",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 6,
+   "text": "# Title - Short present tense imperative phrase, less than 50 characters, like a git commit message #\n\nDiscussion: https://github.com/ESIPFed/science-on-schema.org/issues/30\n\n## Status ##\n_Pick one of:_ Proposed, Accepted, Rejected, Deprecated, Superseded\n\n## Decision ##\nWhat is the change that we're actually proposing or doing.\n\n## Context ##\nWhat is the issue that we're seeing that is motivating this decision or change.\n\n## Consequences ##\nWhat becomes easier or more difficult to do because of this change.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "ESIPFed/science-on-schema.org#30",
+     "kind": "issue",
+     "url": "https://github.com/ESIPFed/science-on-schema.org/issues/30",
+     "number": "30"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/ESIPFed/science-on-schema.org"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "decisions/schemaorg-additionalType.md",
+   "identity": "decisions/schemaorg-additionalType.md",
+   "adr_id": "",
+   "title": "What do we do with the schema.org/additionalType field? #",
+   "first_commit": "2018-08-28T15:44:49-04:00",
+   "first_sha": "63f6a154d78885535523acf7f3efec84a36a727b",
+   "last_commit": "2018-09-17T10:15:44-04:00",
+   "author": "Adam Shepherd",
+   "email": "ashepherd@whoi.edu",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# What do we do with the schema.org/additionalType field? #\n\n## Status ##\n\n## Decision ##\n\n## Context ##\n\n## Consequences ##\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "decisions/13-schemaorg-identifier-as-PropertyValue.md",
+   "identity": "decisions/schemaorg-identifier_as_PropertyValue.md",
+   "commit": "f239355c8c05aa52171805465627f9c22808f9bd",
+   "date": "2020-01-08T21:34:06-05:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Renamed older ADR to follow new naming convention.",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Matt Jones",
+   "email": "gitcode@magisa.org"
+  },
+  {
+   "path": "decisions/74-schemaorg-additionalType-vs-RDF-typing.md",
+   "identity": "decisions/schemaorg-additionalType_vs_RDF-typing.md",
+   "commit": "f239355c8c05aa52171805465627f9c22808f9bd",
+   "date": "2020-01-08T21:34:06-05:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Renamed older ADR to follow new naming convention.",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Matt Jones",
+   "email": "gitcode@magisa.org"
+  },
+  {
+   "path": "decisions/_ADR_template.md",
+   "identity": "decisions/ADR_template.md",
+   "commit": "32da68b4b92d796e0cb54cee722ec19631713da6",
+   "date": "2018-09-17T09:56:41-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename ADR_template.md to _ADR_template.md",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Adam Shepherd",
+   "email": "ashepherd@whoi.edu"
+  },
+  {
+   "path": "decisions/ADR_TEMPLATE.md",
+   "identity": "decisions/ADR_template.md",
+   "commit": "f0272720a40f25319b44100a005c3e5172ddb907",
+   "date": "2018-09-17T09:57:15-04:00",
+   "old_state": "unknown",
+   "new_state": "unknown",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Rename _ADR_template.md to ADR_TEMPLATE.md",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Adam Shepherd",
+   "email": "ashepherd@whoi.edu"
+  },
+  {
+   "path": "decisions/schemaorg-additionalType.md",
+   "identity": "decisions/schemaorg-additionalType.md",
+   "commit": "0d87adb7976346fbfe6085ff6fa51079e27dcf5f",
+   "date": "2018-09-17T10:15:44-04:00",
+   "old_state": "unknown",
+   "new_state": "deleted",
+   "old_raw": "",
+   "new_raw": "",
+   "replacement": null,
+   "message": "Update and rename schemaorg-additionalType.md to schemaorg-additionalType_vs_RDF-typing.md",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "deleted-without-replacement-pointer",
+   "author": "Adam Shepherd",
+   "email": "ashepherd@whoi.edu"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 14,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "8"
+}

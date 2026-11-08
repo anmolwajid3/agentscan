@@ -1,0 +1,31 @@
+case_id,timing,timing_note,implementation_correct,implementation_note,minutes
+C3-01,cant-tell,No issue or pull request. The record is still proposed.,yes,"Process decision. No code path is named, and none is the right answer.",4
+C3-02,written-after,"Text date is 2019-10-02 and status is already accepted, but the file was committed in 2020-12 with other records.",yes,No file path is named.,4
+C3-03,cant-tell,Accepted on the commit day. No discussion link.,yes,No code path.,3
+C3-04,cant-tell,"Story 5022 is named but not linked, and the outcome is still provisional.",yes,Named Go files were not touched by a later commit the script could see. Nothing contradicts none.,5
+C3-05,cant-tell,Accepted the same day. No discussion link.,yes,No code path.,3
+C3-06,cant-tell,Accepted the same day. No discussion link.,yes,"The record names content types, not files.",3
+C3-07,cant-tell,"Template record, accepted the same day, no discussion.",yes,The decision is the record itself.,3
+C3-08,cant-tell,Accepted the same day. No discussion link.,yes,Only another ADR is named.,4
+C3-09,cant-tell,Accepted the same day. No discussion link.,yes,No code path.,4
+C3-10,written-after,Status says accepted and implemented. The record describes leaks already found in the code.,yes,No repository path is named.,4
+C3-11,written-first,Issue 986 is linked. The changelog starts a draft on the commit day and records later edits.,no,node/node.go is a core file. A later touch of it is not identifiable as the monitoring change. The script subject is empty.,8
+C3-12,written-after,The changelog records a draft in July 2019. The file appears in October already accepted.,no,"The chosen commit is months later and the paths are tests, not the introduction of the evidence module.",8
+C3-13,cant-tell,"Accepted, with a changelog, but no discussion link and no separate earlier date I can verify.",yes,No path named.,4
+C3-14,written-after,The record documents an RFC that was already approved. The date inside the file is after the commit.,yes,No code path in this repository.,4
+C3-15,written-after,"Discussed 20 Mar, finalized 24 Mar, committed 28 Mar with status Implemented.",yes,No path named.,5
+C3-16,written-after,"The record date is 2020-10-22 and the file was committed 2020-11-18, already accepted.",yes,No path named.,4
+C3-17,cant-tell,Accepted the same day. No discussion link.,yes,No code path.,4
+C3-18,written-after,"Template date 2019-05-14, file committed 2020-05-27, already accepted.",yes,No code path.,3
+C3-19,cant-tell,"Accepted, no discussion link, no separate date.",yes,"Tables are described, not as repository paths.",4
+C3-20,cant-tell,Accepted the same day. No discussion link.,yes,No path named.,3
+C3-21,cant-tell,Accepted five days after the date in the file. No discussion link.,yes,No path named.,3
+C3-22,cant-tell,"Template choice, no discussion link.",yes,No code path.,3
+C3-23,written-first,"Issue 11 is linked, the status is still proposed, and the text says there is no outcome yet. The date matches the commit.",yes,No path named. The decision was not taken.,5
+C3-24,written-first,"Issue 359 is the problem the record answers, and the record is the decision text.",yes,"The named path is a documentation page, not an implementation commit.",5
+C3-25,cant-tell,Still proposed. No discussion link.,yes,No path named.,4
+C3-26,written-after,"File date October 2025, committed February 2026. The prose says the move had already happened.",yes,No path named.,5
+C3-27,cant-tell,"Issues are linked and the status is accepted, but the packet does not show whether the record came before or after those issues were resolved.",yes,Library URLs are not repository paths.,5
+C3-28,cant-tell,Still proposed. No discussion link.,yes,The named example is in another repository.,4
+C3-29,written-after,"Record date 11 Apr 2020, committed 1 Jun 2020, already accepted, written as a completed look at options.",yes,The named paths are the page itself.,4
+C3-30,cant-tell,Options are still being compared. No discussion link.,yes,No repository path.,4

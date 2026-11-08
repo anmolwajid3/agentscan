@@ -1,0 +1,209 @@
+{
+ "repo": "navikt/modiapersonoversikt",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2018-02-21T09:43:11+01:00",
+ "last_commit": "2026-10-29T04:03:18+00:00",
+ "n_commits": 10775,
+ "n_authors": 55,
+ "n_files": 1022,
+ "n_code_files": 867,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 5,
+ "adrs": [
+  {
+   "path": "doc/architecture/decisions/0005-Formatering-med-prettier.md",
+   "identity": "doc/architecture/decisions/0005-Formatering-med-prettier.md",
+   "adr_id": "5",
+   "title": "Automatisk formatering av kode med prettier",
+   "first_commit": "2019-02-27T14:07:50+01:00",
+   "first_sha": "62b855e4fc4d69030e2fcee2090587ad75a2dd27",
+   "last_commit": "2019-02-27T14:07:50+01:00",
+   "author": "Daniel Winsvold",
+   "email": "danielwinsvold@gmail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 5. Automatisk formatering av kode med prettier\n\nDate: 2019-02-27\n\n## Status\n\nAccepted\n\n## Context\n\nUlike innstillinger i IDEAer har tidligere f\u00f8rt til mye white-space og andre uvensentlige endringer som kan gj\u00f8re PRer tunge \u00e5 lese.\nI tillegg kan forskjellige utvikleres kodestil gj\u00f8re at forskjelige deler av kodebasen ser annerledes ut, noe som kan gj\u00f8re den tyngre \u00e5 lese.\n\n## L\u00f8sning\n\nVi tar ibruk prettier som automatisk formaterer koden ved commit.\n\nPrettier er sv\u00e6rt mye brukt og har mye bra feedback i milj\u00f8et.\nDet vil s\u00f8rge for at koden v\u00e5r vil ligge n\u00e6rmere en etablert standard for hvordan kode skal se ut, og da blir det ogs\u00e5 lettere for nye utviklere \u00e5 sette seg inn i kodebasen.\n\n## Bruk\n\n```\ngit commit\n```\n\nPrettier kj\u00f8res automatisk ved `git commit` vha `husky` og `lint-staged`.\n\n### Oppsett\n\n```package.json\n    \"husky\": {\n        \"hooks\": {\n            \"pre-commit\": \"lint-staged\",\n        }\n    },\n    \"lint-staged\": {\n        \"*.{js,ts,tsx,json,css,md}\": [\n            \"prettier --write\",\n            \"git add\"\n        ]\n    }\n```\n\n## Consequences\n\nPrettier vil endre koden din n\u00e5r du commiter. Dette kan virke frustrerende i starten,\nmen erfaring fra andre team tilsier at det er vel verdt det siden man ender opp med en standarisert kodestil.\n\nPrettier har lite mulighet for config, men dette er et bevisst valg. Med f\u00e6rre valgmuligheter f\u00e5r vi mindre tid til \u00e5 krangle og mer tid til \u00e5 kode. Yey!\n\n![](https://media.giphy.com/media/bTvCkBTQDIPyE/giphy.gif)\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "media.giphy.com/media/bTvCkBTQDIPyE/giphy.gif"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/architecture/decisions/0002-selvstendig-visittkort-som-library.md",
+   "identity": "doc/architecture/decisions/0002-selvstendig-visittkort-som-library.md",
+   "adr_id": "2",
+   "title": "Selvstendig visittkort som library",
+   "first_commit": "2018-05-31T07:41:27+02:00",
+   "first_sha": "dcf444086431756611727148238937bf69ee4499",
+   "last_commit": "2019-02-27T12:45:25+01:00",
+   "author": "Joakim Lindquister",
+   "email": "joakim.lindquister@bekk.no",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 2. Selvstendig visittkort som library\n\nDate: 2018-05-31\n\n## Status\n\nAccepted\n\n## Context\n\nModiapersonoversikt (denne frontenden) blir utviklet som en selvstendig frontend som p\u00e5 sikt skal erstatte frontenden i dagens modiabrukerdialog. For \u00e5 kunne levere fortl\u00f8pende ny funksjonalitet til saksbehandlerene, \u00f8nsker vi \u00e5 levere ofte og sm\u00e5tt.\n\n## Decision\n\nVisittkortet dras inn som en enkeltst\u00e5ende react-komponent inn til modiabrukerdialog.\n\n## Consequences\n\nVi publiserer en npm-modul som eksponerer StandAloneVisittkort som kan rendres som en selvstendig react-komponent.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/architecture/decisions/0003-form-validering.md",
+   "identity": "doc/architecture/decisions/0003-form-validering.md",
+   "adr_id": "3",
+   "title": "Form validering",
+   "first_commit": "2018-06-28T15:21:59+02:00",
+   "first_sha": "1ecf46858c203504f8680ac3d723ab6360a4cdb5",
+   "last_commit": "2019-02-27T12:45:25+01:00",
+   "author": "Joakim Lindquister",
+   "email": "joakim.lindquister@bekk.no",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 1. Form validering\n\nDate: 2018-06-28\n\n## Status\n\nAccepted\n\n## Context\n\nForm validering av adresser, samt alle andre forms. Jeg gjorde en stor jobb p\u00e5 dette. Kopierer inn fra PR-en min her.\n\n[Github PR 232](https://github.com/navikt/modiapersonoversikt/pull/232)\n\n## Kopiert fra PR\n\nEt nytt fors\u00f8k p\u00e5 validering av felter i forms. Dette er en annen m\u00e5te \u00e5 gj\u00f8re validering p\u00e5 enn i https://github.com/navikt/modiapersonoversikt/pull/230. Denne er basert p\u00e5 en [bloggpost](https://medium.com/code-monkey/client-side-form-validation-in-react-40e367de47ba) jeg kom over.\n\nFordelen med denne er at den ble mye mindre intrusive(p\u00e5trengende) en det andre alternativet. Her er det litt mer dropin av valideringen, du trenger ikke skrive om hele formen din. Ble s\u00e5nn passe godt forn\u00f8yd med denne foran den andre, kom gjerne med tilbakemelding \ud83d\udc4d\n\n![](https://media.giphy.com/media/3oKIPf3C7HqqYBVcCk/giphy.gif)\n\nSkriver litt om l\u00f8sningen her, les om du vil :)\n\n## L\u00f8sning\n\nL\u00f8sningen er basert p\u00e5 en klasse, FormValidator, som er generisk og validerer objekter basert p\u00e5 typen den blir initialisert med.\n\n```typescript\nexport default class FormValidator<T> {\n    constructor(regler: Valideringsregel<T>[]);\n}\n```\n\nReglene som man \u00f8nsker \u00e5 validere p\u00e5 sendes med i konstrukt\u00f8ren. Det 'geniale' i denne l\u00f8sningen er via Typescript sin mapped types, hvor et interface blir speilet men med andre verdier som indikerer valideringsresultatet. Eksempelvis for gateadresse:\n\n```typescript\ninterface Gateadresse {\n    gatenavn: string;\n    husnummer: string;\n}\n```\n\nValideringsresultatet av denne vil bli, uten at man trenger \u00e5 definere et eget interface:\n\n```typescript\n{\n  formErGyldig: false,\n  felter: {\n    gatenavn: {\n       erGyldig: false,\n       feilmelding: 'Gatenavn mangler'\n    },\n    husnummer: {\n      erGyldig: true,\n      feilmelding: ''\n   }\n }\n}\n```\n\n## Bruk\n\n```typescript\n// Felt er keyOf Gateadresse, dvs. at typescript klager hvis du sender inn noe som ikke finnes\nconst regel: Valideringsregel<Gateadresse> = {\n    felt: 'gatenavn',\n    feilmelding: 'Gatenavn kan ikke v\u00e6re tom',\n    validator: (gateadresse: Gateadresse) => erIkkeTomStreng(gateadresse.gatenavn)\n};\n\nfunction validerGateadresse(gateadresse: Gateadresse) {\n    return new FormValidator<Gateadresse>([regel]).valider(gateadresse);\n}\n```\n\n### Use-case i en form\n\nN\u00e5r bruker fors\u00f8ker \u00e5 submitte, kj\u00f8res valideringen. Hvis valideringen feiler, settes valideringsresultatet p\u00e5 staten. Input-feltene f\u00e5r da dette gjennom props og kan velge \u00e5 vise feilmelding.\n\nN\u00e5r bruker skriver noe igjen, kan man velge \u00e5 sette valideringsresultatet til undefined, slik at feilmeldingen ikke lenger vises.\n\n```typescript\nconst valideringsresultat = validerGateadresse(input.gateadresse);\nif (!valideringsresultat.formErGyldig) {\n    this.setState({\n        midlertidigAdresseNorge: {\n            ...this.state.midlertidigAdresseNorge,\n            gateadresseValidering: valideringsresultat\n        }\n    });\n    return;\n}\n\nthis.props.endreNorskGateadresse(this.props.person.f\u00f8dselsnummer, input.gateadresse);\n```\n\n```jsx\n<Input\n    bredde={'XXL'}\n    label=\"Gateadresse\"\n    value={props.gateadresse.gatenavn}\n    onChange={(event: ChangeEvent<HTMLInputElement>) =>\n        props.onChange({ ...props.gateadresse, gatenavn: event.target.value })\n    }\n    feil={getSkjemafeilFraValidering(props.validering ? props.validering.felter.gatenavn : undefined)}\n/>\n```\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "navikt/modiapersonoversikt#232",
+     "kind": "pull",
+     "url": "https://github.com/navikt/modiapersonoversikt/pull/232",
+     "number": "232"
+    },
+    {
+     "key": "navikt/modiapersonoversikt#230",
+     "kind": "pull",
+     "url": "https://github.com/navikt/modiapersonoversikt/pull/230",
+     "number": "230"
+    }
+   ],
+   "mentioned_paths": [
+    "media.giphy.com/media/3oKIPf3C7HqqYBVcCk/giphy.gif"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/architecture/decisions/0004-Typesafe-Rest-Redux-Store.md",
+   "identity": "doc/architecture/decisions/0004-Typesafe-Rest-Redux-Store.md",
+   "adr_id": "4",
+   "title": "Typesikker rest-store i Redux",
+   "first_commit": "2018-11-06T15:01:54+01:00",
+   "first_sha": "d256788a086a86db4fc980ea586f6b815933b33e",
+   "last_commit": "2019-02-27T12:45:25+01:00",
+   "author": "J\u00f8rund Amsen",
+   "email": "jorundamsen@nav.no",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 4. Typesikker rest-store i Redux\n\nDate: 2018-08-11\n\n## Status\n\nAccepted\n\n## Context\n\nEtter bump av Redux og sterkere krav p\u00e5 typesikring p\u00e5 reducere har vi m\u00e5ttet omskrive m\u00e5ten vi aksesserer data fra REST i storen\n\n## L\u00f8sning\n\nFor \u00e5 f\u00f8lge prinsippet \"make the impossible impossible\" ble det valgt \u00e5 trekke data og error ut i sub-klasser. Slik er ikke data en gyldig property \u00e5 be om, med mindre status er success og dataen er veldefinert som korrekt type.\n\n```typescript\nexport interface RestReducer<T> {\n    status: STATUS\n}\n\nexport interface Success<T> extends RestReducer<T> {\n    status: STATUS.SUCCESS;\n    data: T;\n}\n\nexport interface NotStarted<T> extends RestReducer<T> {\n    status: STATUS.NOT_STARTED;\n}\n.\n.\n.\nexport interface Failed<T> extends RestReducer<T> {\n    status: STATUS.FAILED;\n    error: string;\n}\n\n```\n\nMed en reducer p\u00e5 formen\n\n```typescript\nreducer: (state : RestReducer<T> = initialState, action: Action) : RestReducer<T> => {\n    .\n    .\n    .\n    case actionTypes.FINISHED:\n        return {\n            status: STATUS.SUCCESS,\n            data: (<FetchSuccess<T>> action).data\n        } as Success<T> ;\n    case actionTypes.FAILED:\n        return {\n            status: STATUS.FAILED,\n            error: (<FetchError> action).error\n        } as Failed<T> ;\n    .\n    .\n    .\n}\n```\n\nFor \u00e5 f\u00e5 tak i data/error-objektet m\u00e5 man n\u00e5 teste p\u00e5 typen med en Typescrpt typeguard:\n\n```typescript\nif (isSuccess(state.restEndepunkter.landReducer)) {\n    state.restEndepunkter.landReducer.data;\n}\n```\n\nSom typesikrer objektet som et Success-objekt for resten av grenen.\n\nI TSX-kode derimot tar vi i bruk Innholdslasteren:\n\n```Typescript\n<Innholdslaster avhengigheter={[this.props.saksoversiktReducer]}>\n    <SakstemaVisning\n        sakstemaWrapper={(this.props.saksoversiktReducer as Loaded<SakstemaWrapper>).data}\n        oppdaterSakstema={this.oppdaterSakstema}\n        valgtSakstema={this.state.valgtSakstema}\n    />\n</Innholdslaster>\n```\n\nHer er det viktig \u00e5 vite at det er ditt eget ansvar \u00e5 huske \u00e5 wrappe alle komponenter som bruker restReducer-props i en Innholdslaster. Det er ogs\u00e5 viktig \u00e5 forst\u00e5 at \"data\" propertyen i dette tilfellet kan v\u00e6re undefined i de tilfellene hvor dataen ikke har ankommet og innholdslaster ikke rendrer children. Aksesser kun de propsene til data internt i komponenten som blir wrappet av Innholdslaster.\n\n####Utrygg bruk:\n\n```Typescript\n<Innholdslaster avhengigheter={[this.props.saksoversiktReducer, this.props.baseUrlReducer]}>\n    <SakstemaVisning\n        sakstemaWrapper={(this.props.saksoversiktReducer as Loaded<SakstemaWrapper>).data.sakstema} //Kan kaste runtime feil!\n        ...\n    />\n</Innholdslaster>\n```\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/architecture/decisions/0001-record-architecture-decisions.md",
+   "identity": "doc/architecture/decisions/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2018-05-31T07:41:27+02:00",
+   "first_sha": "dcf444086431756611727148238937bf69ee4499",
+   "last_commit": "2018-05-31T07:41:27+02:00",
+   "author": "Joakim Lindquister",
+   "email": "joakim.lindquister@bekk.no",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record architecture decisions\n\nDate: 2018-05-31\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as described by Michael Nygard in this article: http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions\n\n## Consequences\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's _adr-tools_ at https://github.com/npryce/adr-tools.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [
+  {
+   "kind": "coauthor",
+   "name": "Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-09-22T11:19:04+02:00",
+   "commit": "0922876cf794486d703f753fb742b497e31f4b85",
+   "evidence": "Use legacy \u00e5rsak derivation in new Infotrygd \u201cutbetalinger p\u00e5 vent\u201d table (#3639)",
+   "official": true,
+   "author": "Copilot",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  },
+  {
+   "kind": "agent-author",
+   "name": "Copilot <198982749+Copilot@users.noreply.github.com>",
+   "date": "2026-09-22T11:19:04+02:00",
+   "commit": "0922876cf794486d703f753fb742b497e31f4b85",
+   "evidence": "Use legacy \u00e5rsak derivation in new Infotrygd \u201cutbetalinger p\u00e5 vent\u201d table (#3639)",
+   "official": true,
+   "author": "Copilot",
+   "email": "198982749+Copilot@users.noreply.github.com"
+  }
+ ],
+ "signal_date": "2026-09-22T09:19:04+00:00",
+ "signal_kind": "coauthor",
+ "mentions": {
+  "strict": [
+   {
+    "sha": "516feedbf6fde91c509a57b9c0111b2fb9196950",
+    "date": "2026-08-31T14:47:36+02:00",
+    "subject": "Fix etter copilot review"
+   }
+  ],
+  "strict_count": 1,
+  "literal_only_count": 3,
+  "capped": false
+ },
+ "group": "ai-eligible",
+ "adr_count_before_signal": 5,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-before-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "5"
+}

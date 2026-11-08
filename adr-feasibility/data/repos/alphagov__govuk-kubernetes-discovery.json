@@ -1,0 +1,212 @@
+{
+ "repo": "alphagov/govuk-kubernetes-discovery",
+ "clone_ok": true,
+ "error": null,
+ "description": "",
+ "first_commit": "2017-06-26T12:55:47+01:00",
+ "last_commit": "2017-10-17T16:28:59+01:00",
+ "n_commits": 6,
+ "n_authors": 4,
+ "n_files": 167,
+ "n_code_files": 3,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 6,
+ "adrs": [
+  {
+   "path": "doc/architecture/decisions/0001-record-architecture-decisions.md",
+   "identity": "doc/architecture/decisions/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2017-06-26T14:42:11+01:00",
+   "first_sha": "6324c3754cd6dd317d7f80240c16b167d115197d",
+   "last_commit": "2017-06-26T14:42:11+01:00",
+   "author": "Sam Cook",
+   "email": "sam.cook@digital.cabinet-office.gov.uk",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record architecture decisions\n\nDate: 2017-05-24\n\n## Status\n\nProposed\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as described by Michael Nygard in this article: http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions\n\n## Consequences\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's _adr-tools_ at https://github.com/npryce/adr-tools.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/architecture/decisions/0002-structure-for-kubernetes-apps.md",
+   "identity": "doc/architecture/decisions/0002-structure-for-kubernetes-apps.md",
+   "adr_id": "2",
+   "title": "Structure for Kubernetes apps",
+   "first_commit": "2017-06-26T14:42:11+01:00",
+   "first_sha": "6324c3754cd6dd317d7f80240c16b167d115197d",
+   "last_commit": "2017-06-26T14:42:11+01:00",
+   "author": "Sam Cook",
+   "email": "sam.cook@digital.cabinet-office.gov.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Structure for Kubernetes apps\n\nDate: 2017-05-24\n\n## Status\n\nAccepted\n\n## Context\n\nWe wanted to agree a structure for Kubernetes applications so that we could create\nconsistent layouts when creating new applications.\n\nThis structure should be iterated upon when we start to work more heavily with\nmigrating apps over to Kubernetes.\n\nWe need to also be aware that developers may want to create their own applications\nand so must be easily understood.\n\nWe want to split open and private repositories easily when we come to start publishing\nour work.\n\n## Decision\n\nWe have agreed on the following tree:\n\n```\n\u251c\u2500\u2500 data\n\u2502   \u2514\u2500\u2500 my-awesome-app\n\u2502   |   \u251c\u2500\u2500 development_secrets.yaml\n|   |   \u2514\u2500\u2500 development_configmaps.yaml\n|   \u2514\u2500\u2500 global\n|       \u2514\u2500\u2500 development_configmaps.yaml\n\u2514\u2500\u2500 manifests\n    \u2514\u2500\u2500 my-awesome-app\n        \u251c\u2500\u2500 deployment.yaml\n        \u2514\u2500\u2500 service.yaml\n```\n\nThis allows us to split the manifests section of Kubernetes configuration from the\ndata values that get created and mounted into any deployments.\n\n## Consequences\n\nThis structure may not be appropriate to work with, but we can re-evaluate if we find\nthis problematic.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/architecture/decisions/0003-using-templates-for-manifests.md",
+   "identity": "doc/architecture/decisions/0003-using-templates-for-manifests.md",
+   "adr_id": "3",
+   "title": "Using templates for manifests",
+   "first_commit": "2017-06-26T14:42:11+01:00",
+   "first_sha": "6324c3754cd6dd317d7f80240c16b167d115197d",
+   "last_commit": "2017-06-26T14:42:11+01:00",
+   "author": "Sam Cook",
+   "email": "sam.cook@digital.cabinet-office.gov.uk",
+   "status": "accepted",
+   "status_raw": "Accepted.",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Using templates for manifests\n\nDate: 2017-05-24\n\n## Status\n\nAccepted.\n\n## Context\n\nKubernetes requires someone to write very verbose manifest files in YAML. Templating\ncan allow someone to separate the manifest and data and allow a tool to generate\nand populate manifest files with ease.\n\nIt allows easily understanding the values of a specific application.\n\nIt requires us to use a tool on top of plainly writing manifests ourselves.\n\n## Decision\n\nWe will not use templates for the time-being, but will re-evaluate our use of\npopulating common values in the future.\n\n## Consequences\n\nWrite everything by hand.\n\nRe-evaluate when we come to working with developers as we should not expect developers\nto write everything by hand.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/architecture/decisions/0004-structure-for-terraform-projects.md",
+   "identity": "doc/architecture/decisions/0004-structure-for-terraform-projects.md",
+   "adr_id": "4",
+   "title": "Structure for Terraform projects",
+   "first_commit": "2017-06-26T14:42:11+01:00",
+   "first_sha": "6324c3754cd6dd317d7f80240c16b167d115197d",
+   "last_commit": "2017-06-26T14:42:11+01:00",
+   "author": "Sam Cook",
+   "email": "sam.cook@digital.cabinet-office.gov.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 4. Structure for Terraform projects\n\nDate: 2017-05-25\n\n## Status\n\nAccepted\n\n## Context\n\nWe wanted to agree on our Terraform code organisation to manage resources in different stacks and\navoid having to recreate things every time we refactor code.\n\n## Decision\n\n- We want to separate code from data, so in the future we can opensource the code without disclosing our implementation details\n- We want to be able to encrypt sensitive data in the repository: we want to support sensitive data encryption as part of the same\nprocess, without having to manage secrets in a different repository, with different scripts, etc.\n- We want to create Terraform modules to reuse code\n- We want to separate Terraform code into different projects (stacks, tiers), each one representing a logical tier. This is specially\nimportant to separate resources between GOV.UK applications.\n\nThe initial solution presents three directories: data, modules and projects:\n- The data directory contains a subdirectory per Terraform project, to store variable values that can be customised per environment.\n- The data directory also contains \\_secrets files with sensitive data encrypted with 'sops'\n- The modules directory contains a subdirectory per Terraform provider\n- The projects directory contains the Terraform stacks/tiers\n\n```\n\u251c\u2500\u2500 data\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 gke-base\n\u2502\u00a0\u00a0 \u2502\u00a0\u00a0 \u251c\u2500\u2500 common.tfvars\n\u2502\u00a0\u00a0 \u2502\u00a0\u00a0 \u2514\u2500\u2500 integration.tfvars\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 gke-cluster\n\u2502\u00a0\u00a0 \u2502\u00a0\u00a0 \u251c\u2500\u2500 common.tfvars\n\u2502\u00a0\u00a0 \u2502\u00a0\u00a0 \u2514\u2500\u2500 integration.tfvars\n\u2502\u00a0\u00a0 \u2514\u2500\u2500 my-application\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 common.tfvars\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 integration.tfvars\n\u2502\u00a0\u00a0     \u2514\u2500\u2500 integration_secrets.json\n\u251c\u2500\u2500 modules\n\u2502\u00a0\u00a0 \u2514\u2500\u2500 google\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 container_cluster\n\u2502\u00a0\u00a0     \u2502\u00a0\u00a0 \u251c\u2500\u2500 main.tf\n\u2502\u00a0\u00a0     \u2502\u00a0\u00a0 \u2514\u2500\u2500 variables.tf\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 dns_managed_zone\n\u2502\u00a0\u00a0     \u2502\u00a0\u00a0 \u2514\u2500\u2500 main.tf\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 mysql_database_instance\n\u2502\u00a0\u00a0     \u2502\u00a0\u00a0 \u251c\u2500\u2500 mysql.tf\n\u2502\u00a0\u00a0     \u2502\u00a0\u00a0 \u2514\u2500\u2500 variables.tf\n\u2502\u00a0\u00a0     \u2514\u2500\u2500 network\n\u2502\u00a0\u00a0         \u251c\u2500\u2500 network.tf\n\u2502\u00a0\u00a0         \u2514\u2500\u2500 public_subnetwork\n\u2502\u00a0\u00a0             \u2514\u2500\u2500 main.tf\n\u2514\u2500\u2500 projects\n    \u251c\u2500\u2500 gke-base\n    \u2502\u00a0\u00a0 \u251c\u2500\u2500 integration.backend\n    \u2502\u00a0\u00a0 \u251c\u2500\u2500 main.tf\n    \u2502\u00a0\u00a0 \u2514\u2500\u2500 variables.tf\n    \u251c\u2500\u2500 gke-cluster\n    \u2502\u00a0\u00a0 \u251c\u2500\u2500 integration.backend\n    \u2502\u00a0\u00a0 \u251c\u2500\u2500 main.tf\n    \u2502\u00a0\u00a0 \u2514\u2500\u2500 variables.tf\n    \u2514\u2500\u2500 my-application\n        \u251c\u2500\u2500 integration.backend\n        \u251c\u2500\u2500 main.tf\n        \u2514\u2500\u2500 variables.tf\n```\n\n## Consequences\n\nThe current secrets management solution implicates that we have to decrypt the secrets files at run time and\nmake sure we clean up unencrypted files after running the Terraform commands.\n\nThere are some parameters that are going to be common to different stacks, for instance, 'zone_name'. At the\nmoment we are going to configure this parameter wherever it's needed, which is different to the behaviour of\nHiera, where we can reference the same parameter in several parts of the code.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/architecture/decisions/0005-consistent-structure-for-terraform-files.md",
+   "identity": "doc/architecture/decisions/0005-consistent-structure-for-terraform-files.md",
+   "adr_id": "5",
+   "title": "Consistent Structure for Terraform Files",
+   "first_commit": "2017-06-26T14:42:11+01:00",
+   "first_sha": "6324c3754cd6dd317d7f80240c16b167d115197d",
+   "last_commit": "2017-06-26T14:42:11+01:00",
+   "author": "Sam Cook",
+   "email": "sam.cook@digital.cabinet-office.gov.uk",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 5. Consistent Structure for Terraform Files\n\nDate: 2017-06-06\n\n## Status\n\nProposed\n\n## Context\n\nWe should have a consistent structure for working with our Terraform files. We\nshould be able to look into a file and understand it's function is and what it\ncreates, what variables it needs to run and what it outputs after it's finished.\n\nWe should not have to spend time picking apart the code to understand what is\ncreated by Terraform.\n\nWe should not have to work with multiple files to understand a single component.\n\n## Decision\n\nCreate style guidelines based upon the following:\n\n - Header with title and description\n - Variables listed\n - Outputs listed\n - Full descriptions of what variables and outputs do in the code\n - `terraform fmt` across each file\n\nCreate a style guideline document explaining this structure.\n\n## Consequences\n\nCode will have to reviewed by peers and asked to change formatting depending on the\nstyleguide.\n\nTests should include some level of linting using `terraform fmt`\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/architecture/decisions/0006-exposing-kubernetes-services.md",
+   "identity": "doc/architecture/decisions/0006-exposing-kubernetes-services.md",
+   "adr_id": "6",
+   "title": "Exposing Kubernetes Services",
+   "first_commit": "2017-06-26T14:42:11+01:00",
+   "first_sha": "6324c3754cd6dd317d7f80240c16b167d115197d",
+   "last_commit": "2017-06-26T14:42:11+01:00",
+   "author": "Sam Cook",
+   "email": "sam.cook@digital.cabinet-office.gov.uk",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 6. Exposing Kubernetes Services\n\nDate: 2017-06-16\n\n## Status\n\nAccepted\n\n## Context\n\nKubernetes services can be exposed to the public using Kubernetes managed resources\nthat can integrate with Cloud environments, such as the Loadbalancer service resource,\nor with Cloud native services, such as AWS ELBs.\n\nWhich solution to use will affect how we manage associated resources and processes, for\ninstance EIPs and DNSs, HTTPS certificates, green-blue deployments, etc.\n\nInitially we want to find a solution that meets some basic requirements:\n- HTTP and HTTPS support\n- Internal-only and Internet facing services\n- Probably we want to route traffic to services based on request URI\n\n## Decision\n\nInitially we tested a Loadbalancer Kubernetes service on AWS. This service configures a\nclassic ELB that connects with the pod service port. It requires uses Kubernetes secrets\nto read the HTTPS certificate but doesn't support request URI routing. It also needs a\nfixed public IP to start the ELB and a DNS entry managed externally.\n\nKubernetes Ingress resources allow us to define rules to route traffic to Kubernetes\nservices. Google Cloud has native support for Ingress resources, but on AWS we need to deploy\na controller service. On non-cloud environments (for instance, a local Minikube VM),\nit is also possible to deploy a Ingress controller that can replicate the behaviour\nexpected in the cloud. The catalogue of Ingress controllers can be found here:\n\nhttps://github.com/kubernetes/ingress/blob/master/docs/catalog.md\n\nWe tested Traefik and CoreOS ALB Ingress controller and finally decided to use the CoreOS\nsolution:\n- Traefik feedback?\n- CoreOS ALB ingress controller https://github.com/coreos/alb-ingress-controller\n  - AWS managed certificates, with AWS Certificate Manager\n  - Uses AWS ALB loadbalancers\n  - Adds Route53 entries\n  - Can optionally access services only on specific namespaces\n\nWe decided to use the CoreOS ALB controller because it uses AWS native solutions that meet our requirements.\nAlso, it's supported by CoreOS.\n\nOther links and discussions about loadbalancer support for Kubernetes on cloud platforms:\n- http://www.sandtable.com/a-single-aws-elastic-load-balancer-for-several-kubernetes-services-using-kubernetes-ingress/\n- Kubernetes discussion around Ingress/AWS LBs support: https://github.com/kubernetes/kubernetes/issues/30518\n- Internal ELB, useful for services that don't need to be open to the Internet: https://github.com/kubernetes/kops/issues/2011\n- ELB and HTTPS: https://github.com/kubernetes/kubernetes/issues/22854\n- Traefik working branch: https://github.com/alphagov/govuk-hosting-discovery/compare/traefik-ingress\n\n## Consequences\n\nAWS Certificate Manager is not supported by Terraform yet :( , so we'll have to add some tooling\nor documentation to manage certificates. Because this is a solution integrated only with AWS,\nwe'll need to investigate other solution if we want to use ingress resources on a local environment.\n\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "kubernetes/kubernetes#30518",
+     "kind": "issue",
+     "url": "https://github.com/kubernetes/kubernetes/issues/30518",
+     "number": "30518"
+    },
+    {
+     "key": "kubernetes/kops#2011",
+     "kind": "issue",
+     "url": "https://github.com/kubernetes/kops/issues/2011",
+     "number": "2011"
+    },
+    {
+     "key": "kubernetes/kubernetes#22854",
+     "kind": "issue",
+     "url": "https://github.com/kubernetes/kubernetes/issues/22854",
+     "number": "22854"
+    }
+   ],
+   "mentioned_paths": [
+    "github.com/kubernetes/ingress/blob/master/docs/catalog.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 6,
+ "superseded_in_window": 0,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "buchgeher-2022",
+ "stars": "",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "6"
+}

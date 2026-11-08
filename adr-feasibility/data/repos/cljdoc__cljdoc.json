@@ -1,0 +1,853 @@
+{
+ "repo": "cljdoc/cljdoc",
+ "clone_ok": true,
+ "error": null,
+ "description": "\ud83d\udcda A central documentation hub for the Clojure community",
+ "first_commit": "2018-01-01T15:51:20+02:00",
+ "last_commit": "2026-10-22T12:53:42-04:00",
+ "n_commits": 4057,
+ "n_authors": 75,
+ "n_files": 490,
+ "n_code_files": 9,
+ "likely_template": false,
+ "history_truncated": false,
+ "adr_count": 21,
+ "adrs": [
+  {
+   "path": "doc/adr/0014-add-support-for-examples.md",
+   "identity": "doc/adr/0014-add-support-for-examples.md",
+   "adr_id": "14",
+   "title": "Add Support For Examples",
+   "first_commit": "2018-11-03T14:16:35+01:00",
+   "first_sha": "70f33ce2dd41a21ea2f83a87cf4c773b139fa002",
+   "last_commit": "2025-10-22T17:31:08-04:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "superseded",
+   "status_raw": "Superseded by [ADR #0015](0015-cancel-work-on-examples.md)",
+   "replacement": "ADR #0015 (0015-cancel-work-on-examples.md)",
+   "n_commits": 3,
+   "text": "# 14. Add Support For Examples\n\nDate: 2018-10-14\n\n## Status\n\nSuperseded by [ADR #0015](0015-cancel-work-on-examples.md)\n\n## Context\n\nExamples are an often suggested feature for cljdoc that could enable library authors and the community to further guide library users.\n\n## Decision\n\nAdd support for examples to cljdoc. Allow libary users to provide examples through their Git repository but also run a community-maintained examples repository where examples can be maintained outside of a project's own Git repository. \n\n## Consequences\n\nThe two different sources for examples (library author vs. community) pose some additional challenges, summarised in this table: \n\n\n| Community Examples                             | Library Examples                  |\n| ---------------------------------------------- | --------------------------------- |\n| User contributed                               | Written by library author(s)      |\n| No perfect mapping to releases                 | Linkable to releases via Git      |\n| Continously evolving dataset                   | Separate dataset for each release |\n| Stored in single `community-examples` Git repo | Stored within library repo        |\n\nThose differences require slight adjustment in the way examples are specified (most importantly to link examples to version ranges).\n\nA sketch at how this could be addressed can be found in the Appendix of this ADR.\n\n## Appendix\n\n### Process\n\n[Issue #70](https://github.com/cljdoc/cljdoc/issues/70). Branch is [`70-examples`](https://github.com/cljdoc/cljdoc/tree/70-examples).\n\n- [x] Define Markdown file format (YAML front matter)\n- [x] Extend git-repo stuff to read examples\n  - [x] Extract contributors to example file\n  - [x] Extract date of first commit this file was added with\n- [x] Define columns & add table that links examples to a specific version\n  - [x] Contributor(s), Date added, Example (md)\n- [ ] Integrate examples into docsets\n- [ ] Integrate examples into UI\n\n\n### Library Examples\n\n```\n---\nfor-var: clojure.core/conj\nfor-namespace: clojure.core\n---\nFor lists `conj` adds items to the front of the list\n\\```\n(conj '(1 2 3) 0)\n;;=> (0 1 2 3)\n\\```\n```\n\n\n```markdown\n---\nfor-var: clojure.core/conj\n---\n\nFor lists `conj` adds items to the front of the list\n\\```\n(conj '(1 2 3) 0)\n;;=> (0 1 2 3)\n\\```\n```\n\n### Library Example in Multi-Module Repo\n\n```markdown\n---\nfor-artifact: metosin/reitit-ring\nfor-var: reitit.ring/router\n---\n\n\\```\n(router\n  [\\\"/api\\\" {:middleware [wrap-format wrap-oauth2]}\n  [\\\"/users\\\" {:get get-user\n               :post update-user\n               :delete {:middleware [wrap-delete]\n               :handler delete-user}}]])\n\\```\n```\n\n### Community Contributed Example\n\nThe following would be maintained in a single Git repository containing all community-contributed examples. The directory structure could roughly look like this: \n`/examples/$group_id/$artifact_id/$example_name.markdown`\n\n```markdown\n---\nversion-range: 0.1.0..\nfor-var: my.lib/fn\n---\n\nHow to do this and that.\n```\n\n```markdown\n---\nversion-range: 0.1.0..0.3.0\nfor-var: my.lib/fn\n---\n\nWill only be shown for versions 0.1.0 to 0.3.0.\nHow to do this and that. \n```\n\n\n\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#0015",
+     "kind": "hash",
+     "url": "",
+     "number": "0015"
+    },
+    {
+     "key": "#70",
+     "kind": "hash",
+     "url": "",
+     "number": "70"
+    },
+    {
+     "key": "cljdoc/cljdoc#70",
+     "kind": "issue",
+     "url": "https://github.com/cljdoc/cljdoc/issues/70",
+     "number": "70"
+    }
+   ],
+   "mentioned_paths": [
+    "/examples/$group_id/$artifact_id/$example_name.markdown"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0021-Moving-To-Exoscale.adoc",
+   "identity": "doc/adr/0021-Moving-To-Exoscale.adoc",
+   "adr_id": "21",
+   "title": "= Moving to Exoscale",
+   "first_commit": "2024-08-28T12:56:40-04:00",
+   "first_sha": "ba14836ce721720bb0209fec09c19752ca34c627",
+   "last_commit": "2024-09-26T17:59:27-04:00",
+   "author": "lread",
+   "email": "lee@dlread.com",
+   "status": "unknown",
+   "status_raw": "",
+   "replacement": null,
+   "n_commits": 51,
+   "text": "= Moving to Exoscale\n:toc:\n:toclevels: 5\n\nCreate Date: 2024-08-28\n\n== Status\n\nExploring & Learning\n\n== Background\nCljdoc has been using a DigitalOcean droplet, AWS Route 53, and AWS S3 for some time.\n\nThis comes with the following characteristics:\n\n1. Only Martin can carry out host-level ops, these are all on personal accounts\n2. There is reasonable costs associated with these services\n3. While we are good with keeping up with docker level updates, our host-level ops is in neglect\n\nA while back, Exoscale generously offered to cover hosting of cljdoc.\nI recently asked them if they were still willing and, good news for us, they answered in the affirmative.\n\nMoving to Exoscale will:\n\n1. Allow Lee to become more familiar with and help out with host-level ops\n2. Move hosting costs to Exoscale, which means one less thing for us to worry about.\n3. As a team of two, we have more of a fighting chance to keep our host-level ops in order\n\n== Exoscale Services\nExoscale has a rich set of services.\nOur current architecture maps like so:\n\n* DigitalOcean Droplet -> Exoscale Compute Standard Medium (with 50gb storage)\n* AWS Route 53 -> Exoscale DNS\n* AWS S3 -> Exoscale Object Store\n\nExoscale also has other services, like SKS (Kubernetes) DBAAS (PostgreSQL, MySQL, etc), Block Storage, Elastic IPs, and so on.\n\n== Cljdoc Architecture at Exoscale\nCljdoc's current architecture is optimized to minimize financial cost.\nIt runs on a single DigitalOcean Droplet and uses a local SQLite database.\nThis has some cons:\n\n1. Updating the host server is difficult.\nWe have automatic blue/green deployment but at the docker level.\nIf blue/green were at the host level, we'd have a much easier time keeping our host up to date.\n2. The SQLite database is awesome in that it is local and fast.\nBut it being local, means upgrading the host requires some careful thought.\n3. We use tools like traefik, nomad and consul to manage blue/green deployments.\nKeeping these tools up to date has a maintenance cost.\n\nIt is tempting to chuck our current architecture when moving to Exoscale, but that requires more thought and more time, and delays us moving to Exoscale.\nSo we'll, within reason, keep our current archecture to start with.\n\n== Progress\n\n* [x] Fire up a Compute instance (debian 12) manually at Exoscale, ssh in and poke around.\n* [x] Setup 2fa at Exoscale\n* [x] Install, and try out, `exo` command line tool\n* [x] Explore Packer vs Cloud Init (currently like Packer)\n* [x] Explore terraform\n** [x] Bring up Compute instance\n** [x] Try defining ssh keys\n** [x] Bring up Object Store\n** [x] Basic firewall setup\n** [x] Figure out how to setup a static IP\n** [x] Configure DNS at Exoscale\n* [x] Add db backup job to cljdoc\n** [x] Reconsider : in filenames, they can be problematic\n* [x] Get traefik/nomad/consul/docker up and running\n* [x] Try/adapt deploy script from my dev box\n* [x] Verify blue/green deploy\n* Verify with prod profile `CLJDOC_PROFILE=prod` in nomad job spec\n** [x] db volume mapping from docker\n** [x] db restore\n** [x] sentry\n** [x] db backup\n** [x] circle ci builds\n** [x] blue/green again\n* [x] Try/adapt full CI deploy\n* [x] Traefik access log rotation.\n* [x] re-bump traefik, nomad, consul\n* [x] Update ops README\n* [x] Turf cljdoc-releases bucket (Martin-approved^TM^)\n* [x] allow port-forward access to traefik web ui\n* [x] Review TODOs\n* [ ] Invite Martin as admin to cljdoc.org at Exoscale\n* [ ] Configure DNS at registrar (Martin)\n\nOpen questions:\n\nReminders:\n\n* 2024-09-03 & 2023-09-17 db backups on Exoscale SOS are manually uploaded backups from DigitalOcean production (so probably don't delete those)\n\nClosed questions\n\n* [x] Ssh key config is quite awkward\n** Issues:\n*** Currently adding mine via terraform via my pub key on my dev box, tying terraform config to my dev box\n*** Currently manually adding for circle, (and eventually martin). This is an awkward thing to remember to do after a terraform re-create of the compute instance.\n** Compromise:\n*** ssh keys to authorize will be loaded from a separate non-version-controlled tfvars file.\n*** For now, the ops team will need to share this securely amongst the team.\n*** The compute instance currently needs to be recreated to add/remove keys\n* [x] Why are clojars-stats downloading after a db restore?\nAren't they stored in cljdoc db?\n** Yup, but I was working from a backup from prod which was then uploade from  dev box test.\nDev has a much shorter retention period than prod, so it pruned, and prod then had to fill in the gaps.\n* [x] Offline doc zip file size is 0 bytes, tried: /download/rewrite-clj/rewrite-clj/1.1.48\n** Newer traefik is pickier about valid `Content-Type`, ours was invalid, fixed\n* [x] Release on Exoscale SOS is including classes folder, that's probably a booboo.\n** Fixed.\n* [x] What do we really need to do for traefik's Let's Encrypt `acme.json`?\n** Do we need to copy existing from DigitalOcean to Exoscale?\n** Has the format changed from traefik v1 to v3?\n** Have required file permissions changed from v1 to v3?\n** I think our only risk is rate limiting https://letsencrypt.org/docs/rate-limits/, which we won't hit.\n** So, plan is: keep a copy of acme.json from DigitalOcean (just in case), but expect `acme.json to regenerate after updating toml config to not use lets encrypt staging url.\n\nDeferred to some later date:\n\n* Maybe automatically install critical updates\n* Explore running consul/nomad under their own users\n* Strategy for discovering vulnerabilities on host?\n* Maybe experiment with Hashicorp Vault?\n* Maybe report on outdated ops software? traefik, nomad, consul, docker...\n** We don't have blue/green at the host level so might punt for now\n* Rein in scope of secrets via CircleCI contexts.\nThese are defined at the CircleCI organization level, but can be applied at the job level.\n* Sharing Terraform state via some hosted service\n\n== Checklist for Migration from DigitalOcean to Exoscale\n\n1. [lee] Cleans up any test db backups at Exoscale\n2. [lee] Recreates Exoscale compute instance for fresh start\n3. [lee] Grabs a fresh db backup from DigitalOcean and uploads to Exoscale for auto-restore\n4. [martin] Points cljdoc.org and cljdoc.xyz to Exoscale.\n5. [lee] Deletes staging endpoint for acme in traefik.toml via commit and deploy\n6. [lee] Merges cljdoc git exoscale branch to master\n7. [lee] Deletes old DigitalOcean CircleCI env vars and ssh keys after migration complete\n8. [lee] Configures CI to only deploy from master (remove deploying from lread-exoscale branch)\n\n== Summary of Changes from DigitalOcean\n\nHighlights:\n\n* Added \"Generously power by Exoscale\" to footer of cljdoc home page\n* Added /api/server-info route to return cljdoc version (to more easily verify blue/green deploy workflow)\n* Prod: host: now based on Debian\n* Prod: host: Updated all software to current\n* Prod: cljdoc: added daily db backup\n* Prod: cljdoc: added db restore when no db exists\n* Prod: host: added traefik log rotation\n* Prod: host: firewall: Handled by Exoscale infrastructure\n* Moved: digitalocean specific work under `ops/digitalocean` (including `modules/deploy`)\n* New: exoscale specific work is under `ops/exoscale`\n* Deploy: bumped jsch to a modern drop in replacement to support modern encryptions\n* Deploy: turfed `cljdoc-releases` bucket, we decided we don't need it anymore\n\n== Data Migration from DigitalOcean to Exoscale\n\n=== DNS\nCan take 24-48h for to update worldwide.\nBecomes active after setup at registrar, so can pre-configure DNS at Exoscale without issue.\n\nNotes:\n\n* Exoscale requires you \"subscribe\" to DNS via their GUI before setup via Exoscale.\n* We 2 hosts, cljdoc.org and cljdoc.xyz, so I chose a \"Medium\" subscription which handles up to 10 hosts.\n\n=== SQLite database\nUse backup from DigitalOcean.\n\nEither put in expected spot on filesystem or new restore strategy will pick up from backup placed in Exoscale Simple Object Store.\n\nDownloading backup for restore took about 3.5 minutes on my dev box.\nIn production this takes about 20s.\nI've bumped up deploy timeout to 5m, just to give more elbow room.\n\nDecisions:\n\n* Leave db host location at `/data/cljdoc` (considered a more conventional `/var/lib/cljdoc`, but then... meh).\n\n=== Lucene database\nNo need to backup and restore, it is reconstituted if missing at startup.\n\nDecisions:\n\n* Leave db host location at `/data/cljdoc/<lucene dir>` (considered a more conventional `/var/lib/cljdoc/<lucene dir>`, but then... meh).\n\n=== SSL Certs\nI think `acme.json` will be regnerated by traefik.\nWe'll keep a backup from DigitalOcean, just in case (but I expect format might have chagned from traefik v1 to v3).\n\nCurrent cert is valid until Fri, 18-Oct-2024.\n\n=== Secrets\n\nAre held by CircleCI and conveyed to consul over ssh port forwarding during deploy.\n\nCircleCI specific secrets - used by `publish-docker` circleci job\n\n* `DOCKER_USER` - can remain unchanged\n* `DOCKER_PASS` - can remain unchanged\n\nCircleCI specific secrets that will change (so add new vars prefixed with `EXO_` to allow for old and new to coexist for a bit):\n\n* Used by `deploy` circleci job\n** `EXO_NOMAD_IP` - used to talk to nomad and consul over their APIs via ssh\n\nCurrent consul delivered secrets that can stay the same:\n\n* Used by `deploy` circleci job (to be sent ultimately to cljdoc container)\n** `SENTRY_DSN` -  sentry.io data source name\n** `CIRCLE_API_TOKEN` - to intitiate analysis jobs on circleci\n** `CIRCLE_BUILDER_PROJECT` - more of a variable than a secret, imo\n\nNew consul secrets:\n\n* Used by `deploy` circleci job (to be sennt ultimately to cljdoc container)\n* `EXO_BACKUPS_BUCKET_NAME` - For SQLite backups/restores\n* `EXO_BACKUPS_BUCKET_KEY`\n* `EXO_BACKUPS_BUCKET_SECRET`\n* `EXO_BACKUPS_BUCKET_REGION`\n\n=== SSH Keys\nWe need to grant permission for CircleCI to ssh in to interact with nomad and consul.\nWe configure an additional key on CircleCI to do this and add authorize it on our server instance.\n\nI'm not exactly sure how this was carried out for DigitalOcean droplet.\nProbably manually?\n\n== Terraform\nWe'll continue to use terraform to declare and provision cloud services.\nExoscale has support for terraform: https://registry.terraform.io/providers/exoscale/exoscale/latest/docs\n\n=== Lifecycles\nFor our purposes, bringing up our entire infra with `apply`, and then perhaps `taint` on the compute instance when we need to update our server should work.\nNote that we don't have a zero downtime strategy yet for updating the host.\n\n=== Sharing Terraform State\nBecause we want to be an ops team I'd like to somehow share terraform state.\nTerraform state is sensitive, so we'd need to share it securely.\nAnd we'd like to avoid the possibility of concurrent updates.\n\nTerraform supports saving state to s3 via `backend` config.\nhttps://developer.hashicorp.com/terraform/language/settings/backends/s3\nClojars makes use of this feature:\nhttps://github.com/clojars/infrastructure/blob/6cf9c100e38408016cd979f1611602523766200e/terraform/main.tf#L6-L11\n\nExoscale includes an example of doing this.\nhttps://github.com/exoscale/terraform-provider-exoscale/blob/aef50d3f097648d405bcca1a46c8a99959f94706/examples/sos-backend/providers.tf\n\nWhen using s3, locking is currently optionally supported via dynamoDB,\nWe don't have dynamoDB at Exoscale, so that's a nogo.\nBut there is some recent investigation into supporting locking via new s3 conditional writes.\nSee: https://github.com/hashicorp/terraform/issues/35625\nConditionals writes are on the Exoscale todo list, but will not be implemented soon.\n\nTerraform s3 backend also optionally supports encryption for data at rest.\nhttps://developer.hashicorp.com/terraform/language/settings/backends/s3#encrypt\nBut.. I think this might be via s3 encryption.\nhttps://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingServerSideEncryption.html\nWhich is planned for implementation at Exoscale, bu not yet available for Exoscale Oject Store.\nhttps://community.exoscale.com/documentation/storage/encryption/#encryption-at-rest\n\n=== Notes\n\n* For Exoscale we need to `ski",
+   "truncated_text": true,
+   "discussion_refs": [
+    {
+     "key": "hashicorp/terraform#35625",
+     "kind": "issue",
+     "url": "https://github.com/hashicorp/terraform/issues/35625",
+     "number": "35625"
+    },
+    {
+     "key": "hashicorp/terraform-provider-aws#37062",
+     "kind": "issue",
+     "url": "https://github.com/hashicorp/terraform-provider-aws/issues/37062",
+     "number": "37062"
+    }
+   ],
+   "mentioned_paths": [
+    "download/rewrite-clj/rewrite-clj/1.1.48",
+    "acme.json",
+    "ops/digitalocean",
+    "modules/deploy",
+    "ops/exoscale",
+    "/data/cljdoc",
+    "/var/lib/cljdoc",
+    "github.com/clojars/infrastructure/blob/6cf9c100e38408016cd979f1611602523766200e/terraform/main.tf",
+    "github.com/exoscale/terraform-provider-exoscale/blob/aef50d3f097648d405bcca1a46c8a99959f94706/examples/sos-backend/providers.tf",
+    "docs.aws.amazon.com/AmazonS3/latest/userguide/UsingServerSideEncryption.html",
+    "/infrastructure/secrets.tfvars",
+    "/secrets.pkrvars.hcl",
+    "config/traefik-toml",
+    "config/cljdoc/secrets-edn",
+    "/ect/nomad/server.hcl",
+    "/etc/systemd/system/nomad.service",
+    "/etc/systemd/system/consul.service",
+    "etc/nomad/server/hcl",
+    "etc/nomad.d",
+    "/etc/nomad.d",
+    "/etc/consul.d",
+    "/var/lib/nomad",
+    "/var/lib/consul",
+    "var/log/cloud-init.log",
+    "var/log/cloud-init-output.log"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0020-support-links-from-docs-to-SCM-when-testing-locally.md",
+   "identity": "doc/adr/0020-support-links-from-docs-to-SCM-when-testing-locally.md",
+   "adr_id": "20",
+   "title": "Support links from docs to SCM when testing locally",
+   "first_commit": "2020-09-17T14:28:32-04:00",
+   "first_sha": "155f3b6dc97c28bef835fd5e6bc8ed0c16d20eca",
+   "last_commit": "2020-09-30T11:59:39-04:00",
+   "author": "lread",
+   "email": "lee@dlread.com",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 20. Support links from docs to SCM when testing locally\n\nDate: 2020-09-08\n\n## Status\n\nProposed\n\n## Context\n\n### Background\n\nCljdoc imports documentation from clojars artifacts and SCM (Source Code Management) repositories. \nThe SCM is a git repository and usually one hosted on GitHub.\n\nDocumentation is imported to cljdoc from 2 distinct sources:\n\n1. API docstrings from sources in a clojars artifact \n2. Stand-alone articles such as `README.md` and documentation under `doc/**` from an SCM repository.\n\nIt is not uncommon for documentation to contain links to other files under in the SCM repository. \nIn these cases, cljdoc automatically rewrites these links to target the correct resource. \nIf the SCM document is an article that has been imported to cljdoc, the link will target the imported article hosted by cljdoc,\notherwise the link will target the hosted SCM, which in most cases, is GitHub. \n\n### Issues with Testing Locally\n\nBefore a project is released to clojars and automatically imported to cljdoc, an author will often want to preview their\ndocumentation by running cljdoc locally. \n\nBecause cljdoc works from the published artifact, when testing locally, authors will first publish their project to their local maven repository.\nThis will remain true for whatever solution we choose here.\n\nA current limitation of running cljdoc locally, as directed by current guidance, is that direct links to SCM files cannot be previewed. \nConcrete examples of non-functioning links are images, source code and articles.\n\nThese broken links make it difficult to get a real sense of how docs will appear and behave on cljdoc.\n\n## Decision\n\nAfter evaluating several alternatives (see below), I realize that our guidance on running cljdoc locally is more \nthe issue than anything else.\n\nI propose that we complement our guidance to include a workflow of importing from hosted SCM (i.e. GitHub) rather than just the local file system. \n\nThe tester would commit their changes and push to a branch on their hosted SCM.\nThey would then ingest docs from this branch.\nAt doc browse time, because ingested docs are referencing a hosted SCM, the links to the SCM would automatically work.\n\nThe advantages are no extra local setup and an SCM preview that truly reflects production.\n\nA minor con is that the author has to push to a hosted SCM.\n\n## Alternatives\n\nI came up with the following ideas when thinking about how to render links to SCM when ingesting docs from \nthe local file system. I rejected them all when I realized that we could achieve a full preview with \na change to documentation. \n\nI was focused on the case where the user has ingested their library from the file system (not hosted SCM).\nThe alternatives explore how we might rewrite broken SCM links to provide a better local preview.\n\n**#1 [chosen] update docs**\n\nSee [Decision](#decision) above.\n\n**#2 [rejected, not viable] rewrite SCM links to target the file system**\n\nTargeting `file://` has the advantage of having nothing extra to run for the tester but is\nsimply not technically feasible; the browser prohibits it for security reasons.\n\n**#3 [rejected] rewrite SCM links to target a local static web server**\n\nThe tester would launch a static web server from their project root.\nA locally running cljdoc would render SCM links to the static web server.\n\nWhile this would be easy to setup for the tester, the fetches would be to an unversioned\nfile system rather than SCM. Also the fetches would always be raw, if the browser/server\ncombo cannot figure out the MIME type, it would prompt for save/download. And links to source\nwould not support navigating to a specific line number.\n\nAlthough this was my original plan, because it does not offer a full preview, \nI have since rejected it.\n\n**#3 [rejected]  rewrite SCM links to target a local git instaweb server**\n\nThe tester would run `git instaweb` from his/her project root to startup a local SCM web server.\n\nThe advantages to this approach include easy setup for tester, fetches from SCM are versioned,\nsupport for raw fetches and support for formatted fetches with ability to navigate to line number.\n\nThe cons are that git instaweb URLs and UI are not GitHub-like. \nWe are also relying on the instaweb implementation remaining static, which seems to be a safe bet, but who knows?\n\nNote that I have also experimented with [git instaweb via docker](https://hub.docker.com/r/leeread/gitweb-quick).\n\nAlthough this was my secondary choice, I have since decided to that option #1 is simpler.\n\n**#4 [rejected] rewrite SCM links to target a local GitHub URL compatible server**\n\nThere are GitHub clones like [gitea](https://gitea.io/en-us/) and [gogs](https://gogs.io/). \nPerhaps one of these could be setup to deliver a local project.\nI had a brief look, but did not qucikly see something that would work, even via docker.\nThis does not mean this couldn't work, just that I gave up in favor of something simpler.\n\nThe pros are GitHub-like URLs and UI.\n\nThe cons are a more difficult setup by the user, more moving parts and the maintenance burden\nof tracking an external component.\n\n**#5 [rejected] rewrite SCM links to target a local custom GitHub compatible server**\n\nI suppose this would not be terribly hard but it is also not something I want us to have to maintain.\n\n**#6 [rejected] add preview support to cljdoc**\n\nI'm not sure how this would work, but we could add preview support to the cljdoc production server.\n\nThis would be a larger project and have to address many more concerns, so I am rejecting for now.\n\n## Consequences\n\nLibrary authors will have guidance on how to get a fuller preview of what their documentation will look like on cljdoc before officially releasing.\n\nAs the change is documentation only (and any minor fixes discovered while testing docs), the main maintenance burden is limited to the docs.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#1",
+     "kind": "hash",
+     "url": "",
+     "number": "1"
+    },
+    {
+     "key": "#2",
+     "kind": "hash",
+     "url": "",
+     "number": "2"
+    },
+    {
+     "key": "#3",
+     "kind": "hash",
+     "url": "",
+     "number": "3"
+    },
+    {
+     "key": "#4",
+     "kind": "hash",
+     "url": "",
+     "number": "4"
+    },
+    {
+     "key": "#5",
+     "kind": "hash",
+     "url": "",
+     "number": "5"
+    },
+    {
+     "key": "#6",
+     "kind": "hash",
+     "url": "",
+     "number": "6"
+    }
+   ],
+   "mentioned_paths": [
+    "doc/**",
+    "file://"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0019-use-custom-search.md",
+   "identity": "doc/adr/0019-use-custom-search.md",
+   "adr_id": "19",
+   "title": "Implement our own indexing and artifacts search",
+   "first_commit": "2019-05-31T22:29:22+02:00",
+   "first_sha": "c41346550af32f2d3823f4bbe493b1bc7bb3f3c1",
+   "last_commit": "2019-05-31T22:29:22+02:00",
+   "author": "Jakub Holy",
+   "email": "jakub.holy@telia.no",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Implement our own indexing and artifacts search\n\n## Status\n\nProposed\n\n## Context\n\nWe need to be able to search (documented) projects, whether \nthey come from Clojars or Maven Central.\n\nSee https://github.com/cljdoc/cljdoc/issues/85\n\n## Decision\n\nImplement our own search, using direct integration with Lucene. Download and \nindex artifact list from Clojars and \"org.clojure\" artifacts from Maven Central.\n\nWe will use Lucene as that is the absolutely prevailing solution for search in\nJava. Direct Java interop is quite idiomatic in Clojure; it isn't too much work as we\nonly need to implement the parts relevant for us and not a generic Lucene wrapper.\nWe avoid the risk of depending on incomplete and potentially abandoned library\n(as happend to Clojars with clucy). And to be able to use Lucene efficiently we\nneed to understand it sufficiently anyway.\n\n## Consequences\n\n* Our search results will be different from those you get from Clojars, we won't\n  benefit from any improvements on Clojars' side\n* We will be able to search also for non-Clojars projects (and thus also make \n  their docset available in Dash)\n* Cljdoc will become slightly more complex and possibly expensive to operate \n  (due to downloading the ~10MB index from Clojars regularly)\n* New projects will not appear immediately in the search until the next scheduled\n  indexing (unless we mitigate that somehow)\n* We can fine-tune the search to prioritize the results we want",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "cljdoc/cljdoc#85",
+     "kind": "issue",
+     "url": "https://github.com/cljdoc/cljdoc/issues/85",
+     "number": "85"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0018-caching-layer.md",
+   "identity": "doc/adr/0017-caching-layer.md",
+   "adr_id": "18",
+   "title": "A caching layer based on memoized functions backed by sqlite",
+   "first_commit": "2018-12-13T17:05:11+01:00",
+   "first_sha": "0b6a23ee8b1701151e773cc226a10b4d895635d0",
+   "last_commit": "2018-12-13T18:32:05+01:00",
+   "author": "Avichal",
+   "email": "pandeyavichal7@gmail.com",
+   "status": "proposed",
+   "status_raw": "Proposed",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# A caching layer based on memoized functions backed by sqlite\n\n## Status\n\nProposed\n\n## Context\nCljdoc needs to store ad-hoc data that doesn't directly fit in its data model.\nFor example: Project's download stats on Clojars, Projects contributors, stars on Github etc.\nWe need this data to show alongside project's documentation. The source of truth for this kind of data is a service across the network.\nClojars, Github, Maven Central etc. Making multiple network calls to render documentation for a projects deteriorates performance.\n\n## Decision\nWe decide to cache this data to avoid multiple network calls. We are using `clojure.core.memoize` to provide a layer over this cache.\nIt enables us to memoize functions that make network calls. `clojure.core.memoize` requires an implementation of `clojure.core.cache/CacheProtocol`\nto memoize return values of a function. We provide an implementation of this protocol. Our cache has two important properties.\nFirst, it is persistent (backed by cljdoc datastore), we don't want to loose cached data on server restart.\nSecond, it has a TTL functionality. Some data such as Github stars and Clojars download count etc should be refreshed timely.\nTTL can be used to set expiry time for a cached item.\n\n## Consequences\n\n##### Performance:\nBy avoiding multiple network calls to render a documentation we reduce the page load latency.\n\n##### Debugging:\nMemoized functions may return data from the original data source or from cache when there is a cache hit.\nFor debugging purpose sometimes it could be challenging to trace where the data is coming from.\n\n##### Security:\nThis cache implementation is backed by sqlite to provide persistence. It runs some raw SQL queries that are prone to sql injection attacks.\nAs a safety measure any value that is received from the client should not be used as a parameter to initialize this cache.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "clojure.core.cache/CacheProtocol"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0017-use-nomad-for-deployment.md",
+   "identity": "doc/adr/0017-use-nomad-for-deployment.md",
+   "adr_id": "17",
+   "title": "Use Nomad For Deployment",
+   "first_commit": "2018-12-03T21:48:17+01:00",
+   "first_sha": "fbae0a585e3eeeff2be73633771ba4d76f8e5478",
+   "last_commit": "2018-12-03T21:48:17+01:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Use Nomad For Deployment\n\n## Status\n\nAccepted\n\n## Context\n\ncljdoc's deployment story has been simplistic but effective. To recap:\n\n- During CI a zip file is pushed to S3 that contains all files to run the application\n- On the live server there is systemd service that will download an archive and run it. The\n  version of the downloaded archive is specified via a file on the server.\n\nUpdating simply required updating a file on the server and restarting the service.\n\nThe issue with this approach however is that every time a new release was pushed to the server\nthe restart of the systemd service would incur up to a minute of downtime. While this generally\nisn't a huge deal it discourages certain development practices that may be desirable such as\nContinuous Deployment.\n\nOur existing deployment setup (and tools used by it) are poorly equipped to handle this kind of\ndeployment scenario. A large amount of bash scripts would be required to start a new cljdoc server,\nwait for it to become available, update nginx's upstream port, and kill old cljdoc server instances\nin a repeatable, automated manner. Likely these bash scripts would be error-prone and turn into\nsomething nobody likes to touch.\n\n## Decision\n\nImplement a *canary deploy* mechanism for the cljdoc server application using\n[Nomad](https://nomadproject.io) and [Traefik](https://traefik.io).\n\nWhile both of these tools are probably aimed at much more complex workloads they provide the\nfollowing benefits over the existing systemd/Nginx setup:\n\n- Automatic SSL certificates via Lets Encrypt\n- Declarative specification of jobs and their desired update semantics\n- APIs to schedule new jobs and cycle old/new deployments\n- Health checks to verify new deployments work as expected\n- Machine images become much simpler since they only need Nomad, Consul, Docker\n\nThis simplifies a lot of cljdoc's operational tasks while also enabling Continuous Deployment.\n\n## Consequences\n\n#### Inefficient Resource Allocation\n\nThe way Nomad [handles canary deployments](https://www.nomadproject.io/guides/operating-a-job/update-strategies/blue-green-and-canary-deployments.html) requires that there are sufficient resources available to run two sets of tasks side by side.\n\nThis results in instances only operating at half their capacity. In practice the cljdoc\nserver never ran into resource constraints so this likely won't cause any actual problems\nbut it's an imperfection nonetheless.\n\n> **Note:** The scaling plan for cljdoc has always been to put a CDN in front of the backend.\n\n#### More Complexity\n\nNomad and Consul are complex tools, designed for multi-instance orchestration. Compared to\nshell scripts this also forces additional complexity upon developers trying to work with these\ntools on their own machines.\n\n#### Atypical Nomad Usage\n\nRunning a single node \"cluster\" is also an atypical usage scenario and thus may receive limited\nsupport or improvements in the future.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "www.nomadproject.io/guides/operating-a-job/update-strategies/blue-green-and-canary-deployments.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0011-use-tachyons-as-css-foundation.md",
+   "identity": "doc/adr/0011-use-tachyons-as-css-foundation.md",
+   "adr_id": "11",
+   "title": "Use Tachyons As CSS Foundation",
+   "first_commit": "2018-05-03T21:26:30+02:00",
+   "first_sha": "26079409a092b638926a6ee965c45f9949fb62d7",
+   "last_commit": "2018-12-07T22:32:03+01:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 11. Use Tachyons As CSS Foundation\n\nDate: 2018-05-03\n\n## Status\n\nAccepted\n\n## Context\n\nA primary component of cljdoc is a web application. As part of our\nwork on this web application we regularly need to implement new UI\nelements or flows to support overall product development. This\nfrontend work requires usage of CSS to specify positioning, text\nstyles and many more variables.\n\nA common problem with CSS is that developers try to generalize CSS\nclasses so that they can be reused (see\ne.g. [BEM](http://getbem.com/)). Arguably the intention is great but\ninevitably the time will come when constraints change and so the\ncomponent's CSS is modified. By that time other people may have used\nthat component in other places relying on the current implementation.\n\nIn programming languages breaking a collaborator's expectation like\nthis can be mitigated using assertions or automatic tests but this is\nless easily done when working with CSS.\n\n\n## Decision\n\nIn order to avoid the problems outlined above we will adopt the\napproach of using atomic, immutable utility classes as promoted by the\n[Tachyons](http://tachyons.io/) library.\n\nTachyons provides safe-to-reuse, single-purpose classes that help with\nachieving consistent scales of whitespace and font-sizes.\n\nBy not modifying the definition of CSS classes anymore we can safely\nbuild out UI components using those classes without needing to worry\nif we're breaking someone else's expectations.\n\n## Consequences\n\n- Tachyons can be a bit weird when not being familiar with the general\n  approach. While I believe it will enable contributors to move more\n  confidently & quickly in the long run we might need to go the extra\n  mile to make them buy into this approach.\n- Previously reuse what at the level of CSS classes. With an approach\n  like Tachyon's reuse will get elevated to the component level.\n\n## Appendix\n\n- [CSS and Scalability](http://mrmrs.github.io/writing/2016/03/24/scalable-css/) \u2014 \n  an insightful article on why utility classes are a good idea by the author of Tachyons. \n  A quote from that article:  \n\n  > In [the monolith] model, you will never stop writing\n  > css. Refactoring css is hard and time consuming. Deleting unused\n  > css is hard and time consuming. And more often than not - it\u2019s not\n  > work people are excited to do. So what happens? People keep\n  > writing more and more css\n- [tachyons-tldr](https://tachyons-tldr.now.sh) \u2014 super helpful tool\n  to look up classes provided by Tachyons via the CSS attributes they\n  affect.\n- [dwyl/learn-tachyons](https://github.com/dwyl/learn-tachyons) \u2014 a\n  nice repository with another 30s pitch and various examples\n  outlining basic usage.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0016-prefer-polling-over-webhooks.md",
+   "identity": "doc/adr/0016-prefer-polling-over-webhooks.md",
+   "adr_id": "16",
+   "title": "Prefer Polling over Webhooks",
+   "first_commit": "2018-11-20T13:49:37+01:00",
+   "first_sha": "5b16a4aa2350e946a0fddf67256f70735cd695ac",
+   "last_commit": "2018-11-20T13:49:37+01:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "accepted",
+   "status_raw": "Accepted (related to [ADR #0008](0008-use-circleci-as-analysis-sandbox.md))",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Prefer Polling over Webhooks\n\n## Status\n\nAccepted (related to [ADR #0008](0008-use-circleci-as-analysis-sandbox.md))\n\n## Context\n\ncljdoc uses CircleCI as a sandbox to run analysis on projects as\noutlined in [ADR #0008](0008-use-circleci-as-analysis-sandbox.md).\n\nThe process currenlty works like this:\n\n1. cljdoc queues a build\n1. CircleCI eventually runs the build\n1. cljdoc is notified via a webhook\n\nThis approach is nice because we don't need to constantly check the status\nof a build until it eventually finishes but it also has a few drawbacks:\n\n- Testing anything involving webhooks in a local development\n  environment is a serious pain\n- Code related to running the analysis and storing it's result are\n  spread accross multiple places making the code harder to follow and\n  maintain\n\n## Decision\n\nMove to a model where the respective analysis service (CircleCI or Local)\nexposes a blocking interface for running the analysis.\n\nFor CircleCI this blocking interface will simply poll the CircleCI build until\nit reached [lifecycle `\"finished\"`](https://circleci.com/docs/api/v1-reference/#build).\n\n## Consequences\n\nUnsolved problems applying to both approaches:\n\n**Restarting the cljdoc server can cause a loss of state.**\n\n- Webhooks may arrive at a time the server is restarted/offline.\n- Background processes running analysis may be terminated by\n  restarting the service.\n\n**It may take longer until analysis is finished.**\n\n- We poll whether the analysis job completed every 5 seconds.\n- So in consequence, loading the result of analysis may be delayed by\n  up to 5 seconds from the moment the job finished.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#0008",
+     "kind": "hash",
+     "url": "",
+     "number": "0008"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0015-cancel-work-on-examples.md",
+   "identity": "doc/adr/0015-cancel-work-on-examples.md",
+   "adr_id": "15",
+   "title": "Don't Ship Examples Just Yet",
+   "first_commit": "2018-11-03T14:37:56+01:00",
+   "first_sha": "27e7ad3d2261348cb7acc4a41c1ce66866700af7",
+   "last_commit": "2018-11-03T14:37:56+01:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "accepted",
+   "status_raw": "Accepted (supersedes [ADR #0014](0014-add-support-for-examples.md))",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# Don't Ship Examples Just Yet\n\n## Status \n\nAccepted (supersedes [ADR #0014](0014-add-support-for-examples.md))\n\n## Context \n\nI'm having second thoughts on shipping examples as one of the next main things for cljdoc. Second to a [clojure.spec integration](https://github.com/cljdoc/cljdoc/issues/67) it would be a huge feature but I'm no longer sure it's impact will be proportional.\n\nMany people suggested examples as a feature for cljdoc but I think this might be more due to their familiarity with them from sites like clojuredocs.org \u2014 rather than library authors actively looking for ways to add structured examples to their libraries.\n\nVarious hypothesis that would support the addition of examples haven't been tested or verified sufficiently:\n\n- Are examples useful for libraries? Their usefulness is mostly proven with regards to standard library functions which are tiny in scope and mostly operate on plain data. Libraries often require more complex setup.\n- Will library authors add examples to their libraries?\n- Is a community-repository necessary? This has been mostly introduced to allow adding examples to Clojure itself. \n\n## Decision \n\nDon't ship examples just yet.\n\ncljdoc is great because library authors don't have to do anything to get great looking documentation, let's keep it that way and focus on broader adoption, i.e. features that deliver value without requiring extra work from library authors.\n\n## Consequences\n\nNo examples. Also some freed up time that can be directed towards other features that scale proportional to users rather than already-busy library authors doing even more work.\n\nA few days of work sunk into this and the progress is preserved in the branch `70-examples` for now.\n\n## Appendix\n\n- When this is re-approached at a later stage consider that examples should be testable in some way. It seems to me that this is the only way to ensure library authors will keep examples up to date.\n- Maybe [REPL transcripts](https://github.com/cognitect-labs/transcriptor) could be an interesting approach here too. ",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "#0014",
+     "kind": "hash",
+     "url": "",
+     "number": "0014"
+    },
+    {
+     "key": "cljdoc/cljdoc#67",
+     "kind": "issue",
+     "url": "https://github.com/cljdoc/cljdoc/issues/67",
+     "number": "67"
+    }
+   ],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0013-move-to-sqlite-for-storage.md",
+   "identity": "doc/adr/0013-move-to-sqlite-for-storage.md",
+   "adr_id": "13",
+   "title": "Move to SQLite for Storage",
+   "first_commit": "2018-08-13T22:27:33+02:00",
+   "first_sha": "caad7f3862ed04e244a1912e83a62883bfdaab5b",
+   "last_commit": "2018-08-18T13:31:21+02:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 3,
+   "text": "# 13. Move to SQLite for Storage\n\nDate: 2018-08-02\n\n## Status\n\nAccepted \n\n## Context\n\nFrom the start cljdoc embraced a library called [`lib-grimoire`](https://github.com/clojure-grimoire/lib-grimoire), which is effectively a filesystem-backed database to store information about Clojure code (namespaces, vars, etc.). Having this as foundation has allowed cljdoc to focus on automation and UI work with are much more visible/impactful especially at an early stage.\n\nNow cljdoc has seen some adoption and more features are coming up (Spec integration, examples) that don't directly fit `lib-grimoire`'s data model. With `lib-grimoire` being built on top of basic filesystem features (files and directories) it might be hard to extend it to accompany this additional data.\n\nTo recap: cljdoc's data model in it's current form pretty much follows this hierarchy: \n\n**Groups \u2192 Artifacts \u2192 Versions \u2192 Namespaces \u2192 Vars**\n\nAll of these are represented as maps and stored as `.edn` files.\n\n## Decision\n\n**Move data out of Grimoire into SQLite.**\n\nSQLite provides low operational complexity while still providing many of the benefits a proper SQL database would provide. These benefits include:\n\n- a more flexible schema\n- generic query language allowing the domain model to evolve regardless of Grimoire's future development\n- potentially better performance\n\nIn initial testing SQLite performed typical operations up to 15x faster than the filesystem-backed Grimoire store and performance did not degrade with more data being inserted.\n\nUsing SQLite will also allow a transition to Postgres (or similar) with relative ease if/when that becomes necessary.\n\nTo keep things as close to Grimoire as possible for now we won't   try to put all keys of our entity maps into individual columns but instead just store most data as BLOBs. Some examples of what goes into those blobs:\n\n- For **Version** entities: \n\t- the doctree, i.e. all articles (like Readme & Changelog)\n\t- a list of files in the project's Git repository and their respective SHAs\n\t- metadata on the Git revision for that version (SHA, tag, etc.)\n- For **Namespace** entities:\n\t- docstring\n- For **Vars/Defs** entities:\n\t- docstring\n\t- arglists\n\t- type (macro, var, protocol, etc.)\n\n> **Notes:** \n> \n> - This list is non-exhaustive. \n> - The terms \"vars\" and \"defs\" are sometimes used interchangeably.\n> - The blobs will be serialised using [nippy](https://github.com/ptaoussanis/nippy). \n\nFields relevant for querying or data-validity are moved into proper columns. For instance for vars we want to ensure there is only one var with the same `(platform, namespace, name)` and so these fields are put into designated columns. \n\n## Consequences\n\nPreparations for this have already begun with [issue 58](https://github.com/cljdoc/cljdoc/issues/58).\n\nOnce the necessary changes are in place a one-off migration will be necessary to transfer the data from one data store to the other.\n\nAlternatively it could be tried to run both storage backends at the same time and intelligently delegate but it seems that this approach would be better suited when high availability is critical. \n\n## Appendix\n\n#### SQLite Performance Notes\n\n- API data of Amazonia is a good test case because it's a lot namespaces/vars.\n- https://stackoverflow.com/a/6533930 pragmas\n\n```\nPRAGMA main.page_size = 4096;\nPRAGMA main.synchronous=NORMAL;\nPRAGMA main.journal_mode=WAL;\nPRAGMA main.cache_size=10000; \n```\n\n\n- Various benchmarks with hibernate: http://www.jpab.org/Hibernate/HSQLDB/embedded/Hibernate/SQLite/embedded.html\n- https://github.com/JoshuaWise/better-sqlite3/wiki/Performance\n- [PRAGMA documentation](https://www.sqlite.org/pragma.html)\n\n#### Thoughts on Non-Maven Origins (GitHub etc.)\n\n> This is not exactly related to this change in the cljdoc persistence layer but still worth thinking about.\n\nCurrently all artifacts cljdoc provides documentation for are in some maven repository \u2014 but we may want to expand do other sources (GitHub via tools.deps or similar).\n\nThis may require additional namespacing as otherwise there might be conflicts between, e.g. GitHub and Clojars. \n\n#### Why not X?\n\n> This isn't intended to be a full analysis but just some basic notes.\n\n**Postgres:** SQLite gives us the same basic abstractions, reasonable\nperformance for our current usage patterns while being significantly\neasier to operate.\n\n**Datomic:** Datomic is aimed at domains where time is an important\ncomponent, which is not the case for cljdoc. Except for the H2 variant\nit has the same operational complexity as Postgres. H2's performance\ndegraded when testing with the approach (blobs and all) described above.\n\nWhile Clojure people might be familiar with Datomic it's probably fair\nto assume that more people are familiar with SQL. This is important if\nwe try to optimize for a diverse crowd of contributors.\n",
+   "truncated_text": false,
+   "discussion_refs": [
+    {
+     "key": "cljdoc/cljdoc#58",
+     "kind": "issue",
+     "url": "https://github.com/cljdoc/cljdoc/issues/58",
+     "number": "58"
+    }
+   ],
+   "mentioned_paths": [
+    "www.jpab.org/Hibernate/HSQLDB/embedded/Hibernate/SQLite/embedded.html",
+    "www.sqlite.org/pragma.html"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0012-move-away-from-static-site-approach.md",
+   "identity": "doc/adr/0012-move-away-from-static-site-approach.md",
+   "adr_id": "12",
+   "title": "Move Away From Static Site Approach",
+   "first_commit": "2018-06-01T10:39:27+02:00",
+   "first_sha": "688e33525b3d32308eb38673a2c343a15bae9c76",
+   "last_commit": "2018-06-01T12:21:23+02:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 12. Move Away From Static Site Approach\n\nDate: 2018-06-01\n\n## Status\n\nAccepted\n\n## Context\n\nWhen starting to build cljdoc I was somewhat reluctant to accept the idea of managing a service people would rely on in my spare time. This has lead to an architecture where all docs are built on an otherwise inaccessible server and then deployed to S3. This is great for uptime but the problem with that approach quickly became obvious: any time I made a tweak to how documentation is rendered I would have to rebuild all documentation.\n\nThis is a hard blocker given the current iteration speed.\n\n## Decision\n\nMove away from rendering documentation to files and serving them via S3 to rendering HTML as it is requested.\n\n## Consequences\n\nUptime and performance were a key motivation for the decision to host docs statically. Rendering docs on a server may impact both of these and will probably require some work to ensure they are not affected too much.\n\nPerformance should be solvable by putting a CDN in front of the server but so far response times are reasonable.\n\nA CDN may also improve uptime but this of course depends on it already being cached so there's no strict guarantees.\n\nOverall moving towards rendering stuff dynamically will allow for much faster iteration speed and make it easier for contributors to get started locally.\n\n## Appendix\n\nThis decision has been made around May 12th, see [this commit](https://github.com/martinklepsch/cljdoc/commit/361f8d95c1ed34d8467778c0adf6bb75859a6c5e).\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0010-use-terraform-to-create-document-infrastructure.md",
+   "identity": "doc/adr/0010-use-terraform-to-create-document-infrastructure.md",
+   "adr_id": "10",
+   "title": "Use Terraform to Create & Document Infrastructure",
+   "first_commit": "2018-01-31T16:51:50+01:00",
+   "first_sha": "ac0e8f6dabd40bd6663f20cef1727d771a796247",
+   "last_commit": "2018-01-31T16:51:50+01:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 10. Use Terraform to Create & Document Infrastructure\n\nDate: 2018-01-31\n\n## Status\n\nAccepted\n\n## Context\n\nRunning a service like cljdoc requires infrastructure of various kinds. For\nthe initial prototype I generated a static site stack using [a library I\ncreated](https://github.com/confetti-clj/confetti) which uses AWS\nCloudFormation under the hood. This has been useful while prototyping but\nwith the addition of [a server component](/doc/adr/0009-introduce-server-component.md)\nand potentially other infrastructure components in the future it becomes\nharder to stick to Cloudformation.\n\n[Terraform](https://www.terraform.io/) seems to be a popular tool in this space\nand provides all the functionality of my library as well as support for using\nmultiple cloud providers.\n\n## Decision\n\nRebuild the static site stack using Terraform. Once that has been transitioned,\nextend the Terraform configuration to include a server that we can use to host\nthe server component of cljdoc.\n\n## Consequences\n\nTerraform is an additional tool compared to just using Boot. Since this is only\nneeded by admins I'm not to worried about this.",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0009-introduce-server-component.md",
+   "identity": "doc/adr/0009-introduce-server-component.md",
+   "adr_id": "9",
+   "title": "Introduce Server Component",
+   "first_commit": "2018-01-30T12:04:50+01:00",
+   "first_sha": "c3d872646faabb4ea185852409234ca37a39e13a",
+   "last_commit": "2018-01-30T12:06:59+01:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 9. Introduce Server Component\n\nDate: 2018-01-30\n\n## Status\n\nAccepted\n\n## Context\n\nWhile most of cljdoc's publishing pipeline could be ran with\n\"job-runners\" (e.g. CircleCI, AWS Lambda) the isolation provided by\nthose isn't required for many parts of the process.\n\nFurthermore some API to trigger documentation builds will be required\nat some point and this API will need to hold some credentials, e.g.\nAWS keys for S3 and CircleCI API tokens. Exposing access to job-runners\ndirectly would make it harder to implement things like rate-limiting etc.\n\nAn API may also be useful to expose further utility endpoints, like\nways to list available versions or download the metadata for a given\nnamespace or artifact.\n\n## Decision\n\nWe will implement a server component which has the following responsibilties:\n\n- be a central API to end users to request documentation builds\n- hold credentials for various services which should not be exposed in analysis sandbox\n- manage flow of documentation builds\n  - trigger analysis of jars\n  - receive webhooks about completed analysis\n  - populate Grimoire store using analysis results and a project's Git repository\n  - build HTML documentation based on data in Grimoire store\n  - deploy HTML documentation to S3/Cloudfront\n\n## Consequences\n\nA running process introduces some operational and monitoring complexity. Specifically\nthis means we'll need to think about:\n\n- How to monitor for failure and diagnose failure?\n- Who to notify in case of failure?\n- Who pays for the server?\n- Who has access to the serer?\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0008-use-circleci-as-analysis-sandbox.md",
+   "identity": "doc/adr/0008-use-circleci-as-analysis-sandbox.md",
+   "adr_id": "8",
+   "title": "Use CircleCI as Analysis Sandbox",
+   "first_commit": "2018-01-29T20:03:28+01:00",
+   "first_sha": "f683f66b99b1196f9a391b57dfe0908ed4416fb1",
+   "last_commit": "2018-01-29T20:03:28+01:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 8. Use CircleCI as Analysis Sandbox\n\nDate: 2018-01-29\n\n## Status\n\nAccepted\n\n## Context\n\nAnalyzing untrusted Clojure code means loading it which should only be done in some kind of\nsandboxed environment. A Docker image has been created to help with this but this still\nrequires us to run and monitor job execution. Bad actors could still trigger many builds\nto run Bitcoin miners and other compute-stealing stuff.\n\nAlternatives to running Docker ourselves are AWS Lambda (probably similar compute-stealing\nissues) and \"hacking\" a continous integration service to do the job for us. More detail can\nbe found in the [notes on Isolation](https://github.com/martinklepsch/cljdoc/blob/72da65055ab94942f33fb63b29b732e81b559508/doc/isolation.md)\n\n## Decision\n\nFor a first version of cljdoc we will use CircleCI to run analysis for us. The result of\nthis analysis will be made available as a build artifact which can then be laoded in\na trusted environment to import data into Grimoire and build HTML (or other) documentation\nfrontends.\n\n## Consequences\n\nCircleCI's free tier comes with 1500 minutes of build-time. This will not be sufficient for\nbuilding documentation for the entire Clojure ecosystem. For the first few dozens of\nprojects we should probably be fine but at some point we'll reach the cap. At this point\nwe might want to ask CircleCI for sponsorship or look for alternatives.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "github.com/martinklepsch/cljdoc/blob/72da65055ab94942f33fb63b29b732e81b559508/doc/isolation.md"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0007-introduce-doctrees-to-describe-non-api-docs.md",
+   "identity": "doc/adr/0007-introduce-docbundles-for-non-api-docs.md",
+   "adr_id": "7",
+   "title": "Introduce DocTrees to describe Non-API Docs",
+   "first_commit": "2018-01-21T00:18:14+01:00",
+   "first_sha": "eb1b70e3d91a0e1b9f5a97daa1abcd435d614110",
+   "last_commit": "2018-01-24T15:30:22+01:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 4,
+   "text": "# 7. Introduce DocTrees to describe Non-API Docs\n\nDate: 2018-01-23\n\n## Status\n\nAccepted\n\n## Context\n\nNon API documentation such as articles and guides are just as\nimportant\u2014if not more important\u2014as API documentation. **We want to\nprovide an easy way for projects to publish a collection of articles\nin a hierarchy that makes sense for the project.**\n\nYada does an [exemplary job](https://juxt.pro/yada/manual/index.html)\nat providing this kind of documentation and it's documentation may\nserve as an example to keep in mind when considering approaches to tackle\nthis problem. [Re-frame's documentation](https://github.com/Day8/re-frame)\nis also an interesting case as it is spread between it's README and other\nfiles in the `doc/` directory of the project.\n\nGenerally I believe a good README on Github is desirable regardless of\nmore, likely more extensive, documentation elsewhere. Integration of\nsuch README should be taken into consideration as well.\n\nFor a first version Markdown-only would be an acceptable limitation\nbut extending to support other markup languages such as Asciidoc\nshould be possible.\n\n#### Grimoire\n\nSince we use Grimoire as a storage system it would be nice to\nintegrate this non-API information into the Grimoire store as well.\nA few challenges arise:\n\n- Grimoire's support for articles and similar kinds of documentation is unfinished\n- How would versioning work? This becomes especially tricky if we want\n  to update non-API documentation as soon as it is changed in Git.\n- How could a hierarchy of documents be encoded in Grimoire? Or should it even?\n\n\n## Decision\n\nWe introduce a way for library authors to specify a hierarchy of\nvarious documentation files they store in their Git repository. This\nhierarchy can be encoded in familiar, hiccup-style vectors. A\nsimplified example, assuming some Markdown files in `doc/`:\n\n```clojure\n[[\"Getting Started\" {:file \"doc/getting-started.md\"}]\n [\"Guides\" {}\n  [\"Integrating Authentication\" {:file \"doc/integrating-auth.md\"}]\n  [\"Websockets\" {:file \"doc/websockets.md\"}]]]\n```\n\nThis information can then be used by cljdoc to create a manual or\nbook-like experience. This approach is partly inspired by [Sphinx' TOC trees](http://www.sphinx-doc.org/en/stable/markup/toctree.html).\n\nBecause Grimoire's support for articles is still in development\nthis ADR does not contain a decision on how to store the information\nthat cljdoc pulls out of projects using DocTrees.\n\n#### More Details on DocTrees\n\nA data structure may describe documentation hierarchy in the following way:\n\n- ordered vector of vectors, somewhat hiccup inspired\n- an attribute-map describes how the content of the given page can be\n  retrieved from the Git repository\n- elements after attribute-map are interpreted as children\n\nThis data structure may be specified by library authors through\na configuration file or derived from the repository structure.\n\n```clojure\n;; README only, perhaps derived\n[[\"Readme\" {:file \"README.md\"}]]\n```\n\n```clojure\n;; Simple markdown files in doc/ \u2014 same as above\n[[\"Getting Started\" {:file \"doc/getting-started.md\"}]\n [\"Guides\" {}\n  [\"Integrating Authentication\" {:file \"doc/integrating-auth.md\"}]\n  [\"Websockets\" {:file \"doc/websockets.md\"}]]]\n```\n\n```clojure\n;; Sections in a single asciidoc file\n[[\"Getting Started\" {:file \"doc/content.adoc#getting-started\"}]\n [\"Guides\" {}\n  [\"Integrating Authentication\" {:file \"doc/content.adoc#integrating-auth\"}]\n  [\"Websockets\" {:file \"doc/content.adoc#websockets\"}]]]\n```\n\n## Consequences\n\n#### Monolithic Documentation\n\nProjects like\n[Fulcro](https://github.com/fulcrologic/fulcro/blob/develop/DevelopersGuide.adoc)\nhave one big file which contains all documentation. It would therefore\nnot be possible for Fulcro to describe a DocTree with items pointing\nto individual files. Potential solutions include:\n- splitting the file (change on side of Fulco)\n- and parsing big files to derive a DocTree (change on side of cljdoc).\n\n## Appendix\n\nBelow are some doc trees for projects with extensive documentation.\n\n#### DocTree for [Yada manual](https://github.com/juxt/yada/blob/master/doc/yada-manual.adoc)\n\n```clojure\n[[\"Preface\" {:file \"doc/preface.adoc\"}]\n [\"Basics\" {}\n  [\"Introduction\" {:file \"doc/intro.adoc\"}]\n  [\"Getting Started\" {:file \"doc/getting-started.adoc\"}]\n  [\"Hello World\" {:file \"doc/hello.adoc\"}]\n  [\"Installation\" {:file \"doc/install.adoc\"}]\n  [\"Resources\" {:file \"doc/install.adoc\"}]\n  [\"Parameters\" {:file \"doc/parameters.adoc\"}]\n  [\"Properties\" {:file \"doc/properties.adoc\"}]\n  [\"Methods\" {:file \"doc/methods.adoc\"}]\n  [\"Representations\" {:file \"doc/representations.adoc\"}]\n  [\"Responses\" {:file \"doc/responses.adoc\"}]\n  [\"Security\" {:file \"doc/security.adoc\"}]\n  [\"Routing\" {:file \"doc/routing.adoc\"}]\n  [\"Phonebook\" {:file \"doc/phonebook.adoc\"}]\n  [\"Swagger\" {:file \"doc/swagger.adoc\"}]]\n [\"Advanced Topics\" {}\n  [\"Async\" {:file \"doc/async.adoc\"}]\n  [\"Search Engine\" {:file \"doc/searchengine.adoc\"}]\n  [\"Server Sent Events\" {:file \"doc/sse.adoc\"}]\n  [\"Server Sent Events\" {:file \"doc/sse.adoc\"}]\n  [\"Chat Server\" {:file \"doc/chatserver.adoc\"}]\n  [\"Handling Request Bodies\" {:file \"doc/requestbodies.adoc\"}]\n  [\"Selfie Uploader\" {:file \"doc/selfieuploader.adoc\"}]\n  [\"Handlers\" {:file \"doc/handlers.adoc\"}]\n  [\"Request Context\" {:file \"doc/requestcontext.adoc\"}]\n  [\"Interceptors\" {:file \"doc/interceptors.adoc\"}]\n  [\"Subresources\" {:file \"doc/subresources.adoc\"}]\n  [\"Fileserver\" {:file \"doc/fileserver.adoc\"}]\n  [\"Testing\" {:file \"doc/testing.adoc\"}]]\n [\"Reference\" {}\n  [\"Glossary\" {:file doc/glossary.adoc}]\n  [\"Reference\" {:file doc/reference.adoc}]\n  [\"Colophon\" {:file doc/colophon.adoc}]]]\n```\n\n#### Notes on [Lacinia](https://github.com/walmartlabs/lacinia/tree/master/docs)\n\nPublished to [readthedocs.io](http://lacinia.readthedocs.io)\n\nWriting out the DocTree isn't an issue here but the Lacinia docs use several\n[ReStructuredText](https://en.wikipedia.org/wiki/ReStructuredText) features like\ninlining contents of other files.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "juxt.pro/yada/manual/index.html",
+    "doc/",
+    "doc/getting-started.md",
+    "doc/integrating-auth.md",
+    "doc/websockets.md",
+    "www.sphinx-doc.org/en/stable/markup/toctree.html",
+    "doc/content.adoc",
+    "github.com/fulcrologic/fulcro/blob/develop/DevelopersGuide.adoc",
+    "github.com/juxt/yada/blob/master/doc/yada-manual.adoc",
+    "doc/preface.adoc",
+    "doc/intro.adoc",
+    "doc/getting-started.adoc",
+    "doc/hello.adoc",
+    "doc/install.adoc",
+    "doc/parameters.adoc",
+    "doc/properties.adoc",
+    "doc/methods.adoc",
+    "doc/representations.adoc",
+    "doc/responses.adoc",
+    "doc/security.adoc",
+    "doc/routing.adoc",
+    "doc/phonebook.adoc",
+    "doc/swagger.adoc",
+    "doc/async.adoc",
+    "doc/searchengine.adoc",
+    "doc/sse.adoc",
+    "doc/chatserver.adoc",
+    "doc/requestbodies.adoc",
+    "doc/selfieuploader.adoc",
+    "doc/handlers.adoc",
+    "doc/requestcontext.adoc",
+    "doc/interceptors.adoc",
+    "doc/subresources.adoc",
+    "doc/fileserver.adoc",
+    "doc/testing.adoc",
+    "doc/glossary.adoc",
+    "doc/reference.adoc",
+    "doc/colophon.adoc"
+   ],
+   "implementation": {
+    "sha": "f485537ab84f50c8cfec429f00021470dd503b3b",
+    "date": "2018-01-23T21:22:59+01:00",
+    "subject": "",
+    "reason": "first-commit-touching-a-path-named-in-the-adr",
+    "paths": [
+     "src/cljdoc/doc_tree.clj"
+    ]
+   }
+  },
+  {
+   "path": "doc/adr/0006-don-t-implement-caches-for-indexes-artifacts-versions-etc.md",
+   "identity": "doc/adr/0006-don-t-implement-caches-for-indexes-artifacts-versions-etc.md",
+   "adr_id": "6",
+   "title": "Don't implement caches for indexes (artifacts, versions, etc)",
+   "first_commit": "2018-01-16T09:58:28+01:00",
+   "first_sha": "e47a74239ae821ea1cfeb3a6c0aa1fa1539e93bf",
+   "last_commit": "2018-01-16T09:58:28+01:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 6. Don't implement caches for indexes (artifacts, versions, etc)\n\nDate: 2018-01-16\n\n## Status\n\nAccepted\n\n## Context\n\nIn [ADR-0005](0005-implement-minimal-api-abstracting-grimoire.md) a decision was made to\nimplement some bundling mechanisms to make it easier for tooling authors to retrieve\ndocumentation data.\n\nIn the pursuit to better show off cljdoc's multi-version capabilities I was going to\nimplement a similar caching/bundling mechanism for the list of versions available.\n\nFollowing problems have been identified:\n\n- Creating and updating an index of versions requires knowledge of prior versions which in\n  turn requires us to talk to the Grimoire store first.\n- The Grimoire store may not be fully available on the machine building documentation.\n- This results in additional roundtrips and, should there ever be multiple machines bundling\n  documentation, distributed writes.\n\n## Decision\n\nDue to the above issues I will not implement any caches to make lists of groups, artifacts\nor versions easily available for now. Already made changes in this direction will be\nreverted.\n\n## Consequences\n\nListing versions (and perhaps also groups/artifacts) is still desirable and so I will need\nto come up with an approach that avoids the above issues. One option already coming to mind\nis a basic HTTP API that reads from the global Grimoire store (S3 or similar) and returns\nindex information.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0005-implement-minimal-api-abstracting-grimoire.md",
+   "identity": "doc/adr/0005-implement-minimal-api-abstracting-grimoire.md",
+   "adr_id": "5",
+   "title": "Implement Minimal API Abstracting Grimoire",
+   "first_commit": "2018-01-14T17:21:23+01:00",
+   "first_sha": "fc3c6b225bfbac3ff36565c66aec2427344e70cd",
+   "last_commit": "2018-01-14T19:19:51+01:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 5. Implement Minimal API Abstracting Grimoire\n\nDate: 2018-01-14\n\n## Status\n\nAccepted\n\n## Context\n\nGrimoire is great as a single source of truth due do it's well designed data-model. The APIs Grimoire exposes have the following drawbacks however:\n\n- Clojure specific\n  - other languages will need to reimplement storage abstractions, which is tedious work and bug-prone\n- Slightly unwieldy for the use case that seems most common for tooling authors that want to build on top of Grimoire data:\n  - \"Give me all information about an `artifact`\" (namespaces, defs, version, etc.)\n  - `artifact` could be something like `[bidi \"2.1.3\"]` here\n\n## Decision\n\nIn order to make Grimoire data as easy to use as possible from a wide variety of languages we will implement a minimal \"cache\" API on top.\n\nThis API will have the following properties:\n- file-based (single files which contain different \"bundles\" of Grimoire data)\n- files are encoded in [Transit](https://github.com/cognitect/transit-format) to reduce cost of duplicate strings and similar\n- files can be regenerated at any time\n\nAn initial implementation of this cache can be fund in `cljdoc.cache` (as of\n`fc3c6b2`). A spec has been written in `cljdoc.spec`. The cache follows the basic form of\n\n```clojure\n{:cache-id       {,,,}\n :cache-contents {,,,}}\n```\n\n> Cache storage could also be implemented as a storage implementation for\nGrimoire. Benefit would be that all Grimoire operations are supported. Given\nthat we want to expose an API with only a very small subset of Grimoire's and do that for multiple languages the utility of this is not immediately apparent.\n\n## Consequences\n\nThe cache map may be extended in the future. Especially a timestamp about\nwhen it was generated could be useful to validate that a bundle has been\nregenerated at a certain point in time.\n\n**Since cache-map generation and structure may change over the course of time\nand also will become a primary API some versioning should also be considered.**\nThis could be as simple as an additional field `:cache-format 1`, where `1`\ngets incremented any time the cache format changes.\n\n\n\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0004-utilize-codox-to-read-clojure-script-sources.md",
+   "identity": "doc/adr/0004-utilize-codox-to-read-clojure-script-sources.md",
+   "adr_id": "4",
+   "title": "Utilize Codox to Read Clojure/Script Sources",
+   "first_commit": "2018-01-14T12:41:14+01:00",
+   "first_sha": "1749c226ec002e563b8c1c7d4522af4efb47c62f",
+   "last_commit": "2018-01-14T17:24:38+01:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "accepted",
+   "status_raw": "Accepted Supercedes [2. Don't build on top of Codox](0002-don-t-build-on-top-of-codox.md)",
+   "replacement": null,
+   "n_commits": 2,
+   "text": "# 4. Utilize Codox to Read Clojure/Script Sources\n\nDate: 2018-01-14\n\n## Status\n\nAccepted\n\nSupercedes [2. Don't build on top of Codox](0002-don-t-build-on-top-of-codox.md)\n\n## Context\n\nI initially thought reading metadata from source files is built into Grimoire but it is not\nand has been implemented separately in projects like [lein-grim](https://github.com/clojure-grimoire/lein-grim). The implementation in `lein-grim` did not work with `.cljs` or `.cljc` files and so copying that\nwas not an option.\n\nIn a previous ADR I decided not to build on top of codox to generate documentation. I still\nbelieve Codox is not what I want to generate final artifacts (HTML, JS Apps) but has\nrelatively solid features when it comes to reading source files and extracting metadata.\n\nCodox' `:writer` option allows us to easily retrieve the raw data in a plain format that\nis easy to understand.\n\n\n## Decision\n\nWe will use Codox to retrieve metadata from source files for now.\nStorage of metadata will be stored in Grimoire as before.\n\n## Consequences\n\nCodox does not provide means to read the source of vars. This will need to be implemented\nseparately, perhaps using `clojure.repl/source-fn` which however has it's own issues.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [
+    "clojure.repl/source-fn"
+   ],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0002-don-t-build-on-top-of-codox.md",
+   "identity": "doc/adr/0002-don-t-build-on-top-of-codox.md",
+   "adr_id": "2",
+   "title": "Don't build on top of Codox",
+   "first_commit": "2018-01-11T19:45:21+01:00",
+   "first_sha": "47e836a6acc6bb0cd22c4ba796bde16fce4bedec",
+   "last_commit": "2018-01-14T12:41:14+01:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "superseded",
+   "status_raw": "Superceded by [4. Utilize codox to read Clojure/Script sources](0004-utilize-codox-to-read-clojure-script-sources.md)",
+   "replacement": "4. Utilize codox to read Clojure/Script sources (0004-utilize-codox-to-read-clojure-script-sources.md)",
+   "n_commits": 2,
+   "text": "# 2. Don't build on top of Codox\n\nDate: 2018-01-11\n\n## Status\n\nSuperceded by [4. Utilize codox to read Clojure/Script sources](0004-utilize-codox-to-read-clojure-script-sources.md)\n\n## Context\n\nWe want to derive data about Clojure projects that can be used to render API documentation\nas well as plain text documentation (e.g. tutorials).\n\nCodox is a popular tool to create this kind of documentation as HTML files.\n\n## Decision\n\nSince Codox renders to HTML instead of some more well defined data format it will be hard to\nturn Codox' output into other formats. Due to this problem building on top of Codox is not\na viable path forward.\n\n## Consequences\n\nSome other tool will be needed to create data about APIs and other documentation.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0003-utilize-grimoire-for-storage.md",
+   "identity": "doc/adr/0003-utilize-grimoire-for-storage.md",
+   "adr_id": "3",
+   "title": "Utilize Grimoire for storage",
+   "first_commit": "2018-01-12T12:42:39+01:00",
+   "first_sha": "6ac880aad4b8a6b6e8a9a361a26fd9b9fea9dfcf",
+   "last_commit": "2018-01-12T12:42:39+01:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 3. Utilize Grimoire for storage\n\nDate: 2018-01-12\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to store documentation (API, articles, etc.) for many different projects, versions\nand platforms.\n\n## Decision\n\n[Grimoire](https://github.com/clojure-grimoire/lib-grimoire) has a storage design that\nsupports those requirements and seems to be a well designed project overall.\n\nGrimoire also supports implementing different storage backends which may be useful later.\n\nFor now we will try to build a filesystem based storage for documentaton based on Grimoire's\nformat and ideas.\n\n## Consequences\n\nUse Grimoire, don't try to come up with alternative storage designs.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  },
+  {
+   "path": "doc/adr/0001-record-architecture-decisions.md",
+   "identity": "doc/adr/0001-record-architecture-decisions.md",
+   "adr_id": "1",
+   "title": "Record architecture decisions",
+   "first_commit": "2018-01-11T19:45:21+01:00",
+   "first_sha": "47e836a6acc6bb0cd22c4ba796bde16fce4bedec",
+   "last_commit": "2018-01-11T19:45:21+01:00",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com",
+   "status": "accepted",
+   "status_raw": "Accepted",
+   "replacement": null,
+   "n_commits": 1,
+   "text": "# 1. Record architecture decisions\n\nDate: 2018-01-11\n\n## Status\n\nAccepted\n\n## Context\n\nWe need to record the architectural decisions made on this project.\n\n## Decision\n\nWe will use Architecture Decision Records, as described by Michael Nygard in this article: http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions\n\n## Consequences\n\nSee Michael Nygard's article, linked above. For a lightweight ADR toolset, see Nat Pryce's _adr-tools_ at https://github.com/npryce/adr-tools.\n",
+   "truncated_text": false,
+   "discussion_refs": [],
+   "mentioned_paths": [],
+   "implementation": {
+    "sha": null,
+    "date": null,
+    "subject": null,
+    "reason": "no-code-commit-found",
+    "paths": []
+   }
+  }
+ ],
+ "status_changes": [
+  {
+   "path": "doc/adr/0014-add-support-for-examples.md",
+   "identity": "doc/adr/0014-add-support-for-examples.md",
+   "commit": "27e7ad3d2261348cb7acc4a41c1ce66866700af7",
+   "date": "2018-11-03T14:37:56+01:00",
+   "old_state": "accepted",
+   "new_state": "superseded",
+   "old_raw": "Accepted",
+   "new_raw": "Superseded by [ADR #0015](0015-cancel-work-on-examples.md)",
+   "replacement": "ADR #0015 (0015-cancel-work-on-examples.md)",
+   "message": "supersede examples adr with ADR-0015",
+   "renamed": false,
+   "script_label": "replaced",
+   "script_rule": "superseded-by-pointer",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com"
+  },
+  {
+   "path": "doc/adr/0018-caching-layer.md",
+   "identity": "doc/adr/0017-caching-layer.md",
+   "commit": "47f0e854a2ec6606c3c3a7b2d1d48c255b72e363",
+   "date": "2018-12-13T18:32:05+01:00",
+   "old_state": "proposed",
+   "new_state": "proposed",
+   "old_raw": "Proposed",
+   "new_raw": "Proposed",
+   "replacement": null,
+   "message": "Rename caching system adr",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Avichal",
+   "email": "pandeyavichal7@gmail.com"
+  },
+  {
+   "path": "doc/adr/0007-introduce-doctrees-to-describe-non-api-docs.md",
+   "identity": "doc/adr/0007-introduce-docbundles-for-non-api-docs.md",
+   "commit": "3d8f44974e285a04f59aba6ff7486571a0d4d35a",
+   "date": "2018-01-23T14:12:44+01:00",
+   "old_state": "proposed",
+   "new_state": "proposed",
+   "old_raw": "Proposed",
+   "new_raw": "Proposed",
+   "replacement": null,
+   "message": "rename for doctree only ADR",
+   "renamed": true,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "rename-without-status-change",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com"
+  },
+  {
+   "path": "doc/adr/0007-introduce-doctrees-to-describe-non-api-docs.md",
+   "identity": "doc/adr/0007-introduce-docbundles-for-non-api-docs.md",
+   "commit": "0ab2f8bd0ad641052b5af3b54a98048cd165d79a",
+   "date": "2018-01-24T15:30:22+01:00",
+   "old_state": "proposed",
+   "new_state": "accepted",
+   "old_raw": "Proposed",
+   "new_raw": "Accepted",
+   "replacement": null,
+   "message": "mark ADR-0007 (doc trees) as accepted",
+   "renamed": false,
+   "script_label": "cleanup-or-rename",
+   "script_rule": "not-an-ending",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com"
+  },
+  {
+   "path": "doc/adr/0002-don-t-build-on-top-of-codox.md",
+   "identity": "doc/adr/0002-don-t-build-on-top-of-codox.md",
+   "commit": "1749c226ec002e563b8c1c7d4522af4efb47c62f",
+   "date": "2018-01-14T12:41:14+01:00",
+   "old_state": "accepted",
+   "new_state": "superseded",
+   "old_raw": "Accepted",
+   "new_raw": "Superceded by [4. Utilize codox to read Clojure/Script sources](0004-utilize-codox-to-read-clojure-script-sources.md)",
+   "replacement": "4. Utilize codox to read Clojure/Script sources (0004-utilize-codox-to-read-clojure-script-sources.md)",
+   "message": "add ADR to use codox for metadata extraction",
+   "renamed": false,
+   "script_label": "replaced",
+   "script_rule": "superseded-by-pointer",
+   "author": "Martin Klepsch",
+   "email": "martinklepsch@googlemail.com"
+  }
+ ],
+ "ai_signals": [],
+ "signal_date": null,
+ "signal_kind": null,
+ "mentions": {
+  "strict": [],
+  "strict_count": 0,
+  "literal_only_count": 0,
+  "capped": false
+ },
+ "group": "non-ai-eligible",
+ "adr_count_before_signal": 21,
+ "superseded_in_window": 2,
+ "eligibility_reason": "at-least-5-adrs-no-signal",
+ "sources": "sourcegraph:doc_adr;buchgeher-2022",
+ "stars": "564",
+ "ai_file_probe": "no",
+ "buchgeher_adr_count": "20"
+}
