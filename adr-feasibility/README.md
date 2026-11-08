@@ -7,7 +7,7 @@ Six checks for the study of architecture decision records (ADRs) and AI coding t
 | 1 | Do enough projects exist? | 50 with an AI signal and at least 5 earlier ADRs, 50 without a signal and at least 5 ADRs, and 100 superseded decisions in those windows |
 | 2 | Does the AI signal mean real use? | 16 of 20 flagged projects show use, and the signal date is usually within 92 days of the first observable use |
 | 3 | Does the ADR date show when the decision was made? | Most of 30 records can be placed as written-first or written-after, and the script's code commit is right in at least 8 of 10 judged cases |
-| 4 | Can the script tell endings apart? | Agreement with a hand label on at least 85% of about 30 status changes |
+| 4 | Can the script tell endings apart? | Agreement with a hand label on at least 85% of a fresh sample of about 30 status changes. The first 30, which exposed missing pointer phrases, are held out in `check4_development_sample.csv` and are not the reported score |
 | 5 | Do two people label the same way? | Cohen's kappa at least 0.6 for decision type and for the yes/no hard dimension |
 | 6 | Do the labels match the people who did the work? | Maintainer replies agree in most of the cases that get an answer |
 

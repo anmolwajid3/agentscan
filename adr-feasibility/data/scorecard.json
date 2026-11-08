@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-08T01:29+00:00",
+  "generated": "2026-11-08T01:41+00:00",
   "check1": {
     "frame_rows": 2338,
     "analyzed": 422,
@@ -49,9 +49,9 @@
     },
     "check4": {
       "labeled": 30,
-      "agreements": 24,
-      "rate": 0.8,
-      "passed": false
+      "agreements": 29,
+      "rate": 0.9666666666666667,
+      "passed": true
     },
     "check5": {
       "rater_a": 15,
@@ -76,5 +76,6 @@
     "check4": 30,
     "check5": 15,
     "check6": 10
-  }
+  },
+  "check4_note": "- Check 4 is a fresh sample of 30, seed 20261110. It shares no file with the first 30 (`check4_development_sample.csv`), which is where the pointer-phrase misses were found. That first sample is not the reported accuracy. The fresh mix is 9 replaced, 4 no-longer-needed, 1 rejected-before-use, 16 cleanup-or-rename. The measured repositories only contain 9 rejected-before-use transitions and 9 no-longer-needed transitions, and the first sample had already taken most of them."
 }

@@ -5,7 +5,7 @@ from adr_pilot.eligibility import check1_passed, classify_project
 from adr_pilot.kappa import cohens_kappa, weighted_kappa
 from adr_pilot.lead import extract_paths, pick_implementation
 from adr_pilot.signals import ai_coauthor_hits, classify_signal_path, is_agent_author, mention_kind
-from adr_pilot.status import parse_status
+from adr_pilot.status import find_replacement, parse_status
 
 
 class StatusTests(unittest.TestCase):
@@ -101,6 +101,44 @@ class EndingTests(unittest.TestCase):
             message="Remove the feature",
         )
         self.assertEqual(ending.label, "no-longer-needed")
+
+    def test_deprecated_by_an_adr_number_is_replaced(self):
+        text = "## Status\n\nDeprecated by [60. lock-pip-requirements](0060-lock-pip-requirements.md)\n"
+        parsed = parse_status(text)
+        self.assertEqual(parsed.state, "deprecated")
+        self.assertIn("0060", parsed.replacement or "")
+        ending = classify_ending("accepted", "deprecated", new_raw=parsed.raw, replacement=parsed.replacement)
+        self.assertEqual(ending.label, "replaced")
+
+    def test_deprecated_as_of_adr_is_replaced(self):
+        raw = "Deprecated as of [ADR-5](ADR-5_no-more-bootstrap.md)."
+        ending = classify_ending("accepted", "deprecated", new_raw=raw)
+        self.assertEqual(ending.label, "replaced")
+
+    def test_deprecated_by_a_bare_number_is_replaced(self):
+        ending = classify_ending("accepted", "deprecated", new_raw="Deprecated by 60")
+        self.assertEqual(ending.label, "replaced")
+
+    def test_rejected_see_adr_is_replaced(self):
+        raw = "Rejected (see [ADR 8](0008-stream-first.md))"
+        parsed = parse_status("# Title\n\n## Status\n\n" + raw + "\n")
+        self.assertEqual(parsed.state, "rejected")
+        ending = classify_ending("accepted", "rejected", new_raw=raw)
+        self.assertEqual(ending.label, "replaced")
+
+    def test_a_year_or_a_person_is_not_a_replacement(self):
+        self.assertEqual(
+            classify_ending("accepted", "deprecated", new_raw="Deprecated by 2021").label,
+            "no-longer-needed",
+        )
+        self.assertEqual(
+            classify_ending("proposed", "rejected", new_raw="Rejected by DAO").label,
+            "rejected-before-use",
+        )
+        self.assertEqual(
+            classify_ending("accepted", "deprecated", new_raw="Deprecated (no superseding ADR)").label,
+            "no-longer-needed",
+        )
 
 
 class EligibilityTests(unittest.TestCase):

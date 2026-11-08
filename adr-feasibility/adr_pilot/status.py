@@ -26,6 +26,16 @@ _REPLACEMENT = re.compile(
     r"(?is)\b(?:superseded|replaced|superceded|supersedes)\s+by\s+"
     r"(?:\[(?P<label>[^\]]+)\]\((?P<url>[^)]+)\)|(?P<plain>[^.\n]{1,160}))"
 )
+# A later decision is named. "by ADR-5", "as of ADR-5", "by 60", "by [60. title](0060.md)",
+# and "see ADR 8" / "see [ADR 8](0008.md)". A bare 4-digit year is a date, not an ADR.
+_POINTER_BY = re.compile(
+    r"(?ix)\b(?:superseded|superceded|replaced|deprecated|obsolete|retired)"
+    r"\s+(?:by|as\s+of|in\s+favour\s+of|in\s+favor\s+of)\s+"
+    r"(?:\[(?P<label>[^\]]+)\]\((?P<url>[^)]+)\)|(?P<adr>adr[\s#_:-]*\d{1,5})\b|(?P<num>\d{1,5})\b)"
+)
+_POINTER_SEE = re.compile(
+    r"(?ix)\bsee\s+(?:\[(?P<label>[^\]]+)\]\((?P<url>[^)]+)\)|(?P<adr>adr[\s#_:-]*\d{1,5}))"
+)
 _LEGEND = re.compile(
     r"(?is)what is the status|such as proposed|e\.g\.\s*proposed|"
     r"proposed\s*[,/|]\s*accepted\s*[,/|]\s*(?:rejected|deprecated)"
@@ -83,16 +93,70 @@ def _strip_comments(text: str) -> str:
     return text
 
 
-def _replacement_from(text: str) -> str | None:
-    match = _REPLACEMENT.search(text)
-    if not match:
-        return None
-    if match.group("label"):
-        label = _collapse(match.group("label"))
-        url = _collapse(match.group("url") or "")
+def _link_names_adr(label: str, url: str) -> bool:
+    blob = f"{label} {url}"
+    if re.search(r"(?i)\badr\b|adr[-_]\d", blob):
+        return True
+    # "60. lock-pip-requirements" linking at 0060-lock-pip-requirements.md
+    if re.match(r"\d{1,5}\b", label.strip()) and re.search(r"(?i)\d{3,5}", url):
+        return True
+    if re.search(r"(?i)(?:^|/)(?:adr[-_]?)?\d{3,5}-", url):
+        return True
+    return False
+
+
+def _pointer_text(match: re.Match) -> str | None:
+    label = _collapse(match.group("label") or "") if "label" in match.groupdict() else ""
+    url = _collapse(match.group("url") or "") if "url" in match.groupdict() else ""
+    if label or url:
+        if not _link_names_adr(label, url):
+            return None
         return f"{label} ({url})" if url else label
-    plain = _collapse(match.group("plain") or "")
-    return plain or None
+    adr = match.groupdict().get("adr")
+    if adr:
+        return _collapse(adr)
+    number = match.groupdict().get("num")
+    if number:
+        value = int(number)
+        if 1900 <= value <= 2099:
+            return None
+        return number
+    return None
+
+
+def _negated_pointer(text: str, start: int) -> bool:
+    prefix = text[max(0, start - 24) : start]
+    return bool(re.search(r"(?i)\b(?:not|no|without)\s+$", prefix))
+
+
+def find_replacement(text: str | None) -> str | None:
+    """Return the other decision named by a replacement phrase, if the text has one.
+
+    Recognises "superseded by ADR-N", "deprecated by ADR-N", "deprecated as of
+    ADR-N", "deprecated by 60", and "rejected, see ADR-N". "Supersedes ADR-N"
+    does not count: that sentence means this record is the replacement.
+    """
+    if not text:
+        return None
+    for pattern in (_REPLACEMENT, _POINTER_BY, _POINTER_SEE):
+        for match in pattern.finditer(text):
+            if _negated_pointer(text, match.start()):
+                continue
+            found = _pointer_text(match) if pattern is not _REPLACEMENT else None
+            if pattern is _REPLACEMENT:
+                if match.group("label"):
+                    label = _collapse(match.group("label"))
+                    url = _collapse(match.group("url") or "")
+                    found = f"{label} ({url})" if url else label
+                else:
+                    found = _collapse(match.group("plain") or "") or None
+            if found:
+                return found
+    return None
+
+
+def _replacement_from(text: str) -> str | None:
+    return find_replacement(text)
 
 
 def _state_from_phrase(phrase: str) -> str:
@@ -124,16 +188,14 @@ def _from_block(block: str) -> Status:
         # The last checked box wins when a template ticks one option.
         phrase = checked[-1]
         state = _state_from_phrase(phrase)
-        replacement = _replacement_from(block) if state == "superseded" else _replacement_from(phrase)
-        if state == "superseded" and replacement is None:
-            replacement = _replacement_from(block)
+        replacement = _replacement_from(phrase) or _replacement_from(block)
         return Status(state, _collapse(phrase)[:300], replacement, state != "unknown")
     # Ignore an unfilled option menu that mentions every lifecycle word.
     words = {state for state in ("proposed", "accepted", "rejected", "deprecated", "superseded") if re.search(rf"(?i)\b{state}", block)}
     if words >= {"proposed", "accepted", "rejected", "superseded"} and " by " not in block.lower():
         return Status("unknown", raw_block, None, False)
     state = _state_from_phrase(block)
-    replacement = _replacement_from(block) if state == "superseded" else None
+    replacement = _replacement_from(block)
     filled = state != "unknown"
     return Status(state, raw_block[:300], replacement, filled)
 

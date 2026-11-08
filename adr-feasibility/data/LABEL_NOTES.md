@@ -14,7 +14,11 @@ None of the 20 unflagged projects had a strict hidden-use hit after one false hi
 
 ## Check 4
 
-The script agreed on 24 of 30 endings (80%), under the 85% bar. The misses are the same pattern: "deprecated by ADR-N", "rejected, see ADR-N", and a deletion of a removed product. The script treats `deprecated` and `rejected` as "no longer needed" even when the text names the replacement. That rule can be tightened. Until it is, those reversals need a hand check.
+The first 30 (seed 20261108) agreed on 24 of 30 (80%). Those rows are kept in `check4_development_sample.csv` and are not the reported score. The misses that named another decision were "deprecated by ADR-N", "deprecated as of ADR-N", and "rejected, see ADR-N". The rules now treat those phrases as a replacement. "Deprecated (no superseding ADR)" is not a replacement. A bare year, as in "deprecated by 2021", is not one either.
+
+The reported score is a fresh sample of 30 (seed 20261110) that shares no file with the first 30. The script agreed on 29 of 30 (97%). The miss is `SAP/cloud-sdk-js` `0002-cli-scaffold.md`: the text says the CLI is deprecated and to use the sample projects instead. The hand label is replaced. The script says no-longer-needed, because the pointer is not an ADR.
+
+The fresh sample has 9 replaced, 4 no-longer-needed, 1 rejected-before-use, and 16 cleanup-or-rename. The measured repositories only contain 9 rejected-before-use transitions and 9 no-longer-needed transitions, and the first sample had already taken 8 of the rejected ones. The fresh sample therefore includes every remaining case of those two labels, then fills the rest with cleanup. On the 14 cases that are not cleanup, agreement is 13 of 14.
 
 ## Check 5 and 6
 

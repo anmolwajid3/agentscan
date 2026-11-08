@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import random
 from datetime import datetime, timezone
@@ -54,6 +55,14 @@ def _collect(args: argparse.Namespace) -> None:
     collect(rows, REPOS, Path(args.clone_root), workers=args.workers, limit=args.limit)
 
 
+def _held_out_paths(path: Path) -> set[tuple[str, str]]:
+    """Repository and path pairs from the sample that exposed the ending-rule gap."""
+    if not path.exists():
+        return set()
+    with path.open(encoding="utf-8", newline="") as handle:
+        return {(row.get("repo") or "", row.get("path") or "") for row in csv.DictReader(handle)}
+
+
 def _report(_args: argparse.Namespace) -> None:
     projects = load_projects(REPOS)
     if not projects:
@@ -61,7 +70,7 @@ def _report(_args: argparse.Namespace) -> None:
     write_project_table(projects, DATA / "projects.csv")
     rng3 = random.Random(20261108)
     rng2 = random.Random(20261108)
-    rng4 = random.Random(20261108)
+    rng4 = random.Random(20261110)
     rng5 = random.Random(20261109)
     summary1 = check1(projects)
     frame_path = DATA / "sampling_frame.csv"
@@ -74,7 +83,8 @@ def _report(_args: argparse.Namespace) -> None:
         summary1["frame_unmeasured"] = max(0, len(frame_rows) - len(projects))
     summary2 = check2(projects, rng2)
     cases3 = build_check3(projects, rng3)
-    cases4 = build_check4(projects, rng4)
+    held_out = _held_out_paths(DATA / "check4_development_sample.csv")
+    cases4 = build_check4(projects, rng4, exclude=held_out)
     cases5 = build_check5(projects, rng5)
     cases6 = build_check6(cases5)
     _write_cases(DATA / "check2_sample.csv", summary2)
@@ -106,6 +116,17 @@ def _report(_args: argparse.Namespace) -> None:
             "check5": len(cases5),
             "check6": len(cases6),
         },
+        "check4_note": (
+            f"- Check 4 is a fresh sample of {len(cases4)}, seed 20261110. "
+            f"It shares no file with the first 30 (`check4_development_sample.csv`), "
+            "which is where the pointer-phrase misses were found. That first sample is not the reported accuracy. "
+            "The fresh mix is "
+            + ", ".join(
+                f"{sum(1 for case in cases4 if case.get('script_label') == label)} {label}"
+                for label in ("replaced", "no-longer-needed", "rejected-before-use", "cleanup-or-rename")
+            )
+            + ". The measured repositories only contain 9 rejected-before-use transitions and 9 no-longer-needed transitions, and the first sample had already taken most of them."
+        ),
     }
     (DATA / "scorecard.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     text = render_scorecard(summary)

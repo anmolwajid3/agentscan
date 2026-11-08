@@ -313,8 +313,62 @@ def _adr_for(project: dict, change: dict) -> dict:
     return {}
 
 
-def build_check4(projects: list[dict], rng: random.Random) -> list[dict]:
-    pool = _real_endings(projects)
+def relabel_change(change: dict) -> dict:
+    """Apply the current ending rules to a stored transition.
+
+    Collected JSON keeps the label from the run that cloned the repository.
+    Check 4 scores the rules in this file, including pointer phrases added
+    after that clone. The stored object is not mutated, so earlier samples
+    that were drawn from the old labels stay stable.
+    """
+    from adr_pilot.endings import classify_ending
+    from adr_pilot.status import find_replacement
+
+    updated = dict(change)
+    deleted = (change.get("new_state") or "") == "deleted"
+    pointer = (
+        change.get("replacement")
+        or find_replacement(change.get("new_raw") or "")
+        or find_replacement(change.get("message") or "")
+    )
+    ending = classify_ending(
+        change.get("old_state"),
+        change.get("old_state") if deleted else change.get("new_state"),
+        old_raw=change.get("old_raw") or "",
+        new_raw="" if deleted else (change.get("new_raw") or ""),
+        message=change.get("message") or "",
+        replacement=pointer,
+        renamed=bool(change.get("renamed")),
+        deleted=deleted,
+    )
+    updated["replacement"] = pointer or change.get("replacement")
+    updated["script_label"] = ending.label
+    updated["script_rule"] = ending.rule
+    return updated
+
+
+def build_check4(
+    projects: list[dict],
+    rng: random.Random,
+    *,
+    exclude: set[tuple[str, str]] | None = None,
+) -> list[dict]:
+    """About 30 endings, up to 8 of each script label.
+
+    ``exclude`` holds (repository, path) pairs from the sample that was used
+    to find a rule gap. Those rows must not be drawn again.
+    """
+    pool = []
+    held = exclude or set()
+    for row in _real_endings(projects):
+        project = row["project"]
+        key = (project.get("repo") or "", row["change"].get("path") or "")
+        if key in held:
+            continue
+        row = {"project": project, "change": relabel_change(row["change"]), "adr": row["adr"]}
+        if row["change"].get("script_rule") in {"not-an-ending", "status-unchanged"}:
+            continue
+        pool.append(row)
     by_label: dict[str, list[dict]] = {label: [] for label in ENDING_LABELS}
     for row in pool:
         by_label.setdefault(row["change"].get("script_label") or "cleanup-or-rename", []).append(row)
@@ -505,7 +559,6 @@ def _packet_markdown(case: dict, kind: str) -> str:
             "",
             f"- Status before: `{case.get('old_state')}` {case.get('old_raw') or ''}",
             f"- Status after: `{case.get('new_state')}` {case.get('new_raw') or ''}",
-            f"- Replacement pointer: {case.get('replacement') or '(none)'}",
             f"- Commit message: {case.get('message') or ''}",
             f"- Git recorded a rename: {case.get('renamed')}",
             "",
@@ -752,6 +805,10 @@ def render_scorecard(summary: dict) -> str:
         "- Stricter project filter (at least two authors and one year of history), not required by the pass bar: "
         f"{c1['strict_ai_eligible']} AI, {c1['strict_non_ai_eligible']} non-AI, {c1['strict_superseded']} superseded. "
         f"That stricter bar {'passes' if c1['passed_strict_real_project_filter'] else 'does not pass'}.",
+        "",
+        "## Check 4 detail",
+        "",
+        summary.get("check4_note") or "- Check 4 uses the sample in `check4_sample.csv`.",
         "",
         "## How to read a failure",
         "",

@@ -1,31 +1,31 @@
 case_id,label,note,minutes
-C4-01,replaced,"Superseded by ADR 8, and the commit says so.",4
-C4-02,replaced,"Superseded by ADR-0032, which removes the bullet gem.",4
-C4-03,replaced,Yarn workspaces superseded when turborepo replaced the tooling.,4
-C4-04,no-longer-needed,"Marked superseded and moved under outdated, with no successor ADR named.",5
-C4-05,replaced,The status changes to superceded. In this repository that word means a later decision took over.,5
-C4-06,replaced,Superseded by ADR046.,3
-C4-07,replaced,Superceded by the encrypted-cookie ADR.,3
-C4-08,replaced,Superceded by the IIIF manifests ADR.,3
-C4-09,no-longer-needed,"Deprecated, and the commit says the billing ADRs are deprecated.",3
-C4-10,no-longer-needed,The commit deletes an obsolete ADR.,3
-C4-11,rejected-before-use,"It was proposed, not implemented, and then retracted.",4
-C4-12,no-longer-needed,"Accepted, then abandoned. The replacement is only being discussed, so nothing has replaced it yet.",5
-C4-13,replaced,Rejected with an explicit see-ADR-8 pointer.,4
-C4-14,replaced,Deprecated by ADR 60.,4
-C4-15,no-longer-needed,Accepted work was removed. No replacement decision is named.,4
-C4-16,replaced,Deprecated as of ADR-5.,4
-C4-17,rejected-before-use,"Proposed, then rejected.",3
-C4-18,rejected-before-use,"Proposed, then rejected.",3
-C4-19,rejected-before-use,"Proposed, then rejected.",3
-C4-20,rejected-before-use,"Proposed, then rejected.",3
-C4-21,rejected-before-use,"Proposed, then rejected.",3
-C4-22,rejected-before-use,"Proposed, then rejected.",3
-C4-23,rejected-before-use,The commit message is the rejection.,3
-C4-24,rejected-before-use,Rejected for concurrency issues before adoption.,3
-C4-25,cleanup-or-rename,Deleted while preparing templates.,3
-C4-26,cleanup-or-rename,Status stays accepted. The commit only reorganises files.,3
-C4-27,cleanup-or-rename,Directory rename. Status unchanged.,3
-C4-28,cleanup-or-rename,The commit message is a rename.,3
-C4-29,cleanup-or-rename,Files archived. Status stays implemented.,3
-C4-30,no-longer-needed,The accepted record was deleted because PIMS v1 was removed.,4
+C4-01,replaced,"Status is superseded. No successor is named, but that word means a later decision took its place.",4
+C4-02,replaced,Superceded by ADR 5.,3
+C4-03,replaced,The commit says the record was superseded and points at the replacement.,3
+C4-04,replaced,Superseded by ADR031 and ADR034.,3
+C4-05,replaced,Superceded by ADR025.,3
+C4-06,replaced,Superceded by the later ADR that decides to use Codox.,3
+C4-07,replaced,Superseded by 0010.,3
+C4-08,replaced,Superseded by ADR 0004.,3
+C4-09,no-longer-needed,"Deprecated, and the status says there is no superseding ADR.",3
+C4-10,no-longer-needed,Deprecated with the billing ADRs. No successor is named.,3
+C4-11,replaced,The CLI scaffold is dropped and the text says to use the sample projects instead.,5
+C4-12,no-longer-needed,Deprecated because the description is no longer accurate. No successor ADR is named.,4
+C4-13,rejected-before-use,It was under DAO review and the DAO rejected it. It had not been accepted.,4
+C4-14,cleanup-or-rename,Status stays accepted. The commit only fixes numbering.,3
+C4-15,cleanup-or-rename,Status stays proposed. Git recorded a rename.,3
+C4-16,cleanup-or-rename,The commit reindexes ADR files. Status does not change.,3
+C4-17,cleanup-or-rename,Proposed becomes accepted. That adopts the decision. It does not end one.,4
+C4-18,cleanup-or-rename,This commit reorders files and fixes a link. Parsed status stays accepted.,4
+C4-19,cleanup-or-rename,Rename of the file. Status stays accepted.,3
+C4-20,cleanup-or-rename,Files moved into a new directory. Status stays accepted.,3
+C4-21,cleanup-or-rename,Decision-state folders were split. Git recorded a rename.,3
+C4-22,cleanup-or-rename,The file was deleted while removing Gitbook. The commit does not say the decision was dropped.,4
+C4-23,cleanup-or-rename,"Proposed becomes accepted during a file move. The decision was adopted, not ended.",4
+C4-24,cleanup-or-rename,Tidied so adr-tools can read it. Status stays proposed on this commit.,4
+C4-25,cleanup-or-rename,Directory renamed from doc to docs. Status stays accepted.,3
+C4-26,replaced,Status changes from proposed to superseded after a workshop.,4
+C4-27,cleanup-or-rename,Directory renamed from doc to docs. Status stays accepted.,3
+C4-28,cleanup-or-rename,Rename only. The commit is a documentation hygiene change.,3
+C4-29,cleanup-or-rename,The commit says the ADR was moved to dev_docs. The decision was not ended.,3
+C4-30,cleanup-or-rename,Deleted while converting the site to Jekyll. The file is a template.,3

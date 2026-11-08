@@ -13,6 +13,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from adr_pilot.status import find_replacement
+
 LABELS = (
     "replaced",
     "no-longer-needed",
@@ -70,16 +72,20 @@ def classify_ending(
     old = old_state or "unknown"
     new = new_state or "unknown"
     raw = f"{new_raw}\n{message}"
+    if new == "deleted":
+        deleted = True
 
     if deleted and renamed:
         renamed = True
         deleted = False
 
+    pointer = replacement or find_replacement(new_raw) or find_replacement(message)
+
     if renamed and (old == new or new in {"unknown", old}):
         return Ending("cleanup-or-rename", "rename-without-status-change")
 
     if deleted:
-        if _REPLACE_MESSAGE.search(message) or replacement:
+        if pointer:
             return Ending("replaced", "deleted-with-replacement")
         if _DROP_MESSAGE.search(message):
             return Ending("no-longer-needed", "deleted-as-obsolete")
@@ -89,21 +95,23 @@ def classify_ending(
         return Ending("cleanup-or-rename", "status-unchanged")
 
     if new == "rejected":
+        if pointer:
+            return Ending("replaced", "rejected-but-points-at-replacement")
         if old in {"accepted", "deprecated", "superseded"}:
             return Ending("no-longer-needed", "rejected-after-acceptance")
         return Ending("rejected-before-use", "rejected-from-proposal")
 
     if new == "deprecated":
-        if replacement or _REPLACE_MESSAGE.search(new_raw):
+        if pointer:
             return Ending("replaced", "deprecated-but-points-at-replacement")
         return Ending("no-longer-needed", "deprecated")
 
     if new == "superseded":
-        if _CLEANUP_TEXT.search(raw) and not replacement:
+        if _CLEANUP_TEXT.search(raw) and not pointer:
             return Ending("cleanup-or-rename", "superseded-wording-is-a-rename")
-        if _DROP_TEXT.search(raw) and not replacement:
+        if _DROP_TEXT.search(raw) and not pointer:
             return Ending("no-longer-needed", "superseded-means-obsolete")
-        if replacement or _REPLACE_MESSAGE.search(new_raw):
+        if pointer or _REPLACE_MESSAGE.search(new_raw):
             return Ending("replaced", "superseded-by-pointer")
         return Ending("replaced", "superseded-default")
 
@@ -113,7 +121,7 @@ def classify_ending(
         # proposed -> accepted is adoption, not an ending of a prior decision.
         return Ending("cleanup-or-rename", "not-an-ending")
 
-    if _RENAME_MESSAGE.search(message) and not replacement:
+    if _RENAME_MESSAGE.search(message) and not pointer:
         return Ending("cleanup-or-rename", "message-says-rename")
 
     return Ending("cleanup-or-rename", "unclassified-status-edit")
