@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import posixpath
 import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 
 from swap_pilot.adopt import commit_is_ai
 from swap_pilot.gitrepo import parse_dt, prefetch_blobs, read_blobs, run_git
-from swap_pilot.pom import parse_pom
+from swap_pilot.pom import parent_relative_path, parse_pom
 
 _BOT = re.compile(r"(?i)dependabot|renovate")
 _POM = re.compile(r"(^|/)pom\.xml$")
@@ -152,18 +153,48 @@ def dependency_changes(repo: str, project: str, commits: list[dict]) -> tuple[li
     requested = prefetch_blobs(repo, oids)
     print(f"  prefetch {requested} pom blobs", flush=True)
     texts = read_blobs(repo, oids)
-    parsed: dict[str, tuple[set[str], list[str]] | None] = {}
+    parsed: dict[tuple[str, ...], tuple[set[str], list[str]] | None] = {}
+    relative_by_oid: dict[str, str | None] = {}
 
-    def libraries(oid: str) -> tuple[set[str], list[str]] | None:
-        if oid not in parsed:
+    def relative_for(oid: str, text: str) -> str | None:
+        if oid not in relative_by_oid:
+            relative_by_oid[oid] = parent_relative_path(text)
+        return relative_by_oid[oid]
+
+    def libraries(path: str, files: dict[str, str]) -> tuple[set[str], list[str]] | None:
+        oids: list[str] = []
+        parent_texts: list[str] = []
+        seen: set[str] = set()
+        current = path
+        while current and current not in seen:
+            seen.add(current)
+            oid = files.get(current)
+            if not oid:
+                break
             text = texts.get(oid)
-            parsed[oid] = None if text is None else parse_pom(text)
-        return parsed[oid]
+            if text is None:
+                if current == path:
+                    return None
+                break
+            oids.append(oid)
+            if current != path:
+                parent_texts.append(text)
+            relative = relative_for(oid, text)
+            if not relative:
+                break
+            nxt = posixpath.normpath(posixpath.join(posixpath.dirname(current), relative))
+            if nxt == current:
+                break
+            current = nxt
+        key = tuple(oids)
+        if key not in parsed:
+            parsed[key] = parse_pom(texts[oids[0]], parent_texts)
+        return parsed[key]
 
     def union_deps(files: dict[str, str], commit: dict, when: str) -> set[str]:
         found: set[str] = set()
-        for path, oid in files.items():
-            result = libraries(oid)
+        for path in files:
+            result = libraries(path, files)
             if result is None:
                 rows.append(_change_row(project, commit, path, "", "", "yes", f"could not read pom.xml {when}"))
                 continue
@@ -218,12 +249,16 @@ def _change_row(project: str, commit: dict, path: str, change: str, lib: str, un
 
 
 def same_commit_swaps(project: str, events: list[dict], rules: dict[tuple[str, str], dict]) -> list[dict]:
+    rules_from: dict[str, list[tuple[str, dict]]] = defaultdict(list)
+    for (source, target), rule in rules.items():
+        rules_from[source].append((target, rule))
     found = []
     for event in events:
         ai = commit_is_ai(event.get("author") or "", event.get("email") or "", event.get("message") or "")
-        for source, target in rules:
-            if source in event["removed"] and target in event["added"]:
-                found.append(_swap_row(project, event, source, target, rules[(source, target)], "same commit", ai))
+        for source in event["removed"]:
+            for target, rule in rules_from.get(source, []):
+                if target in event["added"]:
+                    found.append(_swap_row(project, event, source, target, rule, "same commit", ai))
     return found
 
 
@@ -275,6 +310,7 @@ def _swap_row(project: str, event: dict, source: str, target: str, rule: dict, m
         "lib_added": target,
         "rule_id": rule["rule_id"],
         "rule_type": rule["rule_type"],
+        "rule_category": "rename" if str(rule.get("rule_type") or "").startswith("rename") else "main",
         "detection": mode,
         "bot": "yes" if event.get("bot") else "no",
         "ai": "yes" if ai else "no",

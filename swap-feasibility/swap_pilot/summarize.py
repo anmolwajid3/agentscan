@@ -42,22 +42,81 @@ def _rate(swaps: int, exposure: float | None) -> str:
     return f"{swaps / exposure * 100:.3f}"
 
 
-def summarize(projects: list[dict], swaps: list[dict], config: dict) -> str:
-    by_group = {group: [row for row in swaps if row.get("group") == group] for group in GROUPS}
+def _is_main(row: dict) -> bool:
+    return row.get("rule_category", "main") == "main"
+
+
+def summarize(
+    projects: list[dict],
+    swaps: list[dict],
+    config: dict,
+    *,
+    unparsed_rows: int | None = None,
+    population_eligible: int | None = None,
+    sample: bool = False,
+) -> str:
+    main = [row for row in swaps if _is_main(row)]
+    renamed = [row for row in swaps if row.get("rule_category") == "rename"]
+    by_group = {group: [row for row in main if row.get("group") == group] for group in GROUPS}
+    if sample:
+        intro = [
+            "This file is a random sample of eligible projects. It is not the full population.",
+            "No pass or fail is declared from the sample.",
+            "",
+            f"Sample seed: {config.get('sample_seed')}. Sample size target: {config.get('sample_size')}.",
+        ]
+    else:
+        intro = [
+            "This file is the five-project trial. The sample of eligible projects has not been run.",
+            "No pass or fail is declared from five projects.",
+        ]
     lines = [
         "# P1 summary",
         "",
-        "This file is the five-project trial. The full population has not been run.",
-        "The pass rule is not applied to five projects, and the thresholds were not changed.",
+        *intro,
         "",
-        "**Full-run result: not run.** Waiting for approval before cloning the He et al. list.",
+        "The main counts use the 802 rules whose type does not start with `rename`.",
+        "The 392 rename rules are reported in their own section and are not included in the main counts or the projection.",
         "",
         f"Cut-off: {config['cutoff_date']}. Control window starts {config['control_start']}.",
-        f"Same-commit pass bar: at least {config['pass_ai_after_swaps']} ai_after swaps from more than {config['pass_ai_after_projects']} projects, and at least as many control_same_period swaps.",
+        f"The full-run bar, unchanged and not applied here, is at least {config['pass_ai_after_swaps']} same-commit ai_after swaps from more than {config['pass_ai_after_projects']} projects, and at least as many control_same_period swaps.",
         "",
     ]
+    lines.extend(_mode_tables(projects, by_group, config, "Main rules"))
+    ai_after_same = [row for row in by_group["ai_after"] if row.get("detection") == "same commit"]
+    ai_flagged = sum(1 for row in ai_after_same if row.get("ai") == "yes")
+    lines.append(
+        f"Same-commit main-rule ai_after swaps with an AI co-author or agent author: {ai_flagged} of {len(ai_after_same)}."
+    )
+    lines.append("")
+    lines.extend(_pairs(by_group, "Main rules"))
+    lines.append("## Same-commit main-rule swaps by quarter")
+    lines.append("")
+    lines.append("| Quarter | AI projects | Controls |")
+    lines.append("| --- | --- | --- |")
+    quarters = _quarters(main, projects, config)
+    for quarter in sorted(quarters):
+        lines.append(f"| {quarter} | {quarters[quarter]['ai']} | {quarters[quarter]['control']} |")
+    lines.append("")
+    rename_groups = {group: [row for row in renamed if row.get("group") == group] for group in GROUPS}
+    lines.append("## Rename rules, separate from the main count")
+    lines.append("")
+    lines.append(f"Rename rows in the rule file: 392. Rename swaps detected: {len(renamed)}.")
+    lines.append("")
+    lines.extend(_mode_tables(projects, rename_groups, config, "Rename rules"))
+    if unparsed_rows is None:
+        lines.append("Unparsed dependency rows: NA.")
+    else:
+        lines.append(f"Unparsed dependency rows after placeholder resolution: {unparsed_rows}.")
+    lines.append("")
+    lines.extend(_projection(projects, main, population_eligible))
+    return "\n".join(lines)
+
+
+def _mode_tables(projects: list[dict], by_group: dict, config: dict, title: str) -> list[str]:
+    lines = []
     for mode in ("same commit", "30-day window"):
-        lines.append(f"## {mode}")
+        lines.append(f"## {title}: {mode}")
         lines.append("")
         lines.append("| Group | Swaps | Projects | Exposure (project-months) | Swaps per 100 project-months | Share from top 5 |")
         lines.append("| --- | --- | --- | --- | --- | --- |")
@@ -70,15 +129,14 @@ def summarize(projects: list[dict], swaps: list[dict], config: dict) -> str:
                 f"| {group} | {len(rows)} | {len(projects_with)} | {exposure_text} | {_rate(len(rows), exposure)} | {_top_share(rows)} |"
             )
         lines.append("")
-    ai_after_same = [
-        row for row in by_group["ai_after"] if row.get("detection") == "same commit"
-    ]
-    ai_flagged = sum(1 for row in ai_after_same if row.get("ai") == "yes")
-    lines.append(f"Same-commit ai_after swaps with an AI co-author or agent author: {ai_flagged} of {len(ai_after_same)}.")
-    lines.append("")
+    return lines
+
+
+def _pairs(by_group: dict, title: str) -> list[str]:
+    lines = []
     for group in GROUPS:
         rows = [row for row in by_group[group] if row.get("detection") == "same commit"]
-        lines.append(f"## Most common same-commit pairs: {group}")
+        lines.append(f"## Most common same-commit pairs ({title}): {group}")
         lines.append("")
         if not rows:
             lines.append("None.")
@@ -88,15 +146,37 @@ def summarize(projects: list[dict], swaps: list[dict], config: dict) -> str:
         for pair, count in counts.most_common(20):
             lines.append(f"- {count}: {pair}")
         lines.append("")
-    lines.append("## Same-commit swaps by quarter")
+    return lines
+
+
+def _projection(projects: list[dict], main_swaps: list[dict], population_eligible: int | None) -> list[str]:
+    sample = [project for project in projects if project.get("eligible") == "yes"]
+    swaps = [
+        row for row in main_swaps if row.get("detection") == "same commit" and row.get("group") == "ai_after"
+    ]
+    ai_projects = [project for project in sample if project.get("ai_signal") == "yes"]
+    lines = ["## Projection", ""]
+    if not sample or population_eligible is None:
+        lines.append("Projected ai_after swaps in the full eligible population: NA.")
+        lines.append("AI projects needed to reach 100: NA.")
+        lines.append("")
+        return lines
+    per_project = len(swaps) / len(sample)
+    projected = per_project * population_eligible
+    lines.append(f"Eligible projects in this file: {len(sample)}.")
+    lines.append(f"Eligible population the projection scales to: {population_eligible}.")
+    lines.append(f"Same-commit main-rule ai_after swaps in the sample: {len(swaps)}.")
+    lines.append(f"Projected ai_after swaps in the full eligible population: {projected:.1f}.")
+    if not ai_projects or not swaps:
+        lines.append("AI projects needed to reach 100 such swaps: NA. The observed rate is zero or the sample has no AI project.")
+    else:
+        per_ai = len(swaps) / len(ai_projects)
+        lines.append(f"AI projects in the sample: {len(ai_projects)}.")
+        lines.append(f"Such swaps per AI project: {per_ai:.4f}.")
+        lines.append(f"AI projects needed to reach 100 such swaps at this rate: {100 / per_ai:.1f}.")
+    lines.append("The projection is not a pass or fail.")
     lines.append("")
-    lines.append("| Quarter | AI projects | Controls |")
-    lines.append("| --- | --- | --- |")
-    quarters = _quarters(swaps, projects, config)
-    for quarter in sorted(quarters):
-        lines.append(f"| {quarter} | {quarters[quarter]['ai']} | {quarters[quarter]['control']} |")
-    lines.append("")
-    return "\n".join(lines)
+    return lines
 
 
 def _group_exposure(projects: list[dict], group: str, config: dict) -> float | None:

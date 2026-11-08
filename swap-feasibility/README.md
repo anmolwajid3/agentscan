@@ -13,4 +13,6 @@ python3 -m unittest discover -s tests -q
 python3 -m swap_pilot trial
 ```
 
-`trial` reads the five repositories named in `config.yaml`. It does not clone the full project list. The full run waits until that trial is approved.
+`trial` reads the five repositories named in `config.yaml`.
+
+`sample` screens the He et al. list with `GITHUB_TOKEN`, then clones a random sample of 2,000 eligible projects. The seed is `sample_seed` in `config.yaml`. The main swap count uses the 802 non-rename rules. Rename rules are reported separately. The sample does not declare pass or fail.

@@ -21,27 +21,54 @@ def _child_text(elem: ET.Element, name: str) -> str:
     return ""
 
 
-def _properties(root: ET.Element) -> dict[str, str]:
+def _direct_properties(root: ET.Element) -> dict[str, str]:
     found: dict[str, str] = {}
-    for elem in root.iter():
+    for elem in list(root):
         if _local(elem.tag) != "properties":
             continue
         for child in list(elem):
             if child.text and child.text.strip():
                 found[_local(child.tag)] = child.text.strip()
-    group = _child_text(root, "groupId")
-    artifact = _child_text(root, "artifactId")
-    version = _child_text(root, "version")
-    if group:
-        found.setdefault("project.groupId", group)
-        found.setdefault("groupId", group)
-    if artifact:
-        found.setdefault("project.artifactId", artifact)
-        found.setdefault("artifactId", artifact)
-    if version:
-        found.setdefault("project.version", version)
-        found.setdefault("version", version)
     return found
+
+
+def _parent_coordinates(root: ET.Element) -> dict[str, str]:
+    for elem in list(root):
+        if _local(elem.tag) != "parent":
+            continue
+        return {
+            "project.parent.groupId": _child_text(elem, "groupId"),
+            "project.parent.artifactId": _child_text(elem, "artifactId"),
+            "project.parent.version": _child_text(elem, "version"),
+        }
+    return {}
+
+
+def parent_relative_path(text: str) -> str | None:
+    """Relative path of the parent pom inside this repository.
+
+    Maven's default is ../pom.xml. An empty relativePath means the parent is
+    not read from this repository.
+    """
+    if not text or not text.strip():
+        return None
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError:
+        return None
+    for elem in list(root):
+        if _local(elem.tag) != "parent":
+            continue
+        seen = False
+        raw = ""
+        for child in list(elem):
+            if _local(child.tag) == "relativePath":
+                seen = True
+                raw = (child.text or "").strip()
+        if not seen:
+            return "../pom.xml"
+        return raw or None
+    return None
 
 
 def _resolve(value: str, props: dict[str, str]) -> str | None:
@@ -82,11 +109,48 @@ def _dependency_parents(root: ET.Element) -> list[ET.Element]:
     return parents
 
 
-def parse_pom(text: str) -> tuple[set[str], list[str]]:
+def _expand_map(props: dict[str, str]) -> dict[str, str]:
+    expanded = dict(props)
+    for _ in range(len(expanded) + 1):
+        changed = False
+        for key, value in list(expanded.items()):
+            resolved = _resolve(value, expanded)
+            if resolved is not None and resolved != value:
+                expanded[key] = resolved
+                changed = True
+        if not changed:
+            break
+    return expanded
+
+
+def _apply_identity(props: dict[str, str], root: ET.Element) -> None:
+    """A missing group, artifact, or version is inherited from the parent map."""
+    group = _child_text(root, "groupId")
+    artifact = _child_text(root, "artifactId")
+    version = _child_text(root, "version")
+    if group:
+        props["project.groupId"] = group
+        props["groupId"] = group
+    elif props.get("project.parent.groupId"):
+        props["project.groupId"] = props["project.parent.groupId"]
+        props["groupId"] = props["project.parent.groupId"]
+    if artifact:
+        props["project.artifactId"] = artifact
+        props["artifactId"] = artifact
+    if version:
+        props["project.version"] = version
+        props["version"] = version
+    elif props.get("project.parent.version"):
+        props["project.version"] = props["project.parent.version"]
+        props["version"] = props["project.parent.version"]
+
+
+def parse_pom(text: str, parents: list[str] | None = None) -> tuple[set[str], list[str]]:
     """Return coordinates and unparsed dependency notes.
 
-    An empty file returns no coordinates and no notes. Broken XML returns one
-    unparsed note and no coordinates.
+    `parents` is the nearest parent pom first, then its parent. An empty file
+    returns no coordinates and no notes. Broken XML returns one unparsed note
+    and no coordinates.
     """
     if not text or not text.strip():
         return set(), []
@@ -94,7 +158,21 @@ def parse_pom(text: str) -> tuple[set[str], list[str]]:
         root = ET.fromstring(text)
     except ET.ParseError as exc:
         return set(), [f"xml: {exc}"]
-    props = _properties(root)
+    props: dict[str, str] = {}
+    for parent_text in reversed(parents or []):
+        if not parent_text or not parent_text.strip():
+            continue
+        try:
+            parent_root = ET.fromstring(parent_text)
+        except ET.ParseError:
+            continue
+        props.update({key: value for key, value in _parent_coordinates(parent_root).items() if value})
+        _apply_identity(props, parent_root)
+        props.update(_direct_properties(parent_root))
+    props.update({key: value for key, value in _parent_coordinates(root).items() if value})
+    _apply_identity(props, root)
+    props.update(_direct_properties(root))
+    props = _expand_map(props)
     coordinates: set[str] = set()
     unparsed: list[str] = []
     for block in _dependency_parents(root):

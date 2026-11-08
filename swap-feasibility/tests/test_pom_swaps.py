@@ -36,6 +36,40 @@ class PomTests(unittest.TestCase):
         self.assertNotIn("junit:junit", deps)
         self.assertTrue(any("unresolved" in note for note in bad))
 
+    def test_project_group_and_parent_property_resolve(self):
+        parent = """<project>
+          <groupId>com.example</groupId>
+          <artifactId>parent</artifactId>
+          <version>1</version>
+          <properties><lib.version>1</lib.version></properties>
+        </project>"""
+        child = """<project>
+          <parent>
+            <groupId>com.example</groupId>
+            <artifactId>parent</artifactId>
+            <version>1</version>
+          </parent>
+          <artifactId>child</artifactId>
+          <dependencies>
+            <dependency>
+              <groupId>${project.groupId}</groupId>
+              <artifactId>okhttp</artifactId>
+            </dependency>
+            <dependency>
+              <groupId>${project.parent.groupId}</groupId>
+              <artifactId>mockwebserver</artifactId>
+            </dependency>
+            <dependency>
+              <groupId>org.example</groupId>
+              <artifactId>${missing.lib}</artifactId>
+            </dependency>
+          </dependencies>
+        </project>"""
+        deps, bad = parse_pom(child, [parent])
+        self.assertIn("com.example:okhttp", deps)
+        self.assertIn("com.example:mockwebserver", deps)
+        self.assertTrue(any("unresolved" in note for note in bad))
+
     def test_broken_xml_is_unparsed(self):
         deps, bad = parse_pom("<project>")
         self.assertEqual(deps, set())

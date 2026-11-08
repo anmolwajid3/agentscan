@@ -42,10 +42,16 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description="Library-swap feasibility, P1 trial")
-    parser.add_argument("command", choices=["trial"])
+    parser.add_argument("command", choices=["trial", "screen", "sample"])
     args = parser.parse_args()
     if args.command == "trial":
         trial()
+    elif args.command == "screen":
+        from swap_pilot.screen import screen
+        screen()
+    elif args.command == "sample":
+        from swap_pilot.sample_run import run_sample
+        run_sample()
 
 
 def trial() -> None:
@@ -87,10 +93,14 @@ def trial() -> None:
         swaps,
         [
             "project", "commit", "pair_commit", "date", "lib_removed", "lib_added",
-            "rule_id", "rule_type", "detection", "bot", "ai", "group",
+            "rule_id", "rule_type", "rule_category", "detection", "bot", "ai", "group",
         ],
     )
-    (ROOT / "p1_summary.md").write_text(summarize(projects, swaps, config) + _estimate(config), encoding="utf-8")
+    unparsed_rows = sum(1 for row in changes if row.get("unparsed") == "yes")
+    (ROOT / "p1_summary.md").write_text(
+        summarize(projects, swaps, config, unparsed_rows=unparsed_rows) + _estimate(config),
+        encoding="utf-8",
+    )
     _p2_samples(swaps, changes, int(config["p2_seed"]), int(config["p2_swap_sample"]), int(config["p2_removal_sample"]))
     _run_log(config, rules, log_rows)
     print("wrote trial outputs")
@@ -229,7 +239,12 @@ def _github(repo: str) -> dict:
     else:
         archived_before = "NA"
     fork = payload.get("fork")
-    return {"fork": "NA" if fork is None else ("yes" if fork else "no"), "archived_before": archived_before}
+    archived_now = "NA" if archived_at is None else ("yes" if archived_at else "no")
+    return {
+        "fork": "NA" if fork is None else ("yes" if fork else "no"),
+        "archived_before": archived_before,
+        "archived_now": archived_now,
+    }
 
 
 def _token() -> str:
@@ -290,7 +305,10 @@ def _dir_size(path: Path) -> int:
 
 def _p2_samples(swaps: list[dict], changes: list[dict], seed: int, swap_n: int, removal_n: int) -> None:
     rng = random.Random(seed)
-    same = [row for row in swaps if row.get("detection") == "same commit"]
+    same = [
+        row for row in swaps
+        if row.get("detection") == "same commit" and row.get("rule_category", "main") == "main"
+    ]
     rng.shuffle(same)
     removals = [row for row in changes if row.get("change") == "rem" and row.get("unparsed") == "no"]
     swapped = {(row["project"], row["commit"], row["lib_removed"]) for row in same}

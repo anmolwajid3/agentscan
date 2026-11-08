@@ -1,14 +1,6 @@
-project,commit,pair_commit,date,lib_removed,lib_added,rule_id,rule_type,detection,bot,ai,group
-checkstyle/checkstyle,8ed2ebf91585e0320f4d6584abac1ad5de73105e,,2019-08-09T22:21:39+03:00,junit:junit,org.junit.jupiter:junit-jupiter-api,461,rename:undecided,same commit,no,no,ai_before
-apache/maven,545c6e2685ca238cde4944f8179a3f3fbffa07ae,,2015-04-29T00:38:57+01:00,org.sonatype.sisu:sisu-guice,com.google.inject:guice,1113,undecided,same commit,no,no,ai_before
-checkstyle/checkstyle,67e9ab026ee3012573e8c2b0c5d6c1982f1d19d3,,2018-02-27T17:23:01+08:00,org.powermock:powermock-api-mockito,org.powermock:powermock-api-mockito2,1027,undecided,same commit,no,no,ai_before
-apache/maven,2d3acb12dfd0948493594c32e6a03a0ec81419fc,,2015-10-26T14:33:38-07:00,ant:ant,org.apache.ant:ant,1,rename:upgrade,same commit,no,no,ai_before
-apache/maven,91fa89ea2876448bf73b47763d43307149601749,,2018-09-16T23:33:54+02:00,xmlunit:xmlunit,org.xmlunit:xmlunit-core,1193,rename:undecided,same commit,no,no,ai_before
-square/okhttp,9ecff8f961c321098c2598097fb5289e968ef1ac,,2015-12-16T19:48:54-05:00,com.squareup.okhttp:okhttp,com.squareup.okhttp3:okhttp,221,rename:upgrade,same commit,no,no,NA
-apache/maven,4d6c9292c433626fa0b9a1cf711d4d0c366e7f33,,2016-11-06T12:13:32+01:00,org.eclipse.aether:aether-api,org.apache.maven.resolver:maven-resolver-api,703,rename:undecided,same commit,no,no,ai_before
-checkstyle/checkstyle,88a71e7c91ddc092de8eb8fa210a203de0f6bfa2,,2013-06-12T20:54:44+10:00,com.google.collections:google-collections,com.google.guava:guava,150,undecided,same commit,no,no,ai_before
-FasterXML/jackson-databind,4412d80a3fc6f0a328576b30f1970bf3bdeddb37,,2023-12-09T20:50:35-08:00,org.powermock:powermock-module-junit4,org.mockito:mockito-core,1030,undecided,same commit,no,no,ai_before
-checkstyle/checkstyle,8ed2ebf91585e0320f4d6584abac1ad5de73105e,,2019-08-09T22:21:39+03:00,junit:junit,org.junit.vintage:junit-vintage-engine,468,rename:undecided,same commit,no,no,ai_before
-checkstyle/checkstyle,8ed2ebf91585e0320f4d6584abac1ad5de73105e,,2019-08-09T22:21:39+03:00,junit:junit,org.junit.jupiter:junit-jupiter-engine,462,rename:undecided,same commit,no,no,ai_before
-FasterXML/jackson-databind,75fad765e7f1e76ff988426f29d8f7d7c06e26ac,,2024-03-30T21:17:59-07:00,org.junit.vintage:junit-vintage-engine,org.junit.jupiter:junit-jupiter-api,927,rename:undecided,same commit,no,no,ai_before
-FasterXML/jackson-databind,f356a4a6ffad3c928758c119e2789a95a371e913,,2018-02-02T20:51:28-08:00,org.powermock:powermock-api-mockito,org.powermock:powermock-api-mockito2,1027,undecided,same commit,no,no,ai_before
+project,commit,pair_commit,date,lib_removed,lib_added,rule_id,rule_type,rule_category,detection,bot,ai,group
+apache/maven,545c6e2685ca238cde4944f8179a3f3fbffa07ae,,2015-04-29T00:38:57+01:00,org.sonatype.sisu:sisu-guice,com.google.inject:guice,1113,undecided,main,same commit,no,no,ai_before
+checkstyle/checkstyle,67e9ab026ee3012573e8c2b0c5d6c1982f1d19d3,,2018-02-27T17:23:01+08:00,org.powermock:powermock-api-mockito,org.powermock:powermock-api-mockito2,1027,undecided,main,same commit,no,no,ai_before
+checkstyle/checkstyle,88a71e7c91ddc092de8eb8fa210a203de0f6bfa2,,2013-06-12T20:54:44+10:00,com.google.collections:google-collections,com.google.guava:guava,150,undecided,main,same commit,no,no,ai_before
+FasterXML/jackson-databind,4412d80a3fc6f0a328576b30f1970bf3bdeddb37,,2023-12-09T20:50:35-08:00,org.powermock:powermock-module-junit4,org.mockito:mockito-core,1030,undecided,main,same commit,no,no,ai_before
+FasterXML/jackson-databind,f356a4a6ffad3c928758c119e2789a95a371e913,,2018-02-02T20:51:28-08:00,org.powermock:powermock-api-mockito,org.powermock:powermock-api-mockito2,1027,undecided,main,same commit,no,no,ai_before

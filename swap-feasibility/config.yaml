@@ -13,7 +13,11 @@ pass_ai_after_projects: 20
 p2_seed: 20261108
 p2_swap_sample: 30
 p2_removal_sample: 30
+sample_seed: 20261108
+sample_size: 2000
+sample_workers: 4
 clone_timeout_seconds: 180
+sample_clone_timeout_seconds: 600
 month_days: 30.4375
 
 # Five-project trial. Not the full population.

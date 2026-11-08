@@ -1,54 +1,48 @@
 # P1 summary
 
-This file is the five-project trial. The full population has not been run.
-The pass rule is not applied to five projects, and the thresholds were not changed.
+This file is the five-project trial. The sample of eligible projects has not been run.
+No pass or fail is declared from five projects.
 
-**Full-run result: not run.** Waiting for approval before cloning the He et al. list.
+The main counts use the 802 rules whose type does not start with `rename`.
+The 392 rename rules are reported in their own section and are not included in the main counts or the projection.
 
 Cut-off: 2026-11-08. Control window starts 2025-01-01.
-Same-commit pass bar: at least 100 ai_after swaps from more than 20 projects, and at least as many control_same_period swaps.
+The full-run bar, unchanged and not applied here, is at least 100 same-commit ai_after swaps from more than 20 projects, and at least as many control_same_period swaps.
 
-## same commit
-
-| Group | Swaps | Projects | Exposure (project-months) | Swaps per 100 project-months | Share from top 5 |
-| --- | --- | --- | --- | --- | --- |
-| ai_after | 0 | 0 | 30.7 | 0.000 | NA |
-| ai_before | 12 | 3 | 730.6 | 1.643 | 100.0% |
-| control_same_period | 0 | 0 | 44.4 | 0.000 | NA |
-
-## 30-day window
+## Main rules: same commit
 
 | Group | Swaps | Projects | Exposure (project-months) | Swaps per 100 project-months | Share from top 5 |
 | --- | --- | --- | --- | --- | --- |
 | ai_after | 0 | 0 | 30.7 | 0.000 | NA |
-| ai_before | 3 | 2 | 730.6 | 0.411 | 100.0% |
+| ai_before | 5 | 3 | 730.6 | 0.684 | 100.0% |
 | control_same_period | 0 | 0 | 44.4 | 0.000 | NA |
 
-Same-commit ai_after swaps with an AI co-author or agent author: 0 of 0.
+## Main rules: 30-day window
 
-## Most common same-commit pairs: ai_after
+| Group | Swaps | Projects | Exposure (project-months) | Swaps per 100 project-months | Share from top 5 |
+| --- | --- | --- | --- | --- | --- |
+| ai_after | 0 | 0 | 30.7 | 0.000 | NA |
+| ai_before | 2 | 2 | 730.6 | 0.274 | 100.0% |
+| control_same_period | 0 | 0 | 44.4 | 0.000 | NA |
+
+Same-commit main-rule ai_after swaps with an AI co-author or agent author: 0 of 0.
+
+## Most common same-commit pairs (Main rules): ai_after
 
 None.
 
-## Most common same-commit pairs: ai_before
+## Most common same-commit pairs (Main rules): ai_before
 
 - 2: org.powermock:powermock-api-mockito -> org.powermock:powermock-api-mockito2
 - 1: com.google.collections:google-collections -> com.google.guava:guava
-- 1: junit:junit -> org.junit.jupiter:junit-jupiter-api
-- 1: junit:junit -> org.junit.jupiter:junit-jupiter-engine
-- 1: junit:junit -> org.junit.vintage:junit-vintage-engine
 - 1: org.powermock:powermock-module-junit4 -> org.mockito:mockito-core
-- 1: org.junit.vintage:junit-vintage-engine -> org.junit.jupiter:junit-jupiter-api
 - 1: org.sonatype.sisu:sisu-guice -> com.google.inject:guice
-- 1: org.eclipse.aether:aether-api -> org.apache.maven.resolver:maven-resolver-api
-- 1: xmlunit:xmlunit -> org.xmlunit:xmlunit-core
-- 1: ant:ant -> org.apache.ant:ant
 
-## Most common same-commit pairs: control_same_period
+## Most common same-commit pairs (Main rules): control_same_period
 
 None.
 
-## Same-commit swaps by quarter
+## Same-commit main-rule swaps by quarter
 
 | Quarter | AI projects | Controls |
 | --- | --- | --- |
@@ -60,7 +54,7 @@ None.
 | 2023 Q2 | 0 | 0 |
 | 2023 Q3 | 0 | 0 |
 | 2023 Q4 | 1 | 0 |
-| 2024 Q1 | 1 | 0 |
+| 2024 Q1 | 0 | 0 |
 | 2024 Q2 | 0 | 0 |
 | 2024 Q3 | 0 | 0 |
 | 2024 Q4 | 0 | 0 |
@@ -72,6 +66,33 @@ None.
 | 2026 Q2 | 0 | 0 |
 | 2026 Q3 | 0 | 0 |
 | 2026 Q4 | 0 | 0 |
+
+## Rename rules, separate from the main count
+
+Rename rows in the rule file: 392. Rename swaps detected: 18.
+
+## Rename rules: same commit
+
+| Group | Swaps | Projects | Exposure (project-months) | Swaps per 100 project-months | Share from top 5 |
+| --- | --- | --- | --- | --- | --- |
+| ai_after | 0 | 0 | 30.7 | 0.000 | NA |
+| ai_before | 7 | 3 | 730.6 | 0.958 | 100.0% |
+| control_same_period | 0 | 0 | 44.4 | 0.000 | NA |
+
+## Rename rules: 30-day window
+
+| Group | Swaps | Projects | Exposure (project-months) | Swaps per 100 project-months | Share from top 5 |
+| --- | --- | --- | --- | --- | --- |
+| ai_after | 0 | 0 | 30.7 | 0.000 | NA |
+| ai_before | 1 | 1 | 730.6 | 0.137 | 100.0% |
+| control_same_period | 0 | 0 | 44.4 | 0.000 | NA |
+
+Unparsed dependency rows after placeholder resolution: 75.
+
+## Projection
+
+Projected ai_after swaps in the full eligible population: NA.
+AI projects needed to reach 100: NA.
 ## Estimate before a full run
 
 - He et al. project list: 19652 repositories. All of them are marked fork=False in that file, and all have a pom file count above zero.

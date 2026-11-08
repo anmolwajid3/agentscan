@@ -2,11 +2,13 @@
 
 Data cut-off: 2026-11-08
 P2 seed: 20261108
+Sample seed configured for the 2,000-project draw: 20261108
+The 2,000-project sample was not started in this run: GITHUB_TOKEN was not set in the environment.
 Rules loaded: 1194 from source/rules_typed.csv
 Replication package: Zenodo 10.5281/zenodo.5091384 (concept 10.5281/zenodo.4816752). Project list is cache/projects.csv. Rules are LibraryMigration/data/rules_typed.csv inside gitrepo.zip.
 Git: git version 2.43.0
 Python: 3.12.3
-Written: 2026-11-08T02:59+00:00
+Written: 2026-11-08T03:34+00:00
 
 | Project | HEAD | Note |
 | --- | --- | --- |
