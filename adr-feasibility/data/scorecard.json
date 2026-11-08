@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-08T01:41+00:00",
+  "generated": "2026-11-08T01:56+00:00",
   "check1": {
     "frame_rows": 2338,
     "analyzed": 422,
@@ -11,6 +11,13 @@
     "too_few_adrs": 35,
     "templates": 2,
     "superseded_in_eligible_windows": 133,
+    "reversals_ai_before": 32,
+    "reversals_ai_after": 2,
+    "reversals_non_ai": 101,
+    "reversals_undated": 0,
+    "reversals_ai_before_eligible": 32,
+    "reversals_ai_after_eligible": 2,
+    "reversals_non_ai_eligible": 101,
     "strict_ai_eligible": 67,
     "strict_non_ai_eligible": 200,
     "strict_superseded": 116,
@@ -28,13 +35,13 @@
     "flagged_n": 20,
     "confirmed_use": 19,
     "confirmed_pass": true,
-    "with_observable_start": 19,
-    "within_92_days": 14,
-    "timing_pass": false,
+    "with_observable_start": 18,
+    "within_92_days": 17,
+    "timing_pass": true,
     "hidden_use": 0,
     "unflagged_n": 20,
-    "passed": false,
-    "rule": "Pass if at least 16 of 20 flagged projects have an AI co-author, agent author, or a strict tool mention on or after the signal date, and at least 80% of flagged projects that have an observable use date are within 92 days of the signal, with at least 10 such dates. The instruction file alone is not counted as use."
+    "passed": true,
+    "rule": "The adoption date is the earliest of the instruction file, an AI co-author line, and an agent author. Pass if at least 16 of 20 flagged projects have a co-author, agent author, or strict tool mention on or after that date, and at least 80% of projects that have both an adoption date and a co-author or agent-author date are within 92 days, with at least 10 such dates. A project with no co-author and no agent author has a missing gap, not a gap of zero. Commit-message mentions do not set the date."
   },
   "manual": {
     "check3": {
@@ -77,5 +84,6 @@
     "check5": 15,
     "check6": 10
   },
+  "check2_note": "- Check 2 is a fresh sample, seed 20261111. It excludes the 40 repositories in `check2_development_sample.csv`. The adoption date is the earliest instruction file, AI co-author line, or agent author. The gap is measured to the earliest co-author or agent author. An earlier commit-message mention does not move the date, and a project with no co-author or agent author keeps a blank gap.",
   "check4_note": "- Check 4 is a fresh sample of 30, seed 20261110. It shares no file with the first 30 (`check4_development_sample.csv`), which is where the pointer-phrase misses were found. That first sample is not the reported accuracy. The fresh mix is 9 replaced, 4 no-longer-needed, 1 rejected-before-use, 16 cleanup-or-rename. The measured repositories only contain 9 rejected-before-use transitions and 9 no-longer-needed transitions, and the first sample had already taken most of them."
 }

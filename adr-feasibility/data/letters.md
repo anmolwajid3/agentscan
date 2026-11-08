@@ -8,150 +8,150 @@ Send them from your own account, and stop if someone asks not to be contacted.
 
 Question: roughly when did your team start using AI coding tools?
 
-### googleapis/google-cloud-cpp
+### eclipse/deeplearning4j
 
-Signal date in git: 2026-07-29T17:11:25+00:00 (file:primary)
+Signal date in git: 2025-04-09T07:28:54+00:00 (coauthor)
 
 Subject: One question about AI coding tools
 
 Hello,
 
-I am a PhD student studying architecture decision records. In googleapis/google-cloud-cpp I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
+I am a PhD student studying architecture decision records. In eclipse/deeplearning4j I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
 
 Roughly when did your team start using AI coding tools on this project, if you did? A month and a year is enough. If the project has not used them, that answer helps too.
 
 Thank you,
 Anmol
 
-### mlibrary/nebula
+### simpledotorg/simple-server
 
-Signal date in git: 2026-07-31T19:32:11+00:00 (coauthor)
+Signal date in git: 2026-02-27T20:25:08+00:00 (coauthor)
 
 Subject: One question about AI coding tools
 
 Hello,
 
-I am a PhD student studying architecture decision records. In mlibrary/nebula I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
+I am a PhD student studying architecture decision records. In simpledotorg/simple-server I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
 
 Roughly when did your team start using AI coding tools on this project, if you did? A month and a year is enough. If the project has not used them, that answer helps too.
 
 Thank you,
 Anmol
 
-### cloudfoundry/cli
+### apache/james-project
 
-Signal date in git: 2026-02-25T00:23:55+00:00 (coauthor)
+Signal date in git: 2026-08-31T03:18:44+00:00 (coauthor)
 
 Subject: One question about AI coding tools
 
 Hello,
 
-I am a PhD student studying architecture decision records. In cloudfoundry/cli I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
+I am a PhD student studying architecture decision records. In apache/james-project I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
 
 Roughly when did your team start using AI coding tools on this project, if you did? A month and a year is enough. If the project has not used them, that answer helps too.
 
 Thank you,
 Anmol
 
-### eikek/docspell
+### change-metrics/monocle
 
-Signal date in git: 2026-02-23T11:32:15+00:00 (coauthor)
+Signal date in git: 2026-09-24T04:13:44+00:00 (coauthor)
 
 Subject: One question about AI coding tools
 
 Hello,
 
-I am a PhD student studying architecture decision records. In eikek/docspell I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
+I am a PhD student studying architecture decision records. In change-metrics/monocle I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
 
 Roughly when did your team start using AI coding tools on this project, if you did? A month and a year is enough. If the project has not used them, that answer helps too.
 
 Thank you,
 Anmol
 
-### latextemplates/generator-latex-template
+### UKGovernmentBEIS/beis-report-official-development-assistance
 
-Signal date in git: 2026-06-12T00:57:11+00:00 (file:primary)
+Signal date in git: 2026-10-13T16:57:09+00:00 (coauthor)
 
 Subject: One question about AI coding tools
 
 Hello,
 
-I am a PhD student studying architecture decision records. In latextemplates/generator-latex-template I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
+I am a PhD student studying architecture decision records. In UKGovernmentBEIS/beis-report-official-development-assistance I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
 
 Roughly when did your team start using AI coding tools on this project, if you did? A month and a year is enough. If the project has not used them, that answer helps too.
 
 Thank you,
 Anmol
 
-### psu-libraries/scholarsphere
+### eclipse/ditto
 
-Signal date in git: 2026-05-29T20:39:47+00:00 (coauthor)
+Signal date in git: 2026-01-13T12:24:41+00:00 (coauthor)
 
 Subject: One question about AI coding tools
 
 Hello,
 
-I am a PhD student studying architecture decision records. In psu-libraries/scholarsphere I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
+I am a PhD student studying architecture decision records. In eclipse/ditto I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
 
 Roughly when did your team start using AI coding tools on this project, if you did? A month and a year is enough. If the project has not used them, that answer helps too.
 
 Thank you,
 Anmol
 
-### Amsterdam/signals-frontend
+### celestiaorg/celestia-core
 
-Signal date in git: 2026-09-09T10:17:00+00:00 (coauthor)
+Signal date in git: 2025-04-29T14:14:51+00:00 (coauthor)
 
 Subject: One question about AI coding tools
 
 Hello,
 
-I am a PhD student studying architecture decision records. In Amsterdam/signals-frontend I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
+I am a PhD student studying architecture decision records. In celestiaorg/celestia-core I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
 
 Roughly when did your team start using AI coding tools on this project, if you did? A month and a year is enough. If the project has not used them, that answer helps too.
 
 Thank you,
 Anmol
 
-### scheduleonce/once-ui
+### nicoespeon/abracadabra
 
-Signal date in git: 2026-03-09T14:11:17+00:00 (file:primary)
+Signal date in git: 2026-01-09T20:09:49+00:00 (file:primary)
 
 Subject: One question about AI coding tools
 
 Hello,
 
-I am a PhD student studying architecture decision records. In scheduleonce/once-ui I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
+I am a PhD student studying architecture decision records. In nicoespeon/abracadabra I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
 
 Roughly when did your team start using AI coding tools on this project, if you did? A month and a year is enough. If the project has not used them, that answer helps too.
 
 Thank you,
 Anmol
 
-### ministryofjustice/modernisation-platform
+### ministryofjustice/opg-lpa
 
-Signal date in git: 2026-04-27T15:24:27+00:00 (coauthor)
+Signal date in git: 2026-06-30T11:46:33+00:00 (coauthor)
 
 Subject: One question about AI coding tools
 
 Hello,
 
-I am a PhD student studying architecture decision records. In ministryofjustice/modernisation-platform I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
+I am a PhD student studying architecture decision records. In ministryofjustice/opg-lpa I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
 
 Roughly when did your team start using AI coding tools on this project, if you did? A month and a year is enough. If the project has not used them, that answer helps too.
 
 Thank you,
 Anmol
 
-### Informatievlaanderen/road-registry
+### johanhaleby/occurrent
 
-Signal date in git: 2026-03-19T10:49:27+00:00 (file:primary)
+Signal date in git: 2026-06-18T10:55:44+00:00 (coauthor)
 
 Subject: One question about AI coding tools
 
 Hello,
 
-I am a PhD student studying architecture decision records. In Informatievlaanderen/road-registry I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
+I am a PhD student studying architecture decision records. In johanhaleby/occurrent I can see a public trace that may mean the project uses an AI coding tool. I am not asking for anything private.
 
 Roughly when did your team start using AI coding tools on this project, if you did? A month and a year is enough. If the project has not used them, that answer helps too.
 

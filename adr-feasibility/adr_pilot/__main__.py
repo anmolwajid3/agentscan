@@ -55,6 +55,14 @@ def _collect(args: argparse.Namespace) -> None:
     collect(rows, REPOS, Path(args.clone_root), workers=args.workers, limit=args.limit)
 
 
+def _held_out_repos(path: Path) -> set[str]:
+    """Repositories from the Check 2 sample that exposed the date problem."""
+    if not path.exists():
+        return set()
+    with path.open(encoding="utf-8", newline="") as handle:
+        return {row.get("repo") or "" for row in csv.DictReader(handle) if row.get("repo")}
+
+
 def _held_out_paths(path: Path) -> set[tuple[str, str]]:
     """Repository and path pairs from the sample that exposed the ending-rule gap."""
     if not path.exists():
@@ -69,7 +77,7 @@ def _report(_args: argparse.Namespace) -> None:
         raise SystemExit("No collected repositories. Run: python -m adr_pilot collect")
     write_project_table(projects, DATA / "projects.csv")
     rng3 = random.Random(20261108)
-    rng2 = random.Random(20261108)
+    rng2 = random.Random(20261111)
     rng4 = random.Random(20261110)
     rng5 = random.Random(20261109)
     summary1 = check1(projects)
@@ -81,7 +89,8 @@ def _report(_args: argparse.Namespace) -> None:
         summary1["frame_rows"] = len(frame_rows)
         summary1["frame_ai_probe"] = sum(1 for row in frame_rows if row.get("ai_file_probe") == "yes")
         summary1["frame_unmeasured"] = max(0, len(frame_rows) - len(projects))
-    summary2 = check2(projects, rng2)
+    held_repos = _held_out_repos(DATA / "check2_development_sample.csv")
+    summary2 = check2(projects, rng2, exclude=held_repos)
     cases3 = build_check3(projects, rng3)
     held_out = _held_out_paths(DATA / "check4_development_sample.csv")
     cases4 = build_check4(projects, rng4, exclude=held_out)
@@ -116,6 +125,13 @@ def _report(_args: argparse.Namespace) -> None:
             "check5": len(cases5),
             "check6": len(cases6),
         },
+        "check2_note": (
+            f"- Check 2 is a fresh sample, seed 20261111. It excludes the {len(held_repos)} "
+            "repositories in `check2_development_sample.csv`. The adoption date is the earliest "
+            "instruction file, AI co-author line, or agent author. The gap is measured to the "
+            "earliest co-author or agent author. An earlier commit-message mention does not move the date, "
+            "and a project with no co-author or agent author keeps a blank gap."
+        ),
         "check4_note": (
             f"- Check 4 is a fresh sample of {len(cases4)}, seed 20261110. "
             f"It shares no file with the first 30 (`check4_development_sample.csv`), "
@@ -141,8 +157,9 @@ def _write_cases(path: Path, summary2: dict) -> None:
     for row in summary2["unflagged"]:
         rows.append({**row, "arm": "unflagged"})
     fields = [
-        "arm", "repo", "signal_date", "signal_kind", "earliest_observable_use",
-        "abs_gap_days", "confirmed_use", "hidden_use", "evidence",
+        "arm", "repo", "signal_date", "signal_kind", "adoption_date", "strong_use_date",
+        "earliest_mention", "earliest_observable_use", "abs_gap_days", "confirmed_use",
+        "hidden_use", "evidence",
     ]
     _write_csv(path, rows, fields)
 

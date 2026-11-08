@@ -2,11 +2,19 @@
 
 One person read the packets on 8 November 2026 (Europe/Kyiv) and filled checks 3, 4, and 5 (rater A). Check 4 was labeled from the packets before the script labels were opened. A second rater has not labeled check 5. No maintainer has been emailed. The letters are in `letters.md`.
 
+## Check 1 recount
+
+The adoption date was already the earliest of the instruction file, an AI co-author line, and an agent author. Recounting with that date does not move the pass bar: 67 projects still have a signal and at least 5 earlier ADRs, 273 have at least 5 ADRs and no signal, and 133 superseded records sit in those windows.
+
+Those 133 split into 32 written before adoption and 101 in projects with no signal. Two further superseded records in eligible AI projects were written after adoption. They were not inside the 133. No superseded record lacked a date.
+
 ## Check 2
 
-19 of 20 flagged projects have a co-author line, an agent author, or a tool mention on or after the signal date. That half of the bar passes. The timing half does not: 14 of 19 observable start dates are within 92 days, which is 74%, under the 80% bar. Three gaps are long because a co-author line appears months or years before the instruction file (527, 867, and 2887 days). The file is a late marker. The pre-written response applies: date adoption from the co-author line, or call the file projects AI-configured rather than AI-using.
+The first 20 (seed 20261108, kept in `check2_development_sample.csv`) confirmed use in 19 of 20. The date half failed, 14 of 19 within 92 days. The long gaps were commit-message mentions dated years before the strong signal, including a Cloud Foundry component named Copilot. Those mentions are not the adoption date.
 
-None of the 20 unflagged projects had a strict hidden-use hit after one false hit was removed. That hit was a commit about a UI cursor position. It is not Cursor the editor.
+The reported sample is a new 20 flagged projects and a new 20 unflagged projects, seed 20261111, excluding those 40 repositories. The adoption date is the earliest strong signal. The gap is the distance from that date to the earliest co-author or agent author. 19 of 20 show use on or after the adoption date. 17 of 18 projects that have a co-author or agent-author date are within 92 days. The one longer gap is Sylius/Sylius: `AGENTS.md` on 12 June 2025, first co-author on 2 October 2026, 478 days. Two projects have no co-author and no agent author, so their gap is blank rather than zero. One of those two still has a later strict mention, so use is confirmed. The other only adds the instruction file.
+
+A hidden trace means a strict tool mention, co-author, or agent author in a project with no strong signal. The fresh 20 unflagged projects have none. That is not proof that unflagged projects never use AI. The earlier "cursor position" commit is not a hidden trace.
 
 ## Check 3
 
@@ -22,4 +30,6 @@ The fresh sample has 9 replaced, 4 no-longer-needed, 1 rejected-before-use, and 
 
 ## Check 5 and 6
 
-Rater A took about 81 minutes for 15 reversals, roughly 5 minutes each. Kappa waits on rater B (`data/manual/check5_rater_b.csv` and `guides/classification_guide.md`). Check 6 waits on replies to the ten letters.
+Rater A took about 81 minutes for 15 reversals, roughly 5 minutes each. Kappa waits on rater B (`data/manual/check5_rater_b.csv` and `guides/classification_guide.md`).
+
+Check 6A and 6B were not built. The inputs they require are listed in `check6/INPUTS.md`. The hardness labels cover 15 reversals, not 30, and there is no list of the commits that carried out each reversal.

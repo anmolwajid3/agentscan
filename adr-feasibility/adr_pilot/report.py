@@ -52,6 +52,49 @@ def load_projects(repo_dir: Path) -> list[dict]:
     return projects
 
 
+def _reversal_groups(projects: list[dict]) -> dict:
+    """Split superseded records by adoption date.
+
+    A record with no readable date is counted as undated. It is not added to
+    a before or after group, and it is not treated as zero.
+    """
+    groups = {
+        "reversals_ai_before": 0,
+        "reversals_ai_after": 0,
+        "reversals_non_ai": 0,
+        "reversals_undated": 0,
+        "reversals_ai_before_eligible": 0,
+        "reversals_ai_after_eligible": 0,
+        "reversals_non_ai_eligible": 0,
+    }
+    for project in projects:
+        if not project.get("clone_ok") or project.get("likely_template"):
+            continue
+        signal = parse_dt(project.get("signal_date"))
+        eligible = project.get("group") in {"ai-eligible", "non-ai-eligible"}
+        for adr in project.get("adrs") or []:
+            if adr.get("status") != "superseded":
+                continue
+            written = parse_dt(adr.get("first_commit"))
+            if signal is None:
+                groups["reversals_non_ai"] += 1
+                if eligible:
+                    groups["reversals_non_ai_eligible"] += 1
+                continue
+            if written is None:
+                groups["reversals_undated"] += 1
+                continue
+            if written < signal:
+                groups["reversals_ai_before"] += 1
+                if eligible:
+                    groups["reversals_ai_before_eligible"] += 1
+            else:
+                groups["reversals_ai_after"] += 1
+                if eligible:
+                    groups["reversals_ai_after_eligible"] += 1
+    return groups
+
+
 def _days(first: str | None, last: str | None) -> int | None:
     start, end = parse_dt(first), parse_dt(last)
     if not start or not end:
@@ -93,6 +136,7 @@ def check1(projects: list[dict]) -> dict:
         "too_few_adrs": sum(1 for p in projects if p.get("group") == "too-few-adrs"),
         "templates": sum(1 for p in projects if p.get("group") == "template"),
         "superseded_in_eligible_windows": superseded,
+        **_reversal_groups(projects),
         "strict_ai_eligible": strict_ai,
         "strict_non_ai_eligible": strict_non,
         "strict_superseded": strict_superseded,
@@ -104,6 +148,39 @@ def check1(projects: list[dict]) -> dict:
         "passed": check1_passed(len(ai), len(non), superseded),
         "passed_strict_real_project_filter": check1_passed(strict_ai, strict_non, strict_superseded),
     }
+
+
+def adoption_event(project: dict) -> tuple | None:
+    """Earliest strong signal: instruction file, AI co-author, or agent author.
+
+    A commit message that merely mentions a tool is not an adoption date.
+    Those mentions include products that are not AI coding tools.
+    """
+    found = []
+    for event in project.get("ai_signals") or []:
+        if not event.get("official") or not event.get("date"):
+            continue
+        kind = str(event.get("kind") or "")
+        if kind not in {"coauthor", "agent-author", "file:primary"}:
+            continue
+        when = parse_dt(event.get("date"))
+        if when is not None:
+            found.append((when, event))
+    if not found:
+        return None
+    return min(found, key=lambda pair: pair[0])
+
+
+def _strong_use_dates(project: dict) -> list:
+    """Co-author and agent-author dates. Mentions are not included."""
+    found = []
+    for event in project.get("ai_signals") or []:
+        if event.get("kind") not in {"coauthor", "agent-author"} or not event.get("date"):
+            continue
+        when = parse_dt(event.get("date"))
+        if when is not None:
+            found.append(when)
+    return found
 
 
 def _uses(project: dict) -> list[dict]:
@@ -152,40 +229,65 @@ def _qualifying_uses(project: dict) -> list[tuple]:
     return found
 
 
-def _confirmed(project: dict) -> tuple[bool, str | None, float | None]:
-    """Return confirmed-use, earliest use date, and absolute gap in days.
+def _confirmed(project: dict) -> dict:
+    """Confirmed use, and the gap from the earliest strong signal to strong use.
 
-    The instruction file is the signal, not the proof of use. A mention inside
-    the commit that adds that file does not count. Co-author lines, agent
-    authors, and mentions in other commits do.
+    The adoption date is the earliest instruction file, co-author line, or
+    agent author. The timing comparison uses the earliest co-author or agent
+    author, not an earlier commit-message mention. If that strong use does
+    not exist, the gap is missing. It is not recorded as zero.
     """
-    signal = parse_dt(project.get("signal_date"))
+    adopted = adoption_event(project)
+    signal = adopted[0] if adopted else None
+    signal_kind = (adopted[1].get("kind") if adopted else None) or project.get("signal_kind")
+    signal_iso = signal.astimezone(timezone.utc).isoformat() if signal else None
     uses = _qualifying_uses(project)
+    mention_dates = [when for when, item in uses if item.get("kind") == "mention"]
+    strong = _strong_use_dates(project)
     if not uses:
-        return False, None, None
-    earliest, _item = min(uses, key=lambda pair: pair[0])
-    if signal is not None:
-        confirmed = any(when >= signal for when, _item in uses)
-        gap = abs((earliest - signal).total_seconds()) / 86400
+        confirmed = False
+        earliest_use = None
     else:
-        confirmed = True
+        earliest_when, _item = min(uses, key=lambda pair: pair[0])
+        earliest_use = earliest_when.astimezone(timezone.utc).isoformat()
+        confirmed = True if signal is None else any(when >= signal for when, _item in uses)
+    if signal is not None and strong:
+        real_start = min(strong)
+        gap = abs((real_start - signal).total_seconds()) / 86400
+        strong_iso = real_start.astimezone(timezone.utc).isoformat()
+    else:
         gap = None
-    return confirmed, earliest.astimezone(timezone.utc).isoformat(), gap
+        strong_iso = None
+    mention_iso = min(mention_dates).astimezone(timezone.utc).isoformat() if mention_dates else None
+    return {
+        "confirmed": confirmed,
+        "earliest_observable_use": earliest_use,
+        "gap_days": gap,
+        "adoption_date": signal_iso,
+        "adoption_kind": signal_kind,
+        "strong_use_date": strong_iso,
+        "earliest_mention": mention_iso,
+    }
 
 
-def check2(projects: list[dict], rng: random.Random) -> dict:
-    flagged_pool = [p for p in projects if p.get("signal_date") and p.get("clone_ok") and not p.get("likely_template")]
+def check2(projects: list[dict], rng: random.Random, *, exclude: set[str] | None = None) -> dict:
+    held = exclude or set()
+    flagged_pool = [
+        p for p in projects
+        if p.get("signal_date") and p.get("clone_ok") and not p.get("likely_template") and p.get("repo") not in held
+    ]
     quiet_pool = [
         p for p in projects
-        if not p.get("signal_date") and p.get("clone_ok") and not p.get("likely_template") and int(p.get("adr_count") or 0) >= 5
+        if not p.get("signal_date") and p.get("clone_ok") and not p.get("likely_template")
+        and int(p.get("adr_count") or 0) >= 5 and p.get("repo") not in held
     ]
     flagged = _sample(flagged_pool, 20, rng)
     quiet = _sample(quiet_pool, 20, rng)
     flagged_rows = [_check2_row(p, flagged=True) for p in flagged]
     quiet_rows = [_check2_row(p, flagged=False) for p in quiet]
     confirmed = sum(1 for row in flagged_rows if row["confirmed_use"])
-    dated = [row for row in flagged_rows if row["abs_gap_days"] is not None]
-    within = [row for row in dated if row["abs_gap_days"] <= TIMING_GAP_DAYS]
+    dated = [row for row in flagged_rows if row["abs_gap_days"] != "" and row["abs_gap_days"] is not None]
+    within = [row for row in dated if float(row["abs_gap_days"]) <= TIMING_GAP_DAYS]
     hidden = sum(1 for row in quiet_rows if row["hidden_use"])
     timing_pass = len(dated) >= 10 and (len(within) / len(dated) >= 0.8 if dated else False)
     return {
@@ -201,36 +303,54 @@ def check2(projects: list[dict], rng: random.Random) -> dict:
         "flagged": flagged_rows,
         "unflagged": quiet_rows,
         "rule": (
-            "Pass if at least 16 of 20 flagged projects have an AI co-author, agent author, "
-            "or a strict tool mention on or after the signal date, and at least 80% of flagged "
-            "projects that have an observable use date are within 92 days of the signal, "
-            "with at least 10 such dates. The instruction file alone is not counted as use."
+            "The adoption date is the earliest of the instruction file, an AI co-author line, "
+            "and an agent author. Pass if at least 16 of 20 flagged projects have a co-author, "
+            "agent author, or strict tool mention on or after that date, and at least 80% of "
+            "projects that have both an adoption date and a co-author or agent-author date "
+            "are within 92 days, with at least 10 such dates. A project with no co-author "
+            "and no agent author has a missing gap, not a gap of zero. Commit-message "
+            "mentions do not set the date."
         ),
     }
 
 
 def _check2_row(project: dict, flagged: bool) -> dict:
-    confirmed, earliest, gap = _confirmed(project)
+    result = _confirmed(project)
+    # A hidden trace is a strict mention, co-author, or agent author in a
+    # project that has none of the three strong signals. A rejected literal
+    # mention, such as "cursor position", is not a hidden trace.
     hidden = (not flagged) and bool(_qualifying_uses(project))
+    gap = result["gap_days"]
     return {
         "repo": project.get("repo"),
-        "signal_date": project.get("signal_date"),
-        "signal_kind": project.get("signal_kind"),
-        "earliest_observable_use": earliest,
-        "abs_gap_days": None if gap is None else round(gap, 1),
-        "confirmed_use": confirmed if flagged else "",
+        "signal_date": result["adoption_date"] or project.get("signal_date"),
+        "signal_kind": result["adoption_kind"] or project.get("signal_kind"),
+        "adoption_date": result["adoption_date"] or "",
+        "strong_use_date": result["strong_use_date"] or "",
+        "earliest_mention": result["earliest_mention"] or "",
+        "earliest_observable_use": result["earliest_observable_use"] or "",
+        "abs_gap_days": "" if gap is None else round(gap, 1),
+        "confirmed_use": result["confirmed"] if flagged else "",
         "hidden_use": hidden if not flagged else "",
-        "evidence": _evidence_snippet(project),
+        "evidence": _evidence_snippet(project) if flagged or hidden else "",
     }
 
 
 def _evidence_snippet(project: dict) -> str:
+    from adr_pilot.signals import mention_kind
+
     bits = []
-    for event in (project.get("ai_signals") or [])[:3]:
+    for event in project.get("ai_signals") or []:
         if event.get("kind") in {"coauthor", "agent-author", "file:primary"}:
             bits.append(f"{event.get('kind')}: {event.get('name') or ''} @ {event.get('date')}")
-    for mention in ((project.get("mentions") or {}).get("strict") or [])[:2]:
+        if len(bits) >= 3:
+            break
+    for mention in (project.get("mentions") or {}).get("strict") or []:
+        if mention_kind(mention.get("subject") or "") != "strict":
+            continue
         bits.append(f"mention: {mention.get('subject')} @ {mention.get('date')}")
+        if len([item for item in bits if item.startswith("mention:")]) >= 2:
+            break
     return " | ".join(bits)[:400]
 
 
@@ -753,14 +873,18 @@ def render_scorecard(summary: dict) -> str:
             "1. Enough data",
             f"{c1['ai_eligible']} projects with an AI signal and at least 5 earlier ADRs; "
             f"{c1['non_ai_eligible']} without a signal and at least 5 ADRs; "
-            f"{c1['superseded_in_eligible_windows']} superseded decisions in those windows.",
+            f"{c1['superseded_in_eligible_windows']} superseded decisions in those windows. "
+            f"All superseded records: {c1['reversals_ai_before']} before adoption, "
+            f"{c1['reversals_ai_after']} after adoption, {c1['reversals_non_ai']} with no signal"
+            f"{'' if not c1['reversals_undated'] else f', {c1['reversals_undated']} undated and not placed'}.",
             c1["passed"],
             "Stop or change the study. The full design is not possible in this form.",
         ),
         _row(
             "2. AI signal",
-            f"{c2['confirmed_use']} of {c2['flagged_n']} flagged projects show use after the signal. "
-            f"{c2['within_92_days']} of {c2['with_observable_start']} observable start dates fall within 92 days. "
+            f"{c2['confirmed_use']} of {c2['flagged_n']} flagged projects show use on or after the earliest strong signal. "
+            f"{c2['within_92_days']} of {c2['with_observable_start']} projects with a co-author or agent-author date fall within 92 days. "
+            f"A project with no such date is missing, not zero. "
             f"{c2['hidden_use']} of {c2['unflagged_n']} unflagged projects have a hidden trace. "
             f"Maintainer replies so far: {manual['check2_maintainer_replies']}.",
             c2["passed"],
@@ -805,6 +929,19 @@ def render_scorecard(summary: dict) -> str:
         "- Stricter project filter (at least two authors and one year of history), not required by the pass bar: "
         f"{c1['strict_ai_eligible']} AI, {c1['strict_non_ai_eligible']} non-AI, {c1['strict_superseded']} superseded. "
         f"That stricter bar {'passes' if c1['passed_strict_real_project_filter'] else 'does not pass'}.",
+        "- Superseded records in eligible projects only: "
+        f"{c1['reversals_ai_before_eligible']} before adoption, "
+        f"{c1['reversals_ai_after_eligible']} after adoption, "
+        f"{c1['reversals_non_ai_eligible']} with no signal. "
+        "The pass bar uses the before-adoption count plus the no-signal count. "
+        "Records written after adoption are reported separately and do not fill that bar.",
+        "",
+        "## Check 2 detail",
+        "",
+        summary.get("check2_note") or "- Check 2 uses the sample in `check2_sample.csv`.",
+        "- A hidden trace is a strict mention of Copilot, Claude, Cursor, or ChatGPT, or a co-author or agent author, in a project that has no instruction file, no AI co-author, and no agent author. "
+        "A commit about a cursor position, or a product that happens to be named Copilot, is not a hidden trace. "
+        "Zero hidden traces in a sample of 20 is not proof that unflagged projects never use AI.",
         "",
         "## Check 4 detail",
         "",
